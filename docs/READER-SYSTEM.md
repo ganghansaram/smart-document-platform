@@ -93,10 +93,14 @@
 
 ### 3.3 뷰어 (문서 카드 클릭 시)
 
-- **좌측 패널**: PDF.js로 원본 PDF 렌더링 (예정, 현재는 텍스트 추출)
-- **우측 패널**: 페이지 동기화 번역 텍스트
-- **헤더 midSlot**: ◀ 페이지 ▶ | 번역 아이콘 (아이콘 기반 네비게이션)
-- **스크롤 동기화**: 좌/우 패널 스크롤 연동
+- **좌측 패널**: PDF.js canvas로 원본 PDF 렌더링 (`has_pdf` 문서), 레거시 텍스트 폴백
+- **우측 패널**: 페이지 동기화 번역 텍스트 (`white-space: normal`로 한글 자연 줄바꿈)
+- **헤더 midSlot**: ◀ 페이지 ▶ | 번역 아이콘 | 세그먼트 프로그레스 바
+- **번역 프로그레스 바**: 번역 버튼 우측 인라인 표시 (80px 바 + `n/m` 텍스트), 완료 후 1.5초 뒤 숨김
+- **번역 완료 하이라이트**: 완료 순간 플래시 애니메이션 (800ms) + 영구 좌측 파란 보더
+- **좌우 클릭 동기화**:
+  - PDF 모드: 우측 단락 클릭 → 좌측 PDF 위 바운딩박스 오버레이 (`bbox` 좌표 기반)
+  - 레거시 모드: 좌/우 단락 클릭 → 양쪽 DOM 하이라이트 동기화
 
 ---
 
@@ -132,7 +136,7 @@ PDF 업로드 → PyMuPDF 파싱 → NDJSON 스트리밍 응답.
 문서 상세 (원문 + 번역 포함).
 
 - **권한**: viewer 이상
-- **응답**: `{ id, filename, title, pages, paragraphs, content: [{ id, page, text, translated, type }], created_at }`
+- **응답**: `{ id, filename, title, pages, paragraphs, has_pdf, content: [{ id, page, text, translated, type, bbox?, page_size? }], created_at }`
 
 ### DELETE `/document/{doc_id}`
 
@@ -168,6 +172,8 @@ PDF 업로드 → PyMuPDF 파싱 → NDJSON 스트리밍 응답.
 data/reader/
   _index.json                      ← 문서 목록 인덱스
   20260228_090917_b81b73.json      ← 개별 문서 (원문 + 번역)
+  pdfs/
+    20260228_090917_b81b73.pdf     ← PDF 원본 바이너리 (PDF.js 렌더링용)
 ```
 
 ### `_index.json` — 문서 목록
@@ -195,20 +201,25 @@ data/reader/
   "title": "AIR-BENCH: ...",
   "pages": 31,
   "paragraphs": 1008,
+  "has_pdf": true,
   "content": [
     {
       "id": 0,
       "page": 1,
       "text": "AIR-BENCH: Automated Heterogeneous Information Retrieval Benchmark",
       "translated": null,
-      "type": "text"
+      "type": "text",
+      "bbox": [72.0, 71.25, 523.2, 95.63],
+      "page_size": [612.0, 792.0]
     },
     {
       "id": 1,
       "page": 1,
       "text": "[Figure]",
       "translated": null,
-      "type": "figure"
+      "type": "figure",
+      "bbox": [100.0, 200.0, 500.0, 450.0],
+      "page_size": [612.0, 792.0]
     }
   ],
   "created_at": "2026-02-28T09:09:17.123456"
@@ -222,6 +233,15 @@ data/reader/
 | `text` | 일반 텍스트 — 번역 대상 |
 | `figure` | 이미지 블록 — `[Figure]`로 표시, 번역 스킵 |
 | `formula` | 수식 (특수문자 비율 30% 초과) — 원문 유지 |
+
+### 단락 부가 필드
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `bbox` | `[x0, y0, x1, y1]` | PDF 페이지 내 블록 좌표 (pt 단위). 클릭 시 PDF 오버레이 하이라이트에 사용 |
+| `page_size` | `[width, height]` | PDF 페이지 원본 크기 (pt). bbox→canvas 좌표 변환 시 스케일 계산에 사용 |
+
+> `bbox`/`page_size`는 신규 업로드 문서부터 포함됩니다. 기존 문서는 이 필드가 없으며, 프론트엔드는 필드 부재 시 오버레이를 스킵합니다.
 
 ---
 
@@ -239,8 +259,9 @@ data/reader/
 각 단락마다:
     1. MD5 캐시 확인 → 히트 시 캐시 반환
     2. Ollama API 호출 (generate, stream: false)
-    3. 번역 결과 NDJSON 이벤트로 스트리밍
-    4. 매 5단락마다 중간 저장
+    3. 줄바꿈 후처리: 단일 \n → 공백 치환 (\n\n 문단 구분은 유지)
+    4. 번역 결과 NDJSON 이벤트로 스트리밍
+    5. 매 5단락마다 중간 저장
     ↓
 최종 저장 + 인덱스 갱신
 ```
@@ -278,7 +299,8 @@ Output ONLY the translation, no explanation.
 데이터
 └── data/reader/                     ← 문서 JSON 저장소
     ├── _index.json
-    └── {doc_id}.json
+    ├── {doc_id}.json
+    └── pdfs/{doc_id}.pdf            ← PDF 원본 바이너리
 ```
 
 ---
@@ -299,12 +321,21 @@ Output ONLY the translation, no explanation.
 
 ## 9. 개발 로드맵
 
-### Phase 1 — PDF.js 뷰어 전환 (다음 작업)
+### Phase 1 — PDF.js 뷰어 전환 ✅
 
-- [ ] 좌측 패널: 텍스트 추출 → PDF.js 원본 렌더링으로 전환
-- [ ] PDF 파일을 프론트엔드에서 직접 렌더링 (백엔드는 PDF 바이너리 서빙)
-- [ ] 우측 패널: 페이지 단위 번역 텍스트 (좌측 페이지와 동기화)
-- [ ] 페이지 네비게이션이 양쪽 패널을 동시에 제어
+- [x] 좌측 패널: PDF.js canvas 원본 렌더링 (레거시 텍스트 폴백 유지)
+- [x] PDF 바이너리 저장/서빙 (`GET /api/reader/pdf/{doc_id}`)
+- [x] 우측 패널: 페이지 단위 번역 텍스트 (좌측 페이지와 동기화)
+- [x] 페이지 네비게이션이 양쪽 패널을 동시에 제어
+- [x] 리사이즈 debounce 200ms로 canvas 재렌더링
+
+### Phase 1.5 — 번역 UX 개선 ✅
+
+- [x] 세그먼트 프로그레스 바 (번역 버튼 우측 인라인)
+- [x] 번역 완료 단락 하이라이트 (플래시 애니메이션 + 영구 좌측 보더)
+- [x] 좌우 패널 클릭 동기화 (레거시: DOM 양쪽, PDF: 바운딩박스 오버레이)
+- [x] 한글 줄바꿈 정리 (CSS `white-space: normal` + 백엔드 `\n` → 공백 후처리)
+- [x] PDF 바운딩박스 오버레이 (`bbox`/`page_size` 좌표로 원문 위치 표시)
 
 ### Phase 2 — 번역 품질 개선
 
