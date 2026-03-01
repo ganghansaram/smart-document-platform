@@ -101,6 +101,40 @@
         .view-list { display: flex; flex-direction: column; height: 100%; overflow-y: auto; padding: 32px; }
         .view-reader { display: none; height: 100%; }
 
+        /* 모델 선택 바 */
+        .model-select-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 720px;
+            margin: 0 auto 16px;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .model-select-bar label {
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .model-select-bar select {
+            flex: 1;
+            max-width: 280px;
+            padding: 5px 8px;
+            border: 1px solid #dde4e8;
+            border-radius: 5px;
+            font-size: 13px;
+            font-family: inherit;
+            background: #fff;
+            color: #2c3e50;
+        }
+
+        body[data-theme="dark"] .model-select-bar select {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.12);
+            color: #e0e0e0;
+        }
+
         /* Upload zone */
         .upload-zone {
             border: 2px dashed #dde4e8;
@@ -520,6 +554,70 @@
             color: #95a5a6;
         }
 
+        /* ── 인라인 편집 ── */
+        .reader-para.editing {
+            padding: 0;
+            background: none;
+        }
+
+        .para-edit-area {
+            width: 100%;
+            min-height: 60px;
+            padding: 8px 10px;
+            border: 2px solid #58a6ff;
+            border-radius: 4px;
+            font-size: 15px;
+            line-height: 1.7;
+            font-family: inherit;
+            color: #2c3e50;
+            resize: vertical;
+            background: #fff;
+        }
+
+        body[data-theme="dark"] .para-edit-area {
+            background: #1e1e2e;
+            color: #e0e0e0;
+            border-color: #58a6ff;
+        }
+
+        .para-edit-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+            justify-content: flex-end;
+        }
+
+        .para-edit-actions button {
+            font-size: 12px;
+            padding: 3px 10px;
+            border: 1px solid #dde4e8;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            background: #fff;
+            color: #555;
+        }
+
+        .para-edit-actions button.save {
+            background: #238636;
+            border-color: #238636;
+            color: #fff;
+        }
+
+        .para-edit-actions button:hover { opacity: 0.85; }
+
+        body[data-theme="dark"] .para-edit-actions button {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.12);
+            color: #e0e0e0;
+        }
+
+        body[data-theme="dark"] .para-edit-actions button.save {
+            background: #238636;
+            border-color: #238636;
+            color: #fff;
+        }
+
         /* ── Footer ── */
         .reader-footer {
             text-align: center;
@@ -698,6 +796,11 @@
     <div class="reader-body">
         <!-- State 1: Document list + Upload -->
         <div class="view-list" id="view-list">
+            <div class="model-select-bar" id="model-select-bar">
+                <label for="model-select">번역 모델:</label>
+                <select id="model-select"><option value="">로드 중...</option></select>
+            </div>
+
             <div class="upload-zone" id="upload-zone">
                 <div class="upload-zone-icon">&#128196;</div>
                 <div class="upload-zone-text">PDF 파일을 드래그하거나 클릭하여 업로드</div>
@@ -735,7 +838,8 @@
                         <span>Translation</span>
                         <span class="view-mode-toggle" id="view-mode-toggle" style="display:none">
                             <button class="view-mode-btn active" data-mode="text">텍스트</button>
-                            <button class="view-mode-btn" data-mode="pdf">PDF</button>
+                            <button class="view-mode-btn" data-mode="pdf">번역PDF</button>
+                            <button class="view-mode-btn" data-mode="dual">이중언어</button>
                         </span>
                         <button class="scroll-sync-btn active" id="scroll-sync-btn" style="display:none" title="좌우 스크롤 동기화"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
                         <span class="zoom-controls" id="zoom-right">
@@ -828,8 +932,9 @@
         var pdfPendingPage = null;
 
         // 우측 뷰 모드 state
-        var rightViewMode = 'text'; // 'text' | 'pdf'
+        var rightViewMode = 'text'; // 'text' | 'pdf' | 'dual'
         var translatedPdfDoc = null;
+        var dualPdfDoc = null;
         var translatedPdfRendering = false;
         var scrollSyncEnabled = true;
         var isScrollSyncing = false;
@@ -1041,6 +1146,10 @@
                         translatedPdfDoc.destroy();
                         translatedPdfDoc = null;
                     }
+                    if (dualPdfDoc) {
+                        dualPdfDoc.destroy();
+                        dualPdfDoc = null;
+                    }
 
                     showReader();
 
@@ -1085,6 +1194,10 @@
             if (translatedPdfDoc) {
                 translatedPdfDoc.destroy();
                 translatedPdfDoc = null;
+            }
+            if (dualPdfDoc) {
+                dualPdfDoc.destroy();
+                dualPdfDoc = null;
             }
             loadDocuments();
         }
@@ -1254,6 +1367,12 @@
                         renderTranslatedPdfPage(page);
                     } else {
                         loadTranslatedPdf();
+                    }
+                } else if (rightViewMode === 'dual') {
+                    if (dualPdfDoc) {
+                        renderDualPdfPage(page);
+                    } else {
+                        loadDualPdf();
                     }
                 } else {
                     renderPageContent(page);
@@ -1467,13 +1586,19 @@
             $translateBtn.classList.remove('translating');
             $translateBtn.title = '현재 페이지 번역';
 
-            // 번역 후 캐시된 번역 PDF 무효화 → PDF 모드면 리로드
+            // 번역 후 캐시된 번역 PDF 무효화 → PDF/dual 모드면 리로드
             if (translatedPdfDoc) {
                 translatedPdfDoc.destroy();
                 translatedPdfDoc = null;
             }
+            if (dualPdfDoc) {
+                dualPdfDoc.destroy();
+                dualPdfDoc = null;
+            }
             if (rightViewMode === 'pdf') {
                 loadTranslatedPdf();
+            } else if (rightViewMode === 'dual') {
+                loadDualPdf();
             }
 
             // 프로그레스 바 fade-out
@@ -1521,6 +1646,96 @@
             }
         });
 
+        // ── 더블클릭 인라인 편집 ──
+        $contentRight.addEventListener('dblclick', function(e) {
+            var target = e.target.closest('.reader-para');
+            if (!target || !currentDoc) return;
+            if (target.classList.contains('editing')) return;
+            if (target.classList.contains('figure') || target.classList.contains('table')) return;
+
+            var paraId = Number(target.getAttribute('data-para-id'));
+            var para = currentDoc.content.find(function(p) { return p.id === paraId; });
+            if (!para) return;
+
+            var originalText = para.translated || '';
+            target.classList.add('editing');
+
+            var textarea = document.createElement('textarea');
+            textarea.className = 'para-edit-area';
+            textarea.value = originalText;
+
+            var actions = document.createElement('div');
+            actions.className = 'para-edit-actions';
+            var saveBtn = document.createElement('button');
+            saveBtn.className = 'save';
+            saveBtn.textContent = '저장';
+            var cancelBtn = document.createElement('button');
+            cancelBtn.textContent = '취소';
+            actions.appendChild(cancelBtn);
+            actions.appendChild(saveBtn);
+
+            target.textContent = '';
+            target.appendChild(textarea);
+            target.appendChild(actions);
+            textarea.focus();
+
+            // 높이 자동 맞춤
+            textarea.style.height = textarea.scrollHeight + 'px';
+            textarea.addEventListener('input', function() {
+                textarea.style.height = 'auto';
+                textarea.style.height = textarea.scrollHeight + 'px';
+            });
+
+            function cancel() {
+                target.classList.remove('editing');
+                target.textContent = originalText || '[번역 대기]';
+                if (originalText) {
+                    target.classList.add('translated');
+                } else {
+                    target.classList.add('waiting');
+                }
+            }
+
+            function save() {
+                var newText = textarea.value.trim();
+                if (newText === originalText) { cancel(); return; }
+
+                fetch(API + '/api/reader/document/' + currentDoc.id + '/paragraph/' + paraId, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ translated: newText }),
+                    credentials: 'include',
+                }).then(function(r) {
+                    if (!r.ok) throw new Error('저장 실패');
+                    // 로컬 캐시 갱신
+                    para.translated = newText;
+                    target.classList.remove('editing');
+                    target.textContent = newText;
+                    target.classList.add('translated');
+                    target.classList.remove('waiting');
+                    // 번역 PDF 캐시 무효화
+                    if (translatedPdfDoc) {
+                        translatedPdfDoc.destroy();
+                        translatedPdfDoc = null;
+                    }
+                    if (dualPdfDoc) {
+                        dualPdfDoc.destroy();
+                        dualPdfDoc = null;
+                    }
+                }).catch(function(err) {
+                    alert('저장 실패: ' + err.message);
+                });
+            }
+
+            cancelBtn.addEventListener('click', function(e) { e.stopPropagation(); cancel(); });
+            saveBtn.addEventListener('click', function(e) { e.stopPropagation(); save(); });
+
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+                if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); save(); }
+            });
+        });
+
         // 레거시 모드: 좌측 클릭 시 우측도 하이라이트
         $contentLeft.addEventListener('click', function(e) {
             if (usePdfViewer) return;
@@ -1548,6 +1763,8 @@
                 renderPdfPage(currentPage);
                 if (rightViewMode === 'pdf' && translatedPdfDoc) {
                     renderTranslatedPdfPage(currentPage);
+                } else if (rightViewMode === 'dual' && dualPdfDoc) {
+                    renderDualPdfPage(currentPage);
                 }
             }, 200);
         });
@@ -1578,6 +1795,8 @@
         function applyRightZoom() {
             if (rightViewMode === 'pdf' && translatedPdfDoc) {
                 renderTranslatedPdfPage(currentPage);
+            } else if (rightViewMode === 'dual' && dualPdfDoc) {
+                renderDualPdfPage(currentPage);
             } else {
                 applyTransformZoom($contentRight, rightZoom);
             }
@@ -1626,6 +1845,11 @@
                 $translatedPdfContainer.style.display = 'block';
                 $scrollSyncBtn.style.display = '';
                 loadTranslatedPdf();
+            } else if (rightViewMode === 'dual') {
+                $contentRight.style.display = 'none';
+                $translatedPdfContainer.style.display = 'block';
+                $scrollSyncBtn.style.display = '';
+                loadDualPdf();
             } else {
                 $translatedPdfContainer.style.display = 'none';
                 $contentRight.style.display = 'block';
@@ -1733,6 +1957,155 @@
                 });
             });
         }
+
+        // ══════════════════════════════════════
+        // 이중언어(Dual) PDF 로드/렌더링
+        // ══════════════════════════════════════
+
+        function loadDualPdf() {
+            if (!currentDoc) return;
+
+            if (dualPdfDoc) {
+                renderDualPdfPage(currentPage);
+                return;
+            }
+
+            $translatedPdfContainer.innerHTML = '<div class="doc-empty" style="padding:40px;text-align:center">이중언어 PDF 로드 중...</div>';
+
+            var pdfUrl = API + '/api/reader/dual-pdf/' + currentDoc.id;
+
+            fetch(pdfUrl, { credentials: 'include' })
+                .then(function(r) {
+                    if (r.ok) return r;
+                    // 404 → 번역 PDF 생성 요청 (mono + dual 동시 생성)
+                    return fetch(API + '/api/reader/translated-pdf/' + currentDoc.id, {
+                        method: 'POST',
+                        credentials: 'include',
+                    }).then(function(postR) {
+                        if (!postR.ok) throw new Error('이중언어 PDF 생성 실패');
+                        return fetch(pdfUrl, { credentials: 'include' });
+                    });
+                })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('이중언어 PDF 로드 실패');
+                    return pdfjsLib.getDocument({ url: pdfUrl, withCredentials: true }).promise;
+                })
+                .then(function(pdf) {
+                    dualPdfDoc = pdf;
+                    $translatedPdfContainer.innerHTML = '';
+                    var canvas = document.createElement('canvas');
+                    canvas.id = 'translated-pdf-canvas';
+                    $translatedPdfContainer.appendChild(canvas);
+                    $translatedPdfCanvas = canvas;
+                    renderDualPdfPage(currentPage);
+                })
+                .catch(function(err) {
+                    console.error('[DualPDF]', err);
+                    $translatedPdfContainer.innerHTML = '<div class="doc-empty" style="padding:40px;text-align:center">이중언어 PDF를 생성할 수 없습니다.<br><small>' + escHtml(err.message) + '</small></div>';
+                });
+        }
+
+        function renderDualPdfPage(pageNum) {
+            if (!dualPdfDoc) return;
+            if (translatedPdfRendering) return;
+
+            translatedPdfRendering = true;
+
+            dualPdfDoc.getPage(pageNum).then(function(page) {
+                var panelWidth = $translatedPdfContainer.clientWidth || ($panelRight.clientWidth - 56);
+                var viewport = page.getViewport({ scale: 1 });
+                var baseScale = panelWidth / viewport.width;
+                var scale = baseScale * rightZoom;
+                var scaledViewport = page.getViewport({ scale: scale });
+
+                $translatedPdfCanvas.width = scaledViewport.width;
+                $translatedPdfCanvas.height = scaledViewport.height;
+
+                var ctx = $translatedPdfCanvas.getContext('2d');
+                page.render({
+                    canvasContext: ctx,
+                    viewport: scaledViewport,
+                }).promise.then(function() {
+                    translatedPdfRendering = false;
+                }).catch(function() {
+                    translatedPdfRendering = false;
+                });
+            });
+        }
+
+        // ══════════════════════════════════════
+        // 번역 모델 선택
+        // ══════════════════════════════════════
+
+        var $modelSelect = document.getElementById('model-select');
+
+        function loadModels() {
+            fetch(API + '/api/reader/models', { credentials: 'include' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var models = (data.models || []).map(function(m) { return m.name; });
+                    if (!models.length) {
+                        $modelSelect.innerHTML = '<option value="">모델 없음</option>';
+                        return;
+                    }
+                    // 현재 설정된 모델 가져오기
+                    fetch(API + '/api/settings', { credentials: 'include' })
+                        .then(function(r) { return r.json(); })
+                        .then(function(settings) {
+                            var current = (settings.reader && settings.reader.translation_model) || '';
+                            $modelSelect.innerHTML = '';
+                            models.forEach(function(name) {
+                                var opt = document.createElement('option');
+                                opt.value = name;
+                                opt.textContent = name;
+                                if (name === current) opt.selected = true;
+                                $modelSelect.appendChild(opt);
+                            });
+                            // 현재 설정 모델이 목록에 없으면 첫번째 선택
+                            if (current && !models.includes(current)) {
+                                $modelSelect.value = models[0];
+                            }
+                        })
+                        .catch(function() {
+                            $modelSelect.innerHTML = '';
+                            models.forEach(function(name) {
+                                var opt = document.createElement('option');
+                                opt.value = name;
+                                opt.textContent = name;
+                                $modelSelect.appendChild(opt);
+                            });
+                        });
+                })
+                .catch(function() {
+                    $modelSelect.innerHTML = '<option value="">모델 조회 실패</option>';
+                });
+        }
+
+        $modelSelect.addEventListener('change', function() {
+            var model = $modelSelect.value;
+            if (!model) return;
+            fetch(API + '/api/settings', { credentials: 'include' })
+                .then(function(r) { return r.json(); })
+                .then(function(settings) {
+                    if (!settings.reader) settings.reader = {};
+                    settings.reader.translation_model = model;
+                    return fetch(API + '/api/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(settings),
+                        credentials: 'include',
+                    });
+                })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('저장 실패');
+                })
+                .catch(function(err) {
+                    console.error('[ModelSelect]', err);
+                });
+        });
+
+        // 초기 로드
+        loadModels();
 
         // ── Helpers ──
         function escHtml(str) {

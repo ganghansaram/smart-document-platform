@@ -38,6 +38,9 @@ DEFAULT_SETTINGS: dict = {
         "login_required": True,
         "cors_origins": ["http://localhost:8080", "http://127.0.0.1:8080"],
     },
+    "reader": {
+        "translation_model": "",
+    },
     "upload": {
         "word_com_preprocess": False,
         "upload_temp_dir": None,
@@ -85,6 +88,7 @@ _NO_RESTART = {
     "session.max_conversation_turns", "session.max_history_length",
     "session.max_sessions", "session.max_idle_minutes",
     "upload.word_com_preprocess", "upload.upload_temp_dir",
+    "reader.translation_model",
     "frontend",  # prefix match
 }
 # 나머지(ollama_url, ollama_model, embedding_model, session_expiry_hours,
@@ -168,6 +172,11 @@ def apply_to_config(settings: dict) -> list[str]:
     sec = settings.get("security", {})
     _set(sec, "login_required", "LOGIN_REQUIRED", restart_needed)
     _set(sec, "cors_origins",   "CORS_ORIGINS",   restart_needed)
+
+    rdr = settings.get("reader", {})
+    # reader_translation_model: 빈값이면 기본 OLLAMA_MODEL 유지
+    if rdr.get("translation_model"):
+        _set(rdr, "translation_model", "OLLAMA_MODEL", restart_needed, immediate=True)
 
     upl = settings.get("upload", {})
     _set(upl, "word_com_preprocess", "WORD_COM_PREPROCESS", restart_needed, immediate=True)

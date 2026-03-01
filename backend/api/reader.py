@@ -8,10 +8,13 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body
 from fastapi.responses import StreamingResponse, FileResponse
 from typing import Optional
 
+import requests as http_requests
+
 from dependencies import get_current_user, require_editor
 from services.reader_service import (
     parse_pdf, translate_document, get_documents, get_document, delete_document,
-    get_pdf_path,
+    get_pdf_path, get_reader_image_path, get_translated_pdf_path,
+    get_dual_pdf_path, generate_translated_pdf, invalidate_translated_pdf,
 )
 import config
 
@@ -108,6 +111,80 @@ async def serve_pdf(doc_id: str, user: dict = Depends(get_current_user)):
     if not path:
         raise HTTPException(status_code=404, detail="PDF 파일을 찾을 수 없습니다")
     return FileResponse(path=str(path), media_type="application/pdf")
+
+
+@router.get("/image/{filename}")
+async def serve_image(filename: str, user: dict = Depends(get_current_user)):
+    """크롭 이미지 서빙 (figure/table)"""
+    path = get_reader_image_path(filename)
+    if not path:
+        raise HTTPException(status_code=404, detail="이미지를 찾을 수 없습니다")
+    return FileResponse(path=str(path), media_type="image/png")
+
+
+@router.get("/translated-pdf/{doc_id}")
+async def serve_translated_pdf(doc_id: str, user: dict = Depends(get_current_user)):
+    """번역 PDF 서빙"""
+    path = get_translated_pdf_path(doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail="번역 PDF가 없습니다")
+    return FileResponse(path=str(path), media_type="application/pdf")
+
+
+@router.post("/translated-pdf/{doc_id}")
+async def create_translated_pdf(doc_id: str, user: dict = Depends(get_current_user)):
+    """번역 PDF 생성 (PDFMathTranslate 우선, 미설치 시 PyMuPDF 폴백)"""
+    doc = get_document(doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    try:
+        from services.reader_service import generate_translated_pdf_async
+        await generate_translated_pdf_async(doc["id"])
+    except ImportError:
+        # PDFMathTranslate 미설치 → 기존 PyMuPDF 오버레이 폴백
+        try:
+            generate_translated_pdf(doc)
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"번역 PDF 생성 실패: {e}")
+    return {"success": True}
+
+
+@router.get("/models")
+async def list_models(user: dict = Depends(get_current_user)):
+    """Ollama 사용 가능 모델 목록"""
+    try:
+        resp = http_requests.get(f"{config.OLLAMA_URL}/api/tags", timeout=5)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Ollama 모델 목록 조회 실패: {e}")
+
+
+@router.get("/dual-pdf/{doc_id}")
+async def serve_dual_pdf(doc_id: str, user: dict = Depends(get_current_user)):
+    """이중언어 PDF 서빙"""
+    path = get_dual_pdf_path(doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail="이중언어 PDF가 없습니다")
+    return FileResponse(path=str(path), media_type="application/pdf")
+
+
+@router.patch("/document/{doc_id}/paragraph/{para_id}")
+async def edit_paragraph(
+    doc_id: str, para_id: int,
+    body: dict = Body(...),
+    user: dict = Depends(get_current_user),
+):
+    """번역 텍스트 수동 편집"""
+    from services.reader_service import edit_paragraph_translation
+    result = edit_paragraph_translation(doc_id, para_id, body.get("translated", ""))
+    if result is None:
+        raise HTTPException(status_code=404, detail="문서 또는 단락을 찾을 수 없습니다")
+    return {"success": True}
 
 
 @router.delete("/document/{doc_id}")

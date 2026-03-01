@@ -5,6 +5,7 @@ import json
 import hashlib
 import re
 import os
+import shutil
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
@@ -13,8 +14,45 @@ import requests
 
 import config
 
-# 번역 캐시 (md5 → translated)
+# 번역 캐시 (md5 → translated) — JSON 파일로 영구화
 _translation_cache: dict[str, str] = {}
+_translation_cache_dirty = 0  # 미저장 변경 수
+
+
+def _cache_path() -> Path:
+    return Path(config.READER_DATA_DIR) / "_translation_cache.json"
+
+
+def _load_translation_cache():
+    """파일에서 번역 캐시 로드"""
+    global _translation_cache
+    path = _cache_path()
+    if path.exists():
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                _translation_cache = json.load(f)
+        except Exception:
+            _translation_cache = {}
+
+
+def _save_translation_cache():
+    """번역 캐시를 파일에 저장 (atomic write)"""
+    global _translation_cache_dirty
+    _ensure_data_dir()
+    path = _cache_path()
+    tmp = path.with_suffix(".tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(_translation_cache, f, ensure_ascii=False)
+        tmp.replace(path)
+        _translation_cache_dirty = 0
+    except Exception:
+        if tmp.exists():
+            tmp.unlink()
+
+
+# 모듈 초기화 시 캐시 로드
+_load_translation_cache()
 
 
 def _ensure_data_dir():
@@ -268,6 +306,7 @@ def parse_pdf(pdf_bytes: bytes, filename: str):
 
 def translate_paragraph(text: str) -> str:
     """단일 문단 Ollama 번역"""
+    global _translation_cache_dirty
     cache_key = hashlib.md5(text.encode()).hexdigest()
     if cache_key in _translation_cache:
         return _translation_cache[cache_key]
@@ -299,6 +338,7 @@ def translate_paragraph(text: str) -> str:
         translated = f"[번역 오류: {e}]"
 
     _translation_cache[cache_key] = translated
+    _translation_cache_dirty += 1
     return translated
 
 
@@ -346,12 +386,16 @@ def translate_document(doc_id: str, paragraph_ids: Optional[list[int]] = None):
             "total": total,
         }
 
-        # 매 5단락마다 중간 저장
+        # 매 5단락마다 중간 저장 + 캐시 flush
         if (i + 1) % 5 == 0:
             _save_document(document)
+            if _translation_cache_dirty > 0:
+                _save_translation_cache()
 
     # 최종 저장
     _save_document(document)
+    if _translation_cache_dirty > 0:
+        _save_translation_cache()
 
     # 인덱스의 translated 카운트 갱신
     total_translated = sum(1 for p in content if p["translated"] is not None)
@@ -394,10 +438,11 @@ def delete_document(doc_id: str) -> bool:
     if pdf_file.exists():
         pdf_file.unlink()
 
-    # 번역 PDF 삭제
-    translated_pdf = _pdf_dir() / f"{doc_id}_translated.pdf"
-    if translated_pdf.exists():
-        translated_pdf.unlink()
+    # 번역 PDF 삭제 (mono + dual)
+    for suffix in ("_translated.pdf", "_dual.pdf"):
+        p = _pdf_dir() / f"{doc_id}{suffix}"
+        if p.exists():
+            p.unlink()
 
     # 크롭 이미지 삭제
     img_dir = _images_dir()
@@ -428,11 +473,18 @@ def get_translated_pdf_path(doc_id: str) -> Optional[Path]:
     return path if path.exists() else None
 
 
+def get_dual_pdf_path(doc_id: str) -> Optional[Path]:
+    """이중언어 PDF 경로 반환 (존재 시)"""
+    path = _pdf_dir() / f"{doc_id}_dual.pdf"
+    return path if path.exists() else None
+
+
 def invalidate_translated_pdf(doc_id: str):
-    """번역 PDF 캐시 무효화"""
-    path = _pdf_dir() / f"{doc_id}_translated.pdf"
-    if path.exists():
-        path.unlink()
+    """번역 PDF 캐시 무효화 (mono + dual)"""
+    for suffix in ("_translated.pdf", "_dual.pdf"):
+        p = _pdf_dir() / f"{doc_id}{suffix}"
+        if p.exists():
+            p.unlink()
 
 
 TRANSLATED_BBOX_EXPAND = 1.5  # bbox 높이 확장 비율 (overflow 방지)
@@ -581,3 +633,74 @@ def generate_translated_pdf(doc_data: dict):
     output_path = _pdf_dir() / f"{doc_id}_translated.pdf"
     doc.save(str(output_path))
     doc.close()
+
+
+async def generate_translated_pdf_async(doc_id: str):
+    """PDFMathTranslate(pdf2zh_next)로 고품질 번역 PDF 생성 (mono + dual)"""
+    import asyncio
+    from pdf2zh_next.high_level import do_translate_async_stream
+    from pdf2zh_next.config.model import SettingsModel
+    from pdf2zh_next.config.translate_engine_model import OllamaSettings
+
+    src_path = _pdf_path(doc_id)
+    if not src_path.exists():
+        raise FileNotFoundError(f"원본 PDF 없음: {doc_id}")
+
+    # PDFMathTranslate 설정: Ollama 엔진 사용
+    settings = SettingsModel(
+        translation={
+            "lang_in": "en",
+            "lang_out": "ko",
+        },
+        translate_engine_settings=OllamaSettings(
+            ollama_model=config.OLLAMA_MODEL,
+            ollama_host=config.OLLAMA_URL,
+        ),
+    )
+
+    result_paths = {}
+    async for event in do_translate_async_stream(settings, str(src_path)):
+        etype = event.get("type")
+        if etype == "finish":
+            tr = event["translate_result"]
+            result_paths["mono"] = getattr(tr, "mono_pdf_path", None)
+            result_paths["dual"] = getattr(tr, "dual_pdf_path", None)
+            break
+        elif etype == "error":
+            raise RuntimeError(event.get("error", "번역 PDF 생성 실패"))
+
+    # 결과 PDF를 reader 데이터 디렉토리로 이동
+    output_dir = _pdf_dir()
+    if result_paths.get("mono"):
+        shutil.move(str(result_paths["mono"]),
+                     str(output_dir / f"{doc_id}_translated.pdf"))
+    if result_paths.get("dual"):
+        shutil.move(str(result_paths["dual"]),
+                     str(output_dir / f"{doc_id}_dual.pdf"))
+
+
+def edit_paragraph_translation(doc_id: str, para_id: int, translated: str) -> Optional[bool]:
+    """번역 텍스트 수동 편집 → 문서 저장 + 번역 PDF 무효화"""
+    doc_file = _doc_path(doc_id)
+    if not doc_file.exists():
+        return None
+
+    with open(doc_file, "r", encoding="utf-8") as f:
+        document = json.load(f)
+
+    # para_id 범위 검증
+    para = None
+    for p in document["content"]:
+        if p["id"] == para_id:
+            para = p
+            break
+    if para is None:
+        return None
+
+    para["translated"] = translated
+    _save_document(document)
+
+    # 번역 PDF 캐시 무효화
+    invalidate_translated_pdf(doc_id)
+
+    return True
