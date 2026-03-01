@@ -1,0 +1,27 @@
+[변환 리포트] upload_20260223_215831.pdf
+──────────────────────────────────────────────────
+- [건너뜀] "List of Acronyms and Abbreviations" (Figure/Table 참조)
+✓ h1: "1. Overview" (p.4) → 매칭 (유사도: 1.00)
+✓ h1: "2. Summary of FY 2020 Activities" (p.5) → 매칭 (유사도: 1.00)
+- [건너뜀] "Figure 1 – Breakdown Percentage of Funding in Fiscal Year" (Figure/Table 참조)
+- [건너뜀] "Table 1 – Summary of Activities" (Figure/Table 참조)
+✓ h1: "3. Trends" (p.8) → 매칭 (유사도: 1.00)
+✓ h2: "3.1 Aggregated Funding" (p.9) → 매칭 (유사도: 1.00)
+- [건너뜀] "Figure 2 – Funding FY 2014-2020" (Figure/Table 참조)
+✓ h2: "3.2 Investment Breakdowns" (p.10) → 매칭 (유사도: 1.00)
+- [건너뜀] "Figure 3 – FY 2020 Investment Breakdown by Military Department" (Figure/Table 참조)
+- [건너뜀] "Figure 4 – Percentage of Total FLEX-4 Funding Allocation" (Figure/Table 참조)
+✓ h2: "3.3 Implementation Challenges" (p.13) → 매칭 (유사도: 1.00)
+- [건너뜀] "Table 2 – Implementation Challenges" (Figure/Table 참조)
+✓ h1: "4. Across the Military Departments" (p.14) → 매칭 (유사도: 1.00)
+✓ h2: "4.1 FY 2020 Army Activities" (p.14) → 매칭 (유사도: 1.00)
+- [건너뜀] "Figure 5 – FY 2020 Army Breakdown" (Figure/Table 참조)
+- [건너뜀] "Table 3 – Army Investment Summary" (Figure/Table 참조)
+✓ h2: "4.2 FY 2020 Navy Activities" (p.16) → 매칭 (유사도: 1.00)
+- [건너뜀] "Figure 6 – FY 2020 Navy Breakdown" (Figure/Table 참조)
+- [건너뜀] "Table 4 – Navy Investment Summary" (Figure/Table 참조)
+✓ h2: "4.3 FY 2020 Air Force Activities" (p.18) → 매칭 (유사도: 1.00)
+- [건너뜀] "Figure 7 – FY 2020 Air Force Breakdown" (Figure/Table 참조)
+- [건너뜀] "Table 5 – Air Force Investment Summary" (Figure/Table 참조)
+──────────────────────────────────────────────────
+섹션 제목: 10개 | 매칭 성공: 10 (100.0%) | 실패: 0

@@ -1,0 +1,8 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Offline packages (large binary files)
+# Uncomment if you don't want to track packages in git
+# packages/*.whl

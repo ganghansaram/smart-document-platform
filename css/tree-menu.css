@@ -1,0 +1,721 @@
+/* ===================================
+   트리 메뉴 스타일
+   =================================== */
+
+/* 트리 검색창 */
+.tree-search {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--white);
+    position: sticky;
+    top: 47px;  /* 패널 헤더 높이 아래에 고정 */
+    z-index: 9;
+}
+
+.tree-search-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%235a6c7d'%3E%3Cpath d='M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    flex-shrink: 0;
+}
+
+#tree-search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    background: transparent;
+    color: var(--text-dark);
+}
+
+#tree-search-input::placeholder {
+    color: var(--medium-gray);
+}
+
+.tree-search-clear {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--medium-gray);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.tree-search-clear:hover {
+    color: var(--text-dark);
+}
+
+.tree-search-clear.visible {
+    display: block;
+}
+
+/* 검색 결과 없음 메시지 */
+.tree-no-results {
+    padding: 20px;
+    text-align: center;
+    color: var(--medium-gray);
+    font-size: 13px;
+}
+
+/* 검색어 하이라이트 */
+.search-highlight {
+    background-color: #fff3cd;
+    color: var(--text-dark);
+    border-radius: 2px;
+    padding: 0 2px;
+}
+
+.tree-menu {
+    padding: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.tree-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tree-menu li {
+    margin: 0;
+    padding: 0;
+}
+
+/* 트리 아이템 */
+.tree-item {
+    display: block;
+    padding: 5px 12px 5px 24px;  /* 왼쪽에 화살표 공간 확보 */
+    color: var(--text-dark);
+    text-decoration: none;
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 2px 0;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    position: relative;
+    user-select: none;
+    white-space: nowrap;  /* 줄바꿈 방지 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tree-item:hover {
+    background-color: var(--hover-bg);
+    color: var(--active-color);
+}
+
+.tree-item.active {
+    background-color: var(--active-color);
+    color: var(--white);
+    font-weight: 500;
+}
+
+/* 확장/축소 아이콘 - 왼쪽 여백에 배치 */
+.tree-item .toggle-icon {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.tree-item.has-children .toggle-icon::before {
+    content: '▶';
+    font-size: 10px;
+    color: var(--medium-gray);
+}
+
+.tree-item.has-children.expanded .toggle-icon::before {
+    display: inline-block;
+}
+
+.tree-item.has-children.expanded .toggle-icon {
+    transform: translateY(-50%) rotate(90deg);
+}
+
+/* 자식 항목이 없는 경우 - 토글 아이콘 숨김 */
+.tree-item:not(.has-children) .toggle-icon {
+    display: none;
+}
+
+/* 폴더/문서 아이콘 */
+.tree-item .item-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+/* 폴더 아이콘 (닫힘) - Phosphor Icons Fill */
+.tree-item.has-children .item-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%235a6c7d'%3E%3Cpath d='M216,72H130.67L102.93,51.2a16.12,16.12,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V200a16,16,0,0,0,16,16H216.89A15.13,15.13,0,0,0,232,200.89V88A16,16,0,0,0,216,72Z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+/* 폴더 아이콘 (열림) - Phosphor Icons Fill */
+.tree-item.has-children.expanded .item-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%235a6c7d'%3E%3Cpath d='M241.72,113.72A8,8,0,0,0,236,112H216V88a16,16,0,0,0-16-16H130.67L102.93,51.2a16.12,16.12,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V208h0a8,8,0,0,0,8,8H211.1a8,8,0,0,0,7.59-5.47l28.49-85.47A8,8,0,0,0,241.72,113.72ZM93.33,64l27.74,20.8a16.12,16.12,0,0,0,9.6,3.2H200v24H69.77a16,16,0,0,0-15.18,10.94L40,166.24V64Z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+/* 문서 아이콘 - Phosphor Icons Fill */
+.tree-item:not(.has-children) .item-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%235a6c7d'%3E%3Cpath d='M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,176H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm0-32H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm-8-56V44l44,44Z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+/* URL이 있는 문서 아이콘 (파랑) - 특수 아이콘 제외 */
+.tree-item.has-url:not(.has-children) .item-icon:not(.icon-home):not(.icon-info):not(.icon-glossary):not(.icon-analytics):not(.icon-settings) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%230066cc'%3E%3Cpath d='M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,176H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm0-32H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm-8-56V44l44,44Z'/%3E%3C/svg%3E");
+}
+
+/* 활성화된 문서 아이콘 */
+.tree-item.active:not(.has-children) .item-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%23ffffff'%3E%3Cpath d='M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,176H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm0-32H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm-8-56V44l44,44Z'/%3E%3C/svg%3E");
+}
+
+/* ===== 특수 아이콘 ===== */
+
+/* 홈 아이콘 */
+.tree-item .item-icon.icon-home {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235a6c7d'%3E%3Cpath d='M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'/%3E%3C/svg%3E");
+}
+
+.tree-item:hover .item-icon.icon-home {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230066cc'%3E%3Cpath d='M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'/%3E%3C/svg%3E");
+}
+
+.tree-item.active .item-icon.icon-home {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'/%3E%3C/svg%3E");
+}
+
+/* 정보 아이콘 */
+.tree-item .item-icon.icon-info {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235a6c7d'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E");
+}
+
+.tree-item:hover .item-icon.icon-info {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230066cc'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E");
+}
+
+.tree-item.active .item-icon.icon-info {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E");
+}
+
+/* 용어집 아이콘 (책) */
+.tree-item .item-icon.icon-glossary {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235a6c7d'%3E%3Cpath d='M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z'/%3E%3C/svg%3E");
+}
+
+.tree-item:hover .item-icon.icon-glossary {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230066cc'%3E%3Cpath d='M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z'/%3E%3C/svg%3E");
+}
+
+.tree-item.active .item-icon.icon-glossary {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z'/%3E%3C/svg%3E");
+}
+
+/* 대시보드 아이콘 (바 차트) */
+.tree-item .item-icon.icon-analytics {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235a6c7d'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z'/%3E%3C/svg%3E");
+}
+
+.tree-item:hover .item-icon.icon-analytics {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230066cc'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z'/%3E%3C/svg%3E");
+}
+
+.tree-item.active .item-icon.icon-analytics {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z'/%3E%3C/svg%3E");
+}
+
+/* 관리자 설정 아이콘 (기어) */
+.tree-item .item-icon.icon-settings {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235a6c7d'%3E%3Cpath d='M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.05 7.05 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z'/%3E%3C/svg%3E");
+}
+.tree-item:hover .item-icon.icon-settings {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230066cc'%3E%3Cpath d='M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.05 7.05 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z'/%3E%3C/svg%3E");
+}
+.tree-item.active .item-icon.icon-settings {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.05 7.05 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z'/%3E%3C/svg%3E");
+}
+body[data-theme="dark"] .tree-item .item-icon.icon-settings {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0b0c0'%3E%3Cpath d='M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.05 7.05 0 0 0-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z'/%3E%3C/svg%3E");
+}
+
+/* 중첩된 리스트 */
+.tree-menu ul ul {
+    display: none;
+    padding-left: 20px;
+}
+
+.tree-menu ul ul.expanded {
+    display: block;
+}
+
+/* 레벨별 들여쓰기 강조 */
+.tree-menu ul ul .tree-item {
+    font-size: 13px;
+}
+
+.tree-menu ul ul ul .tree-item {
+    font-size: 13px;
+}
+
+/* 로딩 상태 */
+.tree-menu.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.tree-menu.loading::after {
+    content: '로딩 중...';
+    display: block;
+    text-align: center;
+    padding: 20px;
+    color: var(--medium-gray);
+    font-size: 13px;
+}
+
+/* 빈 상태 */
+.tree-menu:empty::after {
+    content: '메뉴를 불러오는 중...';
+    display: block;
+    text-align: center;
+    padding: 20px;
+    color: var(--medium-gray);
+    font-size: 13px;
+}
+
+/* ===================================
+   트리 아이템 레이블 + 업로드 버튼 레이아웃
+   =================================== */
+
+.tree-item .tree-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 업로드 버튼이 있는 트리 아이템은 flex 레이아웃 */
+.tree-item.has-upload {
+    display: flex;
+    align-items: center;
+}
+
+/* 업로드 버튼 */
+.tree-upload-btn {
+    display: none;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    margin-left: auto;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    opacity: 0.35;
+    transition: opacity 0.2s ease;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%235a6c7d'%3E%3Cpath d='M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0ZM88,80l32-32V152a8,8,0,0,0,16,0V48l32,32a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,88,80Z'/%3E%3C/svg%3E");
+    background-size: 12px 12px;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* 호버 시 업로드 버튼 표시 */
+.tree-item:hover .tree-upload-btn {
+    display: block;
+}
+
+.tree-upload-btn:hover {
+    opacity: 0.8;
+}
+
+/* 활성 아이템의 업로드 버튼 */
+.tree-item.active .tree-upload-btn {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%23ffffff'%3E%3Cpath d='M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0ZM88,80l32-32V152a8,8,0,0,0,16,0V48l32,32a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,88,80Z'/%3E%3C/svg%3E");
+    opacity: 0.5;
+}
+
+.tree-item.active .tree-upload-btn:hover {
+    opacity: 0.9;
+}
+
+/* ===================================
+   업로드 진행 오버레이
+   =================================== */
+
+.upload-progress-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1200;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+
+.upload-progress-box {
+    background-color: var(--white);
+    padding: 40px 50px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.upload-spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 20px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--primary-navy);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.upload-progress-box p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.upload-progress-box .upload-sub-text {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--medium-gray);
+    font-weight: 400;
+}
+
+/* 단계별 진행 표시 */
+.progress-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text-dark);
+}
+
+.progress-steps {
+    text-align: left;
+    min-width: 280px;
+}
+
+.progress-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.progress-step:last-child {
+    border-bottom: none;
+}
+
+.step-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--border-color);
+    flex-shrink: 0;
+    position: relative;
+}
+
+.step-icon.active {
+    border: 3px solid var(--border-color);
+    border-top-color: var(--primary-navy);
+    background: transparent;
+    animation: spin 0.8s linear infinite;
+}
+
+.step-icon.completed {
+    background: #28a745;
+}
+
+.step-icon.completed::after {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 3px;
+    width: 5px;
+    height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.step-icon.skipped {
+    background: #6c757d;
+}
+
+.step-icon.skipped::after {
+    content: '\2013';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.step-icon.error {
+    background: #dc3545;
+}
+
+.step-icon.error::after {
+    content: '\00d7';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.step-label {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-dark);
+}
+
+.step-status {
+    font-size: 12px;
+    color: var(--medium-gray);
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+/* ===================================
+   인덱스 상태 바
+   =================================== */
+
+.index-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-gray);
+    font-size: 11px;
+    color: var(--medium-gray);
+    flex-shrink: 0;
+}
+
+.index-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: var(--success-color, #22c55e);
+    flex-shrink: 0;
+}
+
+.index-status-dot.outdated {
+    background-color: var(--warning-color, #f59e0b);
+}
+
+.index-status-dot.checking {
+    background-color: var(--medium-gray);
+    animation: pulse 1s infinite;
+}
+
+.index-status-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reindex-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.reindex-btn:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--medium-gray);
+}
+
+.reindex-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.reindex-btn.spinning .reindex-icon {
+    animation: spin 0.8s linear infinite;
+}
+
+.reindex-icon {
+    width: 12px;
+    height: 12px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%235a6c7d'%3E%3Cpath d='M197.67,186.37a8,8,0,0,1,0,11.29C196.58,198.73,170.82,224,128,224c-37.39,0-64-20.41-80-40v24a8,8,0,0,1-16,0V160a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H55.44C67.76,189.62,95,216,128,216c36.27,0,58.13-21.44,58.36-21.68A8,8,0,0,1,197.67,186.37ZM216,40a8,8,0,0,0-8,8V72c-16-19.59-42.61-40-80-40-42.82,0-68.58,25.27-69.66,26.34a8,8,0,0,0,11.3,11.34C69.87,69.44,91.73,48,128,48c33,0,60.24,26.38,72.56,48H168a8,8,0,0,0,0,16h48a8,8,0,0,0,8-8V48A8,8,0,0,0,216,40Z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+/* ===================================
+   Analytics Active Users (상태바 내)
+   =================================== */
+
+.analytics-active-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.analytics-divider {
+    color: var(--border-color);
+    margin: 0 4px;
+}
+
+.analytics-user-icon {
+    font-size: 12px;
+    line-height: 1;
+}
+
+/* ===================================
+   다크 테마 — 트리 메뉴 오버라이드
+   =================================== */
+
+/* 검색어 하이라이트 */
+body[data-theme="dark"] .search-highlight {
+    background-color: #665500;
+    color: #ffe066;
+}
+
+/* 업로드 오버레이 */
+body[data-theme="dark"] .upload-progress-overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+body[data-theme="dark"] .upload-progress-box {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+body[data-theme="dark"] .step-icon {
+    background: var(--border-color);
+}
+
+body[data-theme="dark"] .step-icon.active {
+    border-color: var(--border-color);
+    border-top-color: #5ba3f5;
+    background: transparent;
+}
+
+body[data-theme="dark"] .step-icon.completed {
+    background: #22c55e;
+}
+
+body[data-theme="dark"] .step-icon.skipped {
+    background: #6b7280;
+}
+
+body[data-theme="dark"] .step-icon.error {
+    background: #ef4444;
+}
+
+/* 아이콘 다크 모드 색상 전환 — SVG hardcoded 아이콘들 */
+body[data-theme="dark"] .tree-item.has-children .item-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%23a0a4b8'%3E%3Cpath d='M216,72H130.67L102.93,51.2a16.12,16.12,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V200a16,16,0,0,0,16,16H216.89A15.13,15.13,0,0,0,232,200.89V88A16,16,0,0,0,216,72Z'/%3E%3C/svg%3E");
+}
+
+body[data-theme="dark"] .tree-item.has-children.expanded .item-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%23a0a4b8'%3E%3Cpath d='M241.72,113.72A8,8,0,0,0,236,112H216V88a16,16,0,0,0-16-16H130.67L102.93,51.2a16.12,16.12,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V208h0a8,8,0,0,0,8,8H211.1a8,8,0,0,0,7.59-5.47l28.49-85.47A8,8,0,0,0,241.72,113.72ZM93.33,64l27.74,20.8a16.12,16.12,0,0,0,9.6,3.2H200v24H69.77a16,16,0,0,0-15.18,10.94L40,166.24V64Z'/%3E%3C/svg%3E");
+}
+
+body[data-theme="dark"] .tree-item:not(.has-children) .item-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%23a0a4b8'%3E%3Cpath d='M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,176H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm0-32H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm-8-56V44l44,44Z'/%3E%3C/svg%3E");
+}
+
+body[data-theme="dark"] .tree-item.has-url:not(.has-children) .item-icon:not(.icon-home):not(.icon-info):not(.icon-glossary):not(.icon-analytics):not(.icon-settings) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%235ba3f5'%3E%3Cpath d='M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,176H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm0-32H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm-8-56V44l44,44Z'/%3E%3C/svg%3E");
+}
+
+body[data-theme="dark"] .tree-item .item-icon.icon-home {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0a4b8'%3E%3Cpath d='M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'/%3E%3C/svg%3E");
+}
+
+body[data-theme="dark"] .tree-item:hover .item-icon.icon-home {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235ba3f5'%3E%3Cpath d='M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'/%3E%3C/svg%3E");
+}
+
+body[data-theme="dark"] .tree-item .item-icon.icon-info {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0a4b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E");
+}
+
+body[data-theme="dark"] .tree-item:hover .item-icon.icon-info {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235ba3f5'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E");
+}
+
+body[data-theme="dark"] .tree-item .item-icon.icon-glossary {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0a4b8'%3E%3Cpath d='M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z'/%3E%3C/svg%3E");
+}
+
+body[data-theme="dark"] .tree-item:hover .item-icon.icon-glossary {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235ba3f5'%3E%3Cpath d='M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z'/%3E%3C/svg%3E");
+}
+
+body[data-theme="dark"] .tree-item .item-icon.icon-analytics {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0a4b8'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z'/%3E%3C/svg%3E");
+}
+
+body[data-theme="dark"] .tree-item:hover .item-icon.icon-analytics {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235ba3f5'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z'/%3E%3C/svg%3E");
+}
+
+/* 트리 토글/패널 아이콘 다크 */
+body[data-theme="dark"] .tree-item.has-children .toggle-icon::before {
+    color: #a0a4b8;
+}
+
+body[data-theme="dark"] .tree-search-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%23a0a4b8'%3E%3Cpath d='M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z'/%3E%3C/svg%3E");
+}

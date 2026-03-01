@@ -1,0 +1,332 @@
+<p style="text-align: center;"><strong>&lt;</strong><strong> D</strong><strong>eep-</strong><strong>R</strong><strong>einforcement </strong><strong>A</strong><strong>voidance and </strong><strong>C</strong><strong>ommunication </strong><strong>O</strong><strong>perator</strong><strong>&gt;</strong></p>
+
+<p style="text-align: center;">Software Architecture Specification</p>
+
+<p style="text-align: center;">Writer: OOO</p>
+
+<h2 id="revision-history">Revision History</h2>
+
+<table><thead><tr><th>Version</th><th>Date</th><th>Summary</th></tr></thead><tbody><tr><td>1</td><td>2023.09.11</td><td>Project Overview (ch 1.1 ~ ch 1.3)</td></tr><tr><td>2</td><td>2023.10.29</td><td>Architecture Driver (ch 2.1 ~ ch 2.3)</td></tr><tr><td>3</td><td>2023.12.11</td><td>Design Decisions (ch 3.1)</td></tr><tr><td>4</td><td>2023.12.17</td><td>Structural View, Behavior View, Allocation View(ch 3.2 ~ ch 3.4)</td></tr></tbody></table>
+
+<h3 id="contents">Contents</h3>
+
+<h1 id="project-overview">Project Overview</h1>
+
+<h2 id="project-background">Project Background</h2>
+
+<p><strong>Describe p</strong><strong>roject</strong><strong> background in detail</strong></p>
+
+<p>무인 항공기(Unmanned Aerial Vehicle, UAV)는 사람이 탑승하지 않은 항공기로, 원격 조종 혹은 자율 비행의 방법으로 비행한다. 그로 인해 UAV는 타 항공기와 비교해 소형화가 가능하기에, 구매 및 운용 비용이 저렴하여 수요가 증가하는 추세이다[1]. </p>
+
+<p style="text-align: center;">[1] 증가하는 UAV의 시장규모</p>
+
+<p style="text-align: center;">https://www.precedenceresearch.com/small-uav-market</p>
+
+<p>하지만 증가하는 UAV의 수요 만큼 UAV의 충돌 사례 또한 증가하는 추세인데, 많은 인파가 있는 곳에서 추락하거나 대형 항공기와 충돌하는 등의 대형 사고 또한 발생했다. 이는 기존의 대형 항공기와 달리, 150kg 이하 무인동력비행장치에 대해서는 별도의 소프트웨어 감항인증 절차가 없어도 시판이 가능하기에, 1) 충돌 회피 시스템이 없거나, 2) 기능이 부족하거나, 3) 감시가 되지 않는 경우가 많기 때문이다. 또한, 다수의 UAV 간 충돌 회피의 경우 각각의 UAV의 충돌 회피 시스템 뿐 아니라 각 UAV 간 소통(Communication) 및 군집 제어가 필요하나 시판 중인 제품에서는 해당 사항을 충족하는 제품은 없다.</p>
+
+<p><strong>Describe the need/role of the product to be developed in the project, users, and key functions and values/expected effects to be provided to users.</strong></p>
+
+<p>본 프로젝트에서는 UAV를 위한 충돌 회피 시스템인 DRACO(Deep-Reinforcement Avoidance and Communication Operator)를 개발하고자 한다. 본 제품은 UAV들의 충돌 방지에 기여하여, UAV 뿐 아니라 공역 및 인접 지상 영역의 안전성 또한 보장할 수 있다. 본 제품의 주요 사용자는 UAV 사용자 전반이 될 것으로 기대되며, 이를 위해 본 제품은 접목이 용이(Plugable)하고 군집(Swarm) 제어 및 상호 소통(Inter-Communication) 기능을 포함한다. 또한 심층강화학습(Deep Reinforcement Learning, DRL)을 바탕으로 기존의 로직 기반 회피보다 강건(Robust)한 회피 성능을 제공한다.</p>
+
+<p>Briefly describe the market environment, existing/competitive product analysis and comparison, etc.
+</p>
+
+<p style="text-align: center;">[2] 회피 접근법 및 시스템</p>
+
+<p>YASIN, Jawad N., et al. Unmanned aerial vehicles (uavs): Collision avoidance systems and approaches. IEEE access, 2020, 8: 105139-105155.</p>
+
+<p>상단의 표는 기존에 제안된 다양한 충돌 회피 접근법 및 시스템에 대해 정리한 것으로,각 대상에 대해 다음과 같은 9개의 척도로 평가했다.</p>
+
+<p>RTP: 실시간 성능(Run Time Performance)</p>
+
+<p>VC: 속도 제약(Velocity Constraint)</p>
+
+<p>SDE: 정적 및 동적 환경(Static and Dynamic Environment)</p>
+
+<p>DL: 교착 상태(DeadLock)</p>
+
+<p>SC: 군집 호환성(Swarm Compatibility)</p>
+
+<p>R: 강건성(Robustness)</p>
+
+<p>D: 3D 호환성(3D compatibility)</p>
+
+<p>CD: 통신 의존성(Communication Dependence)</p>
+
+<p>ET: 회피 궤적(Escape Trajectories)</p>
+
+<p>PPP: 사전 경로 계획(Pre-mission Path Planning)</p>
+
+<p>본 제품은 사전 경로 계획/이행을 1단계, 타 UAV와 통신을 2단계, 센서 감지를 3단계로 하는 충돌 회피 방식을 채택하여, 이를 통해 PPP 및 CD, DL, SC를 충족할 것이다. 또한 DRL을 통해 RTP, VC, SDE, R, D, ET를 충족할 것이다. 그리하여 위의 9개 척도를 모두 충족하는 충돌 회피 시스템을 구축할 계획이다.</p>
+
+<h2 id="business-context-diagram">Business Context Diagram</h2>
+
+<h2 id="stakeholder-list">Stakeholder List</h2>
+
+<table><thead><tr><th>Stakeholder</th><th>Description</th></tr></thead><tbody><tr><td>UAV 사용자</td><td>충돌 회피 시스템을 구매 및 사용</td></tr><tr><td>ATC</td><td>기존 항공기들의 운항 및 공역 정보를 제공</td></tr><tr><td>국토교통부</td><td>충돌 회피 시스템의 등록 및 규제</td></tr><tr><td>보험 기관</td><td>충돌 회피 시스템의 사고 발생에 따른 보험 요건 검토 및 보상 청구</td></tr><tr><td>시스템 운영자</td><td>충돌 회피 시스템의 업데이트, 모니터링 및 운영 정보 제공</td></tr></tbody></table>
+
+<h1 id="architectural-driver">Architectural Driver</h1>
+
+<h2 id="use-case-model">Use Case Model</h2>
+
+<h3 id="use-case-diagram">Use Case Diagram</h3>
+
+<h3 id="actor-list">Actor List</h3>
+
+<table><thead><tr><th>Name</th><th>Description</th></tr></thead><tbody><tr><td>사용자</td><td>DRACO를 자신의 UAV에 탑재 및 UAV를 운용</td></tr><tr><td>다른 DRACO</td><td>다른 UAV에 탑재된 DRACO로, 사용자 UAV 내 DRACO와 정보를 교환</td></tr><tr><td>사용자의 UAV</td><td>DRACO가 탑재된 UAV</td></tr><tr><td>시스템 운영자</td><td>DRACO에게 운용 정보(지형, 공역, 제한 영역 등)를 제공</td></tr></tbody></table>
+
+<h3 id="use-case-list">Use Case List</h3>
+
+<table><thead><tr><th>ID</th><th>Title</th><th>Description</th><th>Priority</th><th>Priority</th></tr></thead><tbody><tr><td>ID</td><td>Title</td><td>Description</td><td>I</td><td>D</td></tr><tr><td>UC-01</td><td>사용자 등록</td><td>사용자가 DRACO를 사용하기 전 개인정보를 인증하여 사용자로 등록한다.</td><td>H</td><td>L</td></tr><tr><td>UC-02</td><td>사전 경로 
+계획</td><td>사용자가 UAV의 출발지, 목적지 및 제한 영역을 고려하여 이동할 경로를 생성한다.</td><td>M</td><td>L</td></tr><tr><td>UC-03</td><td>사용자 제어</td><td>사용자가 DRACO의 자동회피를 비활성화하고, 사용자 제어 상태로 전환한다.</td><td>H</td><td>L</td></tr><tr><td>UC-04</td><td>커뮤니케이션 기반 
+충돌 회피</td><td>다른 DRACO와 이동 경로 정보를 교환하여, 충돌을 판단 및 회피한다.</td><td>M</td><td>M</td></tr><tr><td>UC-05</td><td>센서 기반
+충돌 회피</td><td>UAV에 탑재된 센서를 통해 충돌을 판단 및 회피한다.</td><td>H</td><td>M</td></tr><tr><td>UC-06</td><td>충돌 위험성 
+판단</td><td>감지된 정보를 바탕으로 회피가 필요한지 판별한다.</td><td>H</td><td>H</td></tr><tr><td>UC-07</td><td>회피 궤적 
+생성</td><td>감지된 정보를 바탕으로 회피 궤적을 생성한다.</td><td>H</td><td>H</td></tr></tbody></table>
+
+<p>* I: Importance, D: Difficulty (high, medium or low)</p>
+
+<h3 id="uc-01-사용자-등록">UC-01 사용자 등록</h3>
+
+<table><thead><tr><th>Use case name</th><th>Use case name</th><th>사용자 등록</th></tr></thead><tbody><tr><td>Actors</td><td>Actors</td><td>사용자, 시스템 운영자</td></tr><tr><td>Pre-conditions</td><td>Pre-conditions</td><td>DRACO가 부팅 후 사용자 등록 화면을 출력 중인 상태이다.</td></tr><tr><td>Flow of events</td><td>Normal case</td><td>1. 사용자가 이름, 연락처, 주소를 입력창에 입력한다.
+2. 사용자가 휴대폰 인증을 통해 본인 인증을 한다.
+3. 시스템 운영자에게 사용자의 정보를 전송한다.</td></tr><tr><td>Flow of events</td><td>Alternative or fail case</td><td>2.a. 본인 인증에 실패할 경우, 5회 이내로 반복 수행한다.
+2.b. 본인 인증에 5회 실패할 경우, 사용자는 시스템 운영자에게 연락하여 인증을 받는다.
+3.a. 오프라인 상태인 경우, “인터넷에 접속되어 있지 않습니다” 문구를 출력한다.</td></tr><tr><td>Post-conditions</td><td>Post-conditions</td><td>DRACO가 활성화되어 UAV의 비행이 가능한 상태이다.</td></tr></tbody></table>
+
+<h3 id="uc-02-사전-경로-계획">UC-02 사전 경로 계획</h3>
+
+<table><thead><tr><th>Use case name</th><th>Use case name</th><th>사전 경로 계획</th></tr></thead><tbody><tr><td>Actors</td><td>Actors</td><td>사용자, 시스템 운영자</td></tr><tr><td>Pre-conditions</td><td>Pre-conditions</td><td>DRACO가 활성화되어 UAV의 비행이 가능한 상태이다.</td></tr><tr><td>Flow of events</td><td>Normal case</td><td>1. 사용자가 “사전 경로 계획” 버튼을 클릭한다.
+2. 시스템 운영자가 제공하는 정보를 토대로, 제한 영역을 지도에 표시한다.
+3. 사용자가 지도에서 출발지, 목적지 및 웨이 포인트를 입력한다.
+4. “계획 비행 시작” 버튼을 클릭한다.</td></tr><tr><td>Flow of events</td><td>Alternative or fail case</td><td>2.a. 오프라인 상태인 경우, 오류 문구를 출력 후 사전 경로 계획을 취소한다.
+3.a. 목적지를 입력하지 않은 경우, 오류 문구를 출력한다.
+3.b. 출발지를 입력하지 않은 경우, 현재 위치를 출발지로 설정한다.
+3.c. 웨이 포인트를 입력하지 않은 경우, 제한 영역을 피하여 자동으로 웨이 포인트를 지정한다.</td></tr><tr><td>Post-conditions</td><td>Post-conditions</td><td>DRACO는 계획 비행 중인 상태이다.</td></tr></tbody></table>
+
+<h3 id="uc-03-사용자-제어">UC-03 사용자 제어</h3>
+
+<table><thead><tr><th>Use case name</th><th>Use case name</th><th>사용자 제어</th></tr></thead><tbody><tr><td>Actors</td><td>Actors</td><td>사용자, 사용자의 UAV</td></tr><tr><td>Pre-conditions</td><td>Pre-conditions</td><td>DRACO가 활성화되어 UAV의 비행이 가능한 상태이다.</td></tr><tr><td>Flow of events</td><td>Normal case</td><td>1. 사용자가 “사용자 제어 모드”를 실행한다.
+2. DRACO의 충돌 회피 기능이 비활성화된다.
+3. UAV가 LED 점등 혹은 주기적인 경적을 울린다.</td></tr><tr><td>Flow of events</td><td>Alternative or fail case</td><td>1.a. “사용자 제어 모드”로 전환되지 않는 경우, 빠른 템포의 경적을 울리며 제자리에서 2바퀴 회전한다.</td></tr><tr><td>Post-conditions</td><td>Post-conditions</td><td>DRACO는 충돌회피 기능이 비활성화된 상태이다.</td></tr></tbody></table>
+
+<h3 id="uc-04-커뮤니케이션-기반-충돌-회피">UC-04 커뮤니케이션 기반 충돌 회피</h3>
+
+<table><thead><tr><th>Use case name</th><th>Use case name</th><th>커뮤니케이션 기반 충돌 회피</th></tr></thead><tbody><tr><td>Actors</td><td>Actors</td><td>다른 DRACO</td></tr><tr><td>Pre-conditions</td><td>Pre-conditions</td><td>주변에 DRACO가 탑재된 다른 UAV가 존재하는 상태이다.</td></tr><tr><td>Flow of events</td><td>Normal case</td><td>1. 다른 DRACO가 브로드캐스팅한 정보를 수신한다.
+2. 수신한 정보에서 노이즈를 제거한다.
+3. (우선순위, 좌표, 운동정보)를 장애물 지도에 매핑한다.
+4. include (UC-06 충돌 위험성 판단)</td></tr><tr><td>Flow of events</td><td>Alternative or fail case</td><td>-</td></tr><tr><td>Post-conditions</td><td>Post-conditions</td><td>DRACO는 충돌 위험이 없는 상태이다.</td></tr></tbody></table>
+
+<h3 id="uc-05-센서-기반-충돌-회피">UC-05 센서 기반 충돌 회피</h3>
+
+<table><thead><tr><th>Use case name</th><th>Use case name</th><th>센서 기반 충돌 회피</th></tr></thead><tbody><tr><td>Actors</td><td>Actors</td><td>사용자의 UAV</td></tr><tr><td>Pre-conditions</td><td>Pre-conditions</td><td>주변에 장애물이 존재하는 상태이다.</td></tr><tr><td>Flow of events</td><td>Normal case</td><td>1. 일정 간격으로 샘플링된 정보를 센서로부터 입력받는다.
+2. 수신한 정보에서 노이즈를 제거한다.
+3. (우선순위, 좌표, 운동정보)를 장애물 지도에 매핑한다.
+4. include (UC-06 충돌 위험성 판단)</td></tr><tr><td>Flow of events</td><td>Alternative or fail case</td><td>-</td></tr><tr><td>Post-conditions</td><td>Post-conditions</td><td>DRACO는 충돌 위험이 없는 상태이다.</td></tr></tbody></table>
+
+<h3 id="uc-06-충돌-위험성-판단">UC-06 충돌 위험성 판단</h3>
+
+<table><thead><tr><th>Use case name</th><th>Use case name</th><th>충돌 위험성 판단</th></tr></thead><tbody><tr><td>Actors</td><td>Actors</td><td>사용자의 UAV</td></tr><tr><td>Pre-conditions</td><td>Pre-conditions</td><td>장애물 정보가 장애물 지도에 매핑된 상태이다.</td></tr><tr><td>Flow of events</td><td>Normal case</td><td>1. UAV와 장애물의 상대속도를 계산한다.
+2. 상대속도 및 지정된 안전계수를 바탕으로, 안전거리 이내에 장애물이 있는지 판별한다.
+extension point: 회피 궤적 생성</td></tr><tr><td>Flow of events</td><td>Alternative or fail case</td><td>-</td></tr><tr><td>Post-conditions</td><td>Post-conditions</td><td>DRACO는 충돌 위험이 없는 상태이다.</td></tr></tbody></table>
+
+<h3 id="uc-07-회피-궤적-생성">UC-07 회피 궤적 생성</h3>
+
+<table><thead><tr><th>Use case name</th><th>Use case name</th><th>회피 궤적 생성</th></tr></thead><tbody><tr><td>Actors</td><td>Actors</td><td>사용자의 UAV</td></tr><tr><td>Pre-conditions</td><td>Pre-conditions</td><td>충돌 위험이 있다고 판별된 상태이다.</td></tr><tr><td>Flow of events</td><td>Normal case</td><td>1. 회피 궤적 생성 DRL 모델에 장애물 지도를 입력한다.
+2. DRL 모델의 출력값을 UAV에게 전달한다.</td></tr><tr><td>Flow of events</td><td>Alternative or fail case</td><td>-</td></tr><tr><td>Post-conditions</td><td>Post-conditions</td><td>DRACO는 충돌 위험이 없는 상태이다.</td></tr></tbody></table>
+
+<h2 id="quality-attribute-scenario">Quality Attribute Scenario</h2>
+
+<h3 id="qa-scenario-list">QA Scenario List</h3>
+
+<table><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Priority</th><th>Priority</th><th>Related
+Use Case</th></tr></thead><tbody><tr><td>ID</td><td>Title</td><td>Type</td><td>I</td><td>D</td><td>Related
+Use Case</td></tr><tr><td>QA-01</td><td>연산 속도(Computational speed)</td><td>Performance</td><td>H</td><td>H</td><td>UC-04,05,06,07</td></tr><tr><td>QA-02</td><td>연산 정확도(Computational accuracy)</td><td>Perfromance</td><td>H</td><td>H</td><td>UC-04,05,06,07</td></tr><tr><td>QA-03</td><td>강건성(Robustness)</td><td>Availability</td><td>H</td><td>H</td><td>UC-04,05</td></tr><tr><td>QA-04</td><td>확장성(Scalability)</td><td>Modifiability</td><td>L</td><td>H</td><td>-</td></tr><tr><td>QA-05</td><td>적응성(Adaptability)</td><td>Portability</td><td>M</td><td>M</td><td>-</td></tr></tbody></table>
+
+<h3 id="qa-01-연산-속도computational-speed-scenario">QA-01 연산 속도(Computational speed) Scenario</h3>
+
+<table><thead><tr><th>QA Type</th><th>Performance</th></tr></thead><tbody><tr><td>Description</td><td>정상 작동 중, 시스템의 요청 혹은 데이터가 입력될 경우 결과 데이터는 0.05초 이내 연산 후 출력되어야 한다.</td></tr><tr><td>Source of Stimulus</td><td>시스템의 요청 혹은 입력 데이터</td></tr><tr><td>Stimulus</td><td>시스템이 요청이 발생하거나, 데이터가 입력됨</td></tr><tr><td>Artifact</td><td>DRACO</td></tr><tr><td>Environment</td><td>정상 작동</td></tr><tr><td>Response</td><td>결과 데이터</td></tr><tr><td>Response Measure</td><td>0.05초 이내(20 FPS 이상) 연산 후 출력</td></tr></tbody></table>
+
+<h3 id="qa-02-연산-정확도computational-accuracy-scenario">QA-02 연산 정확도(Computational accuracy) Scenario</h3>
+
+<table><thead><tr><th>QA Type</th><th>Performance</th></tr></thead><tbody><tr><td>Description</td><td>정상 작동 중, 시스템의 요청 혹은 데이터가 입력될 경우 잘못된 결과 데이터는 0.01% 이하여야 한다.</td></tr><tr><td>Source of Stimulus</td><td>시스템의 요청 혹은 입력 데이터</td></tr><tr><td>Stimulus</td><td>시스템이 요청이 발생하거나, 데이터가 입력됨</td></tr><tr><td>Artifact</td><td>DRACO</td></tr><tr><td>Environment</td><td>정상 작동</td></tr><tr><td>Response</td><td>결과 데이터</td></tr><tr><td>Response Measure</td><td>10,000번 이상의 테스트에서, 잘못된 결과 데이터는 0.01% 이하</td></tr></tbody></table>
+
+<h3 id="qa-03-강건성robustness-scenario">QA-03 강건성(Robustness) Scenario</h3>
+
+<table><thead><tr><th>QA Type</th><th>Availability</th></tr></thead><tbody><tr><td>Description</td><td>정상 작동 중, 외부 환경에서 임의의 데이터가 입력될 경우 에러로 인한 중단시간 없이 처리해야 한다.</td></tr><tr><td>Source of Stimulus</td><td>외부 환경</td></tr><tr><td>Stimulus</td><td>학습되지 않은 데이터</td></tr><tr><td>Artifact</td><td>DRACO</td></tr><tr><td>Environment</td><td>정상 작동</td></tr><tr><td>Response</td><td>처리</td></tr><tr><td>Response Measure</td><td>에러로 인한 중단시간 없음</td></tr></tbody></table>
+
+<h3 id="qa-04-확장성scalability-scenario">QA-04 확장성(Scalability) Scenario</h3>
+
+<table><thead><tr><th>QA Type</th><th>Modifiability</th></tr></thead><tbody><tr><td>Description</td><td>시스템 업그레이드 중, 개발자가 새로운 장치 혹은 기능을 추가하는 경우 시스템에 이를 추가하는 작업은 3일 이내 완료되어야 한다.</td></tr><tr><td>Source of Stimulus</td><td>개발자</td></tr><tr><td>Stimulus</td><td>새로운 장치 혹은 기능을 추가</td></tr><tr><td>Artifact</td><td>DRACO</td></tr><tr><td>Environment</td><td>시스템 업그레이드 중</td></tr><tr><td>Response</td><td>작업 완료</td></tr><tr><td>Response Measure</td><td>3일 이내 작업 완료</td></tr></tbody></table>
+
+<h3 id="qa-05-적응성adaptability-scenario">QA-05 적응성(Adaptability) Scenario</h3>
+
+<table><thead><tr><th>QA Type</th><th>Portability</th></tr></thead><tbody><tr><td>Description</td><td>개발 단계 중, 개발자가 DRACO를 개발하는 경우 DRACO는 많이 사용되는 OS의 상위 5위까지 호환되어야 한다.</td></tr><tr><td>Source of Stimulus</td><td>개발자</td></tr><tr><td>Stimulus</td><td>DRACO를 개발</td></tr><tr><td>Artifact</td><td>DRACO</td></tr><tr><td>Environment</td><td>개발 단계</td></tr><tr><td>Response</td><td>OS와 호환</td></tr><tr><td>Response Measure</td><td>VDC 리서치 기준, 많이 사용되는 OS의 상위 5위까지 호환 여부
+(2023.11.01. 기준, 3년 단위 갱신)</td></tr></tbody></table>
+
+<h2 id="constraint">Constraint</h2>
+
+<h3 id="business-constraint-list">Business Constraint List</h3>
+
+<table><thead><tr><th>ID</th><th>Title</th><th>Description</th></tr></thead><tbody><tr><td>BC-01</td><td>항공법 준수</td><td>국토교통부의 항공안전법을 준수</td></tr><tr><td>BC-02</td><td>오픈소스화</td><td>배포 모델을 깃허브에 공개 및 오픈소스 라이선스 부여</td></tr></tbody></table>
+
+<h3 id="technical-constraint-list">Technical Constraint List</h3>
+
+<table><thead><tr><th>ID</th><th>Title</th><th>Description</th></tr></thead><tbody><tr><td>TC-01</td><td>RTOS 사용</td><td>UAV는 실시간성 보장을 위해 RTOS를 사용하므로, DRACO의 구동 OS는 RTOS 계열로 지정</td></tr><tr><td>TC-02</td><td>개발 언어</td><td>임베디드 보드 내에서 빠른 시간 내 동작을 위해, 개발 언어는 C++로 지정</td></tr><tr><td>TC-03</td><td>GPU 혹은 NPU존재</td><td>딥러닝 모델 구동을 위해, 임베디드 보드는 GPU 혹은 NPU를 사용할 수 있는 상태라고 가정</td></tr><tr><td>TC-04</td><td>DRL 사용</td><td>충돌 회피 로직은 심층 강화학습(Deep Reinforcement Learningn, DRL)로 구현하는 것으로 지정</td></tr></tbody></table>
+
+<h1 id="top-level-design-description">Top Level Design Description</h1>
+
+<h2 id="design-decisions">Design Decisions</h2>
+
+<h3 id="design-decision-list">Design Decision List</h3>
+
+<table><thead><tr><th>ID</th><th>Title</th><th>Relevant Quality Attributes</th></tr></thead><tbody><tr><td>DD-01</td><td>심층 강화학습을 이용한 충돌 회피 로직 설계</td><td>QA-01. 연산 속도 – Performance
+QA-02. 연산 정확도 - Performance 
+QA-03. 강건성 – Availability</td></tr><tr><td>DD-02</td><td>확장성 및 적응성을 위한 시스템 설계</td><td>QA-04. 확장성 – Modifiability
+QA-05. 적응성 – Portability</td></tr><tr><td>DD-03</td><td>강건성 있는 시스템 설계</td><td>QA-03. 강건성 – Availability</td></tr></tbody></table>
+
+<h3 id="dd-01-심층-강화학습을-이용한-충돌-회피-로직-설계">DD-01 심층 강화학습을 이용한 충돌 회피 로직 설계</h3>
+
+<h4>Design Goal</h4>
+
+<p>충돌 회피 로직은 UAV 시스템의 핵심이나, 전통적으로 사용되는 학습이 아닌 알고리즘 기반의 충돌 회피 로직을 사용할 경우 다양한 환경에 대처 및 연산의 병렬화에 약하다. 따라서 본 설계 결정의 목표는 심층 강화학습(Deep Reinforcement Learning, DRL)을 통해 UAV가 복잡하고 동적인 환경에서도 에러없이 신속하고 정확히 충돌을 회피할 수 있도록 하는 것이다. 충돌 회피 로직의 설계는 DRL로 구현하는 것으로 TC-04 제약이 존재한다. 이를 달성하기 위해서는 어떤 DRL 알고리즘을 선택할 것인지 결정해야 하며, 선택된 알고리즘에 따라 심층 신경망의 구조가 달라지게 된다. 최근에 실시간 연속적인 환경에서 좋은 성과를 보이고 있는 DRL 알고리즘에는 DDPG 및 PPO가 있다.</p>
+
+<h4>Design Approach List</h4>
+
+<h5>Design Approach #1 Description:  DDPG(Deep Deterministic Policy Gradient)</h5>
+
+<p>센서로부터 입력된 환경 및 UAV에 대한 정보는 DDPG의 Actor 네트워크로 전달된다. Actor 네트워크는 현재 상태에서 최적의 행동을 결정론적으로 결정한다. 이때의 경험(상태, 행동, 보상, 다음 상태)은 Experience Replay Memory에 저장되며, 이후 미니 배치 형태로 추출된 이 경험 데이터는 Critic 네트워크로 전달되어, Critic은 상태-행동 쌍에 대한 예상 반환값을 계산하고 실제 결과와의 차이를 통해 학습한다. 이러한 구조에서, DDPG는 아키텍처적으로 몇 가지 중요한 전략을 사용한다. Experience Replay Memory의 사용은 학습 데이터의 재사용을 가능하게 하여 연산 속도를 향상시키고, Actor와 Critic의 분리된 구조는 각각의 네트워크가 보다 전문화된 기능을 수행하게 함으로써 전체 시스템의 정확도를 높인다. 또한, 다양한 과거 경험을 통합하여 학습함으로써 예상치 못한 상황에 대한 대응력을 강화하고, 시스템의 강건성을 향상시킨다. 결론적으로, 학습시킬 수 있는 데이터가 충분히 많고 복잡한 문제에 적합하다.</p>
+
+<h5>Design Approach #2 Description: PPO(Proximal Policy Optimization)</h5>
+
+<p>PPO에서 센서로부터 입력된 환경 및 UAV에 대한 정보는 Actor 네트워크로 전달된다. PPO의 Actor 네트워크는 현재 상태에서 가능한 행동들 중 하나를 확률적으로 선택한다. 선택된 행동은 환경에 적용되고, 그 결과로 새로운 상태와 보상이 생성된다. PPO는 이 경험을 바로 학습 과정에 사용한다. 이 알고리즘은 정책의 큰 변화를 방지하기 위해 클리핑 메커니즘을 사용하며, 이는 학습 과정의 안정성을 유지하는 데 기여한다. PPO의 아키텍처 전략은 간단하고 효율적인 네트워크 구조를 통해 연산 속도를 빠르게 하고, on-policy 학습 방식은 최신 데이터에 대해 빠르게 반응하도록 한다. 클리핑 메커니즘은 학습 중 큰 정책 변화를 방지하여 정확도를 높이며, 확률적 정책 결정은 다양한 상황과 예상치 못한 환경 변화에 유연하게 대응할 수 있게 하여 시스템의 강건성을 향상시킨다. 결론적으로, 학습시킬 수 있는 데이터가 상대적으로 부족하지만 보다 단순한 문제에 적합하다.</p>
+
+<h4>Decision and Rationale</h4>
+
+<table><thead><tr><th>Quality Attribute</th><th>Quality Attribute</th><th>Analysis</th><th>Design
+Approach (DA) #1 
+DDPG</th><th>Design
+Approach (DA) #1 
+PPO
+ (Selected)</th></tr></thead><tbody><tr><td>ID</td><td>Title</td><td>Analysis</td><td>Design
+Approach (DA) #1 
+DDPG</td><td>Design
+Approach (DA) #1 
+PPO
+ (Selected)</td></tr><tr><td>QA-01</td><td>연산 속도</td><td>Pros</td><td>(+) 결정론적 정책을 사용하므로 상대적으로 빠른 결정 속도</td><td>(++) 상대적으로 간단한 네트워크 구조로 인해 빠른 연산</td></tr><tr><td>QA-01</td><td>연산 속도</td><td>Cons</td><td>(--)복잡한 네트워크 구조로 인해 높은 차원의 입력을 처리할 경우 연산이 느려질 수 있음</td><td>(-)확률적 정책을 통해 여러 정책 중 하나를 채택해야 하므로 상대적으로 느린 결정 속도</td></tr><tr><td>QA-02</td><td>연산 정확도</td><td>Pros</td><td>(++) 학습된 데이터가 충분히 많을 경우 상대적으로 훨씬 정확한 연산 가능</td><td>(++) 샘플 효율성이 높기에, 학습된 데이터가 비교적 적은 경우에도 정확한 결과 도출</td></tr><tr><td>QA-02</td><td>연산 정확도</td><td>Cons</td><td>(--) 학습되지 않은 상황에 대해서는 정확도 하락</td><td>(-) 학습된 데이터가 충분히 많은 경우 상대적으로 정확도 낮음</td></tr><tr><td>QA-03</td><td>강건성</td><td>Pros</td><td>(++) Experience Replay Memory를 통해 과적합을 방지하여 강건성 향상</td><td>(+++) 확률적 정책을 통해 다양한 환경에 대응</td></tr><tr><td>QA-03</td><td>강건성</td><td>Cons</td><td>(---) 결정론적 접근 방식으로 학습되지 않은 상황에서 허용되지 않은 행동 도출 가능성</td><td>(-) 학습 과정 중 정책이 빠르게 변화하므로 어느 정도 수렴한 상태가 아니면 위험</td></tr></tbody></table>
+
+<h3 id="dd-02-확장성-및-적응성을-위한-시스템-설계">DD-02 확장성 및 적응성을 위한 시스템 설계</h3>
+
+<h4>Design Goal</h4>
+
+<p>각 UAV는 내장된 센서가 다를 것이며 운용 목적에 따라 새로운 센서 및 장치가 추가될 수도 있다. 또한 다양한 UAV의 RTOS에 DRACO가 배포될 수 있다. 따라서 본 설계 결정의 목표는 DRACO 시스템에 확장성(센서 및 기타 장비의 추가 확장 용이성) 및 적응성(다양한 UAV의 RTOS에 적용 용이성)을 최대화하는 것이다. 이를 달성하기 위해서는 적절한 아키텍처를 채택하여야 한다. 확장성 및 적응성에 적절한 아키텍처 패턴에는 Service-Oriented 아키텍처, MicroService 아키텍처가 있다.</p>
+
+<h4>Design Approach List</h4>
+
+<h5>Design Approach #1 Description:  Service-Oriented Architecture</h5>
+
+<p> Service-Oriented Architecture(SOA)는 시스템을 일련의 서비스로 구성하여, 새로운 센서나 기능을 쉽게 통합할 수 있다. 서비스 간의 통합이 용이하므로 다양한 센서 및 UAV 모델을 하나의 통합된 시스템에서 관리할 수 있는 장점이 있다. 하지만 SOA의 중앙 집중식 특성은 때로는 신규 기능의 추가 및 변경이 필요할 때 전체 시스템의 재구성이 요구될 수 있으므로 신속한 확장을 저해할 수 있으며 특정 시스템에 최적화된 서비스를 제공하는 데 한계가 있을 수 있다. 그럼에도, 일관된 인터페이스 및 표준화된 서비스의 구조로 인해 다양한 UAV 및 RTOS에 일관된 형태로 배포하기 용이하므로 빠른 속도로 확장 및 배포할 수 있는 시스템을 구축하고 관리할 수 있다.</p>
+
+<h5>Design Approach #2 Description:  MicroService Architecture</h5>
+
+<p> MicroService Architecture는 각 서비스가 독립적으로 작동하므로, 새로운 센서나 기능을 빠르고 유연하게 추가할 수 있기에 시스템의 확장성을 크게 향상시킬 수 있다. 또한 이러한 독립적 서비스 구조는 다양한 UAV 및 RTOS에 큰 수정없이 서비스를 적용시킬 수 있으며 서비스가 세분화되어 있으므로, 특정 시스템의 요구사항에 맞게 대응이 가능하다. 하지만 각 서비스의 독립적 작동은 시스템 전체의 일관된 관리 및 통합을 저해하므로 전체적 시스템 확장 시 일관성 유지가 어려울 수 있으며, 각 서비스 간의 상호작용이 달라질 수 있으므로 일관된 시스템을 유지하는 데 더 많은 노력이 요구된다.</p>
+
+<h4>Decision and Rationale</h4>
+
+<table><thead><tr><th>Quality Attribute</th><th>Quality Attribute</th><th>Analysis</th><th>Design
+Approach (DA) #1 
+SOA
+(Selected)</th><th>Design
+Approach (DA) #2
+ MicroService</th></tr></thead><tbody><tr><td>ID</td><td>Title</td><td>Analysis</td><td>Design
+Approach (DA) #1 
+SOA
+(Selected)</td><td>Design
+Approach (DA) #2
+ MicroService</td></tr><tr><td>QA-04</td><td>확장성</td><td>Pros</td><td>(++) 일관된 인터페이스를 통한 통합 관리가 용이하며, 시스템의 확장이 더 일관성있게 이뤄짐</td><td>(+++) 각 서비스가 독립적으로 확장이 가능하므로, 신규 기능 및 장치 추가가 용이</td></tr><tr><td>QA-04</td><td>확장성</td><td>Cons</td><td>(--) 신규 기능 및 장치 추가가 더 복잡하고 제한적</td><td>(---) 여러 서비스 간 통합/조율 및 상호작용 관리가 복잡</td></tr><tr><td>QA-05</td><td>적응성</td><td>Pros</td><td>(+++) 다양한 시스템 환경에 보다 일관된 서비스를 제공 가능</td><td>(+++) 다양한 환경 및 UAV모델에 적응하기 위한 서비스의 독립성 및 유연성이 뛰어남</td></tr><tr><td>QA-05</td><td>적응성</td><td>Cons</td><td>(--) 기존과 차이가 큰 환경에 적용할 때 유연성 및 독립성이 부족</td><td>(---) 일관된 서비스 통합 및 관리의 복잡성 증가</td></tr></tbody></table>
+
+<h3 id="dd-03-강건성-있는-시스템-설계">DD-03 강건성 있는 시스템 설계</h3>
+
+<h4>Design Goal</h4>
+
+<p>UAV는 다양한 환경에서 임무를 수행할 수 있으며 학습되지 않거나 노이즈가 존재하는 다양한 데이터 입력이 있을 수 있다. 따라서 시스템의 안전성을 보장하기 본 설계 결정의 목표는 DRACO 시스템의 강건성을 최대화하여 에러로 인한 중단시간이 없이 연속적인 운영을 보장하는 것이다. 이를 달성하기 위해서는 데이터를 순차적으로 처리하는 Pipe and Filter Architecture 혹은, 시스템을 여러 계층으로 구분하여 다루는 Layered Architecture를 고려할 수 있다.</p>
+
+<h4>Design Approach List</h4>
+
+<h5>Design Approach #1 Description:  Pipe and Filter Architecture</h5>
+
+<p>Pipe and Filter Architecture는 데이터를 순차적으로 처리하는 필터들의 나열로 구성된다. 각 필터는 데이터를 처리 및 정제하여 다음 단계로 전달하는데, 이는 실시간 데이터 처리 및 노이즈 필터링에서 효과적이다. 또한 각 필터는 독립적으로 작동하므로 세분화된 데이터 처리 및 오류 검출이 가능하다는 이점이 있으며 한 필터의 문제는 전체 시스템에 적은 영향만을 미친다. 하지만 UAV에 입력되는 데이터의 종류는 지원하는 센서 및 기능에 따라 매우 다양해질 수 있는데, 이러한 복잡한 데이터 처리를 위해서는 필터들 간 미세조정과 상호작용 관리가 필요하므로 복잡성이 증가할 수 있다.</p>
+
+<h5>Design Approach #2 Description:  Layered Architecture</h5>
+
+<p>Layered Architecture는 시스템을 여러 계층으로 분할하여, 각 계층이 특정 기능을 담당하도록 한 구조이다. 각 계층별로 기능이 분리되어 있으므로 독립적 오류처리 및 관리가 가능하므로 오류 처리에 있어 더 명확한 분리가 가능하며 시스템의 설계 및 유지보수가 간단하다. 하지만 계층 간의 상호 의존성이 존재하므로 한 계층의 변경이 타 계층에 영향을 미칠 수 있으며 이로 인해 전체 시스템의 강건성이 약화될 수 있다. 또한 연속적 데이터 처리에 있어 상대적으로 느릴 수 있다.</p>
+
+<h4>Decision and Rationale</h4>
+
+<table><thead><tr><th>Quality Attribute</th><th>Quality Attribute</th><th>Analysis</th><th>Design
+Approach (DA) #1 
+Pipe and Filter
+(Selected)</th><th>…</th><th>Design
+Approach (DA) #2
+Layered</th></tr></thead><tbody><tr><td>ID</td><td>Title</td><td>Analysis</td><td>Design
+Approach (DA) #1 
+Pipe and Filter
+(Selected)</td><td>…</td><td>Design
+Approach (DA) #2
+Layered</td></tr><tr><td>QA-03</td><td>강건성</td><td>Pros</td><td>(+++)세분화된 데이터 처리 및 오류 검출 가능, 독립된 필터로 인해 시스템 전체에 대한 장애 최소화</td><td></td><td>(++) 계층별 구별된 역할을 통해 명확한 오류처리의 분리 가능</td></tr><tr><td>QA-03</td><td>강건성</td><td>Cons</td><td>(-) 복잡한 데이터 처리 및 필터간 상호작용 관리 어려움</td><td></td><td>(---) 계층간 상호의존성으로 인해 한 계층의 문제가 확산될 수 있음</td></tr></tbody></table>
+
+<h2 id="structural-view">Structural View</h2>
+
+<h3 id="structural-model">Structural Model</h3>
+
+<h4>C&amp;C Diagram</h4>
+
+<h4>Element List</h4>
+
+<table><thead><tr><th>Name</th><th>Responsibility</th><th>Relevant ADs</th></tr></thead><tbody><tr><td>LiDAR</td><td>물리 센서 중 LiDAR의 값을 받아와서 디코딩 및 노이즈 제거 등의 전처리를 수행하여 Sensor 컴포넌트에게 제공한다.</td><td>UC-05
+QA-03</td></tr><tr><td>Camera</td><td>물리 센서 중 Camera의 값을 받아와서 디코딩 및 노이즈 제거 등의 전처리를 수행하여 Sensor 컴포넌트에게 제공한다.</td><td>UC-05
+QA-03</td></tr><tr><td>Sensor</td><td>각 센서의 값을 장애물 지도에 매핑하고, Analyzer 컴포넌트에게 제공한다.</td><td>UC-05
+QA-03</td></tr><tr><td>MAVLink</td><td>MAVLink 프로토콜로 전송받은 값을 받아와서 디코딩 및 노이즈 제거 등의 전처리를 수행하여 Communicator 컴포넌트에게 제공한다.</td><td>UC-04
+QA-03</td></tr><tr><td>WiFi</td><td>IEEE 802.11 프로토콜로 전송받은 값을 받아와서 디코딩 및 노이즈 제거 등의 전처리를 수행하여 Communicator 컴포넌트에게 제공한다.</td><td>UC-04
+QA-03</td></tr><tr><td>Communicator</td><td>각 프토토콜을 바탕으로 한 UAV 정보를 장애물 지도에 매핑하고, Analyzer 컴포넌트에게 제공한다.</td><td>UC-04
+QA-03</td></tr><tr><td>Registrator</td><td>사용자 등록 및 인터페이스 기능을 제공한다.</td><td>UC-01</td></tr><tr><td>PreliminaryPlanner</td><td>사용자에게 사전 경로 계획 기능을 제공하며, 설정된 경로 계획을 Analyzer 컴포넌트에게 제공한다.</td><td>UC-02</td></tr><tr><td>UserController</td><td>사용자에게 직접 제어 기능을 제공한다.</td><td>UC-03</td></tr><tr><td>Analyzer</td><td>장애물 지도를 바탕으로 충돌이 발생할지를 판별하고, 해당 정보를 TrajectoryGenerator에게 제공한다.</td><td>UC-04
+UC-05
+UC-06
+QA-03</td></tr><tr><td>TrajectoryGenerator</td><td>충돌이 발생하는 경우, 회피 궤적을 생성하며, 해당 정보를 OSActuatorConnector에게 제공한다.</td><td>UC-04
+UC-05
+UC-06
+UC-07
+QA-01
+QA-02
+QA-03</td></tr><tr><td>OSActuatorConnector</td><td>사용자의 직접 제어 명령 혹은 생성된 회피 궤적을 UAV의 엑추에이터에게 전달한다.</td><td>UC-04
+UC-05
+UC-06
+UC-07</td></tr><tr><td>OSDisplayConnector</td><td>전달받은 정보를 사용자의 디스플레이에 출력한다.</td><td>UC-01</td></tr></tbody></table>
+
+<h3 id="design-rationale">Design Rationale</h3>
+
+<p> DD-01에서, 연산 속도, 연산 정확도 및 강건성을 보장하기 위해 PPO 알고리즘을 사용하는 것으로 결정했었다. 또한 확장성 및 적응성을 위한 DD-02에서는 SOA를 선택했으며, 강건성을 위한 DD-03에서는 처리 컴포넌트의 독립성 보장을 위해 Pipe and Filter 아키텍처를 선택했었다.</p>
+
+<p> 이를 반영하기 위해, 우선 큰 틀에서는 서비스 단위로 컴포넌트들을 분할하는 SOA를 적용했으며, 센서 및 통신을 통한 UAV 인식 및 회피까지의 처리는 Pipe and Filter 아키텍처를 반영하여 각 정보의 순차적이고 독립적인 처리를 보장하였다. DD-01의 PPO 알고리즘에 대한 아키텍처는 전체 아키텍처가 아닌 TrajectoryGenerator 컴포넌트 내에서 구현된다.</p>
+
+<h2 id="behavior-scenario-view">Behavior (scenario) View</h2>
+
+<h3 id="uc-04-커뮤니케이션-기반-충돌-회피-use-case-behavior-model">UC-04 커뮤니케이션 기반 충돌 회피 Use Case Behavior Model</h3>
+
+<p><strong>(UC-06, UC-07 </strong><strong>포함</strong><strong>)</strong></p>
+
+<h3 id="uc-05-센서-기반-충돌-회피-use-case-behavior-model">UC-05 센서 기반 충돌 회피 Use Case Behavior Model</h3>
+
+<p><strong> (UC-06, UC-07 </strong><strong>포함</strong><strong>)</strong></p>
+
+<h2 id="allocation-view">Allocation View</h2>
+
+<h3 id="allocation-diagram">Allocation Diagram</h3>
+
+<h3 id="design-rationale-1">Design Rationale</h3>
+
+<p> 원격으로 UAV를 제어할 사용자의 PC와 UAV, 그리고 DRACO가 설치된 또다른 UAV가 본 소프트웨어가 배치될 주요 하드웨어들이다. 단순한 구조이기 때문에 물리적 배치와 관련된 설계 결정은 별도로 고려하지 않았다. </p>
+
+<p> 다만, 본 Allocation Diagram에서는 현대의 다양한 소프트웨어 요구사항을 지원하기 위해 UAV의 메인 컴퓨터가 대부분의 연산을 수행하도록 IMA(Integrated Modular Avionics) 형태를 채택했으나, 만약 이보다 고성능이 요구되어 별도의 연산 장치가 부착되거나 하드웨어적 강건성을 위해 각 컴포넌트들을 각 물리적 장치에 분할하여 배치하는 경우 지금과는 물리적 배치가 달라질 수 있다.</p>
+
+<p> 또한, 현재의 DRACO 시스템은 사용자의 제어 및 각 UAV간의 정보만을 고려하지만, 커뮤니케이션이 가능한 UAV 및 기타 항공기/제한공역/시설물 등의 정보가 제공되어 고려사항이 많아질 경우, UAV간의 N:N 통신 대신, 중간에서 UAV들의 정보를 취합 및 배포하는 지상 관제 시스템이 추가될 수 있다.</p>

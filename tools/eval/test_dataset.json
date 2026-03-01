@@ -1,0 +1,162 @@
+[
+  {
+    "id": "T01",
+    "query": "KF-21은 어떤 전투기인가?",
+    "category": "factual-ko",
+    "expected_sections": ["개요"],
+    "expected_urls": ["contents/dev-overview/introduction.html"],
+    "answer_should_contain": ["4.5세대", "다목적"]
+  },
+  {
+    "id": "T02",
+    "query": "KF-21 Block 2의 목표는 무엇인가?",
+    "category": "factual-ko",
+    "expected_sections": ["향후-계획"],
+    "expected_urls": ["contents/dev-overview/introduction.html"],
+    "answer_should_contain": ["내부 무장"]
+  },
+  {
+    "id": "T03",
+    "query": "이 웹북은 어떤 기술로 만들어졌나?",
+    "category": "factual-ko",
+    "expected_sections": ["기술-스택"],
+    "expected_urls": ["contents/about.html"],
+    "answer_should_contain": ["HTML5", "JavaScript"]
+  },
+  {
+    "id": "T04",
+    "query": "검색 인덱스는 어떻게 생성하나?",
+    "category": "factual-ko",
+    "expected_sections": ["3-검색-기능"],
+    "expected_urls": ["contents/about.html"],
+    "answer_should_contain": ["build-search-index"]
+  },
+  {
+    "id": "T05",
+    "query": "KF-21 시제기 제작은 언제 이루어졌나?",
+    "category": "factual-ko",
+    "expected_sections": ["개발-경과"],
+    "expected_urls": ["contents/dev-overview/introduction.html"],
+    "answer_should_contain": ["2019"]
+  },
+  {
+    "id": "T06",
+    "query": "RAG에서 BM25와 FAISS를 결합하면 어떤 이점이 있나?",
+    "category": "semantic-ko",
+    "expected_sections": ["서론-introduction", "결론-conclusion"],
+    "expected_urls": ["contents/참고-자료/논문-입고/논문-입고.html"],
+    "answer_should_contain": ["하이브리드"]
+  },
+  {
+    "id": "T07",
+    "query": "하이브리드 검색의 최적 가중치는?",
+    "category": "semantic-ko",
+    "expected_sections": ["실험-및-결과-experiments-and-results"],
+    "expected_urls": ["contents/참고-자료/논문-입고/논문-입고.html"],
+    "answer_should_contain": ["가중치"]
+  },
+  {
+    "id": "T08",
+    "query": "폐쇄망에서 LLM을 운용할 때의 문제점은?",
+    "category": "semantic-ko",
+    "expected_sections": ["서론-introduction", "결론-conclusion"],
+    "expected_urls": ["contents/참고-자료/논문-입고/논문-입고.html"],
+    "answer_should_contain": []
+  },
+  {
+    "id": "T09",
+    "query": "How much did the Air Force invest in FY 2020 FLEX-4?",
+    "category": "factual-en",
+    "expected_sections": ["43-fy-2020-air-force-activities-full-report-in-app"],
+    "expected_urls": ["contents/samples/FY1-DoD-FLEX-4/FY1-DoD-FLEX-4.html"],
+    "answer_should_contain": ["98.6"]
+  },
+  {
+    "id": "T10",
+    "query": "What challenges did DoD labs face in FY 2020?",
+    "category": "factual-en",
+    "expected_sections": ["33-implementation-challenges"],
+    "expected_urls": ["contents/samples/FY1-DoD-FLEX-4/FY1-DoD-FLEX-4.html"],
+    "answer_should_contain": ["Coronavirus", "COVID"]
+  },
+  {
+    "id": "T11",
+    "query": "미 해군은 FLEX-4 예산을 얼마나 사용했나?",
+    "category": "cross-lingual",
+    "expected_sections": ["42-fy-2020-navy-activities-full-report-in-appendix"],
+    "expected_urls": ["contents/samples/FY1-DoD-FLEX-4/FY1-DoD-FLEX-4.html"],
+    "answer_should_contain": ["296.2"]
+  },
+  {
+    "id": "T12",
+    "query": "전투기 성능 향상 로드맵",
+    "category": "semantic-ko",
+    "expected_sections": ["향후-계획"],
+    "expected_urls": ["contents/dev-overview/introduction.html"],
+    "answer_should_contain": ["Block"]
+  },
+  {
+    "id": "T13",
+    "query": "defense laboratory funding trends",
+    "category": "semantic-en",
+    "expected_sections": ["3-trends", "31-aggregated-funding"],
+    "expected_urls": ["contents/samples/FY1-DoD-FLEX-4/FY1-DoD-FLEX-4.html"],
+    "answer_should_contain": []
+  },
+  {
+    "id": "T14",
+    "query": "소프트웨어 아키텍처 이해관계자",
+    "category": "factual-ko",
+    "expected_sections": ["stakeholder-list"],
+    "expected_urls": ["contents/samples/SWA_PMS/SWA_PMS.html", "contents/samples/SWA_Sample_KOR/SWA_Sample_KOR.html"],
+    "answer_should_contain": []
+  },
+  {
+    "id": "T15",
+    "query": "RAG 실험에서 사용한 평가 지표는?",
+    "category": "factual-ko",
+    "expected_sections": ["연구-방법-methodology", "실험-및-결과-experiments-and-results"],
+    "expected_urls": ["contents/참고-자료/논문-입고/논문-입고.html"],
+    "answer_should_contain": []
+  },
+  {
+    "id": "T16",
+    "query": "안녕하세요",
+    "category": "negative",
+    "expected_sections": [],
+    "expected_urls": [],
+    "answer_should_contain": []
+  },
+  {
+    "id": "T17",
+    "query": "오늘 날씨 어때?",
+    "category": "negative",
+    "expected_sections": [],
+    "expected_urls": [],
+    "answer_should_contain": []
+  },
+  {
+    "id": "T18",
+    "query": "웹북 시스템 요구사항은?",
+    "category": "factual-ko",
+    "expected_sections": ["시스템-요구사항"],
+    "expected_urls": ["contents/about.html"],
+    "answer_should_contain": ["Tomcat", "Chrome"]
+  },
+  {
+    "id": "T19",
+    "query": "Army FLEX-4 investment breakdown",
+    "category": "factual-en",
+    "expected_sections": ["41-fy-2020-army-activities-full-report-in-appendix"],
+    "expected_urls": ["contents/samples/FY1-DoD-FLEX-4/FY1-DoD-FLEX-4.html"],
+    "answer_should_contain": ["163.8"]
+  },
+  {
+    "id": "T20",
+    "query": "문서 검색 품질을 높이려면 어떻게 해야 하나?",
+    "category": "semantic-ko",
+    "expected_sections": ["결론-conclusion", "실험-및-결과-experiments-and-results"],
+    "expected_urls": ["contents/참고-자료/논문-입고/논문-입고.html"],
+    "answer_should_contain": []
+  }
+]

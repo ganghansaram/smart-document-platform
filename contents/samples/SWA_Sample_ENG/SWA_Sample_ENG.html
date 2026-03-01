@@ -1,0 +1,2279 @@
+<p><strong>Project Background</strong></p>
+
+<p>HR Management System is a platform that provides an automated  HR solution to help companies manage their employees. Companies may use the HR Management System to automatically compute employee wages based on attendance, Tax, leave deductions, overtime pay; manage employee databases; manage absences and leave;</p>
+
+<p>The HR Management System is designed to be used online to make it easier for companies and employees to access it from anywhere and at any time. The key function to be developed in this system is</p>
+
+<p>Attendance Tracking</p>
+
+<p>Payroll Process</p>
+
+<p>Employee Database Management</p>
+
+<p>Employee Scheduling</p>
+
+<p>Because of the rising complexity of HR operations, the need for workforce or employee management, and the desire for automation to boost efficiency, the HRMS industry has grown significantly. Rapid technological improvements, such as using cloud computing, artificial intelligence, and mobile access, have altered HRMS systems, making them more accessible and user-friendly. </p>
+
+<p>Existing HRMS products in general have several features such as attendance management and payroll and benefit processing. But in general they can only be accessed on desktop applications or web applications. Furthermore, usually existing products can only be used by big companies and cannot be customized based on users&#39; needs.</p>
+
+<p><strong>Business Context Diagram</strong></p>
+
+<p><img src="SWA_Sample_ENG_images/image_67382d40a3ae.png" alt=""></p>
+
+<p><strong>Stakeholder List</strong></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Stakeholder</th>
+
+<th>Description</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Employee</td>
+
+<td>Employees are crucial stakeholders in the HR management System. They can use and access the system to check-in and check-out attendance, request for overtime, request for leave, request dispute and access payroll information.</td>
+</tr>
+
+<tr>
+<td>HR Department / Administrator</td>
+
+<td>They use the system to register the employee to the system. They also can configure the leave balance and tax for each employee and update employee information</td>
+</tr>
+
+<tr>
+<td>Managers / Supervisor</td>
+
+<td>They use the system to approve request from their employee or subordinate</td>
+</tr>
+
+<tr>
+<td>Legal and Compliance Team</td>
+
+<td>They use the system to submit and manage employee contract and legal document</td>
+</tr>
+
+<tr>
+<td>Finance or Payment Agency</td>
+
+<td>They use the system to generate the payroll information and proceed the payment or disbursement.</td>
+</tr>
+
+<tr>
+<td>System Administrator / Product Operations</td>
+
+<td>They use the system to help the client or company who uses the system to manage and approve any request.</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Architectural Driver</strong></p>
+
+<p><strong>Use Case Model</strong></p>
+
+<p>Use Case Diagram</p>
+
+<p>Employee Data</p>
+
+<p><img src="SWA_Sample_ENG_images/image_f64996f69f68.png" alt=""></p>
+
+<p>Shift</p>
+
+<p><img src="SWA_Sample_ENG_images/image_edda1f3eb1ee.png" alt=""></p>
+
+<p>Attendance</p>
+
+<p><img src="SWA_Sample_ENG_images/image_3ecfa98938d6.png" alt=""></p>
+
+<p>Payroll</p>
+
+<p><img src="SWA_Sample_ENG_images/image_cff0542f1468.png" alt=""></p>
+
+<p>Disbursement</p>
+
+<p><img src="SWA_Sample_ENG_images/image_ec5af49b568e.png" alt=""></p>
+
+<p>Actor List</p>
+
+<table>
+
+<thead>
+<tr>
+<th>Name</th>
+
+<th>Description</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Administrator / HR</td>
+
+<td>People from client company / HRMS company who responsible to handle administration of employee</td>
+</tr>
+
+<tr>
+<td>Employee</td>
+
+<td>Worker / Employee of the client company</td>
+</tr>
+
+<tr>
+<td>Manager / Supervisor</td>
+
+<td>Employee of the client company who manage their subordinate</td>
+</tr>
+
+<tr>
+<td>Finance</td>
+
+<td>Employee of the client company who responsible to handle payment or related to fee</td>
+</tr>
+
+<tr>
+<td>System</td>
+
+<td>HRMS</td>
+</tr>
+
+<tr>
+<td>Payment Gateway</td>
+
+<td>Third party system who handle the disbursement process (transfer salary)</td>
+</tr>
+</tbody>
+</table>
+
+<p>Use Case List</p>
+
+<p>Employee Modules</p>
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+
+<th>Title</th>
+
+<th>Description</th>
+
+<th>Priority</th>
+
+<th>Priority</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ID</td>
+
+<td>Title</td>
+
+<td>Description</td>
+
+<td>I</td>
+
+<td>D</td>
+</tr>
+
+<tr>
+<td>UC-ED-01</td>
+
+<td>Register / Add Employee Data</td>
+
+<td></td>
+
+<td>H</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-ED-02</td>
+
+<td>Modify Employee Data</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-ED-03</td>
+
+<td>Approve Employee Data Modification</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-ED-04</td>
+
+<td>Assign Employee</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>M</td>
+</tr>
+</tbody>
+</table>
+
+<p>Shift</p>
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+
+<th>Title</th>
+
+<th>Description</th>
+
+<th>Priority</th>
+
+<th>Priority</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ID</td>
+
+<td>Title</td>
+
+<td>Description</td>
+
+<td>I</td>
+
+<td>D</td>
+</tr>
+
+<tr>
+<td>UC-S-01</td>
+
+<td>Create Shift</td>
+
+<td></td>
+
+<td>H</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-S-02</td>
+
+<td>Modify Shift</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-S-03</td>
+
+<td>Assign Shift</td>
+
+<td></td>
+
+<td>H</td>
+
+<td>H</td>
+</tr>
+
+<tr>
+<td>UC-S-04</td>
+
+<td>Delete Shift</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>M</td>
+</tr>
+</tbody>
+</table>
+
+<p>Attendance</p>
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+
+<th>Title</th>
+
+<th>Description</th>
+
+<th>Priority</th>
+
+<th>Priority</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ID</td>
+
+<td>Title</td>
+
+<td>Description</td>
+
+<td>I</td>
+
+<td>D</td>
+</tr>
+
+<tr>
+<td>UC-AT-01</td>
+
+<td>Checkin / Checkout</td>
+
+<td></td>
+
+<td>H</td>
+
+<td>H</td>
+</tr>
+
+<tr>
+<td>UC-AT-02</td>
+
+<td>Attendance Approval</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>H</td>
+</tr>
+
+<tr>
+<td>UC-AT-03</td>
+
+<td>Modify Attendance</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>H</td>
+</tr>
+
+<tr>
+<td>UC-AT-04</td>
+
+<td>Auto Reject / Approve Attendance</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>M</td>
+</tr>
+</tbody>
+</table>
+
+<p>Payroll</p>
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+
+<th>Title</th>
+
+<th>Description</th>
+
+<th>Priority</th>
+
+<th>Priority</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ID</td>
+
+<td>Title</td>
+
+<td>Description</td>
+
+<td>I</td>
+
+<td>D</td>
+</tr>
+
+<tr>
+<td>UC-PR-01</td>
+
+<td>Create Payroll Group/ Config</td>
+
+<td></td>
+
+<td>H</td>
+
+<td>H</td>
+</tr>
+
+<tr>
+<td>UC-PR-02</td>
+
+<td>Update Payroll Group/ Config</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>H</td>
+</tr>
+
+<tr>
+<td>UC-PR-03</td>
+
+<td>Delete Payroll Group/ Config</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-PR-04</td>
+
+<td>Assign Payroll Group/ Config</td>
+
+<td></td>
+
+<td>H</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-PR-05</td>
+
+<td>Generate Payroll Report</td>
+
+<td></td>
+
+<td>H</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-PR-06</td>
+
+<td>Modify Payroll Report</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-PR-07</td>
+
+<td>View Payroll Report</td>
+
+<td></td>
+
+<td>L</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-PR-08</td>
+
+<td>Calculate Payroll Report</td>
+
+<td></td>
+
+<td>H</td>
+
+<td>H</td>
+</tr>
+</tbody>
+</table>
+
+<p>Disbursement</p>
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+
+<th>Title</th>
+
+<th>Description</th>
+
+<th>Priority</th>
+
+<th>Priority</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ID</td>
+
+<td>Title</td>
+
+<td>Description</td>
+
+<td>I</td>
+
+<td>D</td>
+</tr>
+
+<tr>
+<td>UC-DS-01</td>
+
+<td>Request Disbursement</td>
+
+<td></td>
+
+<td>H</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-DS-02</td>
+
+<td>View Disbursement</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-DS-03</td>
+
+<td>Disbursement Approval</td>
+
+<td></td>
+
+<td>M</td>
+
+<td>M</td>
+</tr>
+
+<tr>
+<td>UC-DS-04</td>
+
+<td>Disburse Payment</td>
+
+<td></td>
+
+<td>H</td>
+
+<td>H</td>
+</tr>
+
+<tr>
+<td>UC-DS-05</td>
+
+<td>View Payslip</td>
+
+<td></td>
+
+<td>L</td>
+
+<td>L</td>
+</tr>
+
+<tr>
+<td>UC-DS-06</td>
+
+<td>Generate Payslip</td>
+
+<td></td>
+
+<td>L</td>
+
+<td>L</td>
+</tr>
+</tbody>
+</table>
+
+<p>* I: Importance, D: Difficulty (high, medium or low)</p>
+
+<p><em>UC-ED-01</em><em> </em><em>Register / Add Employee Data</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Use case name</th>
+
+<th>Use case name</th>
+
+<th>Register employee</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Actors</td>
+
+<td>Actors</td>
+
+<td>Administrator / HR</td>
+</tr>
+
+<tr>
+<td>Pre-conditions</td>
+
+<td>Pre-conditions</td>
+
+<td>Administrator / HR register or add employee data</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Normal case</td>
+
+<td>1. Employee can login and view their data
+2. Managers / Supervisor can assign employee to specific shift</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Alternative or fail case</td>
+
+<td>Managers cannot assign employee to specific shift</td>
+</tr>
+
+<tr>
+<td>Post-conditions</td>
+
+<td>Post-conditions</td>
+
+<td>Employee assign to shift or other data module</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>UC-S-02 </em><em>Create Shift</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Use case name</th>
+
+<th>Use case name</th>
+
+<th>Shift Creation</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Actors</td>
+
+<td>Actors</td>
+
+<td>Administrator / HR / Manager / Supervisor</td>
+</tr>
+
+<tr>
+<td>Pre-conditions</td>
+
+<td>Pre-conditions</td>
+
+<td>Manager / HR  create shift</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Normal case</td>
+
+<td>1. Shift display on system
+2. Managers / Supervisor can assign employee to specific shift</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Alternative or fail case</td>
+
+<td>Managers cannot assign employee to specific shift</td>
+</tr>
+
+<tr>
+<td>Post-conditions</td>
+
+<td>Post-conditions</td>
+
+<td>Shift can be assign to any employee</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>UC-S-03</em><em> </em><em>Assign Shift</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Use case name</th>
+
+<th>Use case name</th>
+
+<th>Shift Assignment</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Actors</td>
+
+<td>Actors</td>
+
+<td>Manager / Supervisor</td>
+</tr>
+
+<tr>
+<td>Pre-conditions</td>
+
+<td>Pre-conditions</td>
+
+<td>Manager / Supervisor assign shift to employee</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Normal case</td>
+
+<td>1. Employee can see their shift
+2. Employee can check in checkout</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Alternative or fail case</td>
+
+<td>Employee cannot checkin and checkout</td>
+</tr>
+
+<tr>
+<td>Post-conditions</td>
+
+<td>Post-conditions</td>
+
+<td>Employee have schedule</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>UC-AT-01 Checkin Checkout</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Use case name</th>
+
+<th>Use case name</th>
+
+<th>Checkin Checkout</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Actors</td>
+
+<td>Actors</td>
+
+<td>Employee</td>
+</tr>
+
+<tr>
+<td>Pre-conditions</td>
+
+<td>Pre-conditions</td>
+
+<td>Employee can check in and checkout</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Normal case</td>
+
+<td>1. The attendance status change to waiting for approval
+2. Managers / Supervisor can approve / reject the attendance</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Alternative or fail case</td>
+
+<td>Employee will mark as absent</td>
+</tr>
+
+<tr>
+<td>Post-conditions</td>
+
+<td>Post-conditions</td>
+
+<td>Manager / Supervisor kan process the attendance approval</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>UC-PR-01 Create Payroll Group / Config</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Use case name</th>
+
+<th>Use case name</th>
+
+<th>Payroll Group Creation</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Actors</td>
+
+<td>Actors</td>
+
+<td>Administrator / HR</td>
+</tr>
+
+<tr>
+<td>Pre-conditions</td>
+
+<td>Pre-conditions</td>
+
+<td>Administrator / HR create payroll group to config the payment calculation</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Normal case</td>
+
+<td>1. Payroll group are register at system
+2. HR can assign the payroll group to the employee</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Alternative or fail case</td>
+
+<td>System cannot calculate based on the configuration 
+HR cannot assign the configuration to payroll group</td>
+</tr>
+
+<tr>
+<td>Post-conditions</td>
+
+<td>Post-conditions</td>
+
+<td>HR can assign payroll group and system can calculate payroll based on configuration</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>UC-PR-04 Assign Payroll Group/ Config</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Use case name</th>
+
+<th>Use case name</th>
+
+<th>Payroll Group Assignment</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Actors</td>
+
+<td>Actors</td>
+
+<td>Administrator / HR</td>
+</tr>
+
+<tr>
+<td>Pre-conditions</td>
+
+<td>Pre-conditions</td>
+
+<td>Administrator / HR assign payroll group to employee</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Normal case</td>
+
+<td>1. System can calculate the payroll based on the configuration</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Alternative or fail case</td>
+
+<td>System cannot calculate based on the configuration</td>
+</tr>
+
+<tr>
+<td>Post-conditions</td>
+
+<td>Post-conditions</td>
+
+<td>System can calculate payroll based on configuration</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>UC-PR-05 Generate Payroll Report</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Use case name</th>
+
+<th>Use case name</th>
+
+<th>Generate Payroll Report</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Actors</td>
+
+<td>Actors</td>
+
+<td>Administrator / HR / Finance</td>
+</tr>
+
+<tr>
+<td>Pre-conditions</td>
+
+<td>Pre-conditions</td>
+
+<td>Administrator / HR / Finance generate payroll report</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Normal case</td>
+
+<td>1. Administrator / HR / Finance can view payroll report
+2. HR can request disbursement based on payroll report</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Alternative or fail case</td>
+
+<td>HR cannot request disbursement</td>
+</tr>
+
+<tr>
+<td>Post-conditions</td>
+
+<td>Post-conditions</td>
+
+<td>Payroll report are registered on system and HR can request disbursement</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>UC-DS-01 Request Disbursement</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Use case name</th>
+
+<th>Use case name</th>
+
+<th>Request Disbursement</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Actors</td>
+
+<td>Actors</td>
+
+<td>Administrator / HR</td>
+</tr>
+
+<tr>
+<td>Pre-conditions</td>
+
+<td>Pre-conditions</td>
+
+<td>Administrator / HR request disbursement</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Normal case</td>
+
+<td>1. Employe get the payment after approval
+2. Finance can process the payment</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Alternative or fail case</td>
+
+<td>Finance can pay the salary</td>
+</tr>
+
+<tr>
+<td>Post-conditions</td>
+
+<td>Post-conditions</td>
+
+<td>Disbursement can be proceed after approval</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>UC-DS-04 Disburse Payment</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Use case name</th>
+
+<th>Use case name</th>
+
+<th>Disburse Payment</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Actors</td>
+
+<td>Actors</td>
+
+<td>System</td>
+</tr>
+
+<tr>
+<td>Pre-conditions</td>
+
+<td>Pre-conditions</td>
+
+<td>System disburse the payment through payment gateway</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Normal case</td>
+
+<td>1. Employee get the money</td>
+</tr>
+
+<tr>
+<td>Flow of events</td>
+
+<td>Alternative or fail case</td>
+
+<td>Employe cannot get the salary</td>
+</tr>
+
+<tr>
+<td>Post-conditions</td>
+
+<td>Post-conditions</td>
+
+<td>Salary transferred to employee</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Quality Attribute Scenario</strong></p>
+
+<p>QA Scenario List</p>
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+
+<th>Title</th>
+
+<th>Type</th>
+
+<th>Priority</th>
+
+<th>Priority</th>
+
+<th>Related
+Use Case</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ID</td>
+
+<td>Title</td>
+
+<td>Type</td>
+
+<td>I</td>
+
+<td>D</td>
+
+<td>Related
+Use Case</td>
+</tr>
+
+<tr>
+<td>QA-01</td>
+
+<td>System can proceed 5000 employee creation with in 5 minutes</td>
+
+<td>Performance</td>
+
+<td>H</td>
+
+<td>H</td>
+
+<td>UC-ED-01</td>
+</tr>
+
+<tr>
+<td>QA-02</td>
+
+<td>Payment option can be adjusted through environment</td>
+
+<td>Modifiability</td>
+
+<td>H</td>
+
+<td>H</td>
+
+<td>UC-DS-04</td>
+</tr>
+
+<tr>
+<td>QA-03</td>
+
+<td>Employee can checkin and checkout 24 hour without failure</td>
+
+<td>Availability</td>
+
+<td>H</td>
+
+<td>H</td>
+
+<td>UC-AT-01</td>
+</tr>
+
+<tr>
+<td>QA-04</td>
+
+<td>System can disburse 1000 in a batch payment within 5 minutes without failure</td>
+
+<td>Performance</td>
+
+<td>H</td>
+
+<td>H</td>
+
+<td>UC-AT-01</td>
+</tr>
+
+<tr>
+<td>QA-05</td>
+
+<td>Employee can checkin and checkout with face ID</td>
+
+<td>Correctness / Fault Tolerance</td>
+
+<td>H</td>
+
+<td>H</td>
+
+<td>UC-AT-01</td>
+</tr>
+
+<tr>
+<td>QA-06</td>
+
+<td>HR / Finance can adjust the payroll only for specific case</td>
+
+<td>Adaptability</td>
+
+<td>H</td>
+
+<td>H</td>
+
+<td>UC-PR-06</td>
+</tr>
+</tbody>
+</table>
+
+<p>* define at least 5 QAS (including 1 performance, 1 availability, 1 modifiability)</p>
+
+<p><em>QA-01 </em><em>Agent Creation</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>QA Type</th>
+
+<th>Performance</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Description</td>
+
+<td>Employee can proceed 5000 employee data creation within 5 minutes by bulk / single creation</td>
+</tr>
+
+<tr>
+<td>Source of Stimulus</td>
+
+<td>Employee</td>
+</tr>
+
+<tr>
+<td>Stimulus</td>
+
+<td>Employee data creation</td>
+</tr>
+
+<tr>
+<td>Artifact</td>
+
+<td>System</td>
+</tr>
+
+<tr>
+<td>Environment</td>
+
+<td>Under normal operation</td>
+</tr>
+
+<tr>
+<td>Response</td>
+
+<td>data created</td>
+</tr>
+
+<tr>
+<td>Response Measure</td>
+
+<td>within 5 minutes</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>QA-02 </em><em>Payment Option</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>QA Type</th>
+
+<th>Modifiability</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Description</td>
+
+<td>Payment option can be adjusted through environment</td>
+</tr>
+
+<tr>
+<td>Source of Stimulus</td>
+
+<td>Developer</td>
+</tr>
+
+<tr>
+<td>Stimulus</td>
+
+<td>Change payment option</td>
+</tr>
+
+<tr>
+<td>Artifact</td>
+
+<td>System</td>
+</tr>
+
+<tr>
+<td>Environment</td>
+
+<td>Production</td>
+</tr>
+
+<tr>
+<td>Response</td>
+
+<td>Modification can be proceed by modify env setup</td>
+</tr>
+
+<tr>
+<td>Response Measure</td>
+
+<td>within 1 hour</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>QA-03 </em><em>Checkin and Checkout</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>QA Type</th>
+
+<th>Availability</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Description</td>
+
+<td>Employee can checkin and checkout 24 hour without failure</td>
+</tr>
+
+<tr>
+<td>Source of Stimulus</td>
+
+<td>Employee</td>
+</tr>
+
+<tr>
+<td>Stimulus</td>
+
+<td>checkin and checkout process</td>
+</tr>
+
+<tr>
+<td>Artifact</td>
+
+<td>System</td>
+</tr>
+
+<tr>
+<td>Environment</td>
+
+<td>Under normal operation</td>
+</tr>
+
+<tr>
+<td>Response</td>
+
+<td>checkin and checkout can be proceed</td>
+</tr>
+
+<tr>
+<td>Response Measure</td>
+
+<td>24 hour without downtime</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>QA-04 Disbursement Process</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>QA Type</th>
+
+<th>Performance</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Description</td>
+
+<td>Finance disburse 1000 in a batch payment within 5 minutes without failure</td>
+</tr>
+
+<tr>
+<td>Source of Stimulus</td>
+
+<td></td>
+</tr>
+
+<tr>
+<td>Stimulus</td>
+
+<td>Disburse payment</td>
+</tr>
+
+<tr>
+<td>Artifact</td>
+
+<td>System</td>
+</tr>
+
+<tr>
+<td>Environment</td>
+
+<td>Under normal operation</td>
+</tr>
+
+<tr>
+<td>Response</td>
+
+<td>disbursement can be proceed max 1000 payment in a batch</td>
+</tr>
+
+<tr>
+<td>Response Measure</td>
+
+<td>within 5 minutes without failure</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>QA-05 Checkin and Checkout</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>QA Type</th>
+
+<th>Performance</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Description</td>
+
+<td>Employee can checkin and checkout with face ID</td>
+</tr>
+
+<tr>
+<td>Source of Stimulus</td>
+
+<td>Employee</td>
+</tr>
+
+<tr>
+<td>Stimulus</td>
+
+<td>checkin / checkout using face id</td>
+</tr>
+
+<tr>
+<td>Artifact</td>
+
+<td>System</td>
+</tr>
+
+<tr>
+<td>Environment</td>
+
+<td>Under normal operation</td>
+</tr>
+
+<tr>
+<td>Response</td>
+
+<td>checkin and checkout using face id succeed with low spec camera and low quality image.</td>
+</tr>
+
+<tr>
+<td>Response Measure</td>
+
+<td>image still can be validated even though on low light, low quality, employee wearing mask and glasses.</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>QA-06 Payroll Adjustment</em></p>
+
+<table>
+
+<thead>
+<tr>
+<th>QA Type</th>
+
+<th>Adaptability</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Description</td>
+
+<td>HR / Finance can adjust the payroll only for specific case</td>
+</tr>
+
+<tr>
+<td>Source of Stimulus</td>
+
+<td>HR / Finance</td>
+</tr>
+
+<tr>
+<td>Stimulus</td>
+
+<td>payroll modification</td>
+</tr>
+
+<tr>
+<td>Artifact</td>
+
+<td>System</td>
+</tr>
+
+<tr>
+<td>Environment</td>
+
+<td>Under normal operation</td>
+</tr>
+
+<tr>
+<td>Response</td>
+
+<td>payroll can be adjusted based on user need on specific payroll</td>
+</tr>
+
+<tr>
+<td>Response Measure</td>
+
+<td>without modify the system, code or payroll group configuration</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Constraint</strong></p>
+
+<p>Business Constraint List</p>
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+
+<th>Title</th>
+
+<th>Description</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>BC-01</td>
+
+<td>Pricing</td>
+
+<td>Pricing competition can be adjust based on user need (monthly,yearly subscription, price based on headcount / product type)</td>
+</tr>
+
+<tr>
+<td>BC-02</td>
+
+<td>Infrastructure / Device</td>
+
+<td>Company capability to provide infrastructure / device need</td>
+</tr>
+
+<tr>
+<td>BC-03</td>
+
+<td>Adaptability</td>
+
+<td>Company needed can be provided by the system. Time availability when the system needs to be customized.</td>
+</tr>
+
+<tr>
+<td>BC-04</td>
+
+<td>Legal</td>
+
+<td>There are legal rules related to workers (minimum payment, maximum working hours etc.)</td>
+</tr>
+</tbody>
+</table>
+
+<p>Technical Constraint List</p>
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+
+<th>Title</th>
+
+<th>Description</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>TC-01</td>
+
+<td>Compatibility</td>
+
+<td>System can be access by all kind of device (computer through website, mobile application for mobile phone and Tablet / Ipad)</td>
+</tr>
+
+<tr>
+<td>TC-02</td>
+
+<td>Compatibility</td>
+
+<td>System can be access with low spec device</td>
+</tr>
+
+<tr>
+<td>TC-03</td>
+
+<td>Accuracy</td>
+
+<td>Face Detection should be accurate (95% accuracy) on low quality image / camera</td>
+</tr>
+
+<tr>
+<td>TC-04</td>
+
+<td>Timezone</td>
+
+<td>Company can easily use on all around the world (with different timezone)</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Top Level Design Description</strong></p>
+
+<p><strong>Microservices Architecture: </strong><strong>
+</strong><strong>Domain Driven Design (DDD) Approach</strong></p>
+
+<p><img src="SWA_Sample_ENG_images/image_4d6302dd1d45.png" alt=""></p>
+
+<p>Design Decision List</p>
+
+<p>* Design decisions should be cover all the QAs in Section 3. (3절에 명세한 모든 QA가 고려되도록 설계 결정을 내려야 한다.)</p>
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+
+<th>Title</th>
+
+<th>Relevant Quality Attributes</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>DD-01</td>
+
+<td>Microservices Architecture</td>
+
+<td>QA-01, QA-02,QA-03,QA-04, QA-06</td>
+</tr>
+
+<tr>
+<td>DD-02</td>
+
+<td>Relational Database (postgreSQL)</td>
+
+<td>QA-02,QA-03, QA-04, QA-06</td>
+</tr>
+
+<tr>
+<td>DD-03</td>
+
+<td>AWS Image Rekognition</td>
+
+<td>QA-05,</td>
+</tr>
+
+<tr>
+<td>DD-04</td>
+
+<td>Authentication and Authorization (Role Based Access Control)</td>
+
+<td>QA-05,  QA-06</td>
+</tr>
+
+<tr>
+<td>DD-05</td>
+
+<td>Communication Protocols (REST- API)</td>
+
+<td>QA-01, QA-04</td>
+</tr>
+
+<tr>
+<td>DD-06</td>
+
+<td>CI/CD (Docker, Jenkins)</td>
+
+<td>QA-02</td>
+</tr>
+
+<tr>
+<td>DD-07</td>
+
+<td>Payment Gateway</td>
+
+<td>QA-04</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>DD-01 </em><em>Microservices Architecture</em></p>
+
+<p><strong>Design Goal</strong></p>
+
+<p>* describe why you defined this design decision. (본 설계 결정을 내린 이유를 설명하세요)</p>
+
+<p>* describe the goal of this design decision. (본 설계 결정의 목표를 설명하세요)</p>
+
+<p>* what is your strategies to satisfy QAs? (관련 QA를 달성할 전략이 무엇인가?)</p>
+
+<p>The decision to adopt a microservices architecture is driven by the imperative need to address specific challenges related to scalability, maintainability, and flexibility in handling distinct functional areas of the system. In contrast to a monolithic architecture, where components are tightly integrated into a single application, microservices offer a more modular and distributed approach.</p>
+
+<p>The primary goal is to enable the system to scale independently, facilitate ease of development, and enhance agility for future changes. By breaking down the system into smaller, independent services, each responsible for a specific business capability, we aim to achieve a more responsive and adaptable architecture.</p>
+
+<p>The microservices architecture allows for the independent scaling of individual services based on their specific resource requirements, ensuring optimal performance and resource utilization. Each microservice will have its own configuration management, enabling dynamic adjustments without affecting the entire system. This enhances the system&#39;s flexibility and adaptability to changing requirements. Availability in a microservices architecture is crucial for maintaining seamless operation across distributed components. Microservices, while providing scalability and flexibility, also introduce challenges related to maintaining constant availability. Implementing effective strategies ensures that the system remains accessible and operational without significant disruptions.</p>
+
+<p><strong>Design Approach List</strong></p>
+
+<p><strong>Monolithic Architecture</strong></p>
+
+<p>Describe Design approach #1</p>
+
+<p>The applied design method, i.e., styles or tactics, will be explained.
+(적용한 설계 방법 즉 패턴, Tactics 등과 함께 설명한다.)</p>
+
+<p>A monolithic architecture consolidates all components into a single, tightly-coupled application. This approach is characterized by a unified and centralized codebase, shared databases, and a single deployment unit. The architecture is akin to a cohesive, all-encompassing structure where all functionalities are tightly integrated.</p>
+
+<p>The applied design method involves adopting a unified and compact structure. This design choice simplifies the deployment and management processes, as the entire application is treated as a cohesive unit. Development and maintenance are streamlined due to the shared codebase, but this approach may face challenges related to scalability and flexibility.</p>
+
+<p><strong>Microservices Architecture</strong></p>
+
+<p>Describe Design approach #2</p>
+
+<p>The applied design method, i.e., styles or tactics, will be explained.</p>
+
+<p>(적용한 설계 방법 즉 패턴, Tactics 등과 함께 설명한다.)</p>
+
+<p>The microservices architecture disassembles the system into independently deployable and scalable services. Each microservice is dedicated to a specific business capability, possesses its own database, and communicates with other services through well-defined APIs. This approach fosters a decentralized structure, allowing for modularity and independence in deployment.</p>
+
+<p>The applied design method emphasizes a decentralized structure, facilitating modularity and independent deployment of microservices. This design choice enhances scalability, adaptability, and fault isolation. The use of well-defined APIs enables seamless communication between microservices, allowing for parallel development and deployment. However, managing the complexity introduced by the distributed nature of microservices requires robust orchestration and communication mechanisms.</p>
+
+<p><strong>Decision and Rationale</strong></p>
+
+<p>Describe the rationale for selecting the most appropriate Design Approach from among the proposed Design Approach.
+(제시된 Design Approach들 중에서 가장 적합한 Design Approach를 선정하는 근거를 기술한다.)</p>
+
+<p>For each design approach, provide pros and cons of all QAs related to the design goal.
+(각 Design Approach 별로 Design Goal과 관련된 모든 QA에 대해 장/단점을 제시하라.)</p>
+
+<p>The microservices architecture (Design Approach #2) is selected to fulfill the design goal and address the challenges identified. This decision is grounded in the recognition that a monolithic architecture may face limitations in terms of scalability, maintainability, and adaptability. Microservices offer a more flexible and scalable approach, aligning with modern software architecture trends. The decentralized nature of microservices supports independent development and deployment, contributing to enhanced agility.</p>
+
+<table>
+
+<thead>
+<tr>
+<th>Quality Attribute</th>
+
+<th>Quality Attribute</th>
+
+<th>Analysis</th>
+
+<th>Design
+Approach (DA) #1 
+Monolithics</th>
+
+<th>Design
+Approach (DA) #2 Microservices
+(Selected)</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ID</td>
+
+<td>Title</td>
+
+<td>Analysis</td>
+
+<td>Design
+Approach (DA) #1 
+Monolithics</td>
+
+<td>Design
+Approach (DA) #2 Microservices
+(Selected)</td>
+</tr>
+
+<tr>
+<td>QA-01</td>
+
+<td>System can proceed 5000 employee creation with in 5 minutes</td>
+
+<td>Pros</td>
+
+<td>Simplified deployment and management.</td>
+
+<td>Scalable, allowing independent scaling of microservices. With its scalable nature, can distribute the load among microservices, potentially meeting the specified requirement.</td>
+</tr>
+
+<tr>
+<td>QA-01</td>
+
+<td>System can proceed 5000 employee creation with in 5 minutes</td>
+
+<td>Cons</td>
+
+<td>Limited scalability due to a single codebase. May struggle to handle the creation of 5000 employees within 5 minutes due to its limited scalability.</td>
+
+<td>Increased complexity in managing distributed components needs to be addressed.</td>
+</tr>
+
+<tr>
+<td>QA-02</td>
+
+<td>Payment option can be adjusted through environment</td>
+
+<td>Pros</td>
+
+<td>Centralized configuration management.</td>
+
+<td>Allows independent adjustment of environment variables, providing greater configurability.</td>
+</tr>
+
+<tr>
+<td>QA-02</td>
+
+<td>Payment option can be adjusted through environment</td>
+
+<td>Cons</td>
+
+<td>Limited flexibility for environment variable adjustments.</td>
+
+<td>Increased operational overhead</td>
+</tr>
+
+<tr>
+<td>QA-03</td>
+
+<td>Employee can checkin and checkout 24 hour without failure</td>
+
+<td>Pros</td>
+
+<td>N/A</td>
+
+<td>Improved fault isolation; failures in one microservice don&#39;t affect others.</td>
+</tr>
+
+<tr>
+<td>QA-03</td>
+
+<td>Employee can checkin and checkout 24 hour without failure</td>
+
+<td>Cons</td>
+
+<td>Limited fault isolation; a failure may affect the entire system.</td>
+
+<td>Increased complexity in monitoring and managing distributed services.</td>
+</tr>
+
+<tr>
+<td>QA-04</td>
+
+<td>System can disburse 1000 in a batch payment within 5 minutes without failure</td>
+
+<td>Pros</td>
+
+<td>N/A</td>
+
+<td>Can distribute the payment processing load among microservices, potentially meeting the specified requirement.</td>
+</tr>
+
+<tr>
+<td>QA-04</td>
+
+<td>System can disburse 1000 in a batch payment within 5 minutes without failure</td>
+
+<td>Cons</td>
+
+<td>Limited scalability may impact the ability to disburse 1000 payments</td>
+
+<td>Increased complexity; effective orchestration required to manage distributed payments.</td>
+</tr>
+
+<tr>
+<td>QA-06</td>
+
+<td>HR / Finance can adjust the payroll only for specific case</td>
+
+<td>Pros</td>
+
+<td>N/A</td>
+
+<td>Allows independent adjustment of payroll for specific cases.</td>
+</tr>
+
+<tr>
+<td>QA-06</td>
+
+<td>HR / Finance can adjust the payroll only for specific case</td>
+
+<td>Cons</td>
+
+<td>Limited flexibility for adjusting payroll only for specific cases.</td>
+
+<td>Increased operational overhead in managing specific adjustments across multiple microservices.</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>DD-02 </em><em>Relational Database</em></p>
+
+<p><strong>Design Goal</strong></p>
+
+<p>* describe why you defined this design decision. (본 설계 결정을 내린 이유를 설명하세요)</p>
+
+<p>* describe the goal of this design decision. (본 설계 결정의 목표를 설명하세요)</p>
+
+<p>* what is your strategies to satisfy QAs? (관련 QA를 달성할 전략이 무엇인가?)</p>
+
+<p>The decision to adopt a relational database is rooted in the need for a structured and organized data storage solution. This choice is grounded in the recognition that relational databases offer a proven model for ensuring data integrity, supporting complex queries, and managing relationships effectively. The structured nature of relational databases provides a reliable foundation for organizing and storing data in a way that facilitates both efficient querying and relationship management.</p>
+
+<p>The goal is to ensure data integrity by utilizing relational databases to enforce constraints and relationships between entities. Implementation strategies include primary keys, foreign keys, and constraints to prevent inconsistencies. Support complex queries by optimizing the database schema and designing normalized tables. Establish scalability by implementing a distributed relational database architecture and optimizing performance for horizontal scalability. Allow controlled adjustments to data, such as in payroll management, by designing the database schema and implementing role-based access controls.</p>
+
+<p><strong>Design Approach List</strong></p>
+
+<p><strong>Design Approach #1 Description: </strong><strong>Non-Relational Database (MongoDB)</strong></p>
+
+<p>Describe Design approach #1</p>
+
+<p>The applied design method, i.e., styles or tactics, will be explained.
+(적용한 설계 방법 즉 패턴, Tactics 등과 함께 설명한다.)</p>
+
+<p>This design approach leverages MongoDB, a NoSQL database system, known for its flexibility, scalability, and ability to handle unstructured or semi-structured data. MongoDB follows a document-oriented data model, storing information in flexible BSON (Binary JSON) documents. The architecture supports horizontal scalability through sharding, allowing distribution of data across multiple servers.</p>
+
+<p>The applied design method focuses on flexibility, scalability, and adaptability to dynamic data structures. MongoDB&#39;s document-oriented approach allows for the storage of diverse data types and evolving schemas. The distributed architecture, combined with horizontal scalability and a flexible schema, positions MongoDB as a suitable choice for applications with changing requirements and large-scale data processing needs. The emphasis is on accommodating varying data structures and providing a scalable solution for distributed environments.</p>
+
+<p><strong>Design Approach #2 Description: </strong><strong>Relational Database (PostgreSQL)</strong></p>
+
+<p>Describe Design approach #2</p>
+
+<p>The applied design method, i.e., styles or tactics, will be explained.</p>
+
+<p>(적용한 설계 방법 즉 패턴, Tactics 등과 함께 설명한다.)</p>
+
+<p>The chosen design approach leverages a traditional relational database model with PostgreSQL, a robust open-source relational database management system (RDBMS). In this architecture, data is stored in tables with predefined structures, relationships, and constraints. PostgreSQL adheres to the principles of the ACID properties, ensuring transactional consistency and reliability.</p>
+
+<p>The Relational Database (PostgreSQL) design approach provides a reliable and structured foundation for applications with well-defined data relationships and complex querying needs. It prioritizes data integrity and consistency, making it suitable for scenarios where a relational model aligns with the nature of the data and application requirements.</p>
+
+<p>The applied design method emphasizes a structured, normalized schema, ACID transactions, and SQL querying within a centralized server architecture. These tactics ensure data integrity, consistency, and reliability, making PostgreSQL a suitable choice for applications with well-defined data structures and complex relationships. The focus is on maintaining a robust and predictable environment for data storage, retrieval, and management.</p>
+
+<p><strong>Decision and Rationale</strong></p>
+
+<p>Describe the rationale for selecting the most appropriate Design Approach from among the proposed Design Approach.
+(제시된 Design Approach들 중에서 가장 적합한 Design Approach를 선정하는 근거를 기술한다.)</p>
+
+<p>For each design approach, provide pros and cons of all QAs related to the design goal.
+(각 Design Approach 별로 Design Goal과 관련된 모든 QA에 대해 장/단점을 제시하라.)</p>
+
+<p>The decision to adopt a relational database (PostgreSQL) is grounded in the need for a structured and organized data storage solution, recognizing the proven model of relational databases in ensuring data integrity, supporting complex queries, and managing relationships effectively. The structured nature of relational databases provides a reliable foundation for organizing and storing data efficiently.</p>
+
+<table>
+
+<thead>
+<tr>
+<th>Quality Attribute</th>
+
+<th>Quality Attribute</th>
+
+<th>Analysis</th>
+
+<th>Design
+Approach (DA) #1 
+Non-Relational (MongoDB)</th>
+
+<th>DA #2 
+Relational Database (PostgreSql)
+(Selected)</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>ID</td>
+
+<td>Title</td>
+
+<td>Analysis</td>
+
+<td>Design
+Approach (DA) #1 
+Non-Relational (MongoDB)</td>
+
+<td>DA #2 
+Relational Database (PostgreSql)
+(Selected)</td>
+</tr>
+
+<tr>
+<td>QA-02</td>
+
+<td>Payment option can be adjusted through environment</td>
+
+<td>Pros</td>
+
+<td>NoSQL databases like MongoDB can adapt to environmental changes without a predefined schema, providing flexibility in payment option adjustments.</td>
+
+<td>Relational databases enforce data integrity through constraints, reducing the risk of inconsistencies when adjusting payment options. PostgreSQL&#39;s structured schema allows for organized and controlled adjustments to payment options.</td>
+</tr>
+
+<tr>
+<td>QA-02</td>
+
+<td>Payment option can be adjusted through environment</td>
+
+<td>Cons</td>
+
+<td>Flexibility might compromise strict data integrity, and adjusting payment options could pose challenges in maintaining consistency. Adjusting payment options through environment variables may result in more complex queries compared to traditional relational databases.</td>
+
+<td>Adjusting payment options might require modifying the schema, potentially causing downtime or complexity in implementation.</td>
+</tr>
+
+<tr>
+<td>QA-03</td>
+
+<td>Employee can checkin and checkout 24 hour without failure</td>
+
+<td>Pros</td>
+
+<td>N/A</td>
+
+<td>PostgreSQL&#39;s adherence to ACID properties ensures transactional consistency, reducing the risk of failures during check-in/check-out.</td>
+</tr>
+
+<tr>
+<td>QA-03</td>
+
+<td>Employee can checkin and checkout 24 hour without failure</td>
+
+<td>Cons</td>
+
+<td>Ensuring consistency across distributed nodes may require careful design to prevent failures or delays in check-in/check-out processing.</td>
+
+<td>N/A</td>
+</tr>
+
+<tr>
+<td>QA-04</td>
+
+<td>System can disburse 1000 in a batch payment within 5 minutes without failure</td>
+
+<td>Pros</td>
+
+<td>MongoDB&#39;s distributed nature and horizontal scalability may enhance throughput, supporting quick batch processing.</td>
+
+<td>PostgreSQL&#39;s ACID properties enhance the reliability of batch payment transactions. Complex batch payment processes can be managed with structured SQL queries, ensuring transactional consistency.</td>
+</tr>
+
+<tr>
+<td>QA-04</td>
+
+<td>System can disburse 1000 in a batch payment within 5 minutes without failure</td>
+
+<td>Cons</td>
+
+<td>Complex transactions involved in batch processing may be more challenging to manage compared to relational databases.</td>
+
+<td>Centralized processing might pose challenges in handling high-throughput batch payments within strict time constraints.</td>
+</tr>
+
+<tr>
+<td>QA-06</td>
+
+<td>HR / Finance can adjust the payroll only for specific case</td>
+
+<td>Pros</td>
+
+<td>N/A</td>
+
+<td>PostgreSQL&#39;s structured nature facilitates the creation of a comprehensive audit trail for payroll adjustments.</td>
+</tr>
+
+<tr>
+<td>QA-06</td>
+
+<td>HR / Finance can adjust the payroll only for specific case</td>
+
+<td>Cons</td>
+
+<td>Implementing precise access controls is crucial to avoid unauthorized adjustments, requiring careful design and monitoring. Ensuring a comprehensive audit trail for specific payroll adjustments may require additional considerations.</td>
+
+<td>Adjustments in the schema for specific cases may require careful planning and execution, potentially causing downtime.</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Structural View</strong></p>
+
+<p>Structural Model</p>
+
+<p><strong>C&amp;C Diagram</strong></p>
+
+<p><img src="SWA_Sample_ENG_images/image_2ab695d66019.png" alt=""></p>
+
+<p><strong>Element List</strong></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Name</th>
+
+<th>Responsibility</th>
+
+<th>Relevant ADs</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Layer User Interface</td>
+
+<td>The User Interface layer is the outermost layer that interacts directly with end-users. Its primary responsibility is to present information to users in a human-readable format and to capture user inputs.</td>
+
+<td>-</td>
+</tr>
+
+<tr>
+<td>Layer API</td>
+
+<td>The API layer acts as an intermediary between the User Interface and the Database layers. It is responsible for processing requests from the UI, performing business logic, and interacting with the database to retrieve or update data.</td>
+
+<td></td>
+</tr>
+
+<tr>
+<td>Layer Database</td>
+
+<td>The Database layer is responsible for storing, retrieving, and managing the persistent data used by the application. It ensures data integrity, consistency, and availability.</td>
+
+<td></td>
+</tr>
+</tbody>
+</table>
+
+<p>Design Rationale</p>
+
+<p>The microservices architecture is chosen to achieve improved scalability, maintainability, and flexibility in handling distinct functional areas. Therefore, every module, service, and database is maintained independently. However, the service still needs to access a multi database due to business need to provide data needed for example, the attendance service needs to access employee and shift databases. Even so, the system still isolate from other service because it will deploy independently to reduce coupling and possibility crash due to other services issues</p>
+
+<p><strong>Behavior (scenario) View</strong></p>
+
+<p><em>UC-01 </em><em>General Use Case Scenario</em> Model</p>
+
+<p><strong>Sequence Diagram</strong></p>
+
+<p><img src="SWA_Sample_ENG_images/image_44f225e1218d.png" alt=""></p>
+
+<p><em>UC-02 </em><em>Failed Check in With Dispute</em></p>
+
+<p><img src="SWA_Sample_ENG_images/image_e883659092f3.png" alt=""></p>
+
+<p><em>UC-03 Disbursement Process</em></p>
+
+<p><img src="SWA_Sample_ENG_images/image_6c5d1e4f246d.png" alt=""></p>
+
+<p><strong>Allocation View</strong></p>
+
+<p><em>Allocation Diagram</em></p>
+
+<p><img src="SWA_Sample_ENG_images/image_6b3af687d070.png" alt=""></p>
+
+<p><em>Design Rationale</em></p>
+
+<p>Designing services as independent containers offers several compelling advantages rooted in the principles of containerization and microservices architecture. One primary rationale is the emphasis on isolation and independence. By encapsulating each service within its own container, the impact of changes or issues within one service is contained, ensuring the robustness of the entire system. This design approach also facilitates scalability, allowing services to be horizontally scaled to handle increased loads. Containers seamlessly integrate into continuous integration and deployment (CI/CD) pipelines, enabling automated testing, building, and deployment processes, resulting in faster release cycles and consistent runtime environments.</p>
+
+<p>Portability is another key benefit, as containers encapsulate applications and dependencies, making them highly portable across various environments and cloud providers. Additionally, the resource efficiency of containers, sharing the host OS kernel and resources, contributes to optimized resource utilization and faster provisioning. The fault isolation provided by containerization ensures that service failures are contained within their respective containers, preventing cascading failures across the system. Furthermore, deploying services as independent containers aligns well with the principles of microservices architecture, fostering a modular and flexible system where each service can be developed, tested, and deployed independently, promoting agility and adaptability to changing business requirements. Overall, this design choice enhances maintainability, scalability, and the overall efficiency of modern application environments.</p>

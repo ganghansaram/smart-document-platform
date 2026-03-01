@@ -1,0 +1,135 @@
+/* ── Platform Header — 공통 헤더 컴포넌트 ── */
+
+/* 헤더 컨테이너 */
+.platform-header {
+    background: linear-gradient(135deg, #001f3f 0%, #003d7a 100%);
+    height: 60px;
+    padding: 0 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+/* 로고 */
+.platform-header-logo {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.platform-header-logo img {
+    height: 30px;
+    width: auto;
+}
+
+.platform-header-logo h1 {
+    font-size: 25px;
+    font-weight: 600;
+    font-style: italic;
+    letter-spacing: 0.5px;
+    color: #fff;
+    margin: 0;
+}
+
+/* nav 영역 (우측, Explorer .main-nav ul 기준: gap 30px) */
+.platform-header-nav {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    gap: 30px;
+}
+
+/* nav 링크 (Explorer .main-nav a 동일) */
+.platform-header-nav a,
+.platform-header-nav button.ph-link {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.platform-header-nav a:hover,
+.platform-header-nav button.ph-link:hover {
+    background-color: rgba(255,255,255,0.15);
+}
+
+/* auth group: username | Logout (Explorer .auth-nav-item 동일) */
+.ph-auth-group {
+    display: flex;
+    align-items: center;
+}
+
+.ph-auth-group .ph-username {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 12px;
+    white-space: nowrap;
+}
+
+.ph-auth-group .ph-sep {
+    color: #fff;
+    opacity: 0.4;
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* 테마 토글 (Explorer .theme-toggle-btn 동일) */
+.platform-header .theme-toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.platform-header .theme-toggle-btn:hover {
+    color: #ffffff;
+}
+
+/* 기본(다크): sun 표시 → "라이트로 전환" 암시 */
+.platform-header .theme-toggle-btn .icon-sun {
+    display: block;
+}
+
+.platform-header .theme-toggle-btn .icon-moon {
+    display: none;
+}
+
+/* 라이트 모드: moon 표시 → "다크로 전환" 암시 */
+body[data-theme="light"] .platform-header .theme-toggle-btn .icon-sun {
+    display: none;
+}
+
+body[data-theme="light"] .platform-header .theme-toggle-btn .icon-moon {
+    display: block;
+}
+
+/* 중간 슬롯 (page-nav 등) */
+.platform-header-mid {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 16px;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.platform-header-mid.visible {
+    visibility: visible;
+    opacity: 1;
+}

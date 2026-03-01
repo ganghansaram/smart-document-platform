@@ -1,0 +1,810 @@
+/* ===================================
+   관리자 설정 페이지 — renderAdminSettings()
+   =================================== */
+
+// ── 재시작 대기 상태 (페이지 재진입 시 배너 복원용) ──────────────────────────
+var _pendingRestartItems = [];
+
+// ── 설정 스키마 ───────────────────────────────────────────────────────────────
+var SETTINGS_SCHEMA = [
+    {
+        tabId: 'tab-ai',
+        tabLabel: 'AI / RAG',
+        sections: [
+            {
+                title: '모델 연결',
+                fields: [
+                    { group: 'ai', key: 'ollama_url',      label: 'Ollama URL',   type: 'text',   restart: true,
+                      desc: '로컬 Ollama 서버 주소 (예: http://localhost:11434)' },
+                    { group: 'ai', key: 'ollama_model',    label: 'LLM 모델',     type: 'text',   restart: true,
+                      desc: '챗봇에 사용할 Ollama 모델명 (예: gemma3:4b, llama3:8b)' },
+                    { group: 'ai', key: 'embedding_model', label: '임베딩 모델',  type: 'text',   restart: true,
+                      desc: '벡터 검색에 사용할 임베딩 모델 (예: bge-m3)' },
+                ]
+            },
+            {
+                title: '검색 설정',
+                fields: [
+                    { group: 'ai', key: 'default_search_type',   label: '검색 방식',          type: 'select',
+                      options: [['hybrid','하이브리드 (권장)'], ['keyword','키워드 (BM25)'], ['vector','벡터 유사도']],
+                      restart: false, desc: '문서 검색 알고리즘 선택' },
+                    { group: 'ai', key: 'max_search_results',    label: '최대 검색 결과 수',  type: 'number',
+                      restart: false, min: 1, max: 20, step: 1,
+                      desc: '챗봇 답변 생성 시 참조할 최대 문서 청크 수' },
+                    { group: 'ai', key: 'max_context_length',    label: '최대 컨텍스트 길이', type: 'number',
+                      restart: false, min: 1000, max: 32000, step: 500,
+                      desc: 'LLM에 전달하는 참고문서 최대 글자 수 (토큰 예산)' },
+                    { group: 'ai', key: 'hybrid_keyword_weight', label: '키워드 비중 (하이브리드)', type: 'number',
+                      restart: false, min: 0, max: 1, step: 0.05,
+                      desc: '하이브리드 검색에서 BM25(키워드) 비중. 나머지는 벡터 비중 (예: 0.3 → 키워드 30%, 벡터 70%)' },
+                    { group: 'ai', key: 'hybrid_rrf_k',         label: 'RRF K 값',           type: 'number',
+                      restart: false, min: 1, max: 200, step: 1,
+                      desc: 'Reciprocal Rank Fusion 상수. 작을수록 상위 순위 문서 가중치 증가 (기본 60)' },
+                    { group: 'ai', key: 'min_vector_score',     label: '최소 벡터 유사도',   type: 'number',
+                      restart: false, min: 0, max: 1, step: 0.01,
+                      desc: '이 값 미만의 벡터 유사도 결과는 제외. 관련 없는 결과 필터링 (기본 0.48)' },
+                ]
+            },
+            {
+                title: '리랭커 / 쿼리 재작성',
+                fields: [
+                    { group: 'ai', key: 'reranker_enabled',          label: '리랭커 사용',      type: 'toggle',
+                      restart: false, desc: 'Cross-encoder 리랭커(bge-reranker-v2-m3)로 검색 결과 정확도 향상' },
+                    { group: 'ai', key: 'reranker_top_k_multiplier', label: '리랭커 후보 배수', type: 'number',
+                      restart: false, min: 1, max: 10, step: 1,
+                      desc: '리랭커 입력 후보 수 = 최대 검색 결과 × 이 값 (더 많은 후보에서 선별)' },
+                    { group: 'ai', key: 'query_rewrite_enabled',     label: '쿼리 재작성',      type: 'toggle',
+                      restart: false, desc: '멀티턴 대화에서 이전 문맥을 반영한 독립적 검색 쿼리 자동 재작성' },
+                ]
+            },
+        ]
+    },
+    {
+        tabId: 'tab-session',
+        tabLabel: '세션 / 대화',
+        sections: [
+            {
+                title: '대화 세션 (인메모리)',
+                fields: [
+                    { group: 'session', key: 'max_conversation_turns', label: '최대 대화 턴 수',      type: 'number',
+                      restart: false, min: 1, max: 20, step: 1,
+                      desc: '챗봇이 기억할 최대 대화 교환 횟수 (이전 Q&A 쌍)' },
+                    { group: 'session', key: 'max_history_length',     label: '히스토리 최대 길이',   type: 'number',
+                      restart: false, min: 100, max: 10000, step: 100,
+                      desc: 'LLM에 포함되는 대화 히스토리 최대 글자 수' },
+                    { group: 'session', key: 'max_sessions',           label: '최대 세션 수',         type: 'number',
+                      restart: false, min: 1, max: 1000, step: 10,
+                      desc: '서버 메모리에 동시 유지할 최대 대화 세션 수 (초과 시 LRU 방식으로 오래된 세션 제거)' },
+                    { group: 'session', key: 'max_idle_minutes',       label: '유휴 세션 만료 (분)', type: 'number',
+                      restart: false, min: 1, max: 1440, step: 5,
+                      desc: '마지막 메시지 이후 이 시간(분)이 지나면 세션 자동 삭제' },
+                ]
+            },
+            {
+                title: '로그인 세션',
+                fields: [
+                    { group: 'session', key: 'session_expiry_hours', label: '로그인 세션 만료 (시간)', type: 'number',
+                      restart: true, min: 1, max: 720, step: 1,
+                      desc: '로그인 유지 시간. 이 시간이 지나면 자동 로그아웃 처리 (재시작 필요)' },
+                ]
+            }
+        ]
+    },
+    {
+        tabId: 'tab-security',
+        tabLabel: '보안 / 접근',
+        sections: [
+            {
+                title: '접근 제어',
+                fields: [
+                    { group: 'security', key: 'login_required', label: '열람 로그인 필수 (백엔드)', type: 'toggle',
+                      restart: true, desc: '활성화 시 비로그인 사용자의 API 접근 차단. 변경 후 서버 재시작 필요' },
+                    { group: 'security', key: 'cors_origins',   label: 'CORS 허용 출처',            type: 'textarea',
+                      restart: true,
+                      desc: '허용할 출처 URL (줄바꿈으로 구분). 변경 후 서버 재시작 필요',
+                      toStr: function(arr) { return Array.isArray(arr) ? arr.join('\n') : String(arr || ''); },
+                      fromStr: function(s) { return s.split('\n').map(function(v) { return v.trim(); }).filter(Boolean); }
+                    },
+                ]
+            }
+        ]
+    },
+    {
+        tabId: 'tab-upload',
+        tabLabel: '업로드 / 변환',
+        sections: [
+            {
+                title: '업로드 기능',
+                fields: [
+                    { group: 'frontend', key: 'upload_enabled',           label: '업로드 기능 활성화',             type: 'toggle',
+                      restart: false, desc: 'Editor 이상 권한 사용자의 파일 업로드 UI 표시 여부' },
+                    { group: 'frontend', key: 'upload_max_file_size_mb',  label: '최대 파일 크기 (MB)',            type: 'number',
+                      restart: false, min: 1, max: 2000, step: 10,
+                      desc: '업로드 허용 최대 단일 파일 크기 (MB 단위)' },
+                    { group: 'frontend', key: 'upload_auto_search_index', label: '업로드 후 검색 인덱스 자동 갱신', type: 'toggle',
+                      restart: false, desc: '파일 업로드 완료 후 키워드(BM25) 검색 인덱스 자동 재생성' },
+                    { group: 'frontend', key: 'upload_auto_vector_index', label: '업로드 후 벡터 인덱스 자동 갱신', type: 'toggle',
+                      restart: false, desc: '파일 업로드 완료 후 FAISS 벡터 인덱스 자동 재생성 (시간 소요)' },
+                ]
+            },
+            {
+                title: 'DOCX 변환',
+                fields: [
+                    { group: 'upload', key: 'word_com_preprocess', label: 'Word COM 전처리', type: 'toggle',
+                      restart: false, desc: 'DOCX 변환 시 Microsoft Word COM으로 자동 번호(장절 목차 등) 평문화. Windows + Word 설치 필요' },
+                    { group: 'upload', key: 'upload_temp_dir',     label: '임시 폴더 경로',  type: 'text',
+                      restart: false, desc: '업로드 파일 임시 저장 경로 (비워두면 시스템 기본 임시 폴더 사용)' },
+                ]
+            }
+        ]
+    },
+    {
+        tabId: 'tab-frontend',
+        tabLabel: '화면 / 에디터',
+        sections: [
+            {
+                title: '화면 표시',
+                fields: [
+                    { group: 'frontend', key: 'display_site_title',  label: '사이트 타이틀', type: 'text',
+                      restart: false, desc: '헤더·로그인 페이지·브라우저 탭에 표시되는 사이트 이름 (예: KF-21 History WebBook)' },
+                    { group: 'frontend', key: 'display_table_style', label: '테이블 스타일', type: 'select',
+                      options: [['bordered','Bordered — 테두리형 (기본)'], ['simple','Simple — 심플'], ['minimal','Minimal — 최소']],
+                      restart: false, desc: '문서 내 테이블의 표시 스타일 프리셋' },
+                    { group: 'frontend', key: 'login_required',      label: '열람 로그인 필수 (프론트엔드)', type: 'toggle',
+                      restart: false, desc: '프론트엔드 측 로그인 게이트 여부. 보안 탭의 백엔드 설정과 동일하게 유지 권장' },
+                ]
+            },
+            {
+                title: 'AI 챗봇 (프론트엔드)',
+                fields: [
+                    { group: 'frontend', key: 'ai_enabled',             label: '챗봇 표시',            type: 'toggle',
+                      restart: false, desc: '우측 하단 AI 챗봇 버튼 및 패널 표시 여부' },
+                    { group: 'frontend', key: 'ai_use_backend',          label: '백엔드 RAG 사용',      type: 'toggle',
+                      restart: false, desc: '활성화 시 서버 RAG 파이프라인 사용 / 비활성화 시 브라우저에서 Ollama 직접 호출' },
+                    { group: 'frontend', key: 'ai_search_type',          label: '검색 방식 (직접 모드)', type: 'select',
+                      options: [['hybrid','하이브리드'], ['keyword','키워드'], ['vector','벡터']],
+                      restart: false, desc: '백엔드 미사용 시 프론트엔드 직접 검색 방식 (백엔드 RAG 사용 시 무관)' },
+                    { group: 'frontend', key: 'ai_max_search_results',   label: '최대 검색 결과 수',    type: 'number',
+                      restart: false, min: 1, max: 20, step: 1 },
+                    { group: 'frontend', key: 'ai_max_context_length',   label: '최대 컨텍스트 길이',   type: 'number',
+                      restart: false, min: 1000, max: 32000, step: 500 },
+                    { group: 'frontend', key: 'ai_system_prompt',        label: '시스템 프롬프트',      type: 'textarea',
+                      restart: false, rows: 8, desc: '챗봇 기본 지침 프롬프트. 백엔드 RAG 사용 시 서버 설정이 우선 적용됨' },
+                ]
+            },
+            {
+                title: '에디터',
+                fields: [
+                    { group: 'frontend', key: 'editor_enabled',            label: '에디터 활성화',      type: 'toggle',
+                      restart: false, desc: '문서 인라인 편집 기능 활성화 여부' },
+                    { group: 'frontend', key: 'editor_auto_save_interval', label: '자동 저장 간격 (ms)', type: 'number',
+                      restart: false, min: 5000, max: 300000, step: 5000,
+                      desc: '에디터 자동 저장 주기 (밀리초). 기본 30000 = 30초' },
+                    { group: 'frontend', key: 'editor_create_backup',      label: '저장 시 백업 생성',   type: 'toggle',
+                      restart: false, desc: '파일 저장 전 .bak 백업 파일 생성' },
+                ]
+            }
+        ]
+    },
+    {
+        tabId: 'tab-menu',
+        tabLabel: '메뉴 관리',
+        sections: []
+    }
+];
+
+// ── 메인 렌더러 ───────────────────────────────────────────────────────────────
+
+async function renderAdminSettings() {
+    var container = document.getElementById('main-content');
+    if (!container) return;
+
+    container.innerHTML = '<div class="admin-settings-page"><div class="admin-settings-loading"><div class="admin-spinner"></div>설정 로드 중...</div></div>';
+    if (typeof updateSectionNav === 'function') updateSectionNav();
+
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+
+    try {
+        var r = await fetch(backendUrl + '/api/settings', { credentials: 'include' });
+        if (r.status === 401) {
+            if (typeof window.handleApiUnauthorized === 'function') window.handleApiUnauthorized();
+            return;
+        }
+        if (r.status === 403) {
+            container.innerHTML = '<div class="admin-settings-page"><div class="admin-settings-error"><span>🔒</span><p>관리자 권한이 필요합니다.</p></div></div>';
+            return;
+        }
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+
+        var data = await r.json();
+        _renderAdminSettingsUI(container, data.settings);
+
+    } catch (e) {
+        container.innerHTML = '<div class="admin-settings-page"><div class="admin-settings-error"><span>⚠</span><p>설정을 불러올 수 없습니다.<br><small>' + _escHtml(e.message) + '</small></p></div></div>';
+    }
+}
+
+// ── UI 렌더링 ──────────────────────────────────────────────────────────────────
+
+function _renderAdminSettingsUI(container, settings) {
+    var html = '<div class="admin-settings-page">';
+
+    // 헤더 (page-header 공통 컴포넌트 사용)
+    html += '<div class="page-header">';
+    html += '<div class="page-header-info">';
+    html += '<h1 class="ph-icon-settings">관리자 설정</h1>';
+    html += '</div>';
+    html += '<div class="page-header-actions">';
+    html += '<button class="admin-btn admin-btn-reset" onclick="_adminReset()">초기화</button>';
+    html += '<button class="admin-btn admin-btn-save" id="admin-save-btn" onclick="_adminSave()">저장</button>';
+    html += '</div>';
+    html += '</div>';
+
+    // 알림 영역 (상단 배치)
+    html += '<div class="admin-settings-notice" id="admin-notice" style="display:none"></div>';
+
+    // 탭 버튼
+    html += '<div class="admin-tabs">';
+    SETTINGS_SCHEMA.forEach(function(tab, idx) {
+        html += '<button class="admin-tab-btn' + (idx === 0 ? ' active' : '') +
+                '" data-tab="' + tab.tabId + '" onclick="_adminSwitchTab(\'' + tab.tabId + '\')">' +
+                tab.tabLabel + '</button>';
+    });
+    html += '</div>';
+
+    // 탭 패널
+    SETTINGS_SCHEMA.forEach(function(tab, idx) {
+        html += '<div class="admin-tab-panel' + (idx === 0 ? ' active' : '') + '" id="' + tab.tabId + '">';
+        tab.sections.forEach(function(section) {
+            html += '<div class="admin-section">';
+            html += '<h3 class="admin-section-title">' + _escHtml(section.title) + '</h3>';
+            html += '<div class="admin-fields">';
+            section.fields.forEach(function(field) {
+                html += _renderField(field, settings);
+            });
+            html += '</div>';
+            html += '</div>';
+        });
+        html += '</div>';
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    // 메뉴 관리 탭 커스텀 렌더링
+    _renderMenuTab();
+
+    // 재시작 대기 상태가 남아있으면 배너 복원
+    if (_pendingRestartItems.length > 0) {
+        _showNotice(
+            'warn',
+            '⚠ 다음 항목이 변경되어 <strong>서버 재시작이 필요</strong>합니다: ' +
+            '<code>' + _pendingRestartItems.join(', ') + '</code>'
+        );
+    }
+}
+
+// ── 필드 렌더링 ───────────────────────────────────────────────────────────────
+
+function _renderField(field, settings) {
+    var val = (settings[field.group] || {})[field.key];
+    var id = 'as-' + field.group + '-' + field.key;
+
+    var restartBadge = field.restart
+        ? '<span class="admin-restart-badge" title="변경 후 서버 재시작 필요">재시작 필요</span>'
+        : '';
+
+    var desc = field.desc
+        ? '<div class="admin-field-desc">' + _escHtml(field.desc) + '</div>'
+        : '';
+
+    var control = _renderControl(field, val, id);
+
+    return '<div class="admin-field admin-field-' + field.type + '">' +
+        '<div class="admin-field-header">' +
+        '<label class="admin-field-label" for="' + id + '">' + _escHtml(field.label) + '</label>' +
+        restartBadge +
+        '</div>' +
+        desc +
+        '<div class="admin-field-control">' + control + '</div>' +
+        '</div>';
+}
+
+function _renderControl(field, val, id) {
+    switch (field.type) {
+        case 'toggle':
+            return '<label class="admin-toggle">' +
+                '<input type="checkbox" id="' + id + '"' + (val ? ' checked' : '') + '>' +
+                '<span class="admin-toggle-slider"></span>' +
+                '</label>';
+
+        case 'select': {
+            var opts = (field.options || []).map(function(opt) {
+                var sel = (String(val) === String(opt[0])) ? ' selected' : '';
+                return '<option value="' + _escHtml(opt[0]) + '"' + sel + '>' + _escHtml(opt[1]) + '</option>';
+            }).join('');
+            return '<select class="admin-select" id="' + id + '">' + opts + '</select>';
+        }
+
+        case 'number': {
+            var attrs = ' value="' + (val !== undefined && val !== null ? val : '') + '"';
+            if (field.min !== undefined) attrs += ' min="' + field.min + '"';
+            if (field.max !== undefined) attrs += ' max="' + field.max + '"';
+            if (field.step !== undefined) attrs += ' step="' + field.step + '"';
+            return '<input type="number" class="admin-input admin-number" id="' + id + '"' + attrs + '>';
+        }
+
+        case 'textarea': {
+            var displayVal = val;
+            if (field.toStr && val !== undefined && val !== null) {
+                displayVal = field.toStr(val);
+            }
+            var rows = field.rows || 3;
+            return '<textarea class="admin-textarea" id="' + id + '" rows="' + rows + '">' +
+                _escHtml(displayVal !== undefined && displayVal !== null ? String(displayVal) : '') +
+                '</textarea>';
+        }
+
+        default: // text
+            return '<input type="text" class="admin-input" id="' + id + '" value="' +
+                _escHtml(val !== undefined && val !== null ? String(val) : '') + '">';
+    }
+}
+
+// ── 탭 전환 ───────────────────────────────────────────────────────────────────
+
+function _adminSwitchTab(tabId) {
+    document.querySelectorAll('.admin-tab-btn').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+    });
+    document.querySelectorAll('.admin-tab-panel').forEach(function(panel) {
+        panel.classList.toggle('active', panel.id === tabId);
+    });
+}
+
+// ── 설정값 수집 ───────────────────────────────────────────────────────────────
+
+function _collectSettings() {
+    var result = {};
+    SETTINGS_SCHEMA.forEach(function(tab) {
+        tab.sections.forEach(function(section) {
+            section.fields.forEach(function(field) {
+                if (!result[field.group]) result[field.group] = {};
+                var id = 'as-' + field.group + '-' + field.key;
+                var el = document.getElementById(id);
+                if (!el) return;
+
+                var val;
+                if (field.type === 'toggle') {
+                    val = el.checked;
+                } else if (field.type === 'number') {
+                    var parsed = parseFloat(el.value);
+                    val = isNaN(parsed) ? null : parsed;
+                } else if (field.type === 'textarea' && field.fromStr) {
+                    val = field.fromStr(el.value);
+                } else {
+                    val = el.value.trim() || null;
+                }
+                result[field.group][field.key] = val;
+            });
+        });
+    });
+    return result;
+}
+
+// ── 저장 ─────────────────────────────────────────────────────────────────────
+
+async function _adminSave() {
+    var saveBtn = document.getElementById('admin-save-btn');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
+
+    _hideNotice();
+
+    var settings = _collectSettings();
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+
+    try {
+        var r = await fetch(backendUrl + '/api/settings', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+
+        if (r.status === 401) {
+            if (typeof window.handleApiUnauthorized === 'function') window.handleApiUnauthorized();
+            return;
+        }
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+
+        var data = await r.json();
+
+        if (data.restart_needed && data.restart_needed.length > 0) {
+            // 기존 목록에 중복 없이 누적
+            data.restart_needed.forEach(function(item) {
+                if (_pendingRestartItems.indexOf(item) === -1) _pendingRestartItems.push(item);
+            });
+            _showNotice(
+                'warn',
+                '⚠ 저장되었습니다. 다음 항목은 <strong>서버 재시작 후</strong> 적용됩니다: ' +
+                '<code>' + _pendingRestartItems.join(', ') + '</code>'
+            );
+        } else {
+            _showNotice('ok', '✓ 설정이 저장되었으며 즉시 적용되었습니다.');
+        }
+
+    } catch (e) {
+        _showNotice('error', '✗ 저장 실패: ' + _escHtml(e.message));
+    } finally {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '저장'; }
+    }
+}
+
+// ── 초기화 ────────────────────────────────────────────────────────────────────
+
+async function _adminReset() {
+    if (!confirm('모든 설정을 기본값으로 초기화하시겠습니까?\n저장된 settings.json이 삭제됩니다.')) return;
+
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+
+    try {
+        var r = await fetch(backendUrl + '/api/settings/reset', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        if (r.status === 401) {
+            if (typeof window.handleApiUnauthorized === 'function') window.handleApiUnauthorized();
+            return;
+        }
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        // 초기화 → 재시작 대기 상태도 클리어
+        _pendingRestartItems = [];
+        renderAdminSettings();
+    } catch (e) {
+        alert('초기화 실패: ' + e.message);
+    }
+}
+
+// ── 알림 유틸 ─────────────────────────────────────────────────────────────────
+
+function _showNotice(type, html) {
+    var el = document.getElementById('admin-notice');
+    if (!el) return;
+    el.className = 'admin-settings-notice notice-' + type;
+    el.innerHTML = html;
+    el.style.display = 'block';
+    if (type === 'ok') {
+        setTimeout(function() { if (el) el.style.display = 'none'; }, 5000);
+    }
+}
+
+function _hideNotice() {
+    var el = document.getElementById('admin-notice');
+    if (el) el.style.display = 'none';
+}
+
+function _escHtml(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── 메뉴 관리 탭 ─────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+var _menuEditorData = null;
+
+function _renderMenuTab() {
+    var panel = document.getElementById('tab-menu');
+    if (!panel) return;
+
+    panel.innerHTML =
+        '<div class="admin-section">' +
+            '<h3 class="admin-section-title">\uBA54\uB274 \uAD6C\uC870 \uD3B8\uC9D1</h3>' +
+            '<div class="menu-editor">' +
+                '<div class="menu-editor-loading"><div class="admin-spinner"></div> \uBA54\uB274 \uB85C\uB4DC \uC911...</div>' +
+            '</div>' +
+        '</div>';
+
+    _menuFetchData();
+}
+
+async function _menuFetchData() {
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+    try {
+        var r = await fetch(backendUrl + '/api/menu', { credentials: 'include' });
+        if (r.status === 401) {
+            if (typeof window.handleApiUnauthorized === 'function') window.handleApiUnauthorized();
+            return;
+        }
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        var data = await r.json();
+        _menuEditorData = data.menu || [];
+        _menuRenderEditor();
+    } catch (e) {
+        var editor = document.querySelector('.menu-editor');
+        if (editor) {
+            editor.innerHTML = '<div class="menu-editor-error">\uBA54\uB274\uB97C \uBD88\uB7EC\uC62C \uC218 \uC5C6\uC2B5\uB2C8\uB2E4: ' + _escHtml(e.message) + '</div>';
+        }
+    }
+}
+
+// ── 트리 렌더링 ───────────────────────────────────────────────────────────────
+
+function _menuRenderEditor() {
+    var editor = document.querySelector('.menu-editor');
+    if (!editor) return;
+
+    var html = '<div class="menu-toolbar">';
+    html += '<button class="admin-btn admin-btn-save" onclick="_menuAddTopLevel()" style="padding:6px 14px;font-size:12px;">+ \uCD5C\uC0C1\uC704 \uD56D\uBAA9 \uCD94\uAC00</button>';
+    html += '</div>';
+    html += '<div class="menu-tree">';
+    if (_menuEditorData && _menuEditorData.length > 0) {
+        html += _menuRenderNodes(_menuEditorData, 0, []);
+    } else {
+        html += '<div class="menu-tree-empty">\uBA54\uB274 \uD56D\uBAA9\uC774 \uC5C6\uC2B5\uB2C8\uB2E4. \uC704 \uBC84\uD2BC\uC73C\uB85C \uCD94\uAC00\uD558\uC138\uC694.</div>';
+    }
+    html += '</div>';
+    html += '<div class="menu-editor-actions">';
+    html += '<button class="admin-btn admin-btn-save" onclick="_menuSave()">\uC800\uC7A5</button>';
+    html += '</div>';
+    editor.innerHTML = html;
+}
+
+function _menuRenderNodes(nodes, depth, pathPrefix) {
+    var html = '';
+    for (var i = 0; i < nodes.length; i++) {
+        html += _menuRenderNode(nodes[i], depth, i, nodes.length, pathPrefix.concat([i]));
+    }
+    return html;
+}
+
+function _menuRenderNode(node, depth, index, siblingCount, path) {
+    var hasChildren = node.children && node.children.length > 0;
+    var isFolder = hasChildren || !node.url;
+    var indent = depth * 20;
+    var pathStr = path.join(',');
+
+    var html = '<div class="menu-node" data-depth="' + depth + '" data-path="' + pathStr + '">';
+    html += '<div class="menu-node-row" style="padding-left:' + (indent + 8) + 'px">';
+
+    if (hasChildren) {
+        html += '<span class="menu-node-toggle" onclick="_menuToggleChildren(this)">&#9660;</span>';
+    } else {
+        html += '<span class="menu-node-toggle-placeholder"></span>';
+    }
+
+    html += '<span class="menu-node-icon">' + (isFolder ? '\uD83D\uDCC1' : '\uD83D\uDCC4') + '</span>';
+    html += '<span class="menu-node-label">' + _escHtml(node.label || '') + '</span>';
+    html += '<span class="menu-node-url">' + (node.url ? _escHtml(node.url) : '\u2014') + '</span>';
+
+    html += '<div class="menu-node-actions">';
+    html += '<button class="menu-btn" title="\uC704\uB85C" onclick="_menuMoveByPath(\'' + pathStr + '\',-1)"' + (index === 0 ? ' disabled' : '') + '>&#9650;</button>';
+    html += '<button class="menu-btn" title="\uC544\uB798\uB85C" onclick="_menuMoveByPath(\'' + pathStr + '\',1)"' + (index === siblingCount - 1 ? ' disabled' : '') + '>&#9660;</button>';
+    html += '<button class="menu-btn" title="\uD558\uC704 \uCD94\uAC00" onclick="_menuAddChildByPath(\'' + pathStr + '\')">+</button>';
+    html += '<button class="menu-btn" title="\uD3B8\uC9D1" onclick="_menuEditByPath(\'' + pathStr + '\')">\u270E</button>';
+    html += '<button class="menu-btn menu-btn-danger" title="\uC0AD\uC81C" onclick="_menuDeleteByPath(\'' + pathStr + '\')">\u2715</button>';
+    html += '</div>';
+    html += '</div>';
+
+    if (hasChildren) {
+        html += '<div class="menu-node-children">';
+        html += _menuRenderNodes(node.children, depth + 1, path);
+        html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+}
+
+// ── 경로 헬퍼 ─────────────────────────────────────────────────────────────────
+
+function _menuParsePath(pathStr) {
+    return pathStr.split(',').map(function(s) { return parseInt(s, 10); });
+}
+
+function _menuNodeByPath(path) {
+    var list = _menuEditorData;
+    var node = null;
+    for (var i = 0; i < path.length; i++) {
+        node = list[path[i]];
+        if (!node) return null;
+        if (i < path.length - 1) {
+            list = node.children || [];
+        }
+    }
+    return { node: node, parentList: _menuParentList(path), index: path[path.length - 1] };
+}
+
+function _menuParentList(path) {
+    if (path.length <= 1) return _menuEditorData;
+    var list = _menuEditorData;
+    for (var i = 0; i < path.length - 1; i++) {
+        var n = list[path[i]];
+        if (!n) return list;
+        list = n.children || [];
+    }
+    return list;
+}
+
+// ── 토글 ──────────────────────────────────────────────────────────────────────
+
+function _menuToggleChildren(toggleEl) {
+    var nodeEl = toggleEl.closest('.menu-node');
+    var childrenEl = nodeEl.querySelector(':scope > .menu-node-children');
+    if (!childrenEl) return;
+    var collapsed = childrenEl.style.display === 'none';
+    childrenEl.style.display = collapsed ? '' : 'none';
+    toggleEl.innerHTML = collapsed ? '&#9660;' : '&#9654;';
+}
+
+// ── 추가 ──────────────────────────────────────────────────────────────────────
+
+function _menuAddTopLevel() {
+    if (!_menuEditorData) _menuEditorData = [];
+    _menuEditorData.push({ label: '\uC0C8 \uD56D\uBAA9' });
+    _menuRenderEditor();
+    _menuEditByPath(String(_menuEditorData.length - 1));
+}
+
+function _menuAddChildByPath(pathStr) {
+    var path = _menuParsePath(pathStr);
+    var ctx = _menuNodeByPath(path);
+    if (!ctx || !ctx.node) return;
+    if (!ctx.node.children) ctx.node.children = [];
+    ctx.node.children.push({ label: '\uC0C8 \uD56D\uBAA9' });
+    _menuRenderEditor();
+    _menuEditByPath(path.concat([ctx.node.children.length - 1]).join(','));
+}
+
+// ── 삭제 ──────────────────────────────────────────────────────────────────────
+
+function _menuCollectUrls(node) {
+    var urls = [];
+    if (node.url) urls.push(node.url);
+    if (node.children) {
+        node.children.forEach(function(child) {
+            urls = urls.concat(_menuCollectUrls(child));
+        });
+    }
+    return urls;
+}
+
+function _menuDeleteByPath(pathStr) {
+    var path = _menuParsePath(pathStr);
+    var ctx = _menuNodeByPath(path);
+    if (!ctx || !ctx.node) return;
+
+    var linkedUrls = _menuCollectUrls(ctx.node);
+    var hasChildren = ctx.node.children && ctx.node.children.length > 0;
+
+    var msg = '"' + ctx.node.label + '"';
+    if (hasChildren) {
+        msg += ' \uD56D\uBAA9\uACFC \uD558\uC704 ' + ctx.node.children.length + '\uAC1C \uD56D\uBAA9\uC744 \uBAA8\uB450 \uC0AD\uC81C\uD569\uB2C8\uB2E4.';
+    } else {
+        msg += ' \uD56D\uBAA9\uC744 \uC0AD\uC81C\uD569\uB2C8\uB2E4.';
+    }
+
+    if (linkedUrls.length > 0) {
+        msg += '\n\n\u26A0 \uC5F0\uACB0\uB41C \uBB38\uC11C ' + linkedUrls.length + '\uAC1C\uAC00 \uC788\uC2B5\uB2C8\uB2E4:';
+        linkedUrls.slice(0, 5).forEach(function(u) { msg += '\n  \u2022 ' + u; });
+        if (linkedUrls.length > 5) msg += '\n  \u2026 \uC678 ' + (linkedUrls.length - 5) + '\uAC1C';
+        msg += '\n\n\uC0AD\uC81C\uD558\uBA74 \uBA54\uB274\uC5D0\uC11C \uC811\uADFC\uD560 \uC218 \uC5C6\uAC8C \uB429\uB2C8\uB2E4.\n(\uB514\uC2A4\uD06C\uC758 \uD30C\uC77C\uC740 \uC0AD\uC81C\uB418\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4)';
+    }
+
+    msg += '\n\n\uC0AD\uC81C\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?';
+    if (!confirm(msg)) return;
+
+    ctx.parentList.splice(ctx.index, 1);
+    _menuRenderEditor();
+}
+
+// ── 이동 ──────────────────────────────────────────────────────────────────────
+
+function _menuMoveByPath(pathStr, direction) {
+    var path = _menuParsePath(pathStr);
+    var ctx = _menuNodeByPath(path);
+    if (!ctx) return;
+
+    var newIndex = ctx.index + direction;
+    if (newIndex < 0 || newIndex >= ctx.parentList.length) return;
+
+    var temp = ctx.parentList[ctx.index];
+    ctx.parentList[ctx.index] = ctx.parentList[newIndex];
+    ctx.parentList[newIndex] = temp;
+    _menuRenderEditor();
+}
+
+// ── 인라인 편집 ───────────────────────────────────────────────────────────────
+
+function _menuEditByPath(pathStr) {
+    var path = _menuParsePath(pathStr);
+    var ctx = _menuNodeByPath(path);
+    if (!ctx || !ctx.node) return;
+
+    var nodeEl = document.querySelector('.menu-node[data-path="' + pathStr + '"]');
+    if (!nodeEl) return;
+    var rowEl = nodeEl.querySelector(':scope > .menu-node-row');
+    if (!rowEl) return;
+
+    var editHtml =
+        '<div class="menu-node-edit" style="padding-left:' + rowEl.style.paddingLeft + '">' +
+            '<input class="admin-input menu-edit-label" placeholder="\uC774\uB984" value="' + _escHtml(ctx.node.label || '') + '">' +
+            '<input class="admin-input menu-edit-url" placeholder="URL (\uBE44\uC6CC\uB450\uBA74 \uD3F4\uB354)" value="' + _escHtml(ctx.node.url || '') + '">' +
+            '<button class="menu-btn menu-btn-ok" onclick="_menuEditConfirm(\'' + pathStr + '\',this)">\uD655\uC778</button>' +
+            '<button class="menu-btn" onclick="_menuEditCancel()">\uCDE8\uC18C</button>' +
+        '</div>';
+
+    rowEl.style.display = 'none';
+    rowEl.insertAdjacentHTML('afterend', editHtml);
+
+    var labelInput = nodeEl.querySelector('.menu-edit-label');
+    if (labelInput) { labelInput.focus(); labelInput.select(); }
+
+    var editDiv = nodeEl.querySelector('.menu-node-edit');
+    if (editDiv) {
+        editDiv.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') _menuEditConfirm(pathStr, editDiv.querySelector('.menu-btn-ok'));
+            else if (e.key === 'Escape') _menuEditCancel();
+        });
+    }
+}
+
+function _menuEditConfirm(pathStr, btnEl) {
+    var path = _menuParsePath(pathStr);
+    var ctx = _menuNodeByPath(path);
+    if (!ctx || !ctx.node) return;
+
+    var editDiv = btnEl.closest('.menu-node-edit');
+    if (!editDiv) return;
+
+    var label = editDiv.querySelector('.menu-edit-label').value.trim();
+    var url = editDiv.querySelector('.menu-edit-url').value.trim();
+
+    if (!label) { alert('\uC774\uB984\uC740 \uD544\uC218\uC785\uB2C8\uB2E4.'); return; }
+
+    ctx.node.label = label;
+    if (url) { ctx.node.url = url; } else { delete ctx.node.url; }
+    _menuRenderEditor();
+}
+
+function _menuEditCancel() {
+    _menuRenderEditor();
+}
+
+// ── 메뉴 저장 ─────────────────────────────────────────────────────────────────
+
+async function _menuSave() {
+    var saveBtn = document.querySelector('.menu-editor-actions .admin-btn-save');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '\uC800\uC7A5 \uC911...'; }
+
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+
+    try {
+        var r = await fetch(backendUrl + '/api/menu', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(_menuEditorData)
+        });
+
+        if (r.status === 401) {
+            if (typeof window.handleApiUnauthorized === 'function') window.handleApiUnauthorized();
+            return;
+        }
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+
+        _showNotice('ok', '\u2713 \uBA54\uB274\uAC00 \uC800\uC7A5\uB418\uC5C8\uC2B5\uB2C8\uB2E4.');
+
+        // 좌측 패널 갱신
+        if (typeof loadMenuData === 'function') loadMenuData();
+
+    } catch (e) {
+        _showNotice('error', '\u2717 \uBA54\uB274 \uC800\uC7A5 \uC2E4\uD328: ' + _escHtml(e.message));
+    } finally {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '\uC800\uC7A5'; }
+    }
+}

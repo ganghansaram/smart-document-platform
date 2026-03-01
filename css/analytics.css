@@ -1,0 +1,498 @@
+/* ===================================
+   Analytics Dashboard Styles
+   =================================== */
+
+/* --- CSS Variables (light theme) --- */
+.analytics-dashboard {
+    --ad-primary: #0066cc;
+    --ad-primary-light: #e8f0fe;
+    --ad-success: #22c55e;
+    --ad-warning: #f59e0b;
+    --ad-danger: #ef4444;
+    --ad-text: #1a1a2e;
+    --ad-text-secondary: #5a6c7d;
+    --ad-bg-card: #ffffff;
+    --ad-border: #e2e8f0;
+    --ad-bar-color: #3b82f6;
+    --ad-bar-chat: #8b5cf6;
+    --ad-hover: #f1f5f9;
+}
+
+body[data-theme="dark"] .analytics-dashboard {
+    --ad-primary: #5ba3f5;
+    --ad-primary-light: #1e293b;
+    --ad-success: #4ade80;
+    --ad-warning: #fbbf24;
+    --ad-danger: #f87171;
+    --ad-text: #e2e8f0;
+    --ad-text-secondary: #94a3b8;
+    --ad-bg-card: #1e293b;
+    --ad-border: #334155;
+    --ad-bar-color: #60a5fa;
+    --ad-bar-chat: #a78bfa;
+    --ad-hover: #334155;
+}
+
+.analytics-dashboard {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0;
+    min-height: calc(100vh - 100px); /* 푸터를 항상 스크롤 후에 표시 */
+}
+
+/* h1은 content.css의 .page-header h1 공통 스타일로 통합 */
+
+/* --- Summary Cards (4-column grid) --- */
+.ad-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+}
+
+.ad-card {
+    background: var(--ad-bg-card);
+    border: 1px solid var(--ad-border);
+    border-radius: 10px;
+    padding: 18px 16px;
+    text-align: center;
+}
+
+.ad-card-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ad-text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ad-card-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ad-text);
+    line-height: 1;
+}
+
+.ad-card-value.active {
+    color: var(--ad-success);
+}
+
+/* Clickable card */
+.ad-card-clickable {
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.ad-card-clickable:hover {
+    border-color: var(--ad-success);
+    box-shadow: 0 0 0 1px var(--ad-success);
+}
+
+/* Active Users Modal */
+.ad-modal-overlay {
+    --ad-text: #1a1a2e;
+    --ad-text-secondary: #5a6c7d;
+    --ad-bg-card: #ffffff;
+    --ad-border: #e2e8f0;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1100;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.15s ease;
+}
+
+body[data-theme="dark"] .ad-modal-overlay {
+    --ad-text: #e2e8f0;
+    --ad-text-secondary: #94a3b8;
+    --ad-bg-card: #1e293b;
+    --ad-border: #334155;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.ad-modal {
+    background: var(--ad-bg-card);
+    border: 1px solid var(--ad-border);
+    border-radius: 10px;
+    width: 380px;
+    max-width: 90vw;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+}
+
+.ad-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--ad-border);
+}
+
+.ad-modal-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ad-text);
+}
+
+.ad-modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: var(--ad-text-secondary);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.ad-modal-close:hover {
+    color: var(--ad-text);
+}
+
+.ad-modal-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.ad-modal-footer {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--ad-border);
+    font-size: 12px;
+    color: var(--ad-text-secondary);
+    text-align: center;
+}
+
+/* IP table */
+.ad-ip-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.ad-ip-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ad-text-secondary);
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--ad-border);
+}
+
+.ad-ip-table td {
+    padding: 8px 8px;
+    border-bottom: 1px solid var(--ad-border);
+}
+
+.ad-ip-table tr:last-child td {
+    border-bottom: none;
+}
+
+.ad-ip-addr {
+    font-family: 'Consolas', 'Monaco', monospace;
+    color: var(--ad-text);
+}
+
+.ad-ip-ago {
+    color: var(--ad-text-secondary);
+    font-size: 12px;
+}
+
+.ad-ip-loading, .ad-ip-empty {
+    font-size: 13px;
+    color: var(--ad-text-secondary);
+    text-align: center;
+    padding: 20px 0;
+}
+
+/* --- Section Titles --- */
+.ad-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ad-text);
+    margin: 0 0 14px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--ad-border);
+}
+
+/* --- Vertical Bar Chart (daily visitors / daily chat) --- */
+.ad-vbar-chart {
+    background: var(--ad-bg-card);
+    border: 1px solid var(--ad-border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.ad-vbar-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 140px;
+    padding-top: 10px;
+}
+
+.ad-vbar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    position: relative;
+}
+
+.ad-vbar {
+    width: 100%;
+    max-width: 36px;
+    border-radius: 4px 4px 0 0;
+    background: var(--ad-bar-color);
+    min-height: 2px;
+    animation: barGrow 0.6s ease-out both;
+    position: relative;
+    cursor: default;
+}
+
+.ad-vbar.chat-bar {
+    background: var(--ad-bar-chat);
+}
+
+.ad-vbar-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ad-text);
+    color: var(--ad-bg-card);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.ad-vbar:hover .ad-vbar-tooltip {
+    display: block;
+}
+
+.ad-vbar-label {
+    font-size: 10px;
+    color: var(--ad-text-secondary);
+    margin-top: 6px;
+    white-space: nowrap;
+}
+
+@keyframes barGrow {
+    from { transform: scaleY(0); transform-origin: bottom; }
+    to   { transform: scaleY(1); transform-origin: bottom; }
+}
+
+/* --- Horizontal Bar Chart (top pages / top searches) --- */
+.ad-hbar-chart {
+    background: var(--ad-bg-card);
+    border: 1px solid var(--ad-border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.ad-hbar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ad-hbar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ad-hbar-rank {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ad-text-secondary);
+    width: 20px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.ad-hbar-name {
+    font-size: 12px;
+    color: var(--ad-text);
+    width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ad-hbar-track {
+    flex: 1;
+    height: 20px;
+    background: var(--ad-hover);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.ad-hbar-fill {
+    height: 100%;
+    background: var(--ad-bar-color);
+    border-radius: 4px;
+    animation: hbarGrow 0.6s ease-out both;
+    min-width: 2px;
+}
+
+.ad-hbar-fill.search-bar {
+    background: var(--ad-warning);
+}
+
+.ad-hbar-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ad-text-secondary);
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+@keyframes hbarGrow {
+    from { width: 0; }
+}
+
+/* --- Chat Stats Card --- */
+.ad-chat-stats {
+    background: var(--ad-bg-card);
+    border: 1px solid var(--ad-border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.ad-chat-summary {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+}
+
+.ad-chat-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.ad-chat-stat-label {
+    font-size: 11px;
+    color: var(--ad-text-secondary);
+}
+
+.ad-chat-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ad-bar-chat);
+}
+
+/* Mini bar chart inside chat stats */
+.ad-mini-vbar-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 60px;
+}
+
+.ad-mini-vbar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.ad-mini-vbar {
+    width: 100%;
+    max-width: 24px;
+    border-radius: 3px 3px 0 0;
+    background: var(--ad-bar-chat);
+    min-height: 1px;
+    animation: barGrow 0.6s ease-out both;
+    opacity: 0.8;
+}
+
+/* --- Action Buttons --- */
+.ad-actions {
+    display: flex;
+    gap: 12px;
+    padding: 16px 0;
+    border-top: 1px solid var(--ad-border);
+}
+
+.ad-btn {
+    padding: 8px 20px;
+    border: 1px solid var(--ad-border);
+    border-radius: 6px;
+    background: var(--ad-bg-card);
+    color: var(--ad-text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ad-btn:hover {
+    background: var(--ad-hover);
+}
+
+.ad-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ad-btn-danger {
+    color: var(--ad-danger);
+    border-color: var(--ad-danger);
+}
+
+.ad-btn-danger:hover {
+    background: var(--ad-danger);
+    color: #fff;
+}
+
+/* --- No data state --- */
+.ad-no-data {
+    padding: 24px;
+    text-align: center;
+    color: var(--ad-text-secondary);
+    font-size: 13px;
+}
+
+/* --- Loading state --- */
+.ad-loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ad-text-secondary);
+    font-size: 14px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 700px) {
+    .ad-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .ad-hbar-name {
+        width: 120px;
+    }
+}

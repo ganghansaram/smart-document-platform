@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Document Platform</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/platform-header.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(150deg, #0a1628 0%, #122a52 45%, #0e1f40 75%, #060c1a 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            color: #e8edf5;
+            visibility: hidden;
+        }
+
+        /* 배경 미세 격자 패턴 */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        .platform-header { position: relative; z-index: 2; }
+
+        /* 메인 영역 */
+        .launcher-main {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
+        }
+
+        .launcher-title {
+            font-size: 26px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        .launcher-subtitle {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        /* 카드 그리드 */
+        .launcher-cards {
+            display: flex;
+            gap: 28px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .launcher-card {
+            position: relative;
+            width: 260px;
+            height: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        /* 카드 배경 이미지 */
+        .launcher-card-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.4s ease;
+        }
+
+        /* 어두운 오버레이 (텍스트 가독성) */
+        .launcher-card-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.15) 100%);
+            transition: background 0.3s;
+        }
+
+        /* 카드 텍스트 영역 */
+        .launcher-card-body {
+            position: relative;
+            z-index: 1;
+            padding: 24px 20px;
+            color: #fff;
+        }
+
+        /* 활성 카드 */
+        .launcher-card.active {
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            cursor: pointer;
+        }
+
+        .launcher-card.active:hover .launcher-card-bg {
+            transform: scale(1.08);
+        }
+
+        /* 비활성 카드 */
+        .launcher-card.disabled {
+            cursor: not-allowed;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .launcher-card.disabled .launcher-card-bg {
+            filter: grayscale(0.6) brightness(0.5);
+        }
+
+        .launcher-card.disabled .launcher-card-overlay {
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.3) 100%);
+        }
+
+        .launcher-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #fff;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+        }
+
+        .launcher-card-desc {
+            font-size: 13px;
+            line-height: 1.5;
+            color: rgba(255,255,255,0.8);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+
+        .launcher-card.disabled .launcher-card-desc {
+            color: rgba(255,255,255,0.45);
+        }
+
+        /* 배지: 좌측 상단 고정 */
+        .launcher-card-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 2;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+            letter-spacing: 0.3px;
+            background: rgba(0,0,0,0.55);
+            color: rgba(255,255,255,0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        /* 푸터 */
+        .launcher-footer {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 16px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            letter-spacing: 0.3px;
+        }
+
+        /* 페이지 전환 */
+        body.fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        body.fade-out {
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="launcher-main">
+        <div class="launcher-title" id="launcher-title">Smart Document Platform</div>
+        <div class="launcher-subtitle">시스템을 선택하세요</div>
+
+        <div class="launcher-cards">
+            <div class="launcher-card active" id="card-explorer">
+                <div class="launcher-card-bg" style="background-image: url('css/images/1-1_KF-21.jpg')"></div>
+                <div class="launcher-card-overlay"></div>
+                <div class="launcher-card-body">
+                    <h3>Explorer</h3>
+                    <div class="launcher-card-desc">문서 탐색 · 검색 · AI 질의</div>
+                </div>
+            </div>
+            <div class="launcher-card disabled">
+                <div class="launcher-card-bg" style="background-image: url('css/images/1-3_KF-21.jpg')"></div>
+                <div class="launcher-card-overlay"></div>
+                <span class="launcher-card-badge">개발 예정</span>
+                <div class="launcher-card-body">
+                    <h3>Compare</h3>
+                    <div class="launcher-card-desc">문서 버전 비교 · 변경 추적</div>
+                </div>
+            </div>
+            <div class="launcher-card active" id="card-reader">
+                <div class="launcher-card-bg" style="background-image: url('css/images/1-2_KF-21.jpg')"></div>
+                <div class="launcher-card-overlay"></div>
+                <div class="launcher-card-body">
+                    <h3>Reader</h3>
+                    <div class="launcher-card-desc">논문 리딩 · 번역 · 정리</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="launcher-footer">
+        &copy; 2025 Korea Aerospace Industries, Ltd. &middot; Smart Document Platform
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/platform-header.js"></script>
+    <script>
+        initPlatformHeader({
+            title: 'Platform',
+            navItems: [],
+            onAuth: function(user) {
+                document.body.style.visibility = 'visible';
+                document.body.classList.add('fade-in');
+            }
+        });
+
+        // Explorer 카드 클릭
+        document.getElementById('card-explorer').addEventListener('click', function() {
+            document.body.classList.add('fade-out');
+            setTimeout(function() {
+                window.location.href = 'index.html';
+            }, 400);
+        });
+
+        // Reader 카드 클릭
+        document.getElementById('card-reader').addEventListener('click', function() {
+            document.body.classList.add('fade-out');
+            setTimeout(function() {
+                window.location.href = 'reader.html';
+            }, 400);
+        });
+    </script>
+</body>
+</html>

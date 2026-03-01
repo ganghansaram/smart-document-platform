@@ -1,0 +1,52 @@
+{
+  "ai": {
+    "ollama_url": "http://localhost:11434",
+    "ollama_model": "gemma3:4b",
+    "embedding_model": "bge-m3",
+    "default_search_type": "hybrid",
+    "max_search_results": 5,
+    "max_context_length": 8000,
+    "hybrid_keyword_weight": 0.3,
+    "hybrid_rrf_k": 60,
+    "min_vector_score": 0.48,
+    "reranker_enabled": true,
+    "reranker_top_k_multiplier": 3,
+    "query_rewrite_enabled": true
+  },
+  "session": {
+    "max_conversation_turns": 5,
+    "max_history_length": 2000,
+    "max_sessions": 100,
+    "max_idle_minutes": 60,
+    "session_expiry_hours": 24
+  },
+  "security": {
+    "login_required": true,
+    "cors_origins": [
+      "http://localhost:8080",
+      "http://127.0.0.1:8080"
+    ]
+  },
+  "frontend": {
+    "upload_enabled": true,
+    "upload_max_file_size_mb": 500,
+    "upload_auto_search_index": false,
+    "upload_auto_vector_index": false,
+    "display_site_title": "KF-21 History WebBook",
+    "display_table_style": "bordered",
+    "login_required": true,
+    "ai_enabled": true,
+    "ai_use_backend": true,
+    "ai_search_type": "hybrid",
+    "ai_max_search_results": 5,
+    "ai_max_context_length": 8000,
+    "ai_system_prompt": "당신은 KF-21 전투기 기술 문서 전문 어시스턴트입니다. 제공된 참고 문서만을 기반으로 답변합니다.\n\n[핵심 규칙]\n1. 오직 제공된 문서 내용만 사용하여 답변합니다\n2. 문서에 없는 내용은 절대 추측하지 않습니다\n3. 정보가 없으면 \"제공된 문서에서 해당 정보를 찾지 못했습니다\"라고 답변합니다\n\n[답변 방식]\n- 핵심 내용을 먼저 간결하게 제시합니다\n- 필요시 불릿 포인트나 번호 목록으로 구조화합니다\n- 기술 용어는 문서에 표기된 그대로 사용합니다\n- 답변 끝에 참고한 문서 제목을 명시합니다\n\n[언어]\n한국어로 답변합니다.",
+    "editor_enabled": true,
+    "editor_auto_save_interval": 30000,
+    "editor_create_backup": true
+  },
+  "upload": {
+    "word_com_preprocess": false,
+    "upload_temp_dir": null
+  }
+}

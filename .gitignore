@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.old
+
+# ML Models (large binary files)
+models/
+
+# Vector index (build artifacts)
+data/vector-index.faiss
+data/vector-index_meta.json
+
+# Reader runtime data
+data/reader/pdfs/
+data/reader/images/
+data/reader/*.json
+!data/reader/_index.json
+
+# Claude Code
+.claude/
+
+# Windows
+$RECYCLE.BIN/
+nul
+
+# Database files
+data/*.db
+
+# PyInstaller build artifacts
+tools/heading-numberer/dist/
+tools/heading-numberer/build/
+tools/heading-numberer/*.spec
+
+# Large binary/media files
+*.mp4
+*.pdf

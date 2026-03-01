@@ -1,0 +1,198 @@
+[
+  {
+    "label": "홈",
+    "url": "contents/home.html"
+  },
+  {
+    "label": "[alpha test] 성능/구조 검증용",
+    "children": [
+      {
+        "label": "Test1 - MyPaper",
+        "url": "contents/samples/MyPaper/MyPaper_20251109_V2.8_Claude.html"
+      },
+      {
+        "label": "Test2 - SWA_PMS",
+        "url": "contents/samples/SWA_PMS/SWA_PMS.html"
+      },
+      {
+        "label": "Test3 - SWA_Sample_KOR",
+        "url": "contents/samples/SWA_Sample_ENG/SWA_Sample_ENG.html"
+      },
+      {
+        "label": "Test4 - SWA_Sample_ENG",
+        "url": "contents/samples/SWA_Sample_KOR/SWA_Sample_KOR.html"
+      },
+      {
+        "label": "Test5 - FY1-DoD-FLEX-4",
+        "url": "contents/samples/FY1-DoD-FLEX-4/FY1-DoD-FLEX-4.html"
+      }
+    ]
+  },
+  {
+    "label": "개발 개요 (Development Overview - KF-21 Boramae Program)",
+    "children": [
+      {
+        "label": "프로그램 소개",
+        "url": "contents/dev-overview/introduction.html"
+      },
+      {
+        "label": "개발 히스토리",
+        "children": [
+          {
+            "label": "초기 개념 연구"
+          },
+          {
+            "label": "체계개발 단계"
+          },
+          {
+            "label": "시험평가 단계"
+          }
+        ]
+      },
+      {
+        "label": "주요 제원"
+      },
+      {
+        "label": "개발 목표"
+      }
+    ]
+  },
+  {
+    "label": "시스템 설계",
+    "children": [
+      {
+        "label": "항공기 구조",
+        "children": [
+          {
+            "label": "동체 설계"
+          },
+          {
+            "label": "주익 설계"
+          },
+          {
+            "label": "미익 설계"
+          }
+        ]
+      },
+      {
+        "label": "항전 시스템",
+        "children": [
+          {
+            "label": "레이더 시스템"
+          },
+          {
+            "label": "통신 시스템"
+          },
+          {
+            "label": "항법 시스템"
+          }
+        ]
+      },
+      {
+        "label": "추진 시스템"
+      },
+      {
+        "label": "무장 시스템"
+      }
+    ]
+  },
+  {
+    "label": "시험 평가",
+    "children": [
+      {
+        "label": "지상 시험",
+        "children": [
+          {
+            "label": "구조 시험"
+          },
+          {
+            "label": "시스템 통합 시험"
+          },
+          {
+            "label": "엔진 시험"
+          }
+        ]
+      },
+      {
+        "label": "비행 시험",
+        "children": [
+          {
+            "label": "초도 비행"
+          },
+          {
+            "label": "성능 시험"
+          },
+          {
+            "label": "무장 시험"
+          }
+        ]
+      },
+      {
+        "label": "시험 결과 분석"
+      }
+    ]
+  },
+  {
+    "label": "기술 문서",
+    "children": [
+      {
+        "label": "설계 문서",
+        "children": [
+          {
+            "label": "시스템 요구사항"
+          },
+          {
+            "label": "인터페이스 명세"
+          },
+          {
+            "label": "설계 검증"
+          }
+        ]
+      },
+      {
+        "label": "운용 문서",
+        "children": [
+          {
+            "label": "운용 매뉴얼"
+          },
+          {
+            "label": "정비 지침"
+          },
+          {
+            "label": "안전 지침"
+          }
+        ]
+      },
+      {
+        "label": "기술 보고서"
+      }
+    ]
+  },
+  {
+    "label": "참고 자료",
+    "children": [
+      {
+        "label": "관련 규격"
+      },
+      {
+        "label": "참고 문헌"
+      }
+    ]
+  },
+  {
+    "label": "용어집",
+    "url": "glossary:terms"
+  },
+  {
+    "label": "정보",
+    "url": "contents/about.html"
+  },
+  {
+    "label": "대시보드",
+    "url": "analytics:dashboard"
+  },
+  {
+    "label": "관리자 설정",
+    "url": "settings:admin"
+  }
+]

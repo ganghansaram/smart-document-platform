@@ -1,0 +1,560 @@
+/* ===================================
+   항공 용어집 (Aviation Glossary) 스타일
+   =================================== */
+
+/* 페이지 컨테이너 */
+.glossary-page {
+    max-width: 1100px !important;
+    padding-bottom: 40px;
+}
+
+.glossary-title {
+    font-size: 28px;
+    color: var(--text-dark);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--primary-navy);
+}
+
+/* 툴바: 검색 + 통계 */
+.glossary-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.glossary-search-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0 12px;
+    height: 40px;
+    transition: border-color 0.2s;
+}
+
+.glossary-search-wrap:focus-within {
+    border-color: var(--active-color);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
+}
+
+.glossary-search-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    flex-shrink: 0;
+    opacity: 0.5;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8' fill='none' stroke='black' stroke-width='2'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center/contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8' fill='none' stroke='black' stroke-width='2'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+
+#glossary-search {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 15px;
+    color: var(--text-dark);
+    height: 100%;
+}
+
+#glossary-search::placeholder {
+    color: var(--medium-gray);
+}
+
+.glossary-search-clear {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--medium-gray);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.glossary-search-clear:hover {
+    color: var(--text-dark);
+}
+
+.glossary-stats {
+    font-size: 13px;
+    color: var(--medium-gray);
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+/* 알파벳 바 */
+.glossary-alphabet-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 20px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.glossary-letter-btn {
+    min-width: 32px;
+    height: 30px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--white);
+    color: var(--text-dark);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    padding: 0 6px;
+}
+
+.glossary-letter-btn:hover:not([disabled]) {
+    background: var(--hover-bg);
+    border-color: var(--active-color);
+}
+
+.glossary-letter-btn.active {
+    background: var(--active-color);
+    color: #fff;
+    border-color: var(--active-color);
+}
+
+.glossary-letter-btn.empty {
+    opacity: 0.35;
+    cursor: default;
+}
+
+/* A-Z 카드 그리드 (초기 화면) */
+.glossary-letter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.glossary-letter-card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+}
+
+.glossary-letter-card:hover {
+    border-color: var(--active-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.glossary-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg-gray);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.glossary-card-letter {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--primary-navy);
+}
+
+body[data-theme="dark"] .glossary-card-letter {
+    color: var(--active-color);
+}
+
+.glossary-card-count {
+    font-size: 12px;
+    color: var(--medium-gray);
+    background: var(--white);
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-weight: 600;
+}
+
+.glossary-card-body {
+    padding: 10px 14px;
+    font-size: 15px;
+    color: var(--text-dark);
+    line-height: 1.7;
+}
+
+.glossary-card-item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.glossary-card-abbr {
+    font-weight: 700;
+    color: var(--text-dark);
+    font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.glossary-card-more {
+    color: var(--active-color);
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+/* 결과 헤더 */
+.glossary-result-header {
+    margin-bottom: 12px;
+}
+
+.glossary-result-info {
+    font-size: 15px;
+    color: var(--text-light);
+}
+
+/* 용어 테이블 */
+.glossary-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.glossary-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.glossary-table th {
+    background: var(--primary-navy);
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+}
+
+body[data-theme="dark"] .glossary-table th {
+    background: #2a2a3e;
+}
+
+.glossary-table td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.glossary-table tbody tr:hover {
+    background: var(--hover-bg);
+}
+
+/* 열 너비 — 약어 고정, 영문/한국어 균등 분배 */
+.glossary-col-abbr {
+    width: 140px;
+}
+
+.glossary-col-en,
+.glossary-col-ko {
+    width: auto;
+}
+
+/* 약어 셀 */
+.glossary-abbr {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-weight: 700;
+    color: #001f3f;
+    white-space: nowrap;
+}
+
+body[data-theme="dark"] .glossary-abbr {
+    color: var(--active-color);
+}
+
+/* 한국어 빈 셀 처리 */
+.glossary-ko:empty::after {
+    content: '-';
+    color: var(--medium-gray);
+    opacity: 0.5;
+}
+
+/* 검색어 하이라이트 */
+.glossary-highlight {
+    background: #fef08a;
+    color: #000;
+    padding: 0 1px;
+    border-radius: 2px;
+}
+
+body[data-theme="dark"] .glossary-highlight {
+    background: #854d0e;
+    color: #fef9c3;
+}
+
+/* 빈 결과 */
+.glossary-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--medium-gray);
+    font-size: 15px;
+}
+
+/* 제한 초과 안내 */
+.glossary-truncated {
+    text-align: center;
+    padding: 16px;
+    color: var(--medium-gray);
+    font-size: 13px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 8px;
+}
+
+/* ===================================
+   우측 패널 — A-Z 퀵링크
+   =================================== */
+.glossary-nav {
+    padding: 8px 12px;
+}
+
+.glossary-nav-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--medium-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.glossary-nav-letter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background 0.15s;
+    cursor: pointer;
+}
+
+.glossary-nav-letter:hover:not(.empty) {
+    background: var(--hover-bg);
+}
+
+.glossary-nav-letter.active {
+    background: var(--active-color);
+    color: #fff;
+}
+
+.glossary-nav-letter.active .glossary-nav-count {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.glossary-nav-letter.empty {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.glossary-nav-count {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--medium-gray);
+}
+
+/* ===================================
+   본문 약어 점선 밑줄
+   =================================== */
+.glossary-term {
+    text-decoration: underline dotted;
+    text-decoration-color: rgba(0, 102, 204, 0.4);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+    cursor: pointer;
+    transition: text-decoration-color 0.15s;
+}
+
+.glossary-term:hover {
+    text-decoration-color: rgba(0, 102, 204, 0.8);
+}
+
+body[data-theme="dark"] .glossary-term {
+    text-decoration-color: rgba(91, 163, 245, 0.4);
+}
+
+body[data-theme="dark"] .glossary-term:hover {
+    text-decoration-color: rgba(91, 163, 245, 0.8);
+}
+
+/* ===================================
+   용어 조회 팝업
+   =================================== */
+.glossary-lookup-popup {
+    position: fixed;
+    z-index: 10000;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.15s, transform 0.15s;
+    overflow: hidden;
+}
+
+.glossary-lookup-popup.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.glossary-lookup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--bg-gray);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.glossary-lookup-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--white);
+    background: var(--primary-navy);
+    padding: 2px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+body[data-theme="dark"] .glossary-lookup-badge {
+    background: var(--active-color);
+    color: #fff;
+}
+
+.glossary-lookup-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--medium-gray);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 2px;
+}
+
+.glossary-lookup-close:hover {
+    color: var(--text-dark);
+}
+
+.glossary-lookup-body {
+    padding: 4px 0;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.glossary-lookup-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.glossary-lookup-item:last-child {
+    border-bottom: none;
+}
+
+.glossary-lookup-abbr {
+    display: block;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--primary-navy);
+    margin-bottom: 2px;
+}
+
+.glossary-lookup-en {
+    display: block;
+    font-size: 15px;
+    color: var(--text-dark);
+    line-height: 1.4;
+}
+
+.glossary-lookup-ko {
+    display: block;
+    font-size: 15px;
+    color: var(--medium-gray);
+    margin-top: 1px;
+}
+
+.glossary-lookup-footer {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+    background: var(--bg-gray);
+}
+
+.glossary-lookup-footer a {
+    font-size: 13px;
+    color: var(--active-color);
+    text-decoration: none;
+}
+
+.glossary-lookup-footer a:hover {
+    text-decoration: underline;
+}
+
+/* 다크모드 — 팝업 */
+body[data-theme="dark"] .glossary-lookup-popup {
+    background: #1e1e2e;
+    border-color: #3a3a4e;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+body[data-theme="dark"] .glossary-lookup-header {
+    background: #2a2a3e;
+    border-color: #3a3a4e;
+}
+
+body[data-theme="dark"] .glossary-lookup-abbr {
+    color: var(--active-color);
+}
+
+body[data-theme="dark"] .glossary-lookup-item {
+    border-color: #3a3a4e;
+}
+
+body[data-theme="dark"] .glossary-lookup-footer {
+    background: #2a2a3e;
+    border-color: #3a3a4e;
+}
+
+/* ===================================
+   인쇄 지원
+   =================================== */
+@media print {
+    .glossary-toolbar,
+    .glossary-alphabet-bar,
+    .glossary-nav,
+    .glossary-lookup-popup {
+        display: none;
+    }
+
+    .glossary-table thead {
+        position: static;
+    }
+
+    .glossary-page {
+        max-width: none !important;
+    }
+
+    .glossary-term {
+        text-decoration: none;
+    }
+}

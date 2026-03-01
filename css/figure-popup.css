@@ -1,0 +1,227 @@
+/* ===================================
+   그림/표 참조 팝업 모달
+   =================================== */
+
+/* 참조 링크 스타일 */
+[data-fig-ref] {
+    color: var(--active-color);
+    cursor: pointer;
+    border-bottom: 1px dashed var(--active-color);
+    transition: all 0.2s ease;
+}
+
+[data-fig-ref]:hover {
+    background-color: rgba(0, 102, 204, 0.08);
+    border-bottom-style: solid;
+}
+
+/* 오버레이 배경 */
+.figure-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 3000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.figure-popup-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 모달 컨테이너 */
+.figure-popup-modal {
+    position: relative;
+    max-width: 90vw;
+    max-height: 85vh;
+    background-color: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.figure-popup-overlay.active .figure-popup-modal {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* 모달 헤더 (캡션 + 닫기) */
+.figure-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-gray);
+    flex-shrink: 0;
+}
+
+.figure-popup-caption {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-navy);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.figure-popup-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.figure-popup-goto {
+    font-size: 14px;
+    color: var(--active-color);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+.figure-popup-goto:hover {
+    color: var(--primary-navy);
+}
+
+.figure-popup-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--medium-gray);
+    font-size: 20px;
+    line-height: 1;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.figure-popup-close:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-dark);
+}
+
+/* 모달 본문 (이미지 또는 표) */
+.figure-popup-body {
+    overflow: auto;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.figure-popup-body img {
+    max-width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+/* 표 팝업 — 공통 */
+.figure-popup-body table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.figure-popup-body table th,
+.figure-popup-body table td {
+    padding: 10px 12px;
+    text-align: left;
+}
+
+.figure-popup-body table th {
+    font-weight: 600;
+}
+
+/* 표 팝업 — bordered */
+body[data-table-style="bordered"] .figure-popup-body table th,
+body[data-table-style="bordered"] .figure-popup-body table td {
+    border: 1px solid var(--border-color);
+}
+body[data-table-style="bordered"] .figure-popup-body table th {
+    background-color: var(--primary-navy);
+    color: var(--white);
+}
+body[data-table-style="bordered"] .figure-popup-body table tr:nth-child(even) {
+    background-color: var(--bg-gray);
+}
+
+/* 표 팝업 — simple */
+body[data-table-style="simple"] .figure-popup-body table th {
+    border-bottom: 2px solid var(--dark-gray);
+}
+body[data-table-style="simple"] .figure-popup-body table td {
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* 표 팝업 — simple/minimal 병합 셀 테두리 */
+body[data-table-style="simple"] .figure-popup-body table [colspan],
+body[data-table-style="simple"] .figure-popup-body table [rowspan],
+body[data-table-style="minimal"] .figure-popup-body table [colspan],
+body[data-table-style="minimal"] .figure-popup-body table [rowspan] {
+    border: 1px solid var(--border-color);
+}
+
+/* 표 팝업 — minimal */
+body[data-table-style="minimal"] .figure-popup-body table th {
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-light);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+body[data-table-style="minimal"] .figure-popup-body table td {
+    border: none;
+}
+
+/* ===================================
+   다크 테마 — 팝업 모달 오버라이드
+   =================================== */
+body[data-theme="dark"] .figure-popup-overlay {
+    background-color: rgba(0, 0, 0, 0.75);
+}
+
+body[data-theme="dark"] .figure-popup-modal {
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+/* 캡션 텍스트 */
+body[data-theme="dark"] .figure-popup-caption {
+    color: #5ba3f5;
+}
+
+body[data-theme="dark"] [data-fig-ref]:hover {
+    background-color: rgba(91, 163, 245, 0.12);
+}
+
+body[data-theme="dark"] .figure-popup-body img {
+    background-color: #ffffff;
+    border-radius: 4px;
+    padding: 4px;
+}
+
