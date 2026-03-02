@@ -636,47 +636,54 @@ def generate_translated_pdf(doc_data: dict):
 
 
 async def generate_translated_pdf_async(doc_id: str):
-    """PDFMathTranslate(pdf2zh_next)로 고품질 번역 PDF 생성 (mono + dual)"""
+    """PDFMathTranslate CLI(pdf2zh)로 고품질 번역 PDF 생성 (mono + dual)"""
     import asyncio
-    from pdf2zh_next.high_level import do_translate_async_stream
-    from pdf2zh_next.config.model import SettingsModel
-    from pdf2zh_next.config.translate_engine_model import OllamaSettings
+    import subprocess as _sp
 
     src_path = _pdf_path(doc_id)
     if not src_path.exists():
         raise FileNotFoundError(f"원본 PDF 없음: {doc_id}")
 
-    # PDFMathTranslate 설정: Ollama 엔진 사용
-    settings = SettingsModel(
-        translation={
-            "lang_in": "en",
-            "lang_out": "ko",
-        },
-        translate_engine_settings=OllamaSettings(
-            ollama_model=config.OLLAMA_MODEL,
-            ollama_host=config.OLLAMA_URL,
-        ),
-    )
+    # 임시 출력 디렉토리
+    output_dir = _pdf_dir()
+    tmp_dir = output_dir / f"_pmt_{doc_id}"
+    tmp_dir.mkdir(exist_ok=True)
 
-    result_paths = {}
-    async for event in do_translate_async_stream(settings, str(src_path)):
-        etype = event.get("type")
-        if etype == "finish":
-            tr = event["translate_result"]
-            result_paths["mono"] = getattr(tr, "mono_pdf_path", None)
-            result_paths["dual"] = getattr(tr, "dual_pdf_path", None)
-            break
-        elif etype == "error":
-            raise RuntimeError(event.get("error", "번역 PDF 생성 실패"))
+    cmd = [
+        "pdf2zh",
+        "--ollama",
+        "--ollama-model", config.OLLAMA_MODEL,
+        "--ollama-host", config.OLLAMA_URL,
+        "--lang-in", "en",
+        "--lang-out", "ko",
+        "--output", str(tmp_dir),
+        str(src_path),
+    ]
+
+    # asyncio에서 subprocess 실행 (이벤트 루프 블로킹 방지)
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
+    )
+    stdout, _ = await proc.communicate()
+
+    if proc.returncode != 0:
+        # 임시 디렉토리 정리
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        log_text = stdout.decode("utf-8", errors="replace")[-500:] if stdout else ""
+        raise RuntimeError(f"pdf2zh 실패 (exit {proc.returncode}): {log_text}")
 
     # 결과 PDF를 reader 데이터 디렉토리로 이동
-    output_dir = _pdf_dir()
-    if result_paths.get("mono"):
-        shutil.move(str(result_paths["mono"]),
-                     str(output_dir / f"{doc_id}_translated.pdf"))
-    if result_paths.get("dual"):
-        shutil.move(str(result_paths["dual"]),
-                     str(output_dir / f"{doc_id}_dual.pdf"))
+    mono = list(tmp_dir.glob("*.mono.pdf"))
+    dual = list(tmp_dir.glob("*.dual.pdf"))
+    if mono:
+        shutil.move(str(mono[0]), str(output_dir / f"{doc_id}_translated.pdf"))
+    if dual:
+        shutil.move(str(dual[0]), str(output_dir / f"{doc_id}_dual.pdf"))
+
+    # 임시 디렉토리 정리 (glossary 등 부산물 포함)
+    shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def edit_paragraph_translation(doc_id: str, para_id: int, translated: str) -> Optional[bool]:
