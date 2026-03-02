@@ -1,6 +1,6 @@
-# KF-21 History WebBook 사용자 가이드
+# Smart Document Platform 사용자 가이드
 
-이 문서는 KF-21 History WebBook의 메뉴 구조 수정, 콘텐츠 추가, 검색 인덱스 업데이트 방법을 안내합니다.
+이 문서는 Smart Document Platform의 메뉴 구조 수정, 콘텐츠 추가, 검색 인덱스 업데이트 방법을 안내합니다.
 
 ---
 
@@ -999,7 +999,7 @@ python main.py
 > **캡션 감지 조건**: 캡션으로 인식되려면 번호 뒤에 구분자(`: – — - .`)가 있어야 합니다.
 > 예: "Figure 1 – Title" (O), "Figure 1을 보면" (X, 본문 참조로 처리)
 
-기술 상세는 [ARCHITECTURE.md](ARCHITECTURE.md#12-문서-변환-파이프라인)를 참조하세요.
+기술 상세는 [05-ARCHITECTURE.md](05-ARCHITECTURE.md#12-문서-변환-파이프라인)를 참조하세요.
 
 ---
 

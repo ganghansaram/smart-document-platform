@@ -83,7 +83,7 @@
 ### 1.1 backend 폴더 생성
 
 ```cmd
-cd C:\AHS_Proj\kf21-webbook-template
+cd C:\AHS_Proj\smart-document-platform
 mkdir backend
 mkdir backend\api
 mkdir backend\services
@@ -93,7 +93,7 @@ mkdir backend\packages
 ### 1.2 확인
 
 ```
-kf21-webbook-template/
+smart-document-platform/
 └── backend/
     ├── api/
     ├── services/
@@ -148,7 +148,7 @@ pywin32>=306
 ### 3.1 백엔드 패키지 다운로드
 
 ```cmd
-cd C:\AHS_Proj\kf21-webbook-template\backend
+cd C:\AHS_Proj\smart-document-platform\backend
 pip download -r requirements.txt -d ./packages/
 ```
 
@@ -164,7 +164,7 @@ backend/packages/
 ### 3.2 변환기 패키지 다운로드 (업로드 기능 사용 시)
 
 ```cmd
-cd C:\AHS_Proj\kf21-webbook-template\tools\converter
+cd C:\AHS_Proj\smart-document-platform\tools\converter
 pip download -r requirements.txt -d ./packages/
 ```
 
@@ -660,7 +660,7 @@ WORD_COM_PREPROCESS = True                            # COM 전처리 활성화
 ### 5.1 백엔드 서버 실행
 
 ```cmd
-cd C:\AHS_Proj\kf21-webbook-template\backend
+cd C:\AHS_Proj\smart-document-platform\backend
 python main.py
 ```
 
@@ -757,14 +757,14 @@ nssm start KF21Backend
 
 ```cmd
 cd C:\AHS_Proj
-zip -r kf21-webbook-template.zip kf21-webbook-template/
+zip -r smart-document-platform.zip smart-document-platform/
 ```
 
 또는 탐색기에서 폴더 우클릭 → "압축"
 
 ### 6.2 폐쇄망으로 파일 이동
 
-USB 또는 승인된 방법으로 `kf21-webbook-template.zip` 이동
+USB 또는 승인된 방법으로 `smart-document-platform.zip` 이동
 
 ### 6.3 폐쇄망에서 설치
 
@@ -942,5 +942,5 @@ const DISPLAY_CONFIG = {
 
 ## 관련 문서
 
-- [ARCHITECTURE.md](ARCHITECTURE.md): 시스템 구조
-- [RAG-PIPELINE.md](RAG-PIPELINE.md): 검색/AI 기술 상세
+- [05-ARCHITECTURE.md](05-ARCHITECTURE.md): 시스템 구조
+- [06-RAG-PIPELINE.md](06-RAG-PIPELINE.md): 검색/AI 기술 상세

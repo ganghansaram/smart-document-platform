@@ -1,6 +1,6 @@
-# KF-21 History WebBook 설치 가이드 (폐쇄망 환경)
+# Smart Document Platform 설치 가이드 (폐쇄망 환경)
 
-이 문서는 KF-21 History WebBook을 에어갭(폐쇄망) 환경에 설치하는 방법을 안내합니다.
+이 문서는 Smart Document Platform을 에어갭(폐쇄망) 환경에 설치하는 방법을 안내합니다.
 
 ---
 
@@ -28,8 +28,8 @@
    - 파일명: `apache-tomcat-7.0.77-windows-x64.zip`
    - 버전: 7.0.77
 
-3. **KF-21 History WebBook**
-   - 파일명: `kf21-webbook-template.zip`
+3. **Smart Document Platform**
+   - 파일명: `smart-document-platform.zip`
    - 이 프로젝트 전체를 압축한 파일
 
 ### 선택 파일
@@ -150,16 +150,16 @@ mkdir ROOT
 
 **방법 A: 압축 파일에서 직접 복사**
 
-`kf21-webbook-template.zip` 압축 해제 후:
+`smart-document-platform.zip` 압축 해제 후:
 
 ```cmd
-# kf21-webbook-template 폴더의 모든 내용을 ROOT로 복사
-xcopy /E /I /Y kf21-webbook-template\* C:\apache-tomcat-7.0.77\webapps\ROOT\
+# smart-document-platform 폴더의 모든 내용을 ROOT로 복사
+xcopy /E /I /Y smart-document-platform\* C:\apache-tomcat-7.0.77\webapps\ROOT\
 ```
 
 **방법 B: 탐색기에서 복사**
 
-1. `kf21-webbook-template` 폴더 열기
+1. `smart-document-platform` 폴더 열기
 2. 모든 파일 및 폴더 선택 (Ctrl+A)
 3. 복사 (Ctrl+C)
 4. `C:\apache-tomcat-7.0.77\webapps\ROOT\` 폴더 열기
@@ -241,7 +241,7 @@ http://localhost:8080
 http://127.0.0.1:8080
 ```
 
-**KF-21 History WebBook 메인 페이지**가 나타나면 성공입니다.
+**Smart Document Platform 메인 페이지**가 나타나면 성공입니다.
 
 ---
 

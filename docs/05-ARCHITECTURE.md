@@ -133,7 +133,7 @@ AI 챗봇 + 문서 편집기 백엔드 시스템 설계 및 배포 문서
 ## 3. 폴더 구조
 
 ```
-kf21-webbook-template/
+smart-document-platform/
 │
 ├── backend/                        # [NEW] Python 백엔드
 │   ├── main.py                     # FastAPI 진입점
@@ -406,7 +406,7 @@ Response:
 
 ```bash
 # 1. 백엔드 폴더 생성 및 이동
-cd kf21-webbook-template
+cd smart-document-platform
 mkdir -p backend/packages
 
 # 2. requirements.txt 생성
@@ -423,7 +423,7 @@ pip download -r requirements.txt -d ./packages/
 
 # 4. 전체 프로젝트 압축
 cd ../..
-zip -r kf21-webbook-with-backend.zip kf21-webbook-template/
+zip -r kf21-webbook-with-backend.zip smart-document-platform/
 ```
 
 ### 5.2 Windows 서버 배포 (폐쇄망)
@@ -433,7 +433,7 @@ zip -r kf21-webbook-with-backend.zip kf21-webbook-template/
 :: kf21-webbook-with-backend.zip을 원하는 위치에 압축 해제
 
 :: 2. 웹북을 Tomcat에 배포 (기존과 동일)
-xcopy /E /I /Y kf21-webbook-template\* C:\apache-tomcat-7.0.77\webapps\ROOT\
+xcopy /E /I /Y smart-document-platform\* C:\apache-tomcat-7.0.77\webapps\ROOT\
 
 :: 3. 백엔드 패키지 설치
 cd C:\apache-tomcat-7.0.77\webapps\ROOT\backend
@@ -581,7 +581,7 @@ requestViaOllama() → Ollama /api/generate 직접 호출
 - 토큰 예산 관리 (8000자), temperature=0
 - 예외 처리, 메모리 보호, 타임아웃 강화
 
-> **기술 상세**: [RAG-PIPELINE.md](RAG-PIPELINE.md#8-구현-체크리스트) 참조
+> **기술 상세**: [06-RAG-PIPELINE.md](06-RAG-PIPELINE.md#8-구현-체크리스트) 참조
 > **기술 보고서**: [RAG-TECHNICAL-REPORT.md](RAG-TECHNICAL-REPORT.md) 참조
 
 ### 문서 편집 기능
@@ -1253,7 +1253,7 @@ app.add_middleware(
 
 ## 18. 관련 문서
 
-- [RAG-PIPELINE.md](RAG-PIPELINE.md): 검색/AI 기술 상세 (청킹, 임베딩, 검색 전략)
+- [06-RAG-PIPELINE.md](06-RAG-PIPELINE.md): 검색/AI 기술 상세 (청킹, 임베딩, 검색 전략)
 - [RAG-TECHNICAL-REPORT.md](RAG-TECHNICAL-REPORT.md): RAG 답변 품질 개선 기술 보고서
 - [02-INSTALLATION.md](02-INSTALLATION.md): Tomcat 기본 설치
 - [04-USER-GUIDE.md](04-USER-GUIDE.md): 콘텐츠 관리, 검색 인덱스 업데이트

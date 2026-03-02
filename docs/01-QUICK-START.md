@@ -1,6 +1,6 @@
-# KF-21 History WebBook 빠른 시작 (로컬 테스트)
+# Smart Document Platform 빠른 시작 (로컬 테스트)
 
-이 문서는 Tomcat 설치 없이 로컬 PC에서 KF-21 History WebBook을 빠르게 테스트하는 방법을 안내합니다.
+이 문서는 Tomcat 설치 없이 로컬 PC에서 Smart Document Platform을 빠르게 테스트하는 방법을 안내합니다.
 
 ---
 
@@ -74,12 +74,12 @@ Python 3.x.x
 명령 프롬프트(cmd)에서 웹북 프로젝트 폴더로 이동:
 
 ```cmd
-cd C:\path\to\kf21-webbook-template
+cd C:\path\to\smart-document-platform
 ```
 
 **예시:**
 ```cmd
-cd C:\Users\사용자명\Desktop\kf21-webbook-template
+cd C:\Users\사용자명\Desktop\smart-document-platform
 ```
 
 ### 2단계: Python 웹 서버 실행
@@ -125,7 +125,7 @@ http://127.0.0.1:8080
 
 ### 3. 확인
 
-**KF-21 History WebBook 메인 페이지**가 나타나면 성공!
+**Smart Document Platform 메인 페이지**가 나타나면 성공!
 
 ---
 
@@ -302,10 +302,10 @@ python tools\build-search-index.py
 **출력:**
 ```
 ============================================================
-KF-21 History WebBook - 검색 인덱스 생성
+Smart Document Platform - 검색 인덱스 생성
 ============================================================
 
-인덱싱: contents/home.html - KF-21 History WebBook에 오신 것을 환영합니다
+인덱싱: contents/home.html - Smart Document Platform에 오신 것을 환영합니다
 ...
 검색 인덱스 생성 완료: data/search-index.json
 총 X개의 문서가 인덱싱되었습니다.
@@ -319,7 +319,7 @@ KF-21 History WebBook - 검색 인덱스 생성
 
 ```cmd
 # 1. 프로젝트 폴더로 이동
-cd C:\path\to\kf21-webbook-template
+cd C:\path\to\smart-document-platform
 
 # 2. 서버 실행
 python -m http.server 8080

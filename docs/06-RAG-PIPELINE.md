@@ -504,7 +504,7 @@ HTML 원본
 
 ## 9. 관련 문서
 
-- [ARCHITECTURE.md](ARCHITECTURE.md): 시스템 구조, 배포 절차
+- [05-ARCHITECTURE.md](05-ARCHITECTURE.md): 시스템 구조, 배포 절차
 - [RAG-TECHNICAL-REPORT.md](RAG-TECHNICAL-REPORT.md): RAG 답변 품질 개선 기술 보고서
 - [04-USER-GUIDE.md](04-USER-GUIDE.md): 검색 인덱스 업데이트 방법
 

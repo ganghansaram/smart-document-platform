@@ -1,6 +1,6 @@
 # Git 및 GitHub 사용 가이드
 
-이 문서는 KF-21 History WebBook 프로젝트의 버전 관리 및 GitHub 활용 방법을 안내합니다.
+이 문서는 Smart Document Platform 프로젝트의 버전 관리 및 GitHub 활용 방법을 안내합니다.
 
 ---
 
@@ -25,7 +25,7 @@
 **확인 방법:**
 
 ```cmd
-cd C:\AHS_Proj\kf21-webbook-template
+cd C:\AHS_Proj\smart-document-platform
 git status
 ```
 
@@ -44,7 +44,7 @@ nothing to commit, working tree clean
 1. **GitHub 로그인**: https://github.com
 2. **새 저장소 생성**:
    - 우측 상단 `+` 클릭 → `New repository`
-   - Repository name: `kf21-webbook-template` (또는 원하는 이름)
+   - Repository name: `smart-document-platform` (또는 원하는 이름)
    - Description: `Air-gapped webbook template for KF-21 development documentation`
    - Visibility:
      - **Private** (비공개, 권장) - 내부 프로젝트용
@@ -54,15 +54,15 @@ nothing to commit, working tree clean
 
 ### 2단계: 로컬 저장소와 GitHub 연결
 
-GitHub에서 저장소 생성 후 표시되는 URL 복사 (예: `https://github.com/사용자명/kf21-webbook-template.git`)
+GitHub에서 저장소 생성 후 표시되는 URL 복사 (예: `https://github.com/사용자명/smart-document-platform.git`)
 
 **명령어 실행:**
 
 ```cmd
-cd C:\AHS_Proj\kf21-webbook-template
+cd C:\AHS_Proj\smart-document-platform
 
 # GitHub 저장소를 원격 저장소로 추가
-git remote add origin https://github.com/사용자명/kf21-webbook-template.git
+git remote add origin https://github.com/사용자명/smart-document-platform.git
 
 # 확인
 git remote -v
@@ -70,8 +70,8 @@ git remote -v
 
 **출력 예시:**
 ```
-origin  https://github.com/사용자명/kf21-webbook-template.git (fetch)
-origin  https://github.com/사용자명/kf21-webbook-template.git (push)
+origin  https://github.com/사용자명/smart-document-platform.git (fetch)
+origin  https://github.com/사용자명/smart-document-platform.git (push)
 ```
 
 ### 3단계: 초기 푸시

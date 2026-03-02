@@ -1,6 +1,6 @@
 # 폐쇄망 기술문서 포털을 위한 RAG 답변 품질 개선 기술 보고서
 
-**프로젝트**: KF-21 History WebBook
+**프로젝트**: Smart Document Platform (KF-21 History WebBook 기반)
 **버전**: v5.0
 **작성일**: 2026-02
 
