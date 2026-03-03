@@ -409,7 +409,7 @@
                 <button class="zoom-btn" id="download-btn" title="다운로드" style="width:auto; padding:0 8px; font-size:13px;">&#8681; 다운로드</button>
                 <span class="zoom-controls" id="zoom-controls">
                     <button class="zoom-btn" id="zoom-out" title="축소">&minus;</button>
-                    <span class="zoom-level" id="zoom-level">100%</span>
+                    <span class="zoom-level" id="zoom-level" title="클릭하면 100%로 초기화" style="cursor:pointer;">100%</span>
                     <button class="zoom-btn" id="zoom-in" title="확대">+</button>
                 </span>
             </div>
@@ -673,6 +673,20 @@
             if (doc.uploaded_at) {
                 meta.textContent += ' · ' + formatDate(doc.uploaded_at);
             }
+            if (doc.status === 'done' && doc.model) {
+                var extra = doc.model;
+                if (doc.translation_started_at && doc.translated_at) {
+                    var started = new Date(doc.translation_started_at);
+                    var ended = new Date(doc.translated_at);
+                    var diffSec = Math.round((ended - started) / 1000);
+                    if (diffSec >= 60) {
+                        extra += ', ' + Math.floor(diffSec / 60) + '분 ' + (diffSec % 60) + '초';
+                    } else {
+                        extra += ', ' + diffSec + '초';
+                    }
+                }
+                meta.textContent += ' (' + extra + ')';
+            }
             card.appendChild(meta);
 
             // 상태 표시
@@ -817,8 +831,23 @@
                     var actionsEl = card.querySelector('.doc-card-actions');
                     card.insertBefore(progBar, actionsEl);
                 }
-                // 액션 버튼 비활성화
-                card.querySelectorAll('.card-btn').forEach(function(btn) { btn.disabled = true; });
+                // 액션 버튼 교체 → 취소 버튼만 표시
+                var actionsEl2 = card.querySelector('.doc-card-actions');
+                if (actionsEl2) {
+                    actionsEl2.innerHTML = '';
+                    var cancelBtn = document.createElement('button');
+                    cancelBtn.className = 'card-btn danger';
+                    cancelBtn.textContent = '취소';
+                    cancelBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        if (!confirm('번역을 취소하시겠습니까?')) return;
+                        fetch(API + '/api/translator/translate/' + docId + '/cancel', {
+                            method: 'POST',
+                            credentials: 'include',
+                        }).then(function() { loadDocuments(); });
+                    });
+                    actionsEl2.appendChild(cancelBtn);
+                }
 
                 startPolling(docId, card);
             }).catch(function(err) {
@@ -959,7 +988,8 @@
             pdfDoc.getPage(pageNum).then(function(page) {
                 var wrapWidth = $canvasWrap.clientWidth - 32;
                 var viewport = page.getViewport({ scale: 1 });
-                var baseScale = wrapWidth / viewport.width;
+                var fitScale = wrapWidth / viewport.width;
+                var baseScale = Math.min(fitScale, 1.5);
                 var scale = baseScale * zoom;
                 var scaledViewport = page.getViewport({ scale: scale });
 
@@ -1051,6 +1081,11 @@
         });
 
         // ── Zoom ──
+        $zoomLevel.addEventListener('click', function() {
+            zoom = 1.0;
+            $zoomLevel.textContent = '100%';
+            renderPdfPage(currentPage);
+        });
         $zoomIn.addEventListener('click', function() {
             zoom = Math.min(ZOOM_MAX, zoom + ZOOM_STEP);
             $zoomLevel.textContent = Math.round(zoom * 100) + '%';

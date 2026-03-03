@@ -129,17 +129,20 @@ def upload_pdf(pdf_bytes: bytes, filename: str, username: str) -> dict:
 # ══════════════════════════════════════
 
 def get_documents(username: str) -> list[dict]:
-    """유저별 문서 목록 (인덱스에서 + 런타임 상태 보정)"""
+    """유저별 문서 목록 (인덱스에서 + 런타임 상태 보정 + meta 부가정보)"""
     index = _load_user_index(username)
     for entry in index:
+        meta = _load_meta(username, entry["id"])
         # 런타임 작업 중이면 status 보정
         if entry["id"] in _active_tasks and not _active_tasks[entry["id"]].done():
             entry["status"] = "translating"
-        else:
-            # meta에서 최신 상태 반영
-            meta = _load_meta(username, entry["id"])
-            if meta:
-                entry["status"] = meta["status"]
+        elif meta:
+            entry["status"] = meta["status"]
+        # meta에서 부가정보 포함
+        if meta:
+            entry["model"] = meta.get("model")
+            entry["translated_at"] = meta.get("translated_at")
+            entry["translation_started_at"] = meta.get("translation_started_at")
     return index
 
 
@@ -164,8 +167,9 @@ def delete_document(username: str, doc_id: str) -> bool:
         task.cancel()
 
     if doc_path.exists():
-        shutil.rmtree(doc_path)
+        shutil.rmtree(doc_path, ignore_errors=True)
 
+    # 인덱스에서 제거 (디렉토리 삭제 실패해도 인덱스는 정리)
     index = _load_user_index(username)
     new_index = [e for e in index if e["id"] != doc_id]
     if len(new_index) == len(index):
@@ -223,6 +227,7 @@ def start_translation(username: str, doc_id: str, model: Optional[str] = None):
     meta["status"] = "translating"
     meta["model"] = effective_model
     meta["progress_stage"] = "번역 준비 중..."
+    meta["translation_started_at"] = datetime.now().isoformat()
     meta["error"] = None
     _save_meta(username, doc_id, meta)
 
