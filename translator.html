@@ -290,9 +290,36 @@
             background: #f0f0f0;
         }
 
+        .viewer-canvas-wrap .pdf-page-container {
+            position: relative;
+            display: inline-block;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+
         .viewer-canvas-wrap canvas {
             display: block;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+
+        .text-layer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0.25;
+            line-height: 1.0;
+        }
+
+        .text-layer > span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            transform-origin: 0% 0%;
+        }
+
+        .text-layer ::selection {
+            background: rgba(0, 100, 200, 0.3);
         }
 
         /* ── Footer ── */
@@ -387,7 +414,10 @@
                 </span>
             </div>
             <div class="viewer-canvas-wrap" id="canvas-wrap">
-                <canvas id="pdf-canvas"></canvas>
+                <div class="pdf-page-container" id="pdf-page-container">
+                    <canvas id="pdf-canvas"></canvas>
+                    <div class="text-layer" id="text-layer"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -485,6 +515,8 @@
         var $pageNext    = document.getElementById('page-next');
         var $pdfCanvas   = document.getElementById('pdf-canvas');
         var $canvasWrap  = document.getElementById('canvas-wrap');
+        var $pageContainer = document.getElementById('pdf-page-container');
+        var $textLayer   = document.getElementById('text-layer');
         var $zoomLevel   = document.getElementById('zoom-level');
         var $zoomIn      = document.getElementById('zoom-in');
         var $zoomOut     = document.getElementById('zoom-out');
@@ -701,15 +733,16 @@
                 });
                 actions.appendChild(viewBtn);
 
+                var retransModelSel = createModelSelect(null);
+                actions.appendChild(retransModelSel);
+
                 var retransBtn = document.createElement('button');
                 retransBtn.className = 'card-btn';
                 retransBtn.textContent = '재번역';
                 retransBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    if (!confirm('다른 모델로 재번역하시겠습니까?')) return;
-                    // 재번역 시 모델 선택 프롬프트
-                    var model = prompt('모델 이름 (비워두면 기본값):', '');
-                    retranslateDoc(doc.id, model || null, card);
+                    if (!confirm('선택한 모델로 재번역하시겠습니까?')) return;
+                    retranslateDoc(doc.id, retransModelSel.value || null, card);
                 });
                 actions.appendChild(retransBtn);
             }
@@ -935,6 +968,15 @@
                 $pdfCanvas.style.width = scaledViewport.width + 'px';
                 $pdfCanvas.style.height = scaledViewport.height + 'px';
 
+                // 컨테이너 크기 동기화
+                $pageContainer.style.width = scaledViewport.width + 'px';
+                $pageContainer.style.height = scaledViewport.height + 'px';
+
+                // 텍스트 레이어 초기화
+                $textLayer.innerHTML = '';
+                $textLayer.style.width = scaledViewport.width + 'px';
+                $textLayer.style.height = scaledViewport.height + 'px';
+
                 var ctx = $pdfCanvas.getContext('2d');
                 pdfRenderTask = page.render({
                     canvasContext: ctx,
@@ -943,6 +985,18 @@
                 pdfRenderTask.promise.then(function() {
                     pdfRendering = false;
                     pdfRenderTask = null;
+
+                    // 텍스트 레이어 렌더링
+                    return page.getTextContent();
+                }).then(function(textContent) {
+                    if (textContent) {
+                        pdfjsLib.renderTextLayer({
+                            textContent: textContent,
+                            container: $textLayer,
+                            viewport: scaledViewport,
+                            textDivs: [],
+                        });
+                    }
                 }).catch(function(err) {
                     pdfRendering = false;
                     pdfRenderTask = null;
