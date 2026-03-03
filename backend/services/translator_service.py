@@ -1,5 +1,5 @@
 """
-Translator 서비스 — PMT 중심 문서 단위 번역 + 개인 작업공간
+Translator 서비스 — 페이지별 온디맨드 번역 + 개인 작업공간
 """
 import json
 import hashlib
@@ -13,7 +13,9 @@ from typing import Optional
 import config
 
 # ── 백그라운드 번역 작업 추적 ──
-_active_tasks: dict[str, asyncio.Task] = {}  # doc_id → Task
+# 키: "{doc_id}:{page_num}"
+_active_tasks: dict[str, asyncio.Task] = {}
+_active_procs: dict[str, asyncio.subprocess.Process] = {}
 
 
 def _ensure_data_dir():
@@ -37,6 +39,10 @@ def _generate_id() -> str:
     now = datetime.now()
     rand = hashlib.md5(os.urandom(8)).hexdigest()[:6]
     return f"{now.strftime('%Y%m%d_%H%M%S')}_{rand}"
+
+
+def _task_key(doc_id: str, page_num: int) -> str:
+    return f"{doc_id}:{page_num}"
 
 
 def _load_user_index(username: str) -> list[dict]:
@@ -102,11 +108,9 @@ def upload_pdf(pdf_bytes: bytes, filename: str, username: str) -> dict:
         "title": filename,
         "pages": pages,
         "uploaded_at": datetime.now().isoformat(),
-        "status": "pending",
-        "progress_stage": None,
-        "model": None,
-        "translated_at": None,
-        "error": None,
+        "status": "uploaded",
+        "page_status": {},
+        "has_legacy_translation": False,
     }
     _save_meta(username, doc_id, meta)
 
@@ -116,7 +120,7 @@ def upload_pdf(pdf_bytes: bytes, filename: str, username: str) -> dict:
         "id": doc_id,
         "filename": filename,
         "pages": pages,
-        "status": "pending",
+        "status": "uploaded",
         "uploaded_at": meta["uploaded_at"],
     })
     _save_user_index(username, index)
@@ -129,20 +133,23 @@ def upload_pdf(pdf_bytes: bytes, filename: str, username: str) -> dict:
 # ══════════════════════════════════════
 
 def get_documents(username: str) -> list[dict]:
-    """유저별 문서 목록 (인덱스에서 + 런타임 상태 보정 + meta 부가정보)"""
+    """유저별 문서 목록 (인덱스 + 메타 보강)"""
     index = _load_user_index(username)
     for entry in index:
         meta = _load_meta(username, entry["id"])
-        # 런타임 작업 중이면 status 보정
-        if entry["id"] in _active_tasks and not _active_tasks[entry["id"]].done():
-            entry["status"] = "translating"
-        elif meta:
-            entry["status"] = meta["status"]
-        # meta에서 부가정보 포함
         if meta:
-            entry["model"] = meta.get("model")
-            entry["translated_at"] = meta.get("translated_at")
-            entry["translation_started_at"] = meta.get("translation_started_at")
+            entry["status"] = meta.get("status", "uploaded")
+            entry["has_legacy_translation"] = meta.get("has_legacy_translation", False)
+            # 페이지별 번역 통계
+            page_status = meta.get("page_status", {})
+            done_count = sum(1 for ps in page_status.values() if ps.get("status") == "done")
+            total = meta.get("pages", 0)
+            entry["translated_pages"] = done_count
+            entry["total_pages"] = total
+            # 레거시 통번역 존재 여부
+            translated_path = _doc_dir(username, entry["id"]) / "translated.pdf"
+            if translated_path.exists():
+                entry["has_legacy_translation"] = True
     return index
 
 
@@ -151,9 +158,9 @@ def get_document(username: str, doc_id: str) -> Optional[dict]:
     meta = _load_meta(username, doc_id)
     if not meta:
         return None
-    # 런타임 상태 보정
-    if doc_id in _active_tasks and not _active_tasks[doc_id].done():
-        meta["status"] = "translating"
+    # 레거시 통번역 존재 여부 갱신
+    translated_path = _doc_dir(username, doc_id) / "translated.pdf"
+    meta["has_legacy_translation"] = translated_path.exists()
     return meta
 
 
@@ -161,38 +168,28 @@ def delete_document(username: str, doc_id: str) -> bool:
     """문서 디렉토리 삭제 + 인덱스 갱신"""
     doc_path = _doc_dir(username, doc_id)
 
-    # 진행 중인 번역 취소
-    task = _active_tasks.pop(doc_id, None)
-    if task and not task.done():
-        task.cancel()
+    # 진행 중인 페이지별 번역 취소
+    keys_to_cancel = [k for k in _active_tasks if k.startswith(doc_id + ":")]
+    for key in keys_to_cancel:
+        proc = _active_procs.pop(key, None)
+        if proc:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        task = _active_tasks.pop(key, None)
+        if task and not task.done():
+            task.cancel()
 
     if doc_path.exists():
         shutil.rmtree(doc_path, ignore_errors=True)
 
-    # 인덱스에서 제거 (디렉토리 삭제 실패해도 인덱스는 정리)
+    # 인덱스에서 제거
     index = _load_user_index(username)
     new_index = [e for e in index if e["id"] != doc_id]
     if len(new_index) == len(index):
         return False
     _save_user_index(username, new_index)
-    return True
-
-
-def cancel_translation(username: str, doc_id: str) -> bool:
-    """번역 취소 → pending으로 복귀"""
-    task = _active_tasks.pop(doc_id, None)
-    if task and not task.done():
-        task.cancel()
-
-    meta = _load_meta(username, doc_id)
-    if not meta:
-        return False
-
-    meta["status"] = "pending"
-    meta["progress_stage"] = None
-    meta["error"] = None
-    _save_meta(username, doc_id, meta)
-    _update_index_status(username, doc_id, "pending")
     return True
 
 
@@ -211,48 +208,61 @@ def get_pdf_path(username: str, doc_id: str, kind: str = "original") -> Optional
     return path if path.exists() else None
 
 
+def get_page_pdf_path(username: str, doc_id: str, page_num: int) -> Optional[Path]:
+    """페이지별 번역 PDF 경로"""
+    path = _doc_dir(username, doc_id) / "pages" / str(page_num) / "translated.pdf"
+    return path if path.exists() else None
+
+
 # ══════════════════════════════════════
-# PMT 번역
+# 페이지별 번역
 # ══════════════════════════════════════
 
-def start_translation(username: str, doc_id: str, model: Optional[str] = None):
-    """번역 시작 → asyncio.Task 생성, 즉시 반환"""
+def start_page_translation(username: str, doc_id: str, page_num: int, model: Optional[str] = None):
+    """단일 페이지 번역 시작 → asyncio.Task 생성, 즉시 반환"""
     meta = _load_meta(username, doc_id)
     if not meta:
         raise FileNotFoundError(f"문서 없음: {doc_id}")
 
+    if page_num < 1 or page_num > meta.get("pages", 0):
+        raise ValueError(f"유효하지 않은 페이지 번호: {page_num}")
+
+    # 동시성 제어: 이 문서에서 이미 번역 중인 페이지가 있으면 거부
+    for key, task in _active_tasks.items():
+        if key.startswith(doc_id + ":") and not task.done():
+            raise RuntimeError("이 문서에서 이미 번역이 진행 중입니다")
+
     effective_model = model or config.TRANSLATOR_TRANSLATION_MODEL or config.OLLAMA_MODEL
 
-    # 메타 업데이트
-    meta["status"] = "translating"
-    meta["model"] = effective_model
-    meta["progress_stage"] = "번역 준비 중..."
-    meta["translation_started_at"] = datetime.now().isoformat()
-    meta["error"] = None
+    # 페이지 상태 업데이트
+    page_status = meta.get("page_status", {})
+    page_status[str(page_num)] = {
+        "status": "translating",
+        "model": effective_model,
+        "progress_stage": "번역 준비 중...",
+        "started_at": datetime.now().isoformat(),
+    }
+    meta["page_status"] = page_status
+    meta["status"] = "uploaded"  # 문서 전체 상태는 uploaded 유지
     _save_meta(username, doc_id, meta)
 
-    # 인덱스도 갱신
-    _update_index_status(username, doc_id, "translating")
-
-    # 기존 작업이 있으면 취소
-    old_task = _active_tasks.pop(doc_id, None)
-    if old_task and not old_task.done():
-        old_task.cancel()
-
-    task = asyncio.create_task(_run_pmt(username, doc_id, effective_model))
-    _active_tasks[doc_id] = task
+    key = _task_key(doc_id, page_num)
+    task = asyncio.create_task(_run_pmt_page(username, doc_id, page_num, effective_model))
+    _active_tasks[key] = task
 
 
-async def _run_pmt(username: str, doc_id: str, model: str):
-    """PMT CLI 비동기 실행"""
+async def _run_pmt_page(username: str, doc_id: str, page_num: int, model: str):
+    """PMT CLI 비동기 실행 — 단일 페이지"""
     import time
+
+    key = _task_key(doc_id, page_num)
 
     src_path = _doc_dir(username, doc_id) / "original.pdf"
     if not src_path.exists():
-        _mark_error(username, doc_id, "원본 PDF 파일 없음")
+        _mark_page_error(username, doc_id, page_num, "원본 PDF 파일 없음")
         return
 
-    tmp_dir = _doc_dir(username, doc_id) / "_pmt_tmp"
+    tmp_dir = _doc_dir(username, doc_id) / f"_pmt_tmp_p{page_num}"
     tmp_dir.mkdir(exist_ok=True)
 
     cmd = [
@@ -263,18 +273,21 @@ async def _run_pmt(username: str, doc_id: str, model: str):
         "--lang-in", "English",
         "--lang-out", "Korean",
         "--primary-font-family", "sans-serif",
+        "--pages", str(page_num),
+        "--only-include-translated-page",
+        "--no-dual",
         "--output", str(tmp_dir),
         str(src_path),
     ]
 
-    _update_progress(username, doc_id, "번역 중...")
+    _update_page_progress(username, doc_id, page_num, "번역 중...")
 
-    # 로그 파일 설정
+    # 로그 파일
     log_path = _doc_dir(username, doc_id) / "pmt.log"
 
     def _log(msg):
         with open(log_path, "a", encoding="utf-8") as lf:
-            lf.write(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}\n")
+            lf.write(f"[{datetime.now().strftime('%H:%M:%S')}] [p{page_num}] {msg}\n")
 
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -282,24 +295,22 @@ async def _run_pmt(username: str, doc_id: str, model: str):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
+        _active_procs[key] = proc
 
-        timeout = getattr(config, "TRANSLATOR_PMT_TIMEOUT", 1200)
+        timeout = getattr(config, "TRANSLATOR_PAGE_TIMEOUT", 300)
         deadline = time.monotonic() + timeout
 
-        # 단계별 타이밍 로그
         pmt_start = time.monotonic()
-        last_stage_time = pmt_start
-        last_stage_name = "시작"
-        _log(f"시작 | doc: {doc_id} | model: {model}")
+        _log(f"시작 | model: {model}")
 
-        # stderr에서 진행 정보 파싱
+        # stderr 파싱
         while True:
             if time.monotonic() > deadline:
                 proc.kill()
                 shutil.rmtree(tmp_dir, ignore_errors=True)
-                _mark_error(username, doc_id, f"번역 시간 초과 ({timeout // 60}분)")
                 elapsed = time.monotonic() - pmt_start
                 _log(f"TIMEOUT | total {elapsed:.1f}s")
+                _mark_page_error(username, doc_id, page_num, f"번역 시간 초과 ({timeout // 60}분)")
                 return
 
             try:
@@ -316,7 +327,6 @@ async def _run_pmt(username: str, doc_id: str, model: str):
 
             _log(f"stderr: {text}")
 
-            # 진행 단계 추출
             stage = None
             if "translat" in text.lower():
                 stage = "번역 중..."
@@ -328,11 +338,7 @@ async def _run_pmt(username: str, doc_id: str, model: str):
                 stage = "PDF 생성 중..."
 
             if stage:
-                now = time.monotonic()
-                _log(f"{stage} | +{now - last_stage_time:.1f}s (prev: {last_stage_name})")
-                last_stage_time = now
-                last_stage_name = stage
-                _update_progress(username, doc_id, stage)
+                _update_page_progress(username, doc_id, page_num, stage)
 
         await proc.wait()
 
@@ -342,97 +348,164 @@ async def _run_pmt(username: str, doc_id: str, model: str):
             stdout_data = await proc.stdout.read()
             shutil.rmtree(tmp_dir, ignore_errors=True)
             log_text = stdout_data.decode("utf-8", errors="replace")[-500:] if stdout_data else ""
-            _mark_error(username, doc_id, f"pdf2zh 실패 (exit {proc.returncode}): {log_text}")
+            _mark_page_error(username, doc_id, page_num, f"pdf2zh 실패 (exit {proc.returncode}): {log_text}")
             return
 
-        # 결과 PDF 이동
-        doc_path = _doc_dir(username, doc_id)
+        # 결과 PDF 이동 → pages/{page_num}/translated.pdf
+        page_dir = _doc_dir(username, doc_id) / "pages" / str(page_num)
+        page_dir.mkdir(parents=True, exist_ok=True)
+
         mono_files = list(tmp_dir.glob("*.mono.pdf"))
-        dual_files = list(tmp_dir.glob("*.dual.pdf"))
+        if not mono_files:
+            # --only-include-translated-page 사용 시 .mono 없이 직접 출력될 수 있음
+            mono_files = [f for f in tmp_dir.glob("*.pdf") if "dual" not in f.name]
 
         if not mono_files:
             shutil.rmtree(tmp_dir, ignore_errors=True)
-            _mark_error(username, doc_id, "pdf2zh 완료되었으나 결과 PDF가 없습니다")
+            _mark_page_error(username, doc_id, page_num, "pdf2zh 완료되었으나 결과 PDF가 없습니다")
             return
 
-        shutil.move(str(mono_files[0]), str(doc_path / "translated.pdf"))
-        if dual_files:
-            shutil.move(str(dual_files[0]), str(doc_path / "dual.pdf"))
-
+        shutil.move(str(mono_files[0]), str(page_dir / "translated.pdf"))
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
-        # 성공 마킹
+        # 성공
         elapsed = time.monotonic() - pmt_start
         _log(f"DONE | total {elapsed:.1f}s")
+
         meta = _load_meta(username, doc_id)
         if meta:
-            meta["status"] = "done"
-            meta["progress_stage"] = None
-            meta["translated_at"] = datetime.now().isoformat()
-            meta["error"] = None
+            ps = meta.get("page_status", {})
+            ps[str(page_num)] = {
+                "status": "done",
+                "model": model,
+                "translated_at": datetime.now().isoformat(),
+                "elapsed_sec": round(elapsed, 1),
+            }
+            meta["page_status"] = ps
             _save_meta(username, doc_id, meta)
-            _update_index_status(username, doc_id, "done")
 
     except asyncio.CancelledError:
+        try:
+            proc.kill()
+        except Exception:
+            pass
         shutil.rmtree(tmp_dir, ignore_errors=True)
+        # 취소 시 상태를 pending으로 되돌림
+        meta = _load_meta(username, doc_id)
+        if meta:
+            ps = meta.get("page_status", {})
+            ps.pop(str(page_num), None)
+            meta["page_status"] = ps
+            _save_meta(username, doc_id, meta)
         return
     except Exception as e:
         shutil.rmtree(tmp_dir, ignore_errors=True)
-        _mark_error(username, doc_id, str(e))
+        _mark_page_error(username, doc_id, page_num, str(e))
     finally:
-        _active_tasks.pop(doc_id, None)
+        _active_tasks.pop(key, None)
+        _active_procs.pop(key, None)
 
 
-def get_translation_status(username: str, doc_id: str) -> Optional[dict]:
-    """번역 상태 반환"""
+def get_page_translation_status(username: str, doc_id: str, page_num: int) -> Optional[dict]:
+    """페이지별 번역 상태"""
     meta = _load_meta(username, doc_id)
     if not meta:
         return None
 
+    ps = meta.get("page_status", {}).get(str(page_num))
+
     # 런타임 상태 보정
-    if doc_id in _active_tasks and not _active_tasks[doc_id].done():
-        meta["status"] = "translating"
+    key = _task_key(doc_id, page_num)
+    if key in _active_tasks and not _active_tasks[key].done():
+        if ps:
+            ps["status"] = "translating"
+        else:
+            ps = {"status": "translating", "progress_stage": "번역 준비 중..."}
+
+    if not ps:
+        return {"status": "pending"}
+
+    return ps
+
+
+def cancel_page_translation(username: str, doc_id: str, page_num: int) -> bool:
+    """페이지 번역 취소"""
+    key = _task_key(doc_id, page_num)
+
+    proc = _active_procs.pop(key, None)
+    if proc:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+
+    task = _active_tasks.pop(key, None)
+    if task and not task.done():
+        task.cancel()
+
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        return False
+
+    ps = meta.get("page_status", {})
+    ps.pop(str(page_num), None)
+    meta["page_status"] = ps
+    _save_meta(username, doc_id, meta)
+    return True
+
+
+def get_doc_page_summary(username: str, doc_id: str) -> Optional[dict]:
+    """뷰어용 전체 페이지 상태 요약"""
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        return None
+
+    page_status = meta.get("page_status", {})
+
+    # 런타임 상태 보정
+    for key, task in _active_tasks.items():
+        if key.startswith(doc_id + ":") and not task.done():
+            pnum = key.split(":")[1]
+            if pnum in page_status:
+                page_status[pnum]["status"] = "translating"
 
     return {
-        "status": meta["status"],
-        "progress_stage": meta.get("progress_stage"),
-        "model": meta.get("model"),
-        "translated_at": meta.get("translated_at"),
-        "error": meta.get("error"),
+        "id": doc_id,
+        "filename": meta.get("filename"),
+        "pages": meta.get("pages", 0),
+        "page_status": page_status,
+        "has_legacy_translation": (_doc_dir(username, doc_id) / "translated.pdf").exists(),
     }
-
-
-def retranslate(username: str, doc_id: str, model: Optional[str] = None):
-    """기존 번역 삭제 + 재번역"""
-    doc_path = _doc_dir(username, doc_id)
-    for fname in ("translated.pdf", "dual.pdf"):
-        f = doc_path / fname
-        if f.exists():
-            f.unlink()
-
-    start_translation(username, doc_id, model)
 
 
 # ── 헬퍼 ──
 
-def _update_progress(username: str, doc_id: str, stage: str):
-    """meta.json progress_stage 업데이트"""
+def _update_page_progress(username: str, doc_id: str, page_num: int, stage: str):
     meta = _load_meta(username, doc_id)
     if meta:
-        meta["progress_stage"] = stage
+        ps = meta.get("page_status", {})
+        entry = ps.get(str(page_num), {})
+        entry["progress_stage"] = stage
+        entry["status"] = "translating"
+        ps[str(page_num)] = entry
+        meta["page_status"] = ps
         _save_meta(username, doc_id, meta)
 
 
-def _mark_error(username: str, doc_id: str, error_msg: str):
-    """에러 상태로 마킹"""
+def _mark_page_error(username: str, doc_id: str, page_num: int, error_msg: str):
     meta = _load_meta(username, doc_id)
     if meta:
-        meta["status"] = "error"
-        meta["error"] = error_msg
-        meta["progress_stage"] = None
+        ps = meta.get("page_status", {})
+        entry = ps.get(str(page_num), {})
+        entry["status"] = "error"
+        entry["error"] = error_msg
+        entry["progress_stage"] = None
+        ps[str(page_num)] = entry
+        meta["page_status"] = ps
         _save_meta(username, doc_id, meta)
-    _update_index_status(username, doc_id, "error")
-    _active_tasks.pop(doc_id, None)
+
+    key = _task_key(doc_id, page_num)
+    _active_tasks.pop(key, None)
 
 
 def _update_index_status(username: str, doc_id: str, status: str):

@@ -1,5 +1,5 @@
 """
-Translator API — PDF 업로드, PMT 번역, 문서 관리
+Translator API — PDF 업로드, 페이지별 번역, 문서 관리
 """
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body
 from fastapi.responses import FileResponse, JSONResponse
@@ -8,8 +8,10 @@ from typing import Optional
 from dependencies import get_current_user, require_editor
 from services.translator_service import (
     upload_pdf, get_documents, get_document, delete_document,
-    get_pdf_path, start_translation, get_translation_status,
-    retranslate, cancel_translation, get_ollama_models,
+    get_pdf_path, get_page_pdf_path,
+    start_page_translation, get_page_translation_status,
+    cancel_page_translation, get_doc_page_summary,
+    get_ollama_models,
 )
 import config
 
@@ -61,52 +63,76 @@ async def api_delete_document(doc_id: str, user: dict = Depends(require_editor))
     return {"success": True}
 
 
-@router.post("/translate/{doc_id}")
-async def api_start_translation(
+# ── 페이지별 번역 ──
+
+@router.post("/translate/{doc_id}/page/{page_num}")
+async def api_start_page_translation(
     doc_id: str,
+    page_num: int,
     body: dict = Body(default={}),
     user: dict = Depends(get_current_user),
 ):
-    """번역 시작 → 202 Accepted"""
+    """페이지 번역 시작 → 202 Accepted"""
     model = body.get("model")
     try:
-        start_translation(user["username"], doc_id, model)
+        start_page_translation(user["username"], doc_id, page_num, model)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
-    return JSONResponse(status_code=202, content={"status": "translating", "doc_id": doc_id})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return JSONResponse(status_code=202, content={"status": "translating", "doc_id": doc_id, "page": page_num})
 
 
-@router.get("/translate/{doc_id}/status")
-async def api_translation_status(doc_id: str, user: dict = Depends(get_current_user)):
-    """번역 진행 상태"""
-    status = get_translation_status(user["username"], doc_id)
-    if not status:
+@router.get("/translate/{doc_id}/page/{page_num}/status")
+async def api_page_translation_status(
+    doc_id: str,
+    page_num: int,
+    user: dict = Depends(get_current_user),
+):
+    """페이지 번역 상태"""
+    status = get_page_translation_status(user["username"], doc_id, page_num)
+    if status is None:
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
     return status
 
 
-@router.post("/translate/{doc_id}/cancel")
-async def api_cancel_translation(doc_id: str, user: dict = Depends(get_current_user)):
-    """번역 취소"""
-    if not cancel_translation(user["username"], doc_id):
-        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
-    return {"success": True, "status": "pending"}
-
-
-@router.post("/retranslate/{doc_id}")
-async def api_retranslate(
+@router.post("/translate/{doc_id}/page/{page_num}/cancel")
+async def api_cancel_page_translation(
     doc_id: str,
-    body: dict = Body(default={}),
+    page_num: int,
     user: dict = Depends(get_current_user),
 ):
-    """재번역 → 202 Accepted"""
-    model = body.get("model")
-    try:
-        retranslate(user["username"], doc_id, model)
-    except FileNotFoundError:
+    """페이지 번역 취소"""
+    if not cancel_page_translation(user["username"], doc_id, page_num):
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
-    return JSONResponse(status_code=202, content={"status": "translating", "doc_id": doc_id})
+    return {"success": True, "status": "cancelled"}
 
+
+@router.get("/translated-pdf/{doc_id}/page/{page_num}")
+async def api_serve_page_translated_pdf(
+    doc_id: str,
+    page_num: int,
+    user: dict = Depends(get_current_user),
+):
+    """페이지별 번역 PDF 서빙"""
+    path = get_page_pdf_path(user["username"], doc_id, page_num)
+    if not path:
+        raise HTTPException(status_code=404, detail="번역 PDF가 없습니다")
+    return FileResponse(path=str(path), media_type="application/pdf")
+
+
+@router.get("/document/{doc_id}/pages")
+async def api_doc_page_summary(doc_id: str, user: dict = Depends(get_current_user)):
+    """전체 페이지 상태 요약"""
+    summary = get_doc_page_summary(user["username"], doc_id)
+    if not summary:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    return summary
+
+
+# ── PDF 서빙 (원본 + 레거시) ──
 
 @router.get("/pdf/{doc_id}")
 async def api_serve_original_pdf(doc_id: str, user: dict = Depends(get_current_user)):
@@ -119,7 +145,7 @@ async def api_serve_original_pdf(doc_id: str, user: dict = Depends(get_current_u
 
 @router.get("/translated-pdf/{doc_id}")
 async def api_serve_translated_pdf(doc_id: str, user: dict = Depends(get_current_user)):
-    """번역 PDF 서빙"""
+    """레거시 통번역 PDF 서빙"""
     path = get_pdf_path(user["username"], doc_id, "translated")
     if not path:
         raise HTTPException(status_code=404, detail="번역 PDF가 없습니다")
@@ -128,7 +154,7 @@ async def api_serve_translated_pdf(doc_id: str, user: dict = Depends(get_current
 
 @router.get("/dual-pdf/{doc_id}")
 async def api_serve_dual_pdf(doc_id: str, user: dict = Depends(get_current_user)):
-    """이중언어 PDF 서빙"""
+    """레거시 이중언어 PDF 서빙"""
     path = get_pdf_path(user["username"], doc_id, "dual")
     if not path:
         raise HTTPException(status_code=404, detail="이중언어 PDF가 없습니다")

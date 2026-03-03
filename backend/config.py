@@ -52,7 +52,8 @@ WORD_COM_PREPROCESS = False
 TRANSLATOR_DATA_DIR = str(Path(__file__).parent.parent / "data" / "translator")
 TRANSLATOR_MAX_PDF_SIZE = 100 * 1024 * 1024  # 100MB
 TRANSLATOR_TRANSLATION_MODEL = ""  # 빈값이면 OLLAMA_MODEL 폴백
-TRANSLATOR_PMT_TIMEOUT = 3600  # 60분, PMT CLI 타임아웃
+TRANSLATOR_PMT_TIMEOUT = 3600  # 60분, 레거시 통번역 타임아웃
+TRANSLATOR_PAGE_TIMEOUT = 300  # 5분, 페이지별 번역 타임아웃
 
 # 서버 설정
 HOST = "0.0.0.0"
