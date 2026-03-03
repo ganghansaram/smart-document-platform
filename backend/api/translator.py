@@ -9,7 +9,7 @@ from dependencies import get_current_user, require_editor
 from services.translator_service import (
     upload_pdf, get_documents, get_document, delete_document,
     get_pdf_path, start_translation, get_translation_status,
-    retranslate, get_ollama_models,
+    retranslate, cancel_translation, get_ollama_models,
 )
 import config
 
@@ -83,6 +83,14 @@ async def api_translation_status(doc_id: str, user: dict = Depends(get_current_u
     if not status:
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
     return status
+
+
+@router.post("/translate/{doc_id}/cancel")
+async def api_cancel_translation(doc_id: str, user: dict = Depends(get_current_user)):
+    """번역 취소"""
+    if not cancel_translation(user["username"], doc_id):
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    return {"success": True, "status": "pending"}
 
 
 @router.post("/retranslate/{doc_id}")

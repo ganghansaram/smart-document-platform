@@ -379,6 +379,7 @@
                 <button class="viewer-tab" data-tab="dual">이중언어</button>
                 <button class="viewer-tab" data-tab="original">원문</button>
                 <span class="spacer"></span>
+                <button class="zoom-btn" id="download-btn" title="다운로드" style="width:auto; padding:0 8px; font-size:13px;">&#8681; 다운로드</button>
                 <span class="zoom-controls" id="zoom-controls">
                     <button class="zoom-btn" id="zoom-out" title="축소">&minus;</button>
                     <span class="zoom-level" id="zoom-level">100%</span>
@@ -465,6 +466,7 @@
         var pdfDoc = null;
         var pdfRendering = false;
         var pdfPendingPage = null;
+        var pdfRenderTask = null;
 
         // Zoom state
         var zoom = 1.0;
@@ -486,6 +488,7 @@
         var $zoomLevel   = document.getElementById('zoom-level');
         var $zoomIn      = document.getElementById('zoom-in');
         var $zoomOut     = document.getElementById('zoom-out');
+        var $downloadBtn = document.getElementById('download-btn');
         var $viewerTabs  = document.getElementById('viewer-tabs');
 
         // ══════════════════════════════════════
@@ -657,6 +660,21 @@
             // 액션 버튼
             var actions = document.createElement('div');
             actions.className = 'doc-card-actions';
+
+            if (doc.status === 'translating') {
+                var cancelBtn = document.createElement('button');
+                cancelBtn.className = 'card-btn danger';
+                cancelBtn.textContent = '취소';
+                cancelBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (!confirm('번역을 취소하시겠습니까?')) return;
+                    fetch(API + '/api/translator/translate/' + doc.id + '/cancel', {
+                        method: 'POST',
+                        credentials: 'include',
+                    }).then(function() { loadDocuments(); });
+                });
+                actions.appendChild(cancelBtn);
+            }
 
             if (doc.status === 'pending' || doc.status === 'error') {
                 var modelSel = createModelSelect(null);
@@ -897,11 +915,12 @@
         function renderPdfPage(pageNum) {
             if (!pdfDoc) return;
 
-            if (pdfRendering) {
-                pdfPendingPage = pageNum;
-                return;
+            // 진행 중인 렌더링 취소
+            if (pdfRenderTask) {
+                pdfRenderTask.cancel();
+                pdfRenderTask = null;
             }
-
+            pdfPendingPage = null;
             pdfRendering = true;
 
             pdfDoc.getPage(pageNum).then(function(page) {
@@ -913,20 +932,20 @@
 
                 $pdfCanvas.width = scaledViewport.width;
                 $pdfCanvas.height = scaledViewport.height;
+                $pdfCanvas.style.width = scaledViewport.width + 'px';
+                $pdfCanvas.style.height = scaledViewport.height + 'px';
 
                 var ctx = $pdfCanvas.getContext('2d');
-                page.render({
+                pdfRenderTask = page.render({
                     canvasContext: ctx,
                     viewport: scaledViewport,
-                }).promise.then(function() {
+                });
+                pdfRenderTask.promise.then(function() {
                     pdfRendering = false;
-                    if (pdfPendingPage !== null) {
-                        var pending = pdfPendingPage;
-                        pdfPendingPage = null;
-                        renderPdfPage(pending);
-                    }
-                }).catch(function() {
+                    pdfRenderTask = null;
+                }).catch(function(err) {
                     pdfRendering = false;
+                    pdfRenderTask = null;
                 });
             });
         }
@@ -987,6 +1006,23 @@
             zoom = Math.max(ZOOM_MIN, zoom - ZOOM_STEP);
             $zoomLevel.textContent = Math.round(zoom * 100) + '%';
             renderPdfPage(currentPage);
+        });
+
+        // ── Download ──
+        $downloadBtn.addEventListener('click', function() {
+            if (!currentDocId) return;
+            var urlMap = {
+                translated: API + '/api/translator/translated-pdf/' + currentDocId,
+                dual: API + '/api/translator/dual-pdf/' + currentDocId,
+                original: API + '/api/translator/pdf/' + currentDocId,
+            };
+            var url = urlMap[currentTab] || urlMap.translated;
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         });
 
         // ── Resize handler ──

@@ -174,6 +174,24 @@ def delete_document(username: str, doc_id: str) -> bool:
     return True
 
 
+def cancel_translation(username: str, doc_id: str) -> bool:
+    """번역 취소 → pending으로 복귀"""
+    task = _active_tasks.pop(doc_id, None)
+    if task and not task.done():
+        task.cancel()
+
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        return False
+
+    meta["status"] = "pending"
+    meta["progress_stage"] = None
+    meta["error"] = None
+    _save_meta(username, doc_id, meta)
+    _update_index_status(username, doc_id, "pending")
+    return True
+
+
 # ══════════════════════════════════════
 # PDF 서빙
 # ══════════════════════════════════════
@@ -244,7 +262,7 @@ async def _run_pmt(username: str, doc_id: str, model: str):
         str(src_path),
     ]
 
-    _update_progress(username, doc_id, "PDFMathTranslate 번역 중...")
+    _update_progress(username, doc_id, "번역 중...")
 
     try:
         proc = await asyncio.create_subprocess_exec(
