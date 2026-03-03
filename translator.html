@@ -264,6 +264,29 @@
 
         .zoom-btn:hover { background: #e8f4f8; border-color: #0066cc; color: #0066cc; }
 
+        .scroll-sync-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border: 1px solid #dde4e8;
+            border-radius: 4px;
+            background: #fff;
+            color: #7f8c8d;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .scroll-sync-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+        .scroll-sync-btn:hover { border-color: #0066cc; color: #0066cc; }
+        .scroll-sync-btn.active {
+            background: #e8f4f8;
+            border-color: #0066cc;
+            color: #0066cc;
+        }
+
         .zoom-level {
             font-size: 12px;
             font-variant-numeric: tabular-nums;
@@ -425,6 +448,9 @@
 
         body[data-theme="dark"] .zoom-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); }
         body[data-theme="dark"] .zoom-btn:hover { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
+        body[data-theme="dark"] .scroll-sync-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.4); }
+        body[data-theme="dark"] .scroll-sync-btn:hover { border-color: rgba(88,166,255,0.4); color: #58a6ff; }
+        body[data-theme="dark"] .scroll-sync-btn.active { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
         body[data-theme="dark"] .zoom-level { color: rgba(255,255,255,0.4); }
 
         body[data-theme="dark"] .viewer-panel { background: #0d0d12; }
@@ -470,6 +496,10 @@
                     <span class="zoom-level" id="zoom-level" title="클릭하면 100%로 초기화" style="cursor:pointer;">100%</span>
                     <button class="zoom-btn" id="zoom-in" title="확대">+</button>
                 </span>
+                <button class="scroll-sync-btn active" id="scroll-sync-btn" title="스크롤 동기화">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h-4v10h4"/><path d="M16 7h4v10h-4"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    동기화
+                </button>
                 <span class="spacer"></span>
                 <span class="page-status-text" id="toolbar-page-status"></span>
                 <select id="model-select"></select>
@@ -586,6 +616,10 @@
         var ZOOM_MIN = 0.5;
         var ZOOM_MAX = 3.0;
 
+        // Scroll sync
+        var scrollSyncEnabled = true;
+        var scrollSyncing = false;  // 재진입 방지
+
         // ── DOM refs ──
         var $viewList       = document.getElementById('view-list');
         var $viewViewer     = document.getElementById('view-viewer');
@@ -598,6 +632,7 @@
         var $zoomLevel      = document.getElementById('zoom-level');
         var $zoomIn         = document.getElementById('zoom-in');
         var $zoomOut        = document.getElementById('zoom-out');
+        var $scrollSyncBtn  = document.getElementById('scroll-sync-btn');
 
         // Left panel
         var $panelLeft      = document.getElementById('panel-left');
@@ -1252,6 +1287,31 @@
             resizeTimer = setTimeout(function() {
                 if (currentDocId) rerenderBothPanels();
             }, 200);
+        });
+
+        // ── Scroll Sync ──
+        $scrollSyncBtn.addEventListener('click', function() {
+            scrollSyncEnabled = !scrollSyncEnabled;
+            $scrollSyncBtn.classList.toggle('active', scrollSyncEnabled);
+        });
+
+        function syncScroll(source, target) {
+            if (!scrollSyncEnabled || scrollSyncing) return;
+            scrollSyncing = true;
+            var maxS = source.scrollHeight - source.clientHeight;
+            var maxT = target.scrollHeight - target.clientHeight;
+            if (maxS > 0 && maxT > 0) {
+                var ratio = source.scrollTop / maxS;
+                target.scrollTop = ratio * maxT;
+            }
+            scrollSyncing = false;
+        }
+
+        $panelLeft.addEventListener('scroll', function() {
+            syncScroll($panelLeft, $panelRight);
+        });
+        $panelRight.addEventListener('scroll', function() {
+            syncScroll($panelRight, $panelLeft);
         });
 
         // ══════════════════════════════════════
