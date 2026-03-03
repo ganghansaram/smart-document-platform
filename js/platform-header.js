@@ -2,7 +2,7 @@
  * Platform Header — 공통 헤더 컴포넌트
  *
  * initPlatformHeader({
- *     title: 'Reader',
+ *     title: 'Translator',
  *     navItems: [{ id, label, href?, hidden? }],
  *     midSlot: HTMLElement | null,
  *     authRequired: true,

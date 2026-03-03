@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translator — Smart Document Platform</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/platform-header.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #f5f7fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', '맑은 고딕', Arial, sans-serif;
+            color: #2c3e50;
+            visibility: hidden;
+            overflow: hidden;
+        }
+
+        /* ── 페이지 네비게이션 (뷰어 전용, midSlot에 삽입) ── */
+        .translator-page-nav {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .translator-page-nav .pn-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+            padding: 0;
+        }
+
+        .translator-page-nav .pn-btn:hover { background: rgba(255,255,255,0.2); }
+        .translator-page-nav .pn-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .translator-page-nav .pn-btn svg { width: 14px; height: 14px; }
+
+        .translator-page-info {
+            font-size: 13px;
+            color: rgba(255,255,255,0.7);
+            min-width: 60px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* ── Main area ── */
+        .translator-body {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ══ State: Document List ══ */
+        .view-list {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            padding: 32px;
+        }
+
+        .view-viewer { display: none; height: 100%; flex-direction: column; }
+
+        /* Upload zone */
+        .upload-zone {
+            border: 2px dashed #dde4e8;
+            border-radius: 10px;
+            padding: 36px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            margin-bottom: 28px;
+            max-width: 720px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #0066cc;
+            background: rgba(0,102,204,0.05);
+        }
+
+        .upload-zone-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.4; }
+        .upload-zone-text { font-size: 15px; color: #7f8c8d; }
+        .upload-zone-hint { font-size: 13px; color: #95a5a6; margin-top: 6px; }
+        .upload-zone input[type="file"] { display: none; }
+
+        /* 문서 카드 그리드 */
+        .doc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .doc-card {
+            background: #ffffff;
+            border: 1px solid #dde4e8;
+            border-radius: 10px;
+            padding: 20px;
+            transition: border-color 0.2s, background 0.2s, opacity 0.3s;
+            position: relative;
+        }
+
+        .doc-card:hover { border-color: rgba(0,102,204,0.4); }
+        .doc-card.translating { opacity: 0.6; }
+
+        .doc-card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-right: 24px;
+        }
+
+        .doc-card-meta {
+            font-size: 13px;
+            color: #95a5a6;
+            margin-bottom: 10px;
+        }
+
+        .doc-card-status {
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .doc-card-status.status-done { color: #3fb950; }
+        .doc-card-status.status-error { color: #f85149; }
+        .doc-card-status.status-translating { color: #58a6ff; }
+
+        /* 프로그레스 바 (indeterminate) */
+        .doc-card-progress-bar {
+            height: 4px;
+            background: #dde4e8;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .doc-card-progress-fill {
+            height: 100%;
+            background: #58a6ff;
+            border-radius: 2px;
+            width: 30%;
+            animation: indeterminate 1.5s ease-in-out infinite;
+        }
+
+        @keyframes indeterminate {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(400%); }
+        }
+
+        .doc-card-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .doc-card-actions select {
+            padding: 5px 8px;
+            border: 1px solid #dde4e8;
+            border-radius: 5px;
+            font-size: 13px;
+            font-family: inherit;
+            background: #fff;
+            color: #2c3e50;
+            max-width: 160px;
+        }
+
+        .card-btn {
+            padding: 5px 12px;
+            border: 1px solid #dde4e8;
+            border-radius: 5px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            background: #fff;
+            color: #555;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .card-btn:hover { background: #e8f4f8; border-color: #0066cc; color: #0066cc; }
+
+        .card-btn.primary {
+            background: #238636;
+            border-color: #238636;
+            color: #fff;
+        }
+        .card-btn.primary:hover { background: #2ea043; }
+
+        .card-btn.danger { color: #f85149; }
+        .card-btn.danger:hover { background: rgba(248,81,73,0.1); border-color: #f85149; }
+
+        .card-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .doc-empty {
+            text-align: center;
+            padding: 40px;
+            color: #95a5a6;
+            font-size: 14px;
+        }
+
+        /* ══ State: Viewer ══ */
+
+        /* 뷰어 탭 바 */
+        .viewer-tabs {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            padding: 6px 16px;
+            border-bottom: 1px solid #dde4e8;
+            background: #fff;
+            flex-shrink: 0;
+        }
+
+        .viewer-tab {
+            padding: 6px 16px;
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            color: #7f8c8d;
+            border-radius: 6px;
+            transition: all 0.15s;
+        }
+
+        .viewer-tab:hover { background: rgba(0,0,0,0.04); }
+        .viewer-tab.active { background: #e8f4f8; color: #0066cc; font-weight: 600; }
+
+        .viewer-tabs .spacer { flex: 1; }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .zoom-btn {
+            width: 26px;
+            height: 26px;
+            border: 1px solid #dde4e8;
+            border-radius: 4px;
+            background: #fff;
+            color: #555;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .zoom-btn:hover { background: #e8f4f8; border-color: #0066cc; color: #0066cc; }
+
+        .zoom-level {
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+            min-width: 40px;
+            text-align: center;
+            color: #7f8c8d;
+        }
+
+        /* PDF 캔버스 영역 */
+        .viewer-canvas-wrap {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            padding: 16px;
+            background: #f0f0f0;
+        }
+
+        .viewer-canvas-wrap canvas {
+            display: block;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+
+        /* ── Footer ── */
+        .translator-footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 11px;
+            color: #95a5a6;
+            flex-shrink: 0;
+            border-top: 1px solid #dde4e8;
+        }
+
+        /* ── Transitions ── */
+        body.fade-in { animation: fadeIn 0.4s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ══════════════════════════════════════
+           다크 모드 오버라이드
+           ══════════════════════════════════════ */
+        body[data-theme="dark"] { background: #121218; color: #e0e0e0; }
+
+        body[data-theme="dark"] .upload-zone { border-color: rgba(255,255,255,0.15); }
+        body[data-theme="dark"] .upload-zone:hover,
+        body[data-theme="dark"] .upload-zone.dragover { border-color: #58a6ff; background: rgba(88,166,255,0.05); }
+        body[data-theme="dark"] .upload-zone-text { color: rgba(255,255,255,0.5); }
+        body[data-theme="dark"] .upload-zone-hint { color: rgba(255,255,255,0.3); }
+
+        body[data-theme="dark"] .doc-card { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+        body[data-theme="dark"] .doc-card:hover { border-color: rgba(88,166,255,0.4); }
+        body[data-theme="dark"] .doc-card-title { color: #e6edf3; }
+        body[data-theme="dark"] .doc-card-meta { color: rgba(255,255,255,0.4); }
+        body[data-theme="dark"] .doc-card-actions select { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: #e0e0e0; }
+        body[data-theme="dark"] .doc-empty { color: rgba(255,255,255,0.3); }
+
+        body[data-theme="dark"] .card-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: #e0e0e0; }
+        body[data-theme="dark"] .card-btn:hover { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
+        body[data-theme="dark"] .card-btn.primary { background: #238636; border-color: #238636; color: #fff; }
+
+        body[data-theme="dark"] .viewer-tabs { background: #1e1e2e; border-bottom-color: rgba(255,255,255,0.08); }
+        body[data-theme="dark"] .viewer-tab { color: rgba(255,255,255,0.4); }
+        body[data-theme="dark"] .viewer-tab.active { background: rgba(88,166,255,0.15); color: #8ab4f8; }
+        body[data-theme="dark"] .viewer-tab:hover:not(.active) { background: rgba(255,255,255,0.06); }
+
+        body[data-theme="dark"] .zoom-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); }
+        body[data-theme="dark"] .zoom-btn:hover { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
+        body[data-theme="dark"] .zoom-level { color: rgba(255,255,255,0.4); }
+
+        body[data-theme="dark"] .viewer-canvas-wrap { background: #0d0d12; }
+
+        body[data-theme="dark"] .doc-card-progress-bar { background: rgba(255,255,255,0.08); }
+
+        body[data-theme="dark"] .translator-footer { color: rgba(255,255,255,0.2); border-top-color: rgba(255,255,255,0.05); }
+    </style>
+</head>
+<body>
+    <!-- page-nav: 뷰어 전용, platform-header midSlot에 삽입 -->
+    <div class="translator-page-nav" id="page-nav" style="display:none">
+        <button class="pn-btn" id="page-prev" title="이전 페이지">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="translator-page-info" id="page-info">1 / 1</span>
+        <button class="pn-btn" id="page-next" title="다음 페이지">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+    </div>
+
+    <div class="translator-body">
+        <!-- State 1: Document List + Upload -->
+        <div class="view-list" id="view-list">
+            <div class="upload-zone" id="upload-zone">
+                <div class="upload-zone-icon">&#128196;</div>
+                <div class="upload-zone-text">PDF 파일을 드래그하거나 클릭하여 업로드</div>
+                <div class="upload-zone-hint">최대 100MB</div>
+                <input type="file" id="file-input" accept=".pdf">
+            </div>
+
+            <div class="doc-grid" id="doc-grid"></div>
+        </div>
+
+        <!-- State 2: PDF Viewer -->
+        <div class="view-viewer" id="view-viewer">
+            <div class="viewer-tabs" id="viewer-tabs">
+                <button class="viewer-tab active" data-tab="translated">번역PDF</button>
+                <button class="viewer-tab" data-tab="dual">이중언어</button>
+                <button class="viewer-tab" data-tab="original">원문</button>
+                <span class="spacer"></span>
+                <span class="zoom-controls" id="zoom-controls">
+                    <button class="zoom-btn" id="zoom-out" title="축소">&minus;</button>
+                    <span class="zoom-level" id="zoom-level">100%</span>
+                    <button class="zoom-btn" id="zoom-in" title="확대">+</button>
+                </span>
+            </div>
+            <div class="viewer-canvas-wrap" id="canvas-wrap">
+                <canvas id="pdf-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <footer class="translator-footer">
+        &copy; 2025 Korea Aerospace Industries, Ltd. &middot; Smart Document Platform
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/lib/pdfjs/pdf.min.js"></script>
+    <script src="js/platform-header.js"></script>
+    <script>
+    // ── 테마 초기화 ──
+    (function() {
+        var saved = localStorage.getItem('theme');
+        if (saved === 'dark') document.body.dataset.theme = 'dark';
+    })();
+    </script>
+    <script>
+    (function() {
+        'use strict';
+
+        // ── PDF.js 설정 ──
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/lib/pdfjs/pdf.worker.min.js';
+
+        var API = (typeof AUTH_CONFIG !== 'undefined' && AUTH_CONFIG.backendUrl)
+            ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+
+        // ── Platform Header ──
+        var $pageNavSource = document.getElementById('page-nav');
+        $pageNavSource.style.display = '';
+
+        var header = initPlatformHeader({
+            title: 'Translator',
+            navItems: [
+                { id: 'back-launcher', label: 'Platform', href: 'launcher.html' },
+                { id: 'back-list', label: '목록', hidden: true },
+            ],
+            midSlot: $pageNavSource,
+            showThemeToggle: true,
+            onAuth: function(user) {
+                currentUser = user;
+                document.body.style.visibility = 'visible';
+                document.body.classList.add('fade-in');
+                loadDocuments();
+                loadModels();
+            }
+        });
+
+        // ── 테마 토글 ──
+        var $themeToggle = document.getElementById('theme-toggle');
+        if ($themeToggle) {
+            $themeToggle.addEventListener('click', function() {
+                var isDark = document.body.dataset.theme === 'dark';
+                document.body.dataset.theme = isDark ? '' : 'dark';
+                localStorage.setItem('theme', isDark ? 'light' : 'dark');
+            });
+        }
+
+        var $backList = header.nav['back-list'];
+        $backList.addEventListener('click', function() { showList(); });
+
+        // ══════════════════════════════════════
+        // State
+        // ══════════════════════════════════════
+        var currentUser = null;
+        var currentDocId = null;
+        var currentTab = 'translated'; // 'translated' | 'dual' | 'original'
+        var currentPage = 1;
+        var totalPages = 1;
+        var modelsList = [];
+        var defaultModel = '';
+        var pollingTimers = {};  // doc_id → timer
+
+        // PDF.js state
+        var pdfDoc = null;
+        var pdfRendering = false;
+        var pdfPendingPage = null;
+
+        // Zoom state
+        var zoom = 1.0;
+        var ZOOM_STEP = 0.1;
+        var ZOOM_MIN = 0.5;
+        var ZOOM_MAX = 3.0;
+
+        // ── DOM refs ──
+        var $viewList    = document.getElementById('view-list');
+        var $viewViewer  = document.getElementById('view-viewer');
+        var $docGrid     = document.getElementById('doc-grid');
+        var $uploadZone  = document.getElementById('upload-zone');
+        var $fileInput   = document.getElementById('file-input');
+        var $pageInfo    = document.getElementById('page-info');
+        var $pagePrev    = document.getElementById('page-prev');
+        var $pageNext    = document.getElementById('page-next');
+        var $pdfCanvas   = document.getElementById('pdf-canvas');
+        var $canvasWrap  = document.getElementById('canvas-wrap');
+        var $zoomLevel   = document.getElementById('zoom-level');
+        var $zoomIn      = document.getElementById('zoom-in');
+        var $zoomOut     = document.getElementById('zoom-out');
+        var $viewerTabs  = document.getElementById('viewer-tabs');
+
+        // ══════════════════════════════════════
+        // Upload
+        // ══════════════════════════════════════
+
+        $uploadZone.addEventListener('click', function() { $fileInput.click(); });
+        $fileInput.addEventListener('change', function() {
+            if ($fileInput.files.length) uploadFile($fileInput.files[0]);
+        });
+        $uploadZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            $uploadZone.classList.add('dragover');
+        });
+        $uploadZone.addEventListener('dragleave', function() {
+            $uploadZone.classList.remove('dragover');
+        });
+        $uploadZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            $uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+        });
+
+        function uploadFile(file) {
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                alert('PDF 파일만 업로드할 수 있습니다.');
+                return;
+            }
+            var formData = new FormData();
+            formData.append('file', file);
+
+            // 업로드 중 표시
+            $uploadZone.style.pointerEvents = 'none';
+            $uploadZone.querySelector('.upload-zone-text').textContent = '업로드 중...';
+
+            fetch(API + '/api/translator/upload', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include',
+            }).then(function(resp) {
+                if (!resp.ok) return resp.json().then(function(e) { throw new Error(e.detail || 'Upload failed'); });
+                return resp.json();
+            }).then(function() {
+                $fileInput.value = '';
+                loadDocuments();
+            }).catch(function(err) {
+                alert('업로드 오류: ' + err.message);
+            }).finally(function() {
+                $uploadZone.style.pointerEvents = '';
+                $uploadZone.querySelector('.upload-zone-text').textContent = 'PDF 파일을 드래그하거나 클릭하여 업로드';
+            });
+        }
+
+        // ══════════════════════════════════════
+        // 모델 목록
+        // ══════════════════════════════════════
+
+        function loadModels() {
+            fetch(API + '/api/translator/models', { credentials: 'include' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var models = (data.models || []).filter(function(m) {
+                        var name = m.name || '';
+                        return name.indexOf('embed') === -1 && name.indexOf('bge') === -1
+                            && name.indexOf('rerank') === -1;
+                    });
+                    modelsList = models.map(function(m) { return m.name; });
+
+                    // 기본 모델 결정
+                    fetch(API + '/api/settings/public', { credentials: 'include' })
+                        .then(function(r) { return r.json(); })
+                        .catch(function() { return {}; })
+                        .then(function(pub) {
+                            // translator.translation_model은 backend settings에서
+                            defaultModel = '';
+                            // 문서 목록 새로 그리기 (모델 드롭다운 포함)
+                            loadDocuments();
+                        });
+                })
+                .catch(function() {
+                    modelsList = [];
+                });
+        }
+
+        function createModelSelect(selectedModel) {
+            var sel = document.createElement('select');
+            modelsList.forEach(function(name) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                if (name === (selectedModel || defaultModel || modelsList[0])) opt.selected = true;
+                sel.appendChild(opt);
+            });
+            if (modelsList.length === 0) {
+                var opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = '모델 없음';
+                sel.appendChild(opt);
+            }
+            return sel;
+        }
+
+        // ══════════════════════════════════════
+        // Document List
+        // ══════════════════════════════════════
+
+        function loadDocuments() {
+            fetch(API + '/api/translator/documents', { credentials: 'include' })
+                .then(function(r) { return r.json(); })
+                .then(function(docs) { renderDocGrid(docs); })
+                .catch(function() { $docGrid.innerHTML = '<div class="doc-empty">문서를 불러올 수 없습니다</div>'; });
+        }
+
+        function renderDocGrid(docs) {
+            // 기존 폴링 정리
+            Object.keys(pollingTimers).forEach(function(id) { clearInterval(pollingTimers[id]); });
+            pollingTimers = {};
+
+            if (!docs.length) {
+                $docGrid.innerHTML = '<div class="doc-empty">업로드된 문서가 없습니다</div>';
+                return;
+            }
+
+            $docGrid.innerHTML = '';
+            docs.forEach(function(doc) {
+                var card = createDocCard(doc);
+                $docGrid.appendChild(card);
+
+                // 번역 중이면 폴링 시작
+                if (doc.status === 'translating') {
+                    startPolling(doc.id, card);
+                }
+            });
+        }
+
+        function createDocCard(doc) {
+            var card = document.createElement('div');
+            card.className = 'doc-card';
+            card.setAttribute('data-doc-id', doc.id);
+            if (doc.status === 'translating') card.classList.add('translating');
+
+            var title = document.createElement('div');
+            title.className = 'doc-card-title';
+            title.textContent = doc.filename;
+            card.appendChild(title);
+
+            var meta = document.createElement('div');
+            meta.className = 'doc-card-meta';
+            meta.textContent = doc.pages + '페이지';
+            if (doc.uploaded_at) {
+                meta.textContent += ' · ' + formatDate(doc.uploaded_at);
+            }
+            card.appendChild(meta);
+
+            // 상태 표시
+            var statusEl = document.createElement('div');
+            statusEl.className = 'doc-card-status';
+            updateStatusEl(statusEl, doc);
+            card.appendChild(statusEl);
+
+            // 번역 중 프로그레스 바
+            if (doc.status === 'translating') {
+                var progBar = document.createElement('div');
+                progBar.className = 'doc-card-progress-bar';
+                progBar.innerHTML = '<div class="doc-card-progress-fill"></div>';
+                card.appendChild(progBar);
+            }
+
+            // 액션 버튼
+            var actions = document.createElement('div');
+            actions.className = 'doc-card-actions';
+
+            if (doc.status === 'pending' || doc.status === 'error') {
+                var modelSel = createModelSelect(null);
+                actions.appendChild(modelSel);
+
+                var translateBtn = document.createElement('button');
+                translateBtn.className = 'card-btn primary';
+                translateBtn.textContent = '번역';
+                translateBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var selectedModel = modelSel.value;
+                    startDocTranslation(doc.id, selectedModel, card);
+                });
+                actions.appendChild(translateBtn);
+            }
+
+            if (doc.status === 'done') {
+                var viewBtn = document.createElement('button');
+                viewBtn.className = 'card-btn primary';
+                viewBtn.textContent = '보기';
+                viewBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    openViewer(doc.id, doc.pages);
+                });
+                actions.appendChild(viewBtn);
+
+                var retransBtn = document.createElement('button');
+                retransBtn.className = 'card-btn';
+                retransBtn.textContent = '재번역';
+                retransBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (!confirm('다른 모델로 재번역하시겠습니까?')) return;
+                    // 재번역 시 모델 선택 프롬프트
+                    var model = prompt('모델 이름 (비워두면 기본값):', '');
+                    retranslateDoc(doc.id, model || null, card);
+                });
+                actions.appendChild(retransBtn);
+            }
+
+            var deleteBtn = document.createElement('button');
+            deleteBtn.className = 'card-btn danger';
+            deleteBtn.textContent = '삭제';
+            deleteBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (!confirm(doc.filename + ' 문서를 삭제하시겠습니까?')) return;
+                fetch(API + '/api/translator/document/' + doc.id, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                }).then(function() { loadDocuments(); });
+            });
+            actions.appendChild(deleteBtn);
+
+            card.appendChild(actions);
+
+            // done 상태 카드 클릭 → 뷰어
+            if (doc.status === 'done') {
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', function(e) {
+                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
+                    openViewer(doc.id, doc.pages);
+                });
+            }
+
+            return card;
+        }
+
+        function updateStatusEl(el, doc) {
+            el.className = 'doc-card-status';
+            if (doc.status === 'pending') {
+                el.textContent = '번역 대기';
+            } else if (doc.status === 'translating') {
+                el.classList.add('status-translating');
+                el.textContent = '번역 중...';
+            } else if (doc.status === 'done') {
+                el.classList.add('status-done');
+                el.textContent = '번역 완료';
+            } else if (doc.status === 'error') {
+                el.classList.add('status-error');
+                el.textContent = '오류 발생';
+            }
+        }
+
+        // ══════════════════════════════════════
+        // 번역 시작 / 재번역
+        // ══════════════════════════════════════
+
+        function startDocTranslation(docId, model, card) {
+            fetch(API + '/api/translator/translate/' + docId, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: model }),
+                credentials: 'include',
+            }).then(function(resp) {
+                if (!resp.ok) return resp.json().then(function(e) { throw new Error(e.detail); });
+                // 카드 UI 업데이트
+                card.classList.add('translating');
+                var statusEl = card.querySelector('.doc-card-status');
+                if (statusEl) {
+                    statusEl.className = 'doc-card-status status-translating';
+                    statusEl.textContent = '번역 중...';
+                }
+                // 프로그레스 바 추가
+                if (!card.querySelector('.doc-card-progress-bar')) {
+                    var progBar = document.createElement('div');
+                    progBar.className = 'doc-card-progress-bar';
+                    progBar.innerHTML = '<div class="doc-card-progress-fill"></div>';
+                    var actionsEl = card.querySelector('.doc-card-actions');
+                    card.insertBefore(progBar, actionsEl);
+                }
+                // 액션 버튼 비활성화
+                card.querySelectorAll('.card-btn').forEach(function(btn) { btn.disabled = true; });
+
+                startPolling(docId, card);
+            }).catch(function(err) {
+                alert('번역 시작 실패: ' + err.message);
+            });
+        }
+
+        function retranslateDoc(docId, model, card) {
+            fetch(API + '/api/translator/retranslate/' + docId, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: model }),
+                credentials: 'include',
+            }).then(function(resp) {
+                if (!resp.ok) return resp.json().then(function(e) { throw new Error(e.detail); });
+                loadDocuments();
+            }).catch(function(err) {
+                alert('재번역 실패: ' + err.message);
+            });
+        }
+
+        // ══════════════════════════════════════
+        // 폴링 (번역 중 상태)
+        // ══════════════════════════════════════
+
+        function startPolling(docId, card) {
+            if (pollingTimers[docId]) clearInterval(pollingTimers[docId]);
+
+            pollingTimers[docId] = setInterval(function() {
+                fetch(API + '/api/translator/translate/' + docId + '/status', { credentials: 'include' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(status) {
+                        var statusEl = card.querySelector('.doc-card-status');
+
+                        if (status.status === 'translating') {
+                            if (statusEl && status.progress_stage) {
+                                statusEl.textContent = status.progress_stage;
+                            }
+                        } else {
+                            // 완료 또는 에러 — 폴링 중지 + 카드 새로고침
+                            clearInterval(pollingTimers[docId]);
+                            delete pollingTimers[docId];
+                            loadDocuments();
+                        }
+                    })
+                    .catch(function() {
+                        clearInterval(pollingTimers[docId]);
+                        delete pollingTimers[docId];
+                    });
+            }, 3000);
+        }
+
+        // ══════════════════════════════════════
+        // Viewer
+        // ══════════════════════════════════════
+
+        function openViewer(docId, pages) {
+            currentDocId = docId;
+            totalPages = pages || 1;
+            currentPage = 1;
+            currentTab = 'translated';
+            zoom = 1.0;
+            $zoomLevel.textContent = '100%';
+
+            // 탭 초기화
+            $viewerTabs.querySelectorAll('.viewer-tab').forEach(function(tab) {
+                tab.classList.toggle('active', tab.dataset.tab === 'translated');
+            });
+
+            showViewer();
+            loadViewerPdf();
+        }
+
+        function showViewer() {
+            $viewList.style.display = 'none';
+            $viewViewer.style.display = 'flex';
+            header.midSlot.classList.add('visible');
+            header.nav['back-list'].style.display = '';
+            updatePageNav();
+        }
+
+        function showList() {
+            $viewViewer.style.display = 'none';
+            $viewList.style.display = 'flex';
+            header.midSlot.classList.remove('visible');
+            header.nav['back-list'].style.display = 'none';
+            currentDocId = null;
+            if (pdfDoc) {
+                pdfDoc.destroy();
+                pdfDoc = null;
+            }
+            loadDocuments();
+        }
+
+        function getPdfUrl() {
+            var base = API + '/api/translator/';
+            if (currentTab === 'translated') return base + 'translated-pdf/' + currentDocId;
+            if (currentTab === 'dual') return base + 'dual-pdf/' + currentDocId;
+            return base + 'pdf/' + currentDocId;
+        }
+
+        function loadViewerPdf() {
+            if (pdfDoc) {
+                pdfDoc.destroy();
+                pdfDoc = null;
+            }
+
+            var url = getPdfUrl();
+            pdfjsLib.getDocument({ url: url, withCredentials: true }).promise.then(function(pdf) {
+                pdfDoc = pdf;
+                totalPages = pdf.numPages;
+                updatePageNav();
+                renderPdfPage(currentPage);
+            }).catch(function(err) {
+                console.error('[PDF.js] load error:', err);
+                // 번역 PDF가 없으면 원문으로 폴백
+                if (currentTab !== 'original') {
+                    currentTab = 'original';
+                    $viewerTabs.querySelectorAll('.viewer-tab').forEach(function(tab) {
+                        tab.classList.toggle('active', tab.dataset.tab === 'original');
+                    });
+                    loadViewerPdf();
+                }
+            });
+        }
+
+        function renderPdfPage(pageNum) {
+            if (!pdfDoc) return;
+
+            if (pdfRendering) {
+                pdfPendingPage = pageNum;
+                return;
+            }
+
+            pdfRendering = true;
+
+            pdfDoc.getPage(pageNum).then(function(page) {
+                var wrapWidth = $canvasWrap.clientWidth - 32;
+                var viewport = page.getViewport({ scale: 1 });
+                var baseScale = wrapWidth / viewport.width;
+                var scale = baseScale * zoom;
+                var scaledViewport = page.getViewport({ scale: scale });
+
+                $pdfCanvas.width = scaledViewport.width;
+                $pdfCanvas.height = scaledViewport.height;
+
+                var ctx = $pdfCanvas.getContext('2d');
+                page.render({
+                    canvasContext: ctx,
+                    viewport: scaledViewport,
+                }).promise.then(function() {
+                    pdfRendering = false;
+                    if (pdfPendingPage !== null) {
+                        var pending = pdfPendingPage;
+                        pdfPendingPage = null;
+                        renderPdfPage(pending);
+                    }
+                }).catch(function() {
+                    pdfRendering = false;
+                });
+            });
+        }
+
+        // ── Tab switching ──
+        $viewerTabs.addEventListener('click', function(e) {
+            var tab = e.target.closest('.viewer-tab');
+            if (!tab) return;
+            var newTab = tab.dataset.tab;
+            if (newTab === currentTab) return;
+
+            currentTab = newTab;
+            $viewerTabs.querySelectorAll('.viewer-tab').forEach(function(t) {
+                t.classList.toggle('active', t.dataset.tab === newTab);
+            });
+
+            currentPage = 1;
+            loadViewerPdf();
+        });
+
+        // ── Page navigation ──
+        function updatePageNav() {
+            $pageInfo.textContent = currentPage + ' / ' + totalPages;
+            $pagePrev.disabled = currentPage <= 1;
+            $pageNext.disabled = currentPage >= totalPages;
+        }
+
+        $pagePrev.addEventListener('click', function() {
+            if (currentPage > 1) goToPage(currentPage - 1);
+        });
+        $pageNext.addEventListener('click', function() {
+            if (currentPage < totalPages) goToPage(currentPage + 1);
+        });
+
+        function goToPage(page) {
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderPdfPage(page);
+            $canvasWrap.scrollTop = 0;
+            updatePageNav();
+        }
+
+        // ── Keyboard shortcuts ──
+        document.addEventListener('keydown', function(e) {
+            if (!currentDocId) return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+            if (e.key === 'ArrowLeft') goToPage(currentPage - 1);
+            if (e.key === 'ArrowRight') goToPage(currentPage + 1);
+        });
+
+        // ── Zoom ──
+        $zoomIn.addEventListener('click', function() {
+            zoom = Math.min(ZOOM_MAX, zoom + ZOOM_STEP);
+            $zoomLevel.textContent = Math.round(zoom * 100) + '%';
+            renderPdfPage(currentPage);
+        });
+        $zoomOut.addEventListener('click', function() {
+            zoom = Math.max(ZOOM_MIN, zoom - ZOOM_STEP);
+            $zoomLevel.textContent = Math.round(zoom * 100) + '%';
+            renderPdfPage(currentPage);
+        });
+
+        // ── Resize handler ──
+        var resizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() {
+                if (currentDocId && pdfDoc) renderPdfPage(currentPage);
+            }, 200);
+        });
+
+        // ══════════════════════════════════════
+        // Utility
+        // ══════════════════════════════════════
+
+        function escHtml(str) {
+            var d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function formatDate(iso) {
+            try {
+                var d = new Date(iso);
+                return d.getFullYear() + '-' +
+                    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(d.getDate()).padStart(2, '0') + ' ' +
+                    String(d.getHours()).padStart(2, '0') + ':' +
+                    String(d.getMinutes()).padStart(2, '0');
+            } catch(e) { return iso; }
+        }
+
+    })();
+    </script>
+</body>
+</html>

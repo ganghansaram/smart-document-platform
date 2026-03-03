@@ -215,12 +215,12 @@
                     <div class="launcher-card-desc">문서 버전 비교 · 변경 추적</div>
                 </div>
             </div>
-            <div class="launcher-card active" id="card-reader">
+            <div class="launcher-card active" id="card-translator">
                 <div class="launcher-card-bg" style="background-image: url('css/images/1-2_KF-21.jpg')"></div>
                 <div class="launcher-card-overlay"></div>
                 <div class="launcher-card-body">
-                    <h3>Reader</h3>
-                    <div class="launcher-card-desc">논문 리딩 · 번역 · 정리</div>
+                    <h3>Translator</h3>
+                    <div class="launcher-card-desc">논문 번역 · PDF 뷰어</div>
                 </div>
             </div>
         </div>
@@ -250,11 +250,11 @@
             }, 400);
         });
 
-        // Reader 카드 클릭
-        document.getElementById('card-reader').addEventListener('click', function() {
+        // Translator 카드 클릭
+        document.getElementById('card-translator').addEventListener('click', function() {
             document.body.classList.add('fade-out');
             setTimeout(function() {
-                window.location.href = 'reader.html';
+                window.location.href = 'translator.html';
             }, 400);
         });
     </script>

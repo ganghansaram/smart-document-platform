@@ -1,7 +1,7 @@
 # Smart Document Platform
 
 에어갭(폐쇄망) 환경에서 사용 가능한 AI 기반 기술문서 웹 플랫폼입니다.
-3개의 독립 시스템(**Explorer**, **Reader**, **Launcher**)으로 구성됩니다.
+3개의 독립 시스템(**Explorer**, **Translator**, **Launcher**)으로 구성됩니다.
 
 ## 주요 특징
 
@@ -18,7 +18,7 @@
 - **그림/표 참조 팝업**: 캡션 자동 ID, 본문 참조 클릭 시 팝업
 - **항공 용어집**: 26,000+ 용어 검색, 본문 약어 자동 인식 + 클릭 팝업
 
-### Reader (PDF 번역 뷰어)
+### Translator (PDF 번역 뷰어)
 - **PDF.js 기반 뷰어**: 좌측 원본 PDF, 우측 번역 텍스트
 - **Ollama 기반 번역**: 페이지 단위 번역, 모델 선택 가능
 - **3종 뷰 모드**: 텍스트 / 번역PDF(mono) / 이중언어(dual)
@@ -26,7 +26,7 @@
 - **번역PDF 생성**: PyMuPDF 오버레이, 폰트 커스터마이징
 
 ### Launcher (통합 런처)
-- 각 시스템(Explorer, Reader)으로의 진입점
+- 각 시스템(Explorer, Translator)으로의 진입점
 
 ### 공통 기능
 - **3단계 RBAC 인증**: viewer / editor / admin 역할 기반 접근 제어
@@ -56,7 +56,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ### 3. 접속
 
 - Explorer: `http://localhost:8080/`
-- Reader: `http://localhost:8080/reader.html`
+- Translator: `http://localhost:8080/translator.html`
 - Launcher: `http://localhost:8080/launcher.html`
 
 > 콘텐츠 열람/검색/AI 채팅은 로그인 없이 가능합니다.
@@ -85,7 +85,7 @@ python tools/create-admin.py
 |------|------|
 | [ARCHITECTURE](docs/05-ARCHITECTURE.md) | 시스템 구성도, 서버별 설치 항목, API 설계 |
 | [RAG-PIPELINE](docs/06-RAG-PIPELINE.md) | 검색/AI 파이프라인, 임베딩, 청킹 전략 |
-| [READER-SYSTEM](docs/07-READER-SYSTEM.md) | Reader PDF 번역 뷰어 기술 문서 |
+| [TRANSLATOR-SYSTEM](docs/07-TRANSLATOR-SYSTEM.md) | Translator PDF 번역 뷰어 기술 문서 |
 
 **개발/전략**
 
@@ -105,7 +105,7 @@ python tools/create-admin.py
 ```
 smart-document-platform/
 ├── index.html              # Explorer 메인 페이지 (3-패널 레이아웃)
-├── reader.html             # Reader PDF 번역 뷰어
+├── translator.html             # Translator PDF 번역 뷰어
 ├── launcher.html           # Launcher 통합 진입점
 ├── login.html              # 독립 로그인 페이지
 ├── css/                    # 스타일시트
@@ -137,7 +137,7 @@ smart-document-platform/
 │   ├── keyboard.js        # 키보드 단축키
 │   ├── analytics.js       # 접속 통계
 │   ├── admin-settings.js  # 관리자 설정 페이지
-│   └── lib/pdfjs/         # PDF.js v3.11.174 (Reader용)
+│   └── lib/pdfjs/         # PDF.js v3.11.174 (Translator용)
 ├── data/                   # 데이터 파일
 │   ├── menu.json          # 메뉴 구조 정의
 │   ├── search-index.json  # 검색 인덱스
@@ -145,7 +145,7 @@ smart-document-platform/
 │   ├── settings.json      # 런타임 설정 오버라이드
 │   ├── auth.db            # 사용자/세션 DB
 │   ├── glossary.json      # 항공 용어집 (26,000+)
-│   └── reader/            # Reader 데이터 (PDF, 번역 캐시)
+│   └── translator/        # Translator 데이터 (PDF, 번역 캐시)
 ├── contents/               # HTML 콘텐츠
 ├── backend/                # FastAPI 백엔드
 │   ├── main.py            # 진입점
@@ -154,12 +154,12 @@ smart-document-platform/
 │   ├── requirements.txt   # 의존성 패키지
 │   ├── fonts/             # 번역PDF용 폰트 (MalgunGothic.ttf)
 │   ├── api/               # API 엔드포인트
-│   │   ├── reader.py     # Reader API (업로드, 번역, PDF 서빙)
+│   │   ├── translator.py     # Translator API (업로드, 번역, PDF 서빙)
 │   │   ├── settings.py   # 설정 API
 │   │   ├── analytics.py  # 통계 API
 │   │   └── auth.py       # 인증 API
 │   └── services/          # 비즈니스 로직
-│       ├── reader_service.py  # PDF 파싱, 번역, 바이너리 저장
+│       ├── translator_service.py  # PDF 파싱, 번역, 바이너리 저장
 │       ├── keyword_search.py  # 키워드 검색
 │       ├── vector_search.py   # FAISS 벡터 검색 + RRF 병합
 │       ├── reranker.py        # Cross-encoder 리랭킹
@@ -180,7 +180,7 @@ smart-document-platform/
     ├── 04-USER-GUIDE.md
     ├── 05-ARCHITECTURE.md
     ├── 06-RAG-PIPELINE.md
-    ├── 07-READER-SYSTEM.md
+    ├── 07-TRANSLATOR-SYSTEM.md
     ├── 08-GIT-GUIDE.md
     ├── 09-PLATFORM-VISION.md
     └── RAG-TECHNICAL-REPORT.md

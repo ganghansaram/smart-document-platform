@@ -48,10 +48,11 @@ UPLOAD_TEMP_DIR = None  # None이면 기본값 (backend/temp/)
 # DRM 환경에서 COM 임시 파일이 암호화되어 변환 실패 시 False로 설정
 WORD_COM_PREPROCESS = False
 
-# Reader 설정
-READER_DATA_DIR = str(Path(__file__).parent.parent / "data" / "reader")
-READER_MAX_PDF_SIZE = 100 * 1024 * 1024  # 100MB
-READER_TRANSLATION_TIMEOUT = 120  # seconds per paragraph
+# Translator 설정
+TRANSLATOR_DATA_DIR = str(Path(__file__).parent.parent / "data" / "translator")
+TRANSLATOR_MAX_PDF_SIZE = 100 * 1024 * 1024  # 100MB
+TRANSLATOR_TRANSLATION_MODEL = ""  # 빈값이면 OLLAMA_MODEL 폴백
+TRANSLATOR_PMT_TIMEOUT = 1200  # 20분, PMT CLI 타임아웃
 
 # 서버 설정
 HOST = "0.0.0.0"
