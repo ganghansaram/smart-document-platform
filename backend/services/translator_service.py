@@ -17,6 +17,21 @@ import config
 _active_tasks: dict[str, asyncio.Task] = {}
 _active_procs: dict[str, asyncio.subprocess.Process] = {}
 
+# ── GPU 동시 번역 제한 (L40-48GB 기준) ──
+_translation_semaphore: asyncio.Semaphore | None = None
+
+def _get_semaphore() -> asyncio.Semaphore:
+    """이벤트 루프 내에서 Semaphore 지연 생성"""
+    global _translation_semaphore
+    if _translation_semaphore is None:
+        max_concurrent = getattr(config, "TRANSLATOR_MAX_CONCURRENT", 4)
+        _translation_semaphore = asyncio.Semaphore(max_concurrent)
+    return _translation_semaphore
+
+# ── 진행 상태 메모리 캐시 (meta.json I/O 최소화) ──
+# 키: "{doc_id}:{page_num}" → progress_stage 문자열
+_page_progress: dict[str, str] = {}
+
 
 def _ensure_data_dir():
     """data/translator 디렉토리 보장"""
@@ -180,6 +195,7 @@ def delete_document(username: str, doc_id: str) -> bool:
         task = _active_tasks.pop(key, None)
         if task and not task.done():
             task.cancel()
+        _page_progress.pop(key, None)
 
     if doc_path.exists():
         shutil.rmtree(doc_path, ignore_errors=True)
@@ -247,8 +263,19 @@ def start_page_translation(username: str, doc_id: str, page_num: int, model: Opt
     _save_meta(username, doc_id, meta)
 
     key = _task_key(doc_id, page_num)
-    task = asyncio.create_task(_run_pmt_page(username, doc_id, page_num, effective_model))
+    _page_progress[key] = "번역 대기 중..."
+    task = asyncio.create_task(_run_pmt_page_guarded(username, doc_id, page_num, effective_model))
     _active_tasks[key] = task
+
+
+async def _run_pmt_page_guarded(username: str, doc_id: str, page_num: int, model: str):
+    """Semaphore로 동시 번역 수 제한 후 실제 번역 실행"""
+    key = _task_key(doc_id, page_num)
+    sem = _get_semaphore()
+    _page_progress[key] = "번역 대기 중... (GPU 순서 대기)"
+    async with sem:
+        _page_progress[key] = "번역 준비 중..."
+        await _run_pmt_page(username, doc_id, page_num, model)
 
 
 async def _run_pmt_page(username: str, doc_id: str, page_num: int, model: str):
@@ -404,24 +431,26 @@ async def _run_pmt_page(username: str, doc_id: str, page_num: int, model: str):
     finally:
         _active_tasks.pop(key, None)
         _active_procs.pop(key, None)
+        _page_progress.pop(key, None)
 
 
 def get_page_translation_status(username: str, doc_id: str, page_num: int) -> Optional[dict]:
-    """페이지별 번역 상태"""
+    """페이지별 번역 상태 (활성 Task는 메모리 캐시 우선, 그 외 meta.json)"""
+    key = _task_key(doc_id, page_num)
+
+    # 활성 Task가 있으면 메모리에서 즉시 반환 (파일 I/O 없음)
+    if key in _active_tasks and not _active_tasks[key].done():
+        return {
+            "status": "translating",
+            "progress_stage": _page_progress.get(key, "번역 준비 중..."),
+        }
+
+    # 완료/에러/미번역은 meta.json에서 확인
     meta = _load_meta(username, doc_id)
     if not meta:
         return None
 
     ps = meta.get("page_status", {}).get(str(page_num))
-
-    # 런타임 상태 보정
-    key = _task_key(doc_id, page_num)
-    if key in _active_tasks and not _active_tasks[key].done():
-        if ps:
-            ps["status"] = "translating"
-        else:
-            ps = {"status": "translating", "progress_stage": "번역 준비 중..."}
-
     if not ps:
         return {"status": "pending"}
 
@@ -442,6 +471,7 @@ def cancel_page_translation(username: str, doc_id: str, page_num: int) -> bool:
     task = _active_tasks.pop(key, None)
     if task and not task.done():
         task.cancel()
+    _page_progress.pop(key, None)
 
     meta = _load_meta(username, doc_id)
     if not meta:
@@ -462,12 +492,14 @@ def get_doc_page_summary(username: str, doc_id: str) -> Optional[dict]:
 
     page_status = meta.get("page_status", {})
 
-    # 런타임 상태 보정
+    # 런타임 상태 보정 (메모리 캐시에서 최신 progress_stage 반영)
     for key, task in _active_tasks.items():
         if key.startswith(doc_id + ":") and not task.done():
             pnum = key.split(":")[1]
-            if pnum in page_status:
-                page_status[pnum]["status"] = "translating"
+            page_status[pnum] = {
+                "status": "translating",
+                "progress_stage": _page_progress.get(key, "번역 준비 중..."),
+            }
 
     return {
         "id": doc_id,
@@ -481,15 +513,9 @@ def get_doc_page_summary(username: str, doc_id: str) -> Optional[dict]:
 # ── 헬퍼 ──
 
 def _update_page_progress(username: str, doc_id: str, page_num: int, stage: str):
-    meta = _load_meta(username, doc_id)
-    if meta:
-        ps = meta.get("page_status", {})
-        entry = ps.get(str(page_num), {})
-        entry["progress_stage"] = stage
-        entry["status"] = "translating"
-        ps[str(page_num)] = entry
-        meta["page_status"] = ps
-        _save_meta(username, doc_id, meta)
+    """메모리 캐시에만 진행 상태 저장 (파일 I/O 없음)"""
+    key = _task_key(doc_id, page_num)
+    _page_progress[key] = stage
 
 
 def _mark_page_error(username: str, doc_id: str, page_num: int, error_msg: str):
@@ -506,6 +532,7 @@ def _mark_page_error(username: str, doc_id: str, page_num: int, error_msg: str):
 
     key = _task_key(doc_id, page_num)
     _active_tasks.pop(key, None)
+    _page_progress.pop(key, None)
 
 
 def _update_index_status(username: str, doc_id: str, status: str):
