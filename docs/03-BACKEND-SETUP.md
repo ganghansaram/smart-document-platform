@@ -26,6 +26,7 @@
 **백엔드가 제공하는 기능:**
 - AI 채팅 API (`/api/chat`, `/api/search`)
 - 문서 편집 저장 API (`/api/save-document`)
+- Translator API (`/api/translator/*`) — PDF 업로드, PMT 번역, 문서 관리
 - 관리자 인증 API (`/api/auth/*`) — 업로드/편집/인덱싱은 admin 로그인 필요
 - 관리자 설정 API (`/api/settings`) — 런타임 설정 변경
 - 접속 통계 API (`/api/analytics/*`) — heartbeat, 대시보드
@@ -46,6 +47,7 @@
 │  - /api/save-document   문서 저장 API (admin)            │
 │  - /api/upload          문서 업로드/변환 API (admin)     │
 │  - /api/reindex         검색 인덱스 재생성 API (admin)   │
+│  - /api/translator/*    Translator PDF 번역 API          │
 └─────────────────────────────────────────────────────────┘
                           │
                           ▼ (AI 사용 시만)
@@ -104,40 +106,42 @@ smart-document-platform/
 
 ## Step 2: requirements.txt 생성
 
-### 2.1 백엔드 기본 패키지
-
-`backend/requirements.txt`:
+모든 백엔드 의존성은 `backend/requirements.txt`에 통합되어 있습니다.
 
 ```
+# 웹 프레임워크
 fastapi==0.128.3
 uvicorn==0.40.0
-requests==2.32.3
 python-multipart==0.0.22
-faiss-cpu>=1.7.4
-numpy>=1.24.0
+pydantic==2.12.5
+pydantic-settings==2.13.1
+
+# HTTP / 유틸
+requests==2.32.3
+
+# 검색 / RAG
+faiss-cpu==1.12.0
+sentence-transformers==5.1.2
+
+# Translator (PDF 번역)
+pdf2zh-next==2.8.2
+PyMuPDF==1.25.2
+
+# Explorer (문서 변환)
+python-docx==1.2.0
+
+# Ollama 클라이언트
+ollama==0.6.1
+
+# Windows 전용 (장절번호 COM 전처리, 선택)
+# pywin32==308
 ```
 
-### 2.2 리랭커 패키지 (검색 정밀도 향상, 선택)
+> **sentence-transformers**: Cross-encoder 리랭커(`bge-reranker-v2-m3`)에 필요. 미설치 시 리랭킹 비활성화.
 
-```
-sentence-transformers>=2.2.2
-```
+> **pdf2zh-next**: Translator PDF 번역 엔진(PDFMathTranslate). babeldoc 캐시 필요 (아래 참조).
 
-> **참고:** `sentence-transformers`는 Cross-encoder 리랭커(`bge-reranker-v2-m3`)에 필요합니다. 미설치 시 리랭킹이 비활성화되며 하이브리드 검색만 동작합니다.
-
-### 2.3 변환기 패키지 (업로드 기능 사용 시)
-
-`tools/converter/requirements.txt`:
-
-```
-python-docx>=0.8.11
-PyMuPDF>=1.24.0
-pywin32>=306
-```
-
-> **참고:** 문서 업로드 기능(`UPLOAD_CONFIG.enabled: true`)을 사용하지 않으면 변환기 패키지는 설치하지 않아도 됩니다.
-
-> **pywin32 (장절번호 자동 평문화):** Word의 다단계 목록 자동번호(1.1, 3.2.4 등)를 텍스트로 변환합니다. **Word가 설치된 환경에서만 동작**하며, Word 또는 pywin32가 없으면 자동번호 없이 변환됩니다 (기존 동작과 동일).
+> **pywin32**: Word 장절번호 자동 평문화용. Word 설치 환경에서만 동작.
 
 ---
 
@@ -152,43 +156,41 @@ cd C:\AHS_Proj\smart-document-platform\backend
 pip download -r requirements.txt -d ./packages/
 ```
 
-`backend/packages/` 폴더에 `.whl` 파일들이 생성됨:
+`backend/packages/` 폴더에 `.whl` 파일들이 생성됨.
+
+> **주의:** PyMuPDF 등의 `.whl` 파일은 **OS와 Python 버전에 따라 다릅니다**. 폐쇄망 대상 PC와 동일한 환경(Windows x64, Python 버전)에서 다운로드해야 합니다.
+
+### 3.2 babeldoc 캐시 복사 (Translator 번역 기능)
+
+pdf2zh-next(PDFMathTranslate)는 첫 실행 시 CMap/폰트/모델 파일 약 **533MB**를 인터넷에서 다운로드합니다. 폐쇄망에서는 이 캐시를 미리 복사해야 합니다.
+
+**인터넷 PC에서 캐시 생성** (이미 번역을 한 번 실행했다면 생성되어 있음):
+
 ```
-backend/packages/
-├── fastapi-0.128.3-py3-none-any.whl
-├── uvicorn-0.40.0-py3-none-any.whl
-├── starlette-0.52.1-py3-none-any.whl
-├── ... (의존성 패키지들)
+C:\Users\{사용자}\.cache\babeldoc\
+├── cache.v1.db
+├── cmap/          # CMap 데이터
+├── fonts/         # 폰트 파일
+├── models/        # ONNX 모델
+├── tiktoken/      # 토크나이저 캐시
+└── working/
 ```
 
-### 3.2 변환기 패키지 다운로드 (업로드 기능 사용 시)
+**폐쇄망 서버 PC에 복사**:
 
 ```cmd
-cd C:\AHS_Proj\smart-document-platform\tools\converter
-pip download -r requirements.txt -d ./packages/
+:: 인터넷 PC의 babeldoc 캐시를 USB 등으로 복사
+:: → 폐쇄망 서버 PC의 동일 경로에 배치
+xcopy /E /I "babeldoc" "C:\Users\{서버계정}\.cache\babeldoc\"
 ```
 
-`tools/converter/packages/` 폴더에 `.whl` 파일들이 생성됨:
-```
-tools/converter/packages/
-├── python_docx-x.x.x-py3-none-any.whl
-├── PyMuPDF-x.x.x-cpXX-cpXX-win_amd64.whl
-├── pywin32-xxx-cpXX-cpXX-win_amd64.whl
-├── lxml-x.x.x-cpXX-cpXX-win_amd64.whl
-├── ... (의존성 패키지들)
-```
-
-> **주의:** PyMuPDF, pywin32의 `.whl` 파일은 **OS와 Python 버전에 따라 다릅니다**. 폐쇄망 대상 PC와 동일한 환경(Windows x64, Python 버전)에서 다운로드해야 합니다.
+> **중요:** 이 캐시는 **백엔드 서버 PC에만** 필요합니다 (사용자 PC 불필요). 캐시가 없으면 번역 시작 시 다운로드를 시도하여 폐쇄망에서 실패합니다.
 
 ### 3.3 폐쇄망에서 설치
 
 ```cmd
 :: 백엔드 패키지 설치
 cd backend
-pip install --no-index --find-links=./packages/ -r requirements.txt
-
-:: 변환기 패키지 설치 (업로드 기능 사용 시)
-cd ..\tools\converter
 pip install --no-index --find-links=./packages/ -r requirements.txt
 ```
 
@@ -844,8 +846,9 @@ http://localhost:8080
 ## 체크리스트
 
 - [ ] Step 1: 폴더 구조 생성
-- [ ] Step 2: requirements.txt 생성
-- [ ] Step 3: 오프라인 패키지 다운로드
+- [ ] Step 2: requirements.txt 확인
+- [ ] Step 3-1: 오프라인 패키지 다운로드 (`pip download`)
+- [ ] Step 3-2: babeldoc 캐시 복사 (Translator 사용 시, `~/.cache/babeldoc/` → 서버 PC)
 - [ ] Step 4: 백엔드 코드 작성
 - [ ] Step 5: 로컬 테스트
 - [ ] Step 6: 폐쇄망 배포

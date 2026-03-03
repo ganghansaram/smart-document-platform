@@ -19,11 +19,11 @@
 - **항공 용어집**: 26,000+ 용어 검색, 본문 약어 자동 인식 + 클릭 팝업
 
 ### Translator (PDF 번역 뷰어)
-- **PDF.js 기반 뷰어**: 좌측 원본 PDF, 우측 번역 텍스트
-- **Ollama 기반 번역**: 페이지 단위 번역, 모델 선택 가능
-- **3종 뷰 모드**: 텍스트 / 번역PDF(mono) / 이중언어(dual)
-- **번역 캐시**: JSON 영구화, 수동 편집 가능
-- **번역PDF 생성**: PyMuPDF 오버레이, 폰트 커스터마이징
+- **PDFMathTranslate 기반**: 레이아웃/수식 보존 문서 단위 통번역 (pdf2zh CLI)
+- **PDF.js 뷰어**: 단일 패널, 3탭 전환 (번역PDF / 이중언어 / 원문)
+- **카드 기반 문서 관리**: 상태별 UI (pending/translating/done/error)
+- **백그라운드 번역**: asyncio 비동기 실행, 실시간 상태 폴링
+- **개인 작업공간**: 사용자별 디렉토리 격리
 
 ### Launcher (통합 런처)
 - 각 시스템(Explorer, Translator)으로의 진입점
@@ -145,21 +145,20 @@ smart-document-platform/
 │   ├── settings.json      # 런타임 설정 오버라이드
 │   ├── auth.db            # 사용자/세션 DB
 │   ├── glossary.json      # 항공 용어집 (26,000+)
-│   └── translator/        # Translator 데이터 (PDF, 번역 캐시)
+│   └── translator/        # Translator 데이터 ({username}/{doc_id}/)
 ├── contents/               # HTML 콘텐츠
 ├── backend/                # FastAPI 백엔드
 │   ├── main.py            # 진입점
 │   ├── config.py          # 백엔드 설정
 │   ├── dependencies.py    # FastAPI 의존성
 │   ├── requirements.txt   # 의존성 패키지
-│   ├── fonts/             # 번역PDF용 폰트 (MalgunGothic.ttf)
 │   ├── api/               # API 엔드포인트
 │   │   ├── translator.py     # Translator API (업로드, 번역, PDF 서빙)
 │   │   ├── settings.py   # 설정 API
 │   │   ├── analytics.py  # 통계 API
 │   │   └── auth.py       # 인증 API
 │   └── services/          # 비즈니스 로직
-│       ├── translator_service.py  # PDF 파싱, 번역, 바이너리 저장
+│       ├── translator_service.py  # PMT 번역, 개인 작업공간, 메타 관리
 │       ├── keyword_search.py  # 키워드 검색
 │       ├── vector_search.py   # FAISS 벡터 검색 + RRF 병합
 │       ├── reranker.py        # Cross-encoder 리랭킹
@@ -195,7 +194,7 @@ smart-document-platform/
 | **AI/LLM** | Ollama (로컬 LLM, 에어갭 호환) |
 | **검색** | BM25 + FAISS (faiss-cpu), bge-m3 임베딩 |
 | **리랭킹** | sentence-transformers, bge-reranker-v2-m3 |
-| **PDF** | PDF.js v3.11.174 (뷰어), PyMuPDF (번역PDF 생성) |
+| **PDF** | PDF.js v3.11.174 (뷰어), PDFMathTranslate/pdf2zh (번역), PyMuPDF (페이지 수 추출) |
 | **데이터** | JSON, SQLite (auth.db) |
 | **웹서버** | Apache Tomcat / Python http.server |
 
