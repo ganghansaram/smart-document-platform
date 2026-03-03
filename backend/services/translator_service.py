@@ -269,6 +269,13 @@ async def _run_pmt(username: str, doc_id: str, model: str):
 
     _update_progress(username, doc_id, "번역 중...")
 
+    # 로그 파일 설정
+    log_path = _doc_dir(username, doc_id) / "pmt.log"
+
+    def _log(msg):
+        with open(log_path, "a", encoding="utf-8") as lf:
+            lf.write(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}\n")
+
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -279,12 +286,20 @@ async def _run_pmt(username: str, doc_id: str, model: str):
         timeout = getattr(config, "TRANSLATOR_PMT_TIMEOUT", 1200)
         deadline = time.monotonic() + timeout
 
+        # 단계별 타이밍 로그
+        pmt_start = time.monotonic()
+        last_stage_time = pmt_start
+        last_stage_name = "시작"
+        _log(f"시작 | doc: {doc_id} | model: {model}")
+
         # stderr에서 진행 정보 파싱
         while True:
             if time.monotonic() > deadline:
                 proc.kill()
                 shutil.rmtree(tmp_dir, ignore_errors=True)
                 _mark_error(username, doc_id, f"번역 시간 초과 ({timeout // 60}분)")
+                elapsed = time.monotonic() - pmt_start
+                _log(f"TIMEOUT | total {elapsed:.1f}s")
                 return
 
             try:
@@ -299,6 +314,8 @@ async def _run_pmt(username: str, doc_id: str, model: str):
             if not text:
                 continue
 
+            _log(f"stderr: {text}")
+
             # 진행 단계 추출
             stage = None
             if "translat" in text.lower():
@@ -311,11 +328,17 @@ async def _run_pmt(username: str, doc_id: str, model: str):
                 stage = "PDF 생성 중..."
 
             if stage:
+                now = time.monotonic()
+                _log(f"{stage} | +{now - last_stage_time:.1f}s (prev: {last_stage_name})")
+                last_stage_time = now
+                last_stage_name = stage
                 _update_progress(username, doc_id, stage)
 
         await proc.wait()
 
         if proc.returncode != 0:
+            elapsed = time.monotonic() - pmt_start
+            _log(f"FAILED (exit {proc.returncode}) | total {elapsed:.1f}s")
             stdout_data = await proc.stdout.read()
             shutil.rmtree(tmp_dir, ignore_errors=True)
             log_text = stdout_data.decode("utf-8", errors="replace")[-500:] if stdout_data else ""
@@ -339,6 +362,8 @@ async def _run_pmt(username: str, doc_id: str, model: str):
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
         # 성공 마킹
+        elapsed = time.monotonic() - pmt_start
+        _log(f"DONE | total {elapsed:.1f}s")
         meta = _load_meta(username, doc_id)
         if meta:
             meta["status"] = "done"
