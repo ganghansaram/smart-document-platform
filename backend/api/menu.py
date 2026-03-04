@@ -19,7 +19,6 @@ SYSTEM_URLS = {
     "glossary:terms",
     "contents/about.html",
     "analytics:dashboard",
-    "settings:admin",
 }
 
 
@@ -56,7 +55,7 @@ def _strip_system(menu: list) -> list:
 
 
 def _reassemble(content: list, system_items: dict) -> list:
-    """홈 → [콘텐츠] → 용어집/정보/대시보드/관리자설정 순으로 재조립"""
+    """홈 → [콘텐츠] → 용어집/정보/대시보드 순으로 재조립"""
     result = []
 
     # 홈 (맨 앞)
@@ -70,7 +69,7 @@ def _reassemble(content: list, system_items: dict) -> list:
             result.append(node)
 
     # 후미 시스템 항목 (순서 고정)
-    for url in ["glossary:terms", "contents/about.html", "analytics:dashboard", "settings:admin"]:
+    for url in ["glossary:terms", "contents/about.html", "analytics:dashboard"]:
         item = system_items.get(url)
         if item:
             result.append(item)

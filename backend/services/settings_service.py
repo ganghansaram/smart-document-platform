@@ -40,6 +40,15 @@ DEFAULT_SETTINGS: dict = {
     },
     "translator": {
         "translation_model": "",
+        "custom_prompt": "",
+        "disable_rich_text": False,
+        "translate_table_text": False,
+        "min_text_length": 0,
+        "max_concurrent": 4,
+        "page_timeout": 300,
+        "qps": 0,
+        "ocr_workaround": False,
+        "enhance_compatibility": False,
     },
     "upload": {
         "word_com_preprocess": False,
@@ -89,6 +98,10 @@ _NO_RESTART = {
     "session.max_sessions", "session.max_idle_minutes",
     "upload.word_com_preprocess", "upload.upload_temp_dir",
     "translator.translation_model",
+    "translator.custom_prompt", "translator.disable_rich_text",
+    "translator.translate_table_text", "translator.min_text_length",
+    "translator.max_concurrent", "translator.page_timeout",
+    "translator.qps", "translator.ocr_workaround", "translator.enhance_compatibility",
     "frontend",  # prefix match
 }
 # 나머지(ollama_url, ollama_model, embedding_model, session_expiry_hours,
@@ -174,7 +187,16 @@ def apply_to_config(settings: dict) -> list[str]:
     _set(sec, "cors_origins",   "CORS_ORIGINS",   restart_needed)
 
     rdr = settings.get("translator", {})
-    _set(rdr, "translation_model", "TRANSLATOR_TRANSLATION_MODEL", restart_needed, immediate=True)
+    _set(rdr, "translation_model",    "TRANSLATOR_TRANSLATION_MODEL",  restart_needed, immediate=True)
+    _set(rdr, "custom_prompt",        "TRANSLATOR_CUSTOM_PROMPT",       restart_needed, immediate=True)
+    _set(rdr, "disable_rich_text",    "TRANSLATOR_DISABLE_RICH_TEXT",   restart_needed, immediate=True)
+    _set(rdr, "translate_table_text", "TRANSLATOR_TRANSLATE_TABLE",     restart_needed, immediate=True)
+    _set(rdr, "min_text_length",      "TRANSLATOR_MIN_TEXT_LENGTH",     restart_needed, immediate=True)
+    _set(rdr, "max_concurrent",       "TRANSLATOR_MAX_CONCURRENT",      restart_needed, immediate=True)
+    _set(rdr, "page_timeout",         "TRANSLATOR_PAGE_TIMEOUT",        restart_needed, immediate=True)
+    _set(rdr, "qps",                  "TRANSLATOR_QPS",                 restart_needed, immediate=True)
+    _set(rdr, "ocr_workaround",       "TRANSLATOR_OCR_WORKAROUND",      restart_needed, immediate=True)
+    _set(rdr, "enhance_compatibility","TRANSLATOR_ENHANCE_COMPAT",      restart_needed, immediate=True)
 
     upl = settings.get("upload", {})
     _set(upl, "word_com_preprocess", "WORD_COM_PREPROCESS", restart_needed, immediate=True)

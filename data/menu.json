@@ -190,9 +190,5 @@
   {
     "label": "대시보드",
     "url": "analytics:dashboard"
-  },
-  {
-    "label": "관리자 설정",
-    "url": "settings:admin"
   }
 ]

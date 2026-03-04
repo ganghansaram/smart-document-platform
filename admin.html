@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings — Smart Document Platform</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/platform-header.css">
+    <link rel="stylesheet" href="css/content.css">
+    <link rel="stylesheet" href="css/admin-settings.css">
+</head>
+<body style="visibility:hidden">
+    <div id="main-content"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/platform-header.js"></script>
+    <script src="js/admin-settings.js"></script>
+    <script>
+    // ── 테마 초기화 ──
+    (function() {
+        var saved = localStorage.getItem('theme');
+        document.body.dataset.theme = (saved === 'dark') ? 'dark' : 'light';
+    })();
+
+    var _headerResult = initPlatformHeader({
+        title: 'Settings',
+        navItems: [{ id: 'back-launcher', label: 'Platform', href: 'launcher.html' }],
+        showThemeToggle: true,
+        onAuth: function(user) {
+            if (user.role !== 'admin') {
+                window.location.replace('launcher.html');
+                return;
+            }
+            document.body.style.visibility = 'visible';
+            renderAdminSettings();
+        }
+    });
+
+    // ── 테마 토글 ──
+    var $themeToggle = document.getElementById('theme-toggle');
+    if ($themeToggle) {
+        $themeToggle.addEventListener('click', function() {
+            var isDark = document.body.dataset.theme === 'dark';
+            document.body.dataset.theme = isDark ? 'light' : 'dark';
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        });
+    }
+    </script>
+</body>
+</html>

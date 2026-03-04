@@ -330,17 +330,6 @@ function loadContent(url) {
         return;
     }
 
-    // 관리자 설정 페이지
-    if (url === 'settings:admin') {
-        if (typeof pauseSlideshow === 'function') pauseSlideshow();
-        AppState.currentPage = url;
-        updatePageUrl(url);
-        if (typeof highlightCurrentPage === 'function') highlightCurrentPage(url);
-        if (typeof renderAdminSettings === 'function') renderAdminSettings();
-        updateBreadcrumb(url);
-        return;
-    }
-
     // 대시보드 페이지: API 기반 동적 렌더링
     if (url === 'analytics:dashboard') {
         if (typeof pauseSlideshow === 'function') pauseSlideshow();

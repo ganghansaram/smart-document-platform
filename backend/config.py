@@ -55,6 +55,13 @@ TRANSLATOR_TRANSLATION_MODEL = ""  # 빈값이면 OLLAMA_MODEL 폴백
 TRANSLATOR_PMT_TIMEOUT = 3600  # 60분, 레거시 통번역 타임아웃
 TRANSLATOR_PAGE_TIMEOUT = 300  # 5분, 페이지별 번역 타임아웃
 TRANSLATOR_MAX_CONCURRENT = 4  # 동시 번역 최대 수 (GPU 부하 제한)
+TRANSLATOR_CUSTOM_PROMPT = ""          # --custom-system-prompt
+TRANSLATOR_DISABLE_RICH_TEXT = False    # --disable-rich-text-translate
+TRANSLATOR_TRANSLATE_TABLE = False      # --translate-table-text
+TRANSLATOR_MIN_TEXT_LENGTH = 0          # --min-text-length
+TRANSLATOR_QPS = 0                      # --qps (0=무제한)
+TRANSLATOR_OCR_WORKAROUND = False       # --ocr-workaround
+TRANSLATOR_ENHANCE_COMPAT = False       # --enhance-compatibility
 
 # 서버 설정
 HOST = "0.0.0.0"

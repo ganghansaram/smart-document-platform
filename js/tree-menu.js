@@ -121,12 +121,10 @@ function createMenuList(items) {
             itemIcon.classList.add('icon-glossary');
         } else if (item.url === 'analytics:dashboard') {
             itemIcon.classList.add('icon-analytics');
-        } else if (item.url === 'settings:admin') {
-            itemIcon.classList.add('icon-settings');
         }
 
-        // 대시보드/설정 메뉴: admin 전용 (auth-admin-only 클래스)
-        if (item.url === 'analytics:dashboard' || item.url === 'settings:admin') {
+        // 대시보드 메뉴: admin 전용 (auth-admin-only 클래스)
+        if (item.url === 'analytics:dashboard') {
             li.classList.add('auth-admin-only');
         }
 
@@ -430,10 +428,8 @@ function createFilteredMenuList(items, query) {
             itemIcon.classList.add('icon-glossary');
         } else if (item.url === 'analytics:dashboard') {
             itemIcon.classList.add('icon-analytics');
-        } else if (item.url === 'settings:admin') {
-            itemIcon.classList.add('icon-settings');
         }
-        if (item.url === 'analytics:dashboard' || item.url === 'settings:admin') {
+        if (item.url === 'analytics:dashboard') {
             li.classList.add('auth-admin-only');
         }
         // URL이 있는 문서는 has-url 클래스 추가

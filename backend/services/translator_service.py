@@ -488,8 +488,25 @@ async def _run_pmt_pages(username: str, doc_id: str, pages_str: str, page_list: 
         "--only-include-translated-page",
         "--no-dual",
         "--output", str(tmp_dir),
-        str(src_path),
     ]
+
+    # 동적 옵션 (settings에서 읽음)
+    if getattr(config, "TRANSLATOR_CUSTOM_PROMPT", ""):
+        cmd += ["--custom-system-prompt", config.TRANSLATOR_CUSTOM_PROMPT]
+    if getattr(config, "TRANSLATOR_DISABLE_RICH_TEXT", False):
+        cmd.append("--disable-rich-text-translate")
+    if getattr(config, "TRANSLATOR_TRANSLATE_TABLE", False):
+        cmd.append("--translate-table-text")
+    if getattr(config, "TRANSLATOR_MIN_TEXT_LENGTH", 0) > 0:
+        cmd += ["--min-text-length", str(config.TRANSLATOR_MIN_TEXT_LENGTH)]
+    if getattr(config, "TRANSLATOR_QPS", 0) > 0:
+        cmd += ["--qps", str(config.TRANSLATOR_QPS)]
+    if getattr(config, "TRANSLATOR_OCR_WORKAROUND", False):
+        cmd.append("--ocr-workaround")
+    if getattr(config, "TRANSLATOR_ENHANCE_COMPAT", False):
+        cmd.append("--enhance-compatibility")
+
+    cmd.append(str(src_path))  # 입력 파일은 항상 마지막
 
     for pnum in page_list:
         _update_page_progress(username, doc_id, pnum, "번역 중...")
