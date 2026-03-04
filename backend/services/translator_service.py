@@ -52,6 +52,10 @@ def _user_index_path(username: str) -> Path:
     return _user_dir(username) / "_index.json"
 
 
+def _user_folders_path(username: str) -> Path:
+    return _user_dir(username) / "_folders.json"
+
+
 def _generate_id() -> str:
     now = datetime.now()
     rand = hashlib.md5(os.urandom(8)).hexdigest()[:6]
@@ -135,6 +139,121 @@ def _save_meta(username: str, doc_id: str, meta: dict):
 
 
 # ══════════════════════════════════════
+# 폴더 CRUD
+# ══════════════════════════════════════
+
+def _load_user_folders(username: str) -> list[dict]:
+    path = _user_folders_path(username)
+    if path.exists():
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+
+def _save_user_folders(username: str, folders: list[dict]):
+    udir = _user_dir(username)
+    udir.mkdir(parents=True, exist_ok=True)
+    with open(_user_folders_path(username), "w", encoding="utf-8") as f:
+        json.dump(folders, f, ensure_ascii=False, indent=2)
+
+
+def get_folders(username: str) -> list[dict]:
+    return _load_user_folders(username)
+
+
+def create_folder(username: str, name: str, parent_id: Optional[str] = None) -> dict:
+    folders = _load_user_folders(username)
+
+    # parent_id 유효성 검증
+    if parent_id:
+        if not any(f["id"] == parent_id for f in folders):
+            raise ValueError(f"상위 폴더를 찾을 수 없습니다: {parent_id}")
+
+    # 같은 레벨에서 order 산출
+    siblings = [f for f in folders if f.get("parent_id") == parent_id]
+    order = max((f.get("order", 0) for f in siblings), default=-1) + 1
+
+    folder = {
+        "id": "f_" + _generate_id(),
+        "name": name,
+        "parent_id": parent_id,
+        "order": order,
+    }
+    folders.append(folder)
+    _save_user_folders(username, folders)
+    return folder
+
+
+def rename_folder(username: str, folder_id: str, new_name: str) -> dict:
+    folders = _load_user_folders(username)
+    for f in folders:
+        if f["id"] == folder_id:
+            f["name"] = new_name
+            _save_user_folders(username, folders)
+            return f
+    raise FileNotFoundError(f"폴더를 찾을 수 없습니다: {folder_id}")
+
+
+def delete_folder(username: str, folder_id: str) -> bool:
+    """폴더 삭제 — 하위 폴더/문서는 삭제된 폴더의 상위로 이동"""
+    folders = _load_user_folders(username)
+    target = None
+    for f in folders:
+        if f["id"] == folder_id:
+            target = f
+            break
+    if not target:
+        return False
+
+    parent_id = target.get("parent_id")
+
+    # 하위 폴더들의 parent_id를 삭제 폴더의 parent로 변경
+    for f in folders:
+        if f.get("parent_id") == folder_id:
+            f["parent_id"] = parent_id
+
+    # 대상 폴더 제거
+    folders = [f for f in folders if f["id"] != folder_id]
+    _save_user_folders(username, folders)
+
+    # 이 폴더에 속한 문서들을 상위 폴더로 이동
+    index = _load_user_index(username)
+    changed = False
+    for entry in index:
+        if entry.get("folder") == folder_id:
+            entry["folder"] = parent_id
+            changed = True
+    if changed:
+        _save_user_index(username, index)
+
+    return True
+
+
+def move_document_to_folder(username: str, doc_id: str, folder_id: Optional[str]) -> bool:
+    """문서를 폴더로 이동 (folder_id=None → 루트)"""
+    if folder_id:
+        folders = _load_user_folders(username)
+        if not any(f["id"] == folder_id for f in folders):
+            raise ValueError(f"폴더를 찾을 수 없습니다: {folder_id}")
+
+    index = _load_user_index(username)
+    found = False
+    for entry in index:
+        if entry["id"] == doc_id:
+            entry["folder"] = folder_id
+            found = True
+            break
+    if not found:
+        return False
+
+    _save_user_index(username, index)
+    return True
+
+
+# ══════════════════════════════════════
 # 업로드
 # ══════════════════════════════════════
 
@@ -192,6 +311,8 @@ def get_documents(username: str) -> list[dict]:
         meta = _load_meta(username, entry["id"])
         if meta:
             entry["status"] = meta.get("status", "uploaded")
+            if meta.get("title") and meta["title"] != meta.get("filename"):
+                entry["title"] = meta["title"]
             entry["has_legacy_translation"] = meta.get("has_legacy_translation", False)
             # 페이지별 번역 통계
             page_status = meta.get("page_status", {})
@@ -244,6 +365,23 @@ def delete_document(username: str, doc_id: str) -> bool:
     if len(new_index) == len(index):
         return False
     _save_user_index(username, new_index)
+    return True
+
+
+def rename_document(username: str, doc_id: str, new_title: str) -> bool:
+    """문서 제목(title) 변경 — meta.json + _index.json 동시 갱신"""
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        return False
+    meta["title"] = new_title
+    _save_meta(username, doc_id, meta)
+    # 인덱스에도 title 반영
+    index = _load_user_index(username)
+    for entry in index:
+        if entry["id"] == doc_id:
+            entry["title"] = new_title
+            break
+    _save_user_index(username, index)
     return True
 
 
