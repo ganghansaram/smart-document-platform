@@ -6,6 +6,7 @@
     <title>Translator — Smart Document Platform</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/platform-header.css">
+    <link rel="stylesheet" href="css/tree-menu.css">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -557,6 +558,283 @@
         body[data-theme="dark"] .page-spinner { border-color: rgba(255,255,255,0.1); border-top-color: #58a6ff; }
 
         body[data-theme="dark"] .translator-footer { color: rgba(255,255,255,0.2); border-top-color: rgba(255,255,255,0.05); }
+
+        /* ══════════════════════════════════════
+           트리 패널 (오버레이)
+           ══════════════════════════════════════ */
+
+        .tree-panel-trigger {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 56px;
+            z-index: 99;
+            cursor: pointer;
+            background: #f5f7fa;
+            border: 1px solid #dde4e8;
+            border-left: none;
+            border-radius: 0 6px 6px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            opacity: 0.5;
+            transition: all 0.25s ease;
+        }
+
+        .tree-panel-trigger::after {
+            content: '\203A';
+            font-size: 20px;
+            font-weight: 300;
+            color: #7f8c8d;
+            line-height: 1;
+        }
+
+        .tree-panel-trigger:hover {
+            background: #fff;
+            border-color: #0066cc;
+            box-shadow: 0 2px 12px rgba(0,102,204,0.15);
+            opacity: 1;
+        }
+
+        .tree-panel-trigger:hover::after {
+            color: #0066cc;
+        }
+
+        /* 패널 열렸을 때 손잡이 숨김 */
+        .tree-panel-overlay.open ~ .tree-panel-trigger {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .tree-panel-overlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100%;
+            background: #fff;
+            border-right: 1px solid #dde4e8;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+        }
+
+        .tree-panel-overlay.open {
+            transform: translateX(0);
+        }
+
+        .tp-header {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid #dde4e8;
+            flex-shrink: 0;
+            gap: 6px;
+        }
+
+        .tp-header-title {
+            font-size: 14px;
+            font-weight: 600;
+            flex: 1;
+            color: #2c3e50;
+        }
+
+        .tp-btn {
+            width: 26px;
+            height: 26px;
+            border: 1px solid #dde4e8;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: background 0.15s, border-color 0.15s;
+            color: #7f8c8d;
+        }
+
+        .tp-btn:hover { background: #e8f4f8; border-color: #0066cc; color: #0066cc; }
+        .tp-btn svg { width: 14px; height: 14px; }
+
+        .tp-btn.pinned {
+            background: #e8f4f8;
+            border-color: #0066cc;
+            color: #0066cc;
+        }
+
+        /* 트리 내 tree-menu 스타일 조정 */
+        .tree-panel-overlay .tree-menu {
+            padding: 8px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* 트리 폴더 drag-over 하이라이트 */
+        .tree-item.drag-over {
+            background: rgba(0,102,204,0.12) !important;
+            outline: 2px dashed #0066cc;
+            outline-offset: -2px;
+        }
+
+        /* 카드 드래그 중 반투명 */
+        .doc-card.dragging {
+            opacity: 0.4;
+        }
+
+        /* 문서 페이지 뱃지 */
+        .tree-doc-badge {
+            display: inline-block;
+            font-size: 10px;
+            color: #95a5a6;
+            margin-left: 4px;
+        }
+
+        /* ── 컨텍스트 메뉴 ── */
+        .tp-context-menu {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            background: #fff;
+            border: 1px solid #dde4e8;
+            border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            padding: 4px 0;
+            min-width: 140px;
+        }
+
+        .tp-context-menu .ctx-item {
+            display: block;
+            width: 100%;
+            padding: 7px 14px;
+            border: none;
+            background: none;
+            text-align: left;
+            font-size: 13px;
+            font-family: inherit;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .tp-context-menu .ctx-item:hover {
+            background: #e8f4f8;
+            color: #0066cc;
+        }
+
+        .tp-context-menu .ctx-item.danger { color: #f85149; }
+        .tp-context-menu .ctx-item.danger:hover { background: rgba(248,81,73,0.08); }
+
+        /* ── 폴더 선택 다이얼로그 ── */
+        .folder-picker-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 999;
+        }
+
+        .folder-picker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            min-width: 260px;
+            max-width: 340px;
+        }
+
+        .folder-picker h3 {
+            margin: 0 0 14px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .folder-picker-list {
+            max-height: 240px;
+            overflow-y: auto;
+            margin-bottom: 14px;
+            border: 1px solid #dde4e8;
+            border-radius: 6px;
+        }
+
+        .folder-picker-item {
+            display: block;
+            width: 100%;
+            padding: 8px 12px;
+            border: none;
+            background: none;
+            text-align: left;
+            font-size: 13px;
+            font-family: inherit;
+            color: #2c3e50;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.1s;
+        }
+
+        .folder-picker-item:last-child { border-bottom: none; }
+        .folder-picker-item:hover { background: #e8f4f8; color: #0066cc; }
+        .folder-picker-item.selected { background: #0066cc; color: #fff; }
+
+        .folder-picker-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .folder-picker-actions button {
+            padding: 6px 18px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+        }
+
+        .fp-cancel { background: #f0f0f0; color: #555; }
+        .fp-cancel:hover { background: #e0e0e0; }
+        .fp-submit { background: #238636; color: #fff; }
+        .fp-submit:hover { background: #2ea043; }
+
+        /* ── 다크 모드: 트리 패널 ── */
+        body[data-theme="dark"] .tree-panel-trigger { background: #1e1e2e; border-color: rgba(255,255,255,0.08); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        body[data-theme="dark"] .tree-panel-trigger::after { color: rgba(255,255,255,0.4); }
+        body[data-theme="dark"] .tree-panel-trigger:hover { background: #2a2a3e; border-color: rgba(88,166,255,0.4); box-shadow: 0 2px 12px rgba(88,166,255,0.25); }
+        body[data-theme="dark"] .tree-panel-trigger:hover::after { color: #58a6ff; }
+
+        body[data-theme="dark"] .tree-panel-overlay { background: #1e1e2e; border-right-color: rgba(255,255,255,0.08); box-shadow: 2px 0 12px rgba(0,0,0,0.3); }
+        body[data-theme="dark"] .tp-header { border-bottom-color: rgba(255,255,255,0.08); }
+        body[data-theme="dark"] .tp-header-title { color: #e0e0e0; }
+        body[data-theme="dark"] .tp-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); }
+        body[data-theme="dark"] .tp-btn:hover { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
+        body[data-theme="dark"] .tp-btn.pinned { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
+
+        body[data-theme="dark"] .tp-context-menu { background: #1e1e2e; border-color: rgba(255,255,255,0.12); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+        body[data-theme="dark"] .tp-context-menu .ctx-item { color: #e0e0e0; }
+        body[data-theme="dark"] .tp-context-menu .ctx-item:hover { background: rgba(88,166,255,0.15); color: #58a6ff; }
+        body[data-theme="dark"] .tp-context-menu .ctx-item.danger { color: #f85149; }
+        body[data-theme="dark"] .tp-context-menu .ctx-item.danger:hover { background: rgba(248,81,73,0.1); }
+
+        body[data-theme="dark"] .folder-picker-overlay { background: rgba(0,0,0,0.5); }
+        body[data-theme="dark"] .folder-picker { background: #1e1e2e; color: #e0e0e0; }
+        body[data-theme="dark"] .folder-picker-list { border-color: rgba(255,255,255,0.12); }
+        body[data-theme="dark"] .folder-picker-item { color: #e0e0e0; border-bottom-color: rgba(255,255,255,0.06); }
+        body[data-theme="dark"] .folder-picker-item:hover { background: rgba(88,166,255,0.15); color: #58a6ff; }
+        body[data-theme="dark"] .folder-picker-item.selected { background: #0066cc; color: #fff; }
+        body[data-theme="dark"] .fp-cancel { background: #333; color: #ccc; }
+
+        body[data-theme="dark"] .tree-item.drag-over { background: rgba(88,166,255,0.15) !important; outline-color: #58a6ff; }
     </style>
 </head>
 <body>
@@ -572,6 +850,38 @@
     </div>
 
     <div class="translator-body">
+        <!-- Tree Panel: overlay -->
+        <div class="tree-panel-overlay" id="tp-overlay">
+            <div class="tp-header">
+                <span class="tp-header-title">내 문서</span>
+                <button class="tp-btn" id="tp-new-folder" title="새 폴더">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                </button>
+                <button class="tp-btn" id="tp-pin" title="패널 고정">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76z"/></svg>
+                </button>
+            </div>
+            <div class="tree-menu" id="tp-tree"></div>
+        </div>
+
+        <!-- Tree Panel: trigger handle -->
+        <div class="tree-panel-trigger" id="tp-trigger"></div>
+
+        <!-- Context Menu -->
+        <div class="tp-context-menu" id="tp-ctx-menu"></div>
+
+        <!-- Folder Picker Dialog -->
+        <div class="folder-picker-overlay" id="fp-overlay">
+            <div class="folder-picker" id="fp-dialog">
+                <h3>이동할 폴더 선택</h3>
+                <div class="folder-picker-list" id="fp-list"></div>
+                <div class="folder-picker-actions">
+                    <button class="fp-cancel" id="fp-cancel">취소</button>
+                    <button class="fp-submit" id="fp-submit">이동</button>
+                </div>
+            </div>
+        </div>
+
         <!-- State 1: Document List + Upload -->
         <div class="view-list" id="view-list">
             <div class="upload-zone" id="upload-zone">
@@ -677,7 +987,7 @@
             title: 'Translator',
             navItems: [
                 { id: 'back-launcher', label: 'Platform', href: 'launcher.html' },
-                { id: 'back-list', label: '목록', hidden: true },
+                { id: 'back-list', label: 'Home', hidden: true },
             ],
             midSlot: $pageNavSource,
             showThemeToggle: true,
@@ -875,12 +1185,7 @@
         // Document List
         // ══════════════════════════════════════
 
-        function loadDocuments() {
-            fetch(API + '/api/translator/documents', { credentials: 'include' })
-                .then(function(r) { return r.json(); })
-                .then(function(docs) { renderDocGrid(docs); })
-                .catch(function() { $docGrid.innerHTML = '<div class="doc-empty">문서를 불러올 수 없습니다</div>'; });
-        }
+        function loadDocuments() { loadTreeData(); }
 
         function renderDocGrid(docs) {
             if (!docs.length) {
@@ -1539,6 +1844,441 @@
                     String(d.getMinutes()).padStart(2, '0');
             } catch(e) { return iso; }
         }
+
+        // ══════════════════════════════════════
+        // Tree Panel
+        // ══════════════════════════════════════
+
+        var $tpTrigger  = document.getElementById('tp-trigger');
+        var $tpOverlay  = document.getElementById('tp-overlay');
+        var $tpTree     = document.getElementById('tp-tree');
+        var $tpPin      = document.getElementById('tp-pin');
+        var $tpNewFolder = document.getElementById('tp-new-folder');
+        var $ctxMenu    = document.getElementById('tp-ctx-menu');
+        var $fpOverlay  = document.getElementById('fp-overlay');
+        var $fpList     = document.getElementById('fp-list');
+        var $fpCancel   = document.getElementById('fp-cancel');
+        var $fpSubmit   = document.getElementById('fp-submit');
+
+        var tpPinned = localStorage.getItem('tp-pinned') === 'true';
+        var tpExpandedSet = JSON.parse(localStorage.getItem('tp-expanded') || '{}');
+        var treeFolders = [];
+        var treeDocs = [];
+        var selectedFolderId = null;  // 트리에서 현재 선택된 폴더 (카드 필터링용)
+        var fpTargetDocId = null;     // 폴더 피커에서 이동할 문서 ID
+        var fpSelectedFolder = undefined; // 폴더 피커에서 선택한 폴더 ID
+        var ctxTargetId = null;       // 컨텍스트 메뉴 대상 ID
+        var ctxTargetType = null;     // 'folder' | 'doc'
+
+        // Pin 초기화
+        if (tpPinned) {
+            $tpPin.classList.add('pinned');
+            $tpOverlay.classList.add('open');
+        }
+
+        // ── 패널 열기/닫기 ──
+        function openTreePanel() {
+            $tpOverlay.classList.add('open');
+        }
+        function closeTreePanel() {
+            if (!tpPinned) $tpOverlay.classList.remove('open');
+        }
+
+        $tpTrigger.addEventListener('mouseenter', function() { openTreePanel(); });
+        $tpTrigger.addEventListener('click', function() { openTreePanel(); });
+
+        $tpOverlay.addEventListener('mouseleave', function(e) {
+            if (!tpPinned) {
+                // 커서가 트리거 쪽으로 갔으면 닫지 않음
+                var rect = $tpTrigger.getBoundingClientRect();
+                if (e.clientX <= rect.right) return;
+                closeTreePanel();
+            }
+        });
+
+        $tpPin.addEventListener('click', function() {
+            tpPinned = !tpPinned;
+            $tpPin.classList.toggle('pinned', tpPinned);
+            localStorage.setItem('tp-pinned', tpPinned);
+            if (!tpPinned && !$tpOverlay.matches(':hover')) {
+                closeTreePanel();
+            }
+        });
+
+        // ── 트리 데이터 로드 ──
+        function loadTreeData() {
+            Promise.all([
+                fetch(API + '/api/translator/folders', { credentials: 'include' }).then(function(r) { return r.json(); }).catch(function() { return []; }),
+                fetch(API + '/api/translator/documents', { credentials: 'include' }).then(function(r) { return r.json(); }).catch(function() { return []; }),
+            ]).then(function(results) {
+                treeFolders = results[0];
+                treeDocs = results[1];
+                renderTree();
+                renderDocGrid(filteredDocs());
+            });
+        }
+
+        function filteredDocs() {
+            if (!selectedFolderId) return treeDocs;
+            return treeDocs.filter(function(d) {
+                return (d.folder || null) === selectedFolderId;
+            });
+        }
+
+        // loadDocuments()는 위에서 loadTreeData()를 호출하도록 정의됨
+
+        // ── 트리 렌더링 ──
+        function renderTree() {
+            $tpTree.innerHTML = '';
+            var rootUl = document.createElement('ul');
+
+            // 루트 노드: "내 문서"
+            var rootLi = document.createElement('li');
+            var rootItem = document.createElement('div');
+            rootItem.className = 'tree-item has-children expanded';
+            rootItem.innerHTML = '<span class="toggle-icon"></span><span class="item-icon"></span><span class="tree-label">내 문서</span>';
+            rootItem.addEventListener('click', function(e) {
+                if (e.target.closest('.toggle-icon')) return;
+                selectedFolderId = null;
+                highlightTreeSelection(null);
+                renderDocGrid(filteredDocs());
+            });
+            rootItem.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                showCtxMenu(e, null, 'root');
+            });
+            // 루트 드롭 타겟 (문서를 루트로 이동)
+            rootItem.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                rootItem.classList.add('drag-over');
+            });
+            rootItem.addEventListener('dragleave', function() {
+                rootItem.classList.remove('drag-over');
+            });
+            rootItem.addEventListener('drop', function(e) {
+                e.preventDefault();
+                rootItem.classList.remove('drag-over');
+                var docId = e.dataTransfer.getData('text/plain');
+                if (docId) moveDocToFolder(docId, null);
+            });
+            rootLi.appendChild(rootItem);
+
+            var rootChildUl = document.createElement('ul');
+            rootChildUl.className = 'child-menu expanded';
+
+            // 폴더 + 문서 렌더링
+            buildTreeLevel(rootChildUl, null);
+
+            rootLi.appendChild(rootChildUl);
+            rootUl.appendChild(rootLi);
+            $tpTree.appendChild(rootUl);
+
+            // /* (미래) "공유 문서" 루트 노드 자리 예약 */
+        }
+
+        function buildTreeLevel(parentUl, parentId) {
+            // 폴더
+            var folders = treeFolders.filter(function(f) { return (f.parent_id || null) === parentId; });
+            folders.sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
+
+            folders.forEach(function(folder) {
+                var li = document.createElement('li');
+                var hasKids = treeFolders.some(function(f) { return f.parent_id === folder.id; })
+                    || treeDocs.some(function(d) { return (d.folder || null) === folder.id; });
+                var isExpanded = !!tpExpandedSet[folder.id];
+
+                var item = document.createElement('div');
+                item.className = 'tree-item has-children' + (isExpanded ? ' expanded' : '');
+                item.setAttribute('data-folder-id', folder.id);
+                item.innerHTML = '<span class="toggle-icon"></span><span class="item-icon"></span><span class="tree-label">' + escHtml(folder.name) + '</span>';
+
+                // 토글
+                item.addEventListener('click', function(e) {
+                    if (e.target.closest('.toggle-icon')) {
+                        var expanded = item.classList.toggle('expanded');
+                        var childMenu = li.querySelector(':scope > ul');
+                        if (childMenu) childMenu.classList.toggle('expanded', expanded);
+                        if (expanded) tpExpandedSet[folder.id] = true;
+                        else delete tpExpandedSet[folder.id];
+                        localStorage.setItem('tp-expanded', JSON.stringify(tpExpandedSet));
+                        return;
+                    }
+                    selectedFolderId = folder.id;
+                    highlightTreeSelection(folder.id);
+                    renderDocGrid(filteredDocs());
+                });
+
+                // 우클릭
+                item.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    showCtxMenu(e, folder.id, 'folder');
+                });
+
+                // 드롭 타겟
+                item.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    item.classList.add('drag-over');
+                });
+                item.addEventListener('dragleave', function() {
+                    item.classList.remove('drag-over');
+                });
+                item.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    item.classList.remove('drag-over');
+                    var docId = e.dataTransfer.getData('text/plain');
+                    if (docId) moveDocToFolder(docId, folder.id);
+                });
+
+                li.appendChild(item);
+
+                if (hasKids) {
+                    var childUl = document.createElement('ul');
+                    childUl.className = 'child-menu' + (isExpanded ? ' expanded' : '');
+                    buildTreeLevel(childUl, folder.id);
+                    li.appendChild(childUl);
+                }
+
+                parentUl.appendChild(li);
+            });
+
+            // 이 레벨의 문서
+            var docs = treeDocs.filter(function(d) { return (d.folder || null) === parentId; });
+            docs.forEach(function(doc) {
+                var li = document.createElement('li');
+                var item = document.createElement('div');
+                item.className = 'tree-item';
+                item.setAttribute('data-doc-id', doc.id);
+
+                var pages = doc.total_pages || doc.pages || 0;
+                item.innerHTML = '<span class="item-icon"></span><span class="tree-label">' + escHtml(doc.filename) + '</span>' +
+                    (pages ? '<span class="tree-doc-badge">' + pages + 'p</span>' : '');
+
+                item.addEventListener('click', function() {
+                    openViewer(doc.id, pages || 1);
+                });
+
+                item.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    showCtxMenu(e, doc.id, 'doc');
+                });
+
+                li.appendChild(item);
+                parentUl.appendChild(li);
+            });
+        }
+
+        function highlightTreeSelection(folderId) {
+            var items = $tpTree.querySelectorAll('.tree-item');
+            items.forEach(function(item) {
+                var isCurrent = item.getAttribute('data-folder-id') === folderId;
+                if (!folderId && !item.getAttribute('data-folder-id') && !item.getAttribute('data-doc-id') && item.querySelector('.tree-label').textContent === '내 문서') {
+                    isCurrent = true;
+                }
+                item.classList.toggle('active', isCurrent);
+            });
+        }
+
+        // ── 드래그 앤 드롭 (카드 → 트리) ──
+        // createDocCard에 draggable 추가 — 기존 함수를 래핑
+        var _origCreateDocCard = createDocCard;
+        createDocCard = function(doc) {
+            var card = _origCreateDocCard(doc);
+            card.setAttribute('draggable', 'true');
+            card.addEventListener('dragstart', function(e) {
+                e.dataTransfer.setData('text/plain', doc.id);
+                e.dataTransfer.effectAllowed = 'move';
+                card.classList.add('dragging');
+            });
+            card.addEventListener('dragend', function() {
+                card.classList.remove('dragging');
+            });
+            return card;
+        };
+
+        // 루트 트리 아이템도 드롭 타겟으로 (내 문서 → 루트로 이동)
+        // renderTree 후 rootItem에 드롭 설정 — renderTree가 호출될 때마다 설정됨
+
+        // ── 컨텍스트 메뉴 ──
+        function showCtxMenu(e, targetId, targetType) {
+            e.stopPropagation();
+            ctxTargetId = targetId;
+            ctxTargetType = targetType;
+
+            $ctxMenu.innerHTML = '';
+
+            if (targetType === 'root' || targetType === 'folder') {
+                addCtxItem('새 폴더', function() {
+                    var name = prompt('새 폴더 이름:');
+                    if (!name || !name.trim()) return;
+                    var parentId = targetType === 'folder' ? targetId : null;
+                    fetch(API + '/api/translator/folders', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: name.trim(), parent_id: parentId }),
+                        credentials: 'include',
+                    }).then(function(r) {
+                        if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail); });
+                        loadTreeData();
+                    }).catch(function(err) { alert(err.message); });
+                });
+            }
+
+            if (targetType === 'folder') {
+                addCtxItem('이름 변경', function() {
+                    var folder = treeFolders.find(function(f) { return f.id === targetId; });
+                    var name = prompt('새 이름:', folder ? folder.name : '');
+                    if (!name || !name.trim()) return;
+                    fetch(API + '/api/translator/folders/' + targetId, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: name.trim() }),
+                        credentials: 'include',
+                    }).then(function(r) {
+                        if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail); });
+                        loadTreeData();
+                    }).catch(function(err) { alert(err.message); });
+                });
+
+                addCtxItem('삭제', function() {
+                    var folder = treeFolders.find(function(f) { return f.id === targetId; });
+                    if (!confirm('"' + (folder ? folder.name : '') + '" 폴더를 삭제하시겠습니까?\n하위 항목은 상위 폴더로 이동됩니다.')) return;
+                    fetch(API + '/api/translator/folders/' + targetId, {
+                        method: 'DELETE',
+                        credentials: 'include',
+                    }).then(function(r) {
+                        if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail); });
+                        if (selectedFolderId === targetId) selectedFolderId = null;
+                        loadTreeData();
+                    }).catch(function(err) { alert(err.message); });
+                }, true);
+            }
+
+            if (targetType === 'doc') {
+                addCtxItem('이동...', function() {
+                    openFolderPicker(targetId);
+                });
+            }
+
+            if ($ctxMenu.children.length === 0) return;
+
+            $ctxMenu.style.left = e.clientX + 'px';
+            $ctxMenu.style.top = e.clientY + 'px';
+            $ctxMenu.style.display = 'block';
+
+            // 화면 밖 보정
+            requestAnimationFrame(function() {
+                var rect = $ctxMenu.getBoundingClientRect();
+                if (rect.right > window.innerWidth) $ctxMenu.style.left = (e.clientX - rect.width) + 'px';
+                if (rect.bottom > window.innerHeight) $ctxMenu.style.top = (e.clientY - rect.height) + 'px';
+            });
+        }
+
+        function addCtxItem(label, onClick, isDanger) {
+            var btn = document.createElement('button');
+            btn.className = 'ctx-item' + (isDanger ? ' danger' : '');
+            btn.textContent = label;
+            btn.addEventListener('click', function() {
+                hideCtxMenu();
+                onClick();
+            });
+            $ctxMenu.appendChild(btn);
+        }
+
+        function hideCtxMenu() { $ctxMenu.style.display = 'none'; }
+
+        document.addEventListener('click', function() { hideCtxMenu(); });
+        document.addEventListener('contextmenu', function(e) {
+            if (!$ctxMenu.contains(e.target)) hideCtxMenu();
+        });
+
+        // ── 새 폴더 버튼 (헤더) ──
+        $tpNewFolder.addEventListener('click', function() {
+            var name = prompt('새 폴더 이름:');
+            if (!name || !name.trim()) return;
+            var parentId = selectedFolderId || null;
+            fetch(API + '/api/translator/folders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name.trim(), parent_id: parentId }),
+                credentials: 'include',
+            }).then(function(r) {
+                if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail); });
+                loadTreeData();
+            }).catch(function(err) { alert(err.message); });
+        });
+
+        // ── 폴더 피커 다이얼로그 ──
+        function openFolderPicker(docId) {
+            fpTargetDocId = docId;
+            var doc = treeDocs.find(function(d) { return d.id === docId; });
+            fpSelectedFolder = doc ? (doc.folder || null) : null;
+
+            $fpList.innerHTML = '';
+
+            // 루트
+            var rootBtn = document.createElement('button');
+            rootBtn.className = 'folder-picker-item' + (fpSelectedFolder === null ? ' selected' : '');
+            rootBtn.textContent = '/ (루트)';
+            rootBtn.addEventListener('click', function() {
+                fpSelectedFolder = null;
+                $fpList.querySelectorAll('.folder-picker-item').forEach(function(b) { b.classList.remove('selected'); });
+                rootBtn.classList.add('selected');
+            });
+            $fpList.appendChild(rootBtn);
+
+            // 폴더 (flat, indent로 계층 표시)
+            buildFolderPickerLevel(null, 0);
+
+            $fpOverlay.style.display = 'block';
+        }
+
+        function buildFolderPickerLevel(parentId, depth) {
+            var folders = treeFolders.filter(function(f) { return (f.parent_id || null) === parentId; });
+            folders.sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
+            folders.forEach(function(folder) {
+                var btn = document.createElement('button');
+                btn.className = 'folder-picker-item' + (fpSelectedFolder === folder.id ? ' selected' : '');
+                btn.style.paddingLeft = (12 + depth * 16) + 'px';
+                btn.textContent = folder.name;
+                btn.addEventListener('click', function() {
+                    fpSelectedFolder = folder.id;
+                    $fpList.querySelectorAll('.folder-picker-item').forEach(function(b) { b.classList.remove('selected'); });
+                    btn.classList.add('selected');
+                });
+                $fpList.appendChild(btn);
+                buildFolderPickerLevel(folder.id, depth + 1);
+            });
+        }
+
+        $fpCancel.addEventListener('click', function() {
+            $fpOverlay.style.display = 'none';
+        });
+
+        $fpOverlay.addEventListener('click', function(e) {
+            if (e.target === $fpOverlay) $fpOverlay.style.display = 'none';
+        });
+
+        $fpSubmit.addEventListener('click', function() {
+            if (!fpTargetDocId) return;
+            $fpOverlay.style.display = 'none';
+            moveDocToFolder(fpTargetDocId, fpSelectedFolder);
+        });
+
+        // ── 문서 이동 API 호출 ──
+        function moveDocToFolder(docId, folderId) {
+            fetch(API + '/api/translator/document/' + docId + '/move', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ folder_id: folderId || null }),
+                credentials: 'include',
+            }).then(function(r) {
+                if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail); });
+                loadTreeData();
+            }).catch(function(err) { alert('이동 실패: ' + err.message); });
+        }
+
 
     })();
     </script>

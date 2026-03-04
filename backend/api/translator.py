@@ -12,11 +12,82 @@ from services.translator_service import (
     start_page_translation, get_page_translation_status,
     cancel_page_translation, get_doc_page_summary,
     get_ollama_models,
+    get_folders, create_folder, rename_folder, delete_folder,
+    move_document_to_folder,
 )
 import config
 
 router = APIRouter(prefix="/translator", tags=["translator"])
 
+
+# ── 폴더 CRUD ──
+
+@router.get("/folders")
+async def api_list_folders(user: dict = Depends(get_current_user)):
+    """폴더 목록"""
+    return get_folders(user["username"])
+
+
+@router.post("/folders")
+async def api_create_folder(
+    body: dict = Body(...),
+    user: dict = Depends(require_editor),
+):
+    """폴더 생성"""
+    name = body.get("name", "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="폴더 이름이 필요합니다")
+    parent_id = body.get("parent_id")
+    try:
+        return create_folder(user["username"], name, parent_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/folders/{folder_id}")
+async def api_rename_folder(
+    folder_id: str,
+    body: dict = Body(...),
+    user: dict = Depends(require_editor),
+):
+    """폴더 이름 변경"""
+    name = body.get("name", "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="폴더 이름이 필요합니다")
+    try:
+        return rename_folder(user["username"], folder_id, name)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="폴더를 찾을 수 없습니다")
+
+
+@router.delete("/folders/{folder_id}")
+async def api_delete_folder(
+    folder_id: str,
+    user: dict = Depends(require_editor),
+):
+    """폴더 삭제 (하위 항목은 상위로 이동)"""
+    if not delete_folder(user["username"], folder_id):
+        raise HTTPException(status_code=404, detail="폴더를 찾을 수 없습니다")
+    return {"success": True}
+
+
+@router.post("/document/{doc_id}/move")
+async def api_move_document(
+    doc_id: str,
+    body: dict = Body(...),
+    user: dict = Depends(require_editor),
+):
+    """문서를 폴더로 이동 (folder_id=null → 루트)"""
+    folder_id = body.get("folder_id")
+    try:
+        if not move_document_to_folder(user["username"], doc_id, folder_id):
+            raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"success": True}
+
+
+# ── 업로드 ──
 
 @router.post("/upload")
 async def api_upload_pdf(
