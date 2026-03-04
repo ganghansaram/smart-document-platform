@@ -7,7 +7,7 @@ from typing import Optional
 
 from dependencies import get_current_user, require_editor
 from services.translator_service import (
-    upload_pdf, get_documents, get_document, delete_document,
+    upload_pdf, get_documents, get_document, delete_document, rename_document,
     get_pdf_path, get_page_pdf_path,
     start_page_translation, get_page_translation_status,
     cancel_page_translation, get_doc_page_summary,
@@ -130,6 +130,21 @@ async def api_get_document(doc_id: str, user: dict = Depends(get_current_user)):
 async def api_delete_document(doc_id: str, user: dict = Depends(require_editor)):
     """문서 삭제"""
     if not delete_document(user["username"], doc_id):
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    return {"success": True}
+
+
+@router.put("/document/{doc_id}")
+async def api_rename_document(
+    doc_id: str,
+    body: dict = Body(...),
+    user: dict = Depends(require_editor),
+):
+    """문서 제목 변경"""
+    title = body.get("title", "").strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="제목이 필요합니다")
+    if not rename_document(user["username"], doc_id, title):
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
     return {"success": True}
 

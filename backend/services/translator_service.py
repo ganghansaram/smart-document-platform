@@ -311,6 +311,8 @@ def get_documents(username: str) -> list[dict]:
         meta = _load_meta(username, entry["id"])
         if meta:
             entry["status"] = meta.get("status", "uploaded")
+            if meta.get("title") and meta["title"] != meta.get("filename"):
+                entry["title"] = meta["title"]
             entry["has_legacy_translation"] = meta.get("has_legacy_translation", False)
             # 페이지별 번역 통계
             page_status = meta.get("page_status", {})
@@ -363,6 +365,23 @@ def delete_document(username: str, doc_id: str) -> bool:
     if len(new_index) == len(index):
         return False
     _save_user_index(username, new_index)
+    return True
+
+
+def rename_document(username: str, doc_id: str, new_title: str) -> bool:
+    """문서 제목(title) 변경 — meta.json + _index.json 동시 갱신"""
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        return False
+    meta["title"] = new_title
+    _save_meta(username, doc_id, meta)
+    # 인덱스에도 title 반영
+    index = _load_user_index(username)
+    for entry in index:
+        if entry["id"] == doc_id:
+            entry["title"] = new_title
+            break
+    _save_user_index(username, index)
     return True
 
 
