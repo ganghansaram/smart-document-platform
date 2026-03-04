@@ -234,6 +234,102 @@
         }
         .viewer-toolbar .cancel-page-btn:hover { background: rgba(248,81,73,0.1); }
 
+        .viewer-toolbar .range-translate-btn {
+            padding: 5px 14px;
+            border: 1px solid #238636;
+            border-radius: 5px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            background: transparent;
+            color: #238636;
+            transition: background 0.15s, color 0.15s;
+        }
+        .viewer-toolbar .range-translate-btn:hover { background: #238636; color: #fff; }
+
+        /* 범위 번역 다이얼로그 */
+        .range-dialog-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 999;
+        }
+        .range-dialog {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border-radius: 10px;
+            padding: 24px 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            min-width: 280px;
+            z-index: 1000;
+        }
+        .range-dialog h3 {
+            margin: 0 0 16px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .range-dialog .range-inputs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .range-dialog .range-inputs label {
+            font-size: 13px;
+            color: #555;
+        }
+        .range-dialog .range-inputs input {
+            width: 60px;
+            padding: 5px 8px;
+            border: 1px solid #dde4e8;
+            border-radius: 5px;
+            font-size: 14px;
+            text-align: center;
+            font-family: inherit;
+        }
+        .range-dialog .range-hint {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-bottom: 16px;
+        }
+        .range-dialog .range-error {
+            font-size: 12px;
+            color: #f85149;
+            margin-bottom: 8px;
+            min-height: 16px;
+        }
+        .range-dialog .range-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .range-dialog .range-actions button {
+            padding: 6px 18px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+        }
+        .range-dialog .btn-range-cancel {
+            background: #f0f0f0;
+            color: #555;
+        }
+        .range-dialog .btn-range-cancel:hover { background: #e0e0e0; }
+        .range-dialog .btn-range-submit {
+            background: #238636;
+            color: #fff;
+        }
+        .range-dialog .btn-range-submit:hover { background: #2ea043; }
+
+        [data-theme="dark"] .range-dialog { background: #1e1e1e; color: #e0e0e0; }
+        [data-theme="dark"] .range-dialog .range-inputs input { background: #2d2d2d; border-color: #444; color: #e0e0e0; }
+        [data-theme="dark"] .range-dialog .btn-range-cancel { background: #333; color: #ccc; }
+
         .viewer-toolbar .page-status-text {
             font-size: 13px;
             color: #7f8c8d;
@@ -305,9 +401,8 @@
         .viewer-panel {
             flex: 1;
             overflow: auto;
-            display: flex;
-            justify-content: center;
             padding: 16px;
+            text-align: center;  /* 작을 때 중앙 정렬, 클 때 자연 스크롤 */
             background: #f0f0f0;
             position: relative;
         }
@@ -504,7 +599,26 @@
                 <span class="page-status-text" id="toolbar-page-status"></span>
                 <select id="model-select"></select>
                 <button class="translate-page-btn" id="translate-page-btn">이 페이지 번역</button>
+                <button class="range-translate-btn" id="range-translate-btn">범위 번역</button>
                 <button class="cancel-page-btn" id="cancel-page-btn" style="display:none">취소</button>
+            </div>
+            <!-- 범위 번역 다이얼로그 -->
+            <div class="range-dialog-overlay" id="range-dialog-overlay">
+                <div class="range-dialog" id="range-dialog">
+                    <h3>범위 번역</h3>
+                    <div class="range-inputs">
+                        <label>시작:</label>
+                        <input type="number" id="range-start" min="1" value="1">
+                        <label>끝:</label>
+                        <input type="number" id="range-end" min="1" value="1">
+                    </div>
+                    <div class="range-hint">최대 5페이지까지 한 번에 번역</div>
+                    <div class="range-error" id="range-error"></div>
+                    <div class="range-actions">
+                        <button class="btn-range-cancel" id="range-cancel-btn">취소</button>
+                        <button class="btn-range-submit" id="range-submit-btn">번역</button>
+                    </div>
+                </div>
             </div>
             <div class="viewer-panels" id="viewer-panels">
                 <!-- Left: Original -->
@@ -651,7 +765,16 @@
         var $toolbarStatus  = document.getElementById('toolbar-page-status');
         var $modelSelect    = document.getElementById('model-select');
         var $translateBtn   = document.getElementById('translate-page-btn');
+        var $rangeBtn       = document.getElementById('range-translate-btn');
         var $cancelBtn      = document.getElementById('cancel-page-btn');
+
+        // Range dialog
+        var $rangeOverlay   = document.getElementById('range-dialog-overlay');
+        var $rangeStart     = document.getElementById('range-start');
+        var $rangeEnd       = document.getElementById('range-end');
+        var $rangeError     = document.getElementById('range-error');
+        var $rangeCancelBtn = document.getElementById('range-cancel-btn');
+        var $rangeSubmitBtn = document.getElementById('range-submit-btn');
 
         // ══════════════════════════════════════
         // Upload
@@ -1100,11 +1223,13 @@
                 $translateBtn.style.display = '';
                 $translateBtn.disabled = false;
                 $translateBtn.textContent = status === 'error' ? '재시도' : '이 페이지 번역';
+                $rangeBtn.style.display = '';
                 $cancelBtn.style.display = 'none';
                 $modelSelect.style.display = '';
                 $toolbarStatus.textContent = '';
             } else if (status === 'translating') {
                 $translateBtn.style.display = 'none';
+                $rangeBtn.style.display = 'none';
                 $cancelBtn.style.display = '';
                 $modelSelect.style.display = 'none';
                 $toolbarStatus.textContent = '번역 중...';
@@ -1112,6 +1237,7 @@
                 $translateBtn.style.display = '';
                 $translateBtn.textContent = '재번역';
                 $translateBtn.disabled = false;
+                $rangeBtn.style.display = '';
                 $cancelBtn.style.display = 'none';
                 $modelSelect.style.display = '';
                 var ps = pageStatusCache[String(currentPage)];
@@ -1119,12 +1245,14 @@
                 if (ps) {
                     if (ps.model) info += ps.model;
                     if (ps.elapsed_sec) info += ', ' + ps.elapsed_sec + '초';
+                    if (ps.batch) info += ' (' + ps.batch + 'p 일괄)';
                 }
                 $toolbarStatus.textContent = info;
             } else if (status === 'legacy') {
                 $translateBtn.style.display = '';
                 $translateBtn.textContent = '페이지 번역';
                 $translateBtn.disabled = false;
+                $rangeBtn.style.display = '';
                 $cancelBtn.style.display = 'none';
                 $modelSelect.style.display = '';
                 $toolbarStatus.textContent = '통번역 (레거시)';
@@ -1169,6 +1297,70 @@
                 delete pageStatusCache[String(currentPage)];
                 stopPolling();
                 updateRightPanel();
+            });
+        });
+
+        // ── Range translate dialog ──
+
+        $rangeBtn.addEventListener('click', function() {
+            $rangeStart.value = currentPage;
+            $rangeEnd.value = Math.min(currentPage + 4, totalPages);
+            $rangeStart.max = totalPages;
+            $rangeEnd.max = totalPages;
+            $rangeError.textContent = '';
+            $rangeOverlay.style.display = 'block';
+        });
+
+        $rangeCancelBtn.addEventListener('click', function() {
+            $rangeOverlay.style.display = 'none';
+        });
+
+        $rangeOverlay.addEventListener('click', function(e) {
+            if (e.target === $rangeOverlay) $rangeOverlay.style.display = 'none';
+        });
+
+        $rangeSubmitBtn.addEventListener('click', function() {
+            var start = parseInt($rangeStart.value, 10);
+            var end = parseInt($rangeEnd.value, 10);
+
+            if (isNaN(start) || isNaN(end)) {
+                $rangeError.textContent = '숫자를 입력하세요';
+                return;
+            }
+            if (start < 1 || end < 1 || start > totalPages || end > totalPages) {
+                $rangeError.textContent = '페이지 범위: 1~' + totalPages;
+                return;
+            }
+            if (end < start) {
+                $rangeError.textContent = '끝 페이지가 시작보다 작습니다';
+                return;
+            }
+            if (end - start + 1 > 5) {
+                $rangeError.textContent = '최대 5페이지까지 가능합니다';
+                return;
+            }
+
+            $rangeOverlay.style.display = 'none';
+            var model = $modelSelect.value;
+
+            fetch(API + '/api/translator/translate/' + currentDocId + '/pages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ page_start: start, page_end: end, model: model }),
+                credentials: 'include',
+            }).then(function(resp) {
+                if (!resp.ok) return resp.json().then(function(e) { throw new Error(e.detail); });
+                // 범위 내 모든 페이지를 translating으로
+                for (var p = start; p <= end; p++) {
+                    pageStatusCache[String(p)] = {
+                        status: 'translating',
+                        progress_stage: '번역 준비 중...',
+                        model: model,
+                    };
+                }
+                updateRightPanel();
+            }).catch(function(err) {
+                alert('범위 번역 시작 실패: ' + err.message);
             });
         });
 

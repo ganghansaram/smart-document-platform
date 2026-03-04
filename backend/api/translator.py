@@ -72,10 +72,10 @@ async def api_start_page_translation(
     body: dict = Body(default={}),
     user: dict = Depends(get_current_user),
 ):
-    """페이지 번역 시작 → 202 Accepted"""
+    """단일 페이지 번역 시작 → 202 Accepted (하위 호환)"""
     model = body.get("model")
     try:
-        start_page_translation(user["username"], doc_id, page_num, model)
+        start_page_translation(user["username"], doc_id, str(page_num), model)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
     except ValueError as e:
@@ -83,6 +83,39 @@ async def api_start_page_translation(
     except RuntimeError as e:
         raise HTTPException(status_code=409, detail=str(e))
     return JSONResponse(status_code=202, content={"status": "translating", "doc_id": doc_id, "page": page_num})
+
+
+@router.post("/translate/{doc_id}/pages")
+async def api_start_range_translation(
+    doc_id: str,
+    body: dict = Body(...),
+    user: dict = Depends(get_current_user),
+):
+    """범위 번역 시작 (최대 5페이지) → 202 Accepted"""
+    page_start = body.get("page_start")
+    page_end = body.get("page_end")
+    model = body.get("model")
+
+    if page_start is None or page_end is None:
+        raise HTTPException(status_code=400, detail="page_start, page_end 필수")
+    if page_end < page_start:
+        raise HTTPException(status_code=400, detail="page_end는 page_start 이상이어야 합니다")
+    if page_end - page_start + 1 > 5:
+        raise HTTPException(status_code=400, detail="최대 5페이지까지 범위 번역 가능합니다")
+
+    pages_str = str(page_start) if page_start == page_end else f"{page_start}-{page_end}"
+    try:
+        start_page_translation(user["username"], doc_id, pages_str, model)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return JSONResponse(status_code=202, content={
+        "status": "translating", "doc_id": doc_id,
+        "page_start": page_start, "page_end": page_end,
+    })
 
 
 @router.get("/translate/{doc_id}/page/{page_num}/status")

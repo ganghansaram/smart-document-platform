@@ -13,7 +13,7 @@ from typing import Optional
 import config
 
 # ── 백그라운드 번역 작업 추적 ──
-# 키: "{doc_id}:{page_num}"
+# 키: "{doc_id}:{pages_str}" (예: "doc:3" 또는 "doc:3-7")
 _active_tasks: dict[str, asyncio.Task] = {}
 _active_procs: dict[str, asyncio.subprocess.Process] = {}
 
@@ -29,8 +29,10 @@ def _get_semaphore() -> asyncio.Semaphore:
     return _translation_semaphore
 
 # ── 진행 상태 메모리 캐시 (meta.json I/O 최소화) ──
-# 키: "{doc_id}:{page_num}" → progress_stage 문자열
+# 키: "{doc_id}:{pages_str}" → progress_stage 문자열
 _page_progress: dict[str, str] = {}
+
+MAX_RANGE_PAGES = 5
 
 
 def _ensure_data_dir():
@@ -56,8 +58,44 @@ def _generate_id() -> str:
     return f"{now.strftime('%Y%m%d_%H%M%S')}_{rand}"
 
 
-def _task_key(doc_id: str, page_num: int) -> str:
-    return f"{doc_id}:{page_num}"
+def _task_key(doc_id: str, pages_str: str) -> str:
+    return f"{doc_id}:{pages_str}"
+
+
+def _parse_pages(pages_str: str, total: int) -> list[int]:
+    """페이지 문자열 파싱: "3" → [3], "3-7" → [3,4,5,6,7]"""
+    pages_str = pages_str.strip()
+    if "-" in pages_str:
+        parts = pages_str.split("-", 1)
+        start, end = int(parts[0]), int(parts[1])
+        if end < start:
+            raise ValueError(f"끝 페이지({end})가 시작 페이지({start})보다 작습니다")
+        if end - start + 1 > MAX_RANGE_PAGES:
+            raise ValueError(f"최대 {MAX_RANGE_PAGES}페이지까지 범위 번역 가능합니다")
+        page_list = list(range(start, end + 1))
+    else:
+        page_list = [int(pages_str)]
+
+    for p in page_list:
+        if p < 1 or p > total:
+            raise ValueError(f"유효하지 않은 페이지 번호: {p} (1~{total})")
+    return page_list
+
+
+def _is_page_in_task_key(key: str, page_num: int) -> bool:
+    """Task 키(예: "doc:3-7")에 특정 페이지가 포함되는지 확인"""
+    parts = key.split(":", 1)
+    if len(parts) != 2:
+        return False
+    pages_str = parts[1]
+    try:
+        if "-" in pages_str:
+            s, e = pages_str.split("-", 1)
+            return int(s) <= page_num <= int(e)
+        else:
+            return int(pages_str) == page_num
+    except ValueError:
+        return False
 
 
 def _load_user_index(username: str) -> list[dict]:
@@ -234,14 +272,16 @@ def get_page_pdf_path(username: str, doc_id: str, page_num: int) -> Optional[Pat
 # 페이지별 번역
 # ══════════════════════════════════════
 
-def start_page_translation(username: str, doc_id: str, page_num: int, model: Optional[str] = None):
-    """단일 페이지 번역 시작 → asyncio.Task 생성, 즉시 반환"""
+def start_page_translation(username: str, doc_id: str, pages: str, model: Optional[str] = None):
+    """페이지 번역 시작 (단일 또는 범위) → asyncio.Task 생성, 즉시 반환
+    pages: "3" (단일) 또는 "3-7" (범위, 최대 5페이지)
+    """
     meta = _load_meta(username, doc_id)
     if not meta:
         raise FileNotFoundError(f"문서 없음: {doc_id}")
 
-    if page_num < 1 or page_num > meta.get("pages", 0):
-        raise ValueError(f"유효하지 않은 페이지 번호: {page_num}")
+    total = meta.get("pages", 0)
+    page_list = _parse_pages(pages, total)
 
     # 동시성 제어: 이 문서에서 이미 번역 중인 페이지가 있으면 거부
     for key, task in _active_tasks.items():
@@ -250,48 +290,54 @@ def start_page_translation(username: str, doc_id: str, page_num: int, model: Opt
 
     effective_model = model or config.TRANSLATOR_TRANSLATION_MODEL or config.OLLAMA_MODEL
 
-    # 페이지 상태 업데이트
+    # 범위 내 모든 페이지 상태를 translating으로 기록
     page_status = meta.get("page_status", {})
-    page_status[str(page_num)] = {
-        "status": "translating",
-        "model": effective_model,
-        "progress_stage": "번역 준비 중...",
-        "started_at": datetime.now().isoformat(),
-    }
+    for pnum in page_list:
+        page_status[str(pnum)] = {
+            "status": "translating",
+            "model": effective_model,
+            "progress_stage": "번역 준비 중...",
+            "started_at": datetime.now().isoformat(),
+        }
     meta["page_status"] = page_status
     meta["status"] = "uploaded"  # 문서 전체 상태는 uploaded 유지
     _save_meta(username, doc_id, meta)
 
-    key = _task_key(doc_id, page_num)
+    key = _task_key(doc_id, pages)
     _page_progress[key] = "번역 대기 중..."
-    task = asyncio.create_task(_run_pmt_page_guarded(username, doc_id, page_num, effective_model))
+    task = asyncio.create_task(_run_pmt_pages_guarded(username, doc_id, pages, page_list, effective_model))
     _active_tasks[key] = task
 
 
-async def _run_pmt_page_guarded(username: str, doc_id: str, page_num: int, model: str):
+async def _run_pmt_pages_guarded(username: str, doc_id: str, pages_str: str, page_list: list[int], model: str):
     """Semaphore로 동시 번역 수 제한 후 실제 번역 실행"""
-    key = _task_key(doc_id, page_num)
+    key = _task_key(doc_id, pages_str)
     sem = _get_semaphore()
     _page_progress[key] = "번역 대기 중... (GPU 순서 대기)"
     async with sem:
         _page_progress[key] = "번역 준비 중..."
-        await _run_pmt_page(username, doc_id, page_num, model)
+        await _run_pmt_pages(username, doc_id, pages_str, page_list, model)
 
 
-async def _run_pmt_page(username: str, doc_id: str, page_num: int, model: str):
-    """PMT CLI 비동기 실행 — 단일 페이지"""
+async def _run_pmt_pages(username: str, doc_id: str, pages_str: str, page_list: list[int], model: str):
+    """PMT CLI 비동기 실행 — 단일 또는 범위 페이지"""
     import time
+    import fitz
 
-    key = _task_key(doc_id, page_num)
+    key = _task_key(doc_id, pages_str)
+    is_range = len(page_list) > 1
+    label = f"p{pages_str}" if is_range else f"p{page_list[0]}"
 
     src_path = _doc_dir(username, doc_id) / "original.pdf"
     if not src_path.exists():
-        _mark_page_error(username, doc_id, page_num, "원본 PDF 파일 없음")
+        for pnum in page_list:
+            _mark_page_error(username, doc_id, pnum, "원본 PDF 파일 없음")
         return
 
-    tmp_dir = _doc_dir(username, doc_id) / f"_pmt_tmp_p{page_num}"
+    tmp_dir = _doc_dir(username, doc_id) / f"_pmt_tmp_{label}"
     tmp_dir.mkdir(exist_ok=True)
 
+    # pdf2zh의 --pages: "3" 또는 "3-7" (네이티브 범위 지원)
     cmd = [
         "pdf2zh",
         "--ollama",
@@ -300,21 +346,22 @@ async def _run_pmt_page(username: str, doc_id: str, page_num: int, model: str):
         "--lang-in", "English",
         "--lang-out", "Korean",
         "--primary-font-family", "sans-serif",
-        "--pages", str(page_num),
+        "--pages", pages_str,
         "--only-include-translated-page",
         "--no-dual",
         "--output", str(tmp_dir),
         str(src_path),
     ]
 
-    _update_page_progress(username, doc_id, page_num, "번역 중...")
+    for pnum in page_list:
+        _update_page_progress(username, doc_id, pnum, "번역 중...")
 
     # 로그 파일
     log_path = _doc_dir(username, doc_id) / "pmt.log"
 
     def _log(msg):
         with open(log_path, "a", encoding="utf-8") as lf:
-            lf.write(f"[{datetime.now().strftime('%H:%M:%S')}] [p{page_num}] {msg}\n")
+            lf.write(f"[{datetime.now().strftime('%H:%M:%S')}] [{label}] {msg}\n")
 
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -324,11 +371,13 @@ async def _run_pmt_page(username: str, doc_id: str, page_num: int, model: str):
         )
         _active_procs[key] = proc
 
-        timeout = getattr(config, "TRANSLATOR_PAGE_TIMEOUT", 300)
+        # 범위 번역은 페이지 수에 비례한 타임아웃
+        base_timeout = getattr(config, "TRANSLATOR_PAGE_TIMEOUT", 300)
+        timeout = base_timeout * len(page_list)
         deadline = time.monotonic() + timeout
 
         pmt_start = time.monotonic()
-        _log(f"시작 | model: {model}")
+        _log(f"시작 | model: {model} | pages: {pages_str}")
 
         # stderr 파싱
         while True:
@@ -337,7 +386,8 @@ async def _run_pmt_page(username: str, doc_id: str, page_num: int, model: str):
                 shutil.rmtree(tmp_dir, ignore_errors=True)
                 elapsed = time.monotonic() - pmt_start
                 _log(f"TIMEOUT | total {elapsed:.1f}s")
-                _mark_page_error(username, doc_id, page_num, f"번역 시간 초과 ({timeout // 60}분)")
+                for pnum in page_list:
+                    _mark_page_error(username, doc_id, pnum, f"번역 시간 초과 ({timeout // 60}분)")
                 return
 
             try:
@@ -365,7 +415,7 @@ async def _run_pmt_page(username: str, doc_id: str, page_num: int, model: str):
                 stage = "PDF 생성 중..."
 
             if stage:
-                _update_page_progress(username, doc_id, page_num, stage)
+                _page_progress[key] = stage
 
         await proc.wait()
 
@@ -375,39 +425,63 @@ async def _run_pmt_page(username: str, doc_id: str, page_num: int, model: str):
             stdout_data = await proc.stdout.read()
             shutil.rmtree(tmp_dir, ignore_errors=True)
             log_text = stdout_data.decode("utf-8", errors="replace")[-500:] if stdout_data else ""
-            _mark_page_error(username, doc_id, page_num, f"pdf2zh 실패 (exit {proc.returncode}): {log_text}")
+            for pnum in page_list:
+                _mark_page_error(username, doc_id, pnum, f"pdf2zh 실패 (exit {proc.returncode}): {log_text}")
             return
 
-        # 결과 PDF 이동 → pages/{page_num}/translated.pdf
-        page_dir = _doc_dir(username, doc_id) / "pages" / str(page_num)
-        page_dir.mkdir(parents=True, exist_ok=True)
-
+        # 결과 PDF 찾기
         mono_files = list(tmp_dir.glob("*.mono.pdf"))
         if not mono_files:
-            # --only-include-translated-page 사용 시 .mono 없이 직접 출력될 수 있음
             mono_files = [f for f in tmp_dir.glob("*.pdf") if "dual" not in f.name]
 
         if not mono_files:
             shutil.rmtree(tmp_dir, ignore_errors=True)
-            _mark_page_error(username, doc_id, page_num, "pdf2zh 완료되었으나 결과 PDF가 없습니다")
+            for pnum in page_list:
+                _mark_page_error(username, doc_id, pnum, "pdf2zh 완료되었으나 결과 PDF가 없습니다")
             return
 
-        shutil.move(str(mono_files[0]), str(page_dir / "translated.pdf"))
+        mono_file = mono_files[0]
+        elapsed = time.monotonic() - pmt_start
+
+        # PyMuPDF로 페이지별 분리 저장
+        result_doc = fitz.open(str(mono_file))
+        result_pages = len(result_doc)
+
+        if result_pages != len(page_list):
+            _log(f"WARNING: 결과 PDF {result_pages}페이지, 요청 {len(page_list)}페이지")
+
+        for i, pnum in enumerate(page_list):
+            if i >= result_pages:
+                _mark_page_error(username, doc_id, pnum, f"결과 PDF에 해당 페이지 없음 (인덱스 {i})")
+                continue
+
+            page_dir = _doc_dir(username, doc_id) / "pages" / str(pnum)
+            page_dir.mkdir(parents=True, exist_ok=True)
+
+            single = fitz.open()
+            single.insert_pdf(result_doc, from_page=i, to_page=i)
+            single.save(str(page_dir / "translated.pdf"))
+            single.close()
+
+        result_doc.close()
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
-        # 성공
-        elapsed = time.monotonic() - pmt_start
+        # 성공 — 메타 업데이트
         _log(f"DONE | total {elapsed:.1f}s")
 
         meta = _load_meta(username, doc_id)
         if meta:
             ps = meta.get("page_status", {})
-            ps[str(page_num)] = {
-                "status": "done",
-                "model": model,
-                "translated_at": datetime.now().isoformat(),
-                "elapsed_sec": round(elapsed, 1),
-            }
+            for pnum in page_list:
+                entry = {
+                    "status": "done",
+                    "model": model,
+                    "translated_at": datetime.now().isoformat(),
+                    "elapsed_sec": round(elapsed, 1),
+                }
+                if is_range:
+                    entry["batch"] = pages_str
+                ps[str(pnum)] = entry
             meta["page_status"] = ps
             _save_meta(username, doc_id, meta)
 
@@ -421,13 +495,15 @@ async def _run_pmt_page(username: str, doc_id: str, page_num: int, model: str):
         meta = _load_meta(username, doc_id)
         if meta:
             ps = meta.get("page_status", {})
-            ps.pop(str(page_num), None)
+            for pnum in page_list:
+                ps.pop(str(pnum), None)
             meta["page_status"] = ps
             _save_meta(username, doc_id, meta)
         return
     except Exception as e:
         shutil.rmtree(tmp_dir, ignore_errors=True)
-        _mark_page_error(username, doc_id, page_num, str(e))
+        for pnum in page_list:
+            _mark_page_error(username, doc_id, pnum, str(e))
     finally:
         _active_tasks.pop(key, None)
         _active_procs.pop(key, None)
@@ -436,14 +512,14 @@ async def _run_pmt_page(username: str, doc_id: str, page_num: int, model: str):
 
 def get_page_translation_status(username: str, doc_id: str, page_num: int) -> Optional[dict]:
     """페이지별 번역 상태 (활성 Task는 메모리 캐시 우선, 그 외 meta.json)"""
-    key = _task_key(doc_id, page_num)
-
-    # 활성 Task가 있으면 메모리에서 즉시 반환 (파일 I/O 없음)
-    if key in _active_tasks and not _active_tasks[key].done():
-        return {
-            "status": "translating",
-            "progress_stage": _page_progress.get(key, "번역 준비 중..."),
-        }
+    # 활성 Task에서 이 페이지가 포함된 키 찾기
+    for tk, task in _active_tasks.items():
+        if tk.startswith(doc_id + ":") and not task.done():
+            if _is_page_in_task_key(tk, page_num):
+                return {
+                    "status": "translating",
+                    "progress_stage": _page_progress.get(tk, "번역 준비 중..."),
+                }
 
     # 완료/에러/미번역은 meta.json에서 확인
     meta = _load_meta(username, doc_id)
@@ -458,21 +534,45 @@ def get_page_translation_status(username: str, doc_id: str, page_num: int) -> Op
 
 
 def cancel_page_translation(username: str, doc_id: str, page_num: int) -> bool:
-    """페이지 번역 취소"""
-    key = _task_key(doc_id, page_num)
+    """페이지 번역 취소 — 해당 페이지를 포함하는 범위 Task도 취소"""
+    # 이 페이지를 포함하는 활성 Task 키 찾기
+    matched_key = None
+    for tk, task in _active_tasks.items():
+        if tk.startswith(doc_id + ":") and not task.done():
+            if _is_page_in_task_key(tk, page_num):
+                matched_key = tk
+                break
 
-    proc = _active_procs.pop(key, None)
-    if proc:
-        try:
-            proc.kill()
-        except Exception:
-            pass
+    if matched_key:
+        proc = _active_procs.pop(matched_key, None)
+        if proc:
+            try:
+                proc.kill()
+            except Exception:
+                pass
 
-    task = _active_tasks.pop(key, None)
-    if task and not task.done():
-        task.cancel()
-    _page_progress.pop(key, None)
+        task = _active_tasks.pop(matched_key, None)
+        if task and not task.done():
+            task.cancel()
+        _page_progress.pop(matched_key, None)
 
+        # 범위 내 모든 페이지 상태 초기화
+        pages_str = matched_key.split(":", 1)[1]
+        meta = _load_meta(username, doc_id)
+        if meta:
+            total = meta.get("pages", 0)
+            try:
+                affected = _parse_pages(pages_str, total)
+            except ValueError:
+                affected = [page_num]
+            ps = meta.get("page_status", {})
+            for pnum in affected:
+                ps.pop(str(pnum), None)
+            meta["page_status"] = ps
+            _save_meta(username, doc_id, meta)
+        return True
+
+    # 활성 Task 없는 경우 — meta에서만 제거
     meta = _load_meta(username, doc_id)
     if not meta:
         return False
@@ -495,11 +595,18 @@ def get_doc_page_summary(username: str, doc_id: str) -> Optional[dict]:
     # 런타임 상태 보정 (메모리 캐시에서 최신 progress_stage 반영)
     for key, task in _active_tasks.items():
         if key.startswith(doc_id + ":") and not task.done():
-            pnum = key.split(":")[1]
-            page_status[pnum] = {
-                "status": "translating",
-                "progress_stage": _page_progress.get(key, "번역 준비 중..."),
-            }
+            pages_str = key.split(":", 1)[1]
+            progress = _page_progress.get(key, "번역 준비 중...")
+            total_p = meta.get("pages", 0)
+            try:
+                affected = _parse_pages(pages_str, total_p)
+            except ValueError:
+                continue
+            for pnum in affected:
+                page_status[str(pnum)] = {
+                    "status": "translating",
+                    "progress_stage": progress,
+                }
 
     return {
         "id": doc_id,
@@ -513,9 +620,14 @@ def get_doc_page_summary(username: str, doc_id: str) -> Optional[dict]:
 # ── 헬퍼 ──
 
 def _update_page_progress(username: str, doc_id: str, page_num: int, stage: str):
-    """메모리 캐시에만 진행 상태 저장 (파일 I/O 없음)"""
-    key = _task_key(doc_id, page_num)
-    _page_progress[key] = stage
+    """메모리 캐시에만 진행 상태 저장 — 이 페이지를 포함하는 Task 키에 기록"""
+    # 이 페이지를 포함하는 활성 Task 키 찾기
+    for tk in _active_tasks:
+        if tk.startswith(doc_id + ":") and _is_page_in_task_key(tk, page_num):
+            _page_progress[tk] = stage
+            return
+    # 폴백: 단일 페이지 키
+    _page_progress[f"{doc_id}:{page_num}"] = stage
 
 
 def _mark_page_error(username: str, doc_id: str, page_num: int, error_msg: str):
