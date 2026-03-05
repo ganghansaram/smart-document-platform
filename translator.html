@@ -107,6 +107,13 @@
             width: 100%;
         }
 
+        .doc-grid.drag-over {
+            outline: 2px dashed #4a90d9;
+            outline-offset: -2px;
+            border-radius: 8px;
+            background: rgba(74,144,217,0.04);
+        }
+
         .doc-card {
             background: #ffffff;
             border: 1px solid #dde4e8;
@@ -835,6 +842,7 @@
         body[data-theme="dark"] .fp-cancel { background: #333; color: #ccc; }
 
         body[data-theme="dark"] .tree-item.drag-over { background: rgba(88,166,255,0.15) !important; outline-color: #58a6ff; }
+        body[data-theme="dark"] .doc-grid.drag-over { outline-color: #58a6ff; background: rgba(88,166,255,0.06); }
     </style>
 </head>
 <body>
@@ -1189,7 +1197,7 @@
 
         function renderDocGrid(docs) {
             if (!docs.length) {
-                $docGrid.innerHTML = '<div class="doc-empty">업로드된 문서가 없습니다</div>';
+                $docGrid.innerHTML = '<div class="doc-empty">워크스페이스가 비어 있습니다.<br>PDF를 업로드하거나, 내 문서에서 드래그하세요.</div>';
                 return;
             }
 
@@ -1865,7 +1873,6 @@
         var tpExpandedSet = JSON.parse(localStorage.getItem('tp-expanded') || '{}');
         var treeFolders = [];
         var treeDocs = [];
-        var selectedFolderId = null;  // null=전체, 폴더ID=해당 폴더 필터링
         var fpTargetDocId = null;     // 폴더 피커에서 이동할 문서 ID
         var fpSelectedFolder = undefined; // 폴더 피커에서 선택한 폴더 ID
         var ctxTargetId = null;       // 컨텍스트 메뉴 대상 ID
@@ -1920,10 +1927,7 @@
         }
 
         function filteredDocs() {
-            if (!selectedFolderId) return treeDocs;  // null=전체 문서
-            return treeDocs.filter(function(d) {
-                return (d.folder || null) === selectedFolderId;
-            });
+            return treeDocs.filter(function(d) { return !d.folder; });
         }
 
         // loadDocuments()는 위에서 loadTreeData()를 호출하도록 정의됨
@@ -1938,34 +1942,15 @@
             var rootItem = document.createElement('div');
             rootItem.className = 'tree-item has-children expanded';
             rootItem.innerHTML = '<span class="toggle-icon"></span><span class="item-icon"></span><span class="tree-label">내 문서</span>';
-            rootItem.addEventListener('click', function(e) {
-                if (e.target.closest('.toggle-icon')) return;
-                selectedFolderId = null;
-                highlightTreeSelection(null);
-                if ($viewViewer.style.display !== 'none') {
-                    showList();
-                } else {
-                    renderDocGrid(filteredDocs());
-                }
+            rootItem.querySelector('.toggle-icon').addEventListener('click', function(e) {
+                e.stopPropagation();
+                var expanded = rootItem.classList.toggle('expanded');
+                var childMenu = rootLi.querySelector(':scope > ul.child-menu');
+                if (childMenu) childMenu.classList.toggle('expanded', expanded);
             });
             rootItem.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
                 showCtxMenu(e, null, 'root');
-            });
-            // 루트 드롭 타겟 (문서를 루트로 이동)
-            rootItem.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                rootItem.classList.add('drag-over');
-            });
-            rootItem.addEventListener('dragleave', function() {
-                rootItem.classList.remove('drag-over');
-            });
-            rootItem.addEventListener('drop', function(e) {
-                e.preventDefault();
-                rootItem.classList.remove('drag-over');
-                var docId = e.dataTransfer.getData('text/plain');
-                if (docId) moveDocToFolder(docId, null);
             });
             rootLi.appendChild(rootItem);
 
@@ -1998,24 +1983,14 @@
                 item.setAttribute('data-folder-id', folder.id);
                 item.innerHTML = '<span class="toggle-icon"></span><span class="item-icon"></span><span class="tree-label" title="' + escHtml(folder.name) + '">' + escHtml(folder.name) + '</span>';
 
-                // 토글
-                item.addEventListener('click', function(e) {
-                    if (e.target.closest('.toggle-icon')) {
-                        var expanded = item.classList.toggle('expanded');
-                        var childMenu = li.querySelector(':scope > ul');
-                        if (childMenu) childMenu.classList.toggle('expanded', expanded);
-                        if (expanded) tpExpandedSet[folder.id] = true;
-                        else delete tpExpandedSet[folder.id];
-                        localStorage.setItem('tp-expanded', JSON.stringify(tpExpandedSet));
-                        return;
-                    }
-                    selectedFolderId = folder.id;
-                    highlightTreeSelection(folder.id);
-                    if ($viewViewer.style.display !== 'none') {
-                        showList();
-                    } else {
-                        renderDocGrid(filteredDocs());
-                    }
+                // 토글 (클릭 시 펼침/접힘만)
+                item.addEventListener('click', function() {
+                    var expanded = item.classList.toggle('expanded');
+                    var childMenu = li.querySelector(':scope > ul');
+                    if (childMenu) childMenu.classList.toggle('expanded', expanded);
+                    if (expanded) tpExpandedSet[folder.id] = true;
+                    else delete tpExpandedSet[folder.id];
+                    localStorage.setItem('tp-expanded', JSON.stringify(tpExpandedSet));
                 });
 
                 // 우클릭
@@ -2052,12 +2027,15 @@
                 parentUl.appendChild(li);
             });
 
-            // 이 레벨의 문서
-            var docs = treeDocs.filter(function(d) { return (d.folder || null) === parentId; });
+            // 이 레벨의 문서 (루트에서는 비소속 문서 표시 안 함)
+            var docs = treeDocs.filter(function(d) {
+                if (!parentId) return false;
+                return (d.folder || null) === parentId;
+            });
             docs.forEach(function(doc) {
                 var li = document.createElement('li');
                 var item = document.createElement('div');
-                item.className = 'tree-item';
+                item.className = 'tree-item has-url';
                 item.setAttribute('data-doc-id', doc.id);
 
                 var pages = doc.total_pages || doc.pages || 0;
@@ -2074,19 +2052,19 @@
                     showCtxMenu(e, doc.id, 'doc');
                 });
 
+                // 트리 문서 드래그 (워크스페이스로 이동 지원)
+                item.setAttribute('draggable', 'true');
+                item.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', doc.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                    item.classList.add('dragging');
+                });
+                item.addEventListener('dragend', function() {
+                    item.classList.remove('dragging');
+                });
+
                 li.appendChild(item);
                 parentUl.appendChild(li);
-            });
-        }
-
-        function highlightTreeSelection(folderId) {
-            var items = $tpTree.querySelectorAll('.tree-item');
-            items.forEach(function(item) {
-                var isCurrent = item.getAttribute('data-folder-id') === folderId;
-                if (!folderId && !item.getAttribute('data-folder-id') && !item.getAttribute('data-doc-id') && item.querySelector('.tree-label').textContent === '내 문서') {
-                    isCurrent = true;
-                }
-                item.classList.toggle('active', isCurrent);
             });
         }
 
@@ -2107,8 +2085,21 @@
             return card;
         };
 
-        // 루트 트리 아이템도 드롭 타겟으로 (내 문서 → 루트로 이동)
-        // renderTree 후 rootItem에 드롭 설정 — renderTree가 호출될 때마다 설정됨
+        // 카드 그리드를 드롭 타겟으로 (트리 → 워크스페이스 이동)
+        $docGrid.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            $docGrid.classList.add('drag-over');
+        });
+        $docGrid.addEventListener('dragleave', function(e) {
+            if (!$docGrid.contains(e.relatedTarget)) $docGrid.classList.remove('drag-over');
+        });
+        $docGrid.addEventListener('drop', function(e) {
+            e.preventDefault();
+            $docGrid.classList.remove('drag-over');
+            var docId = e.dataTransfer.getData('text/plain');
+            if (docId) moveDocToFolder(docId, null);
+        });
 
         // ── 컨텍스트 메뉴 ──
         function showCtxMenu(e, targetId, targetType) {
@@ -2159,13 +2150,15 @@
                         credentials: 'include',
                     }).then(function(r) {
                         if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail); });
-                        if (selectedFolderId === targetId) selectedFolderId = null;
                         loadTreeData();
                     }).catch(function(err) { alert(err.message); });
                 }, true);
             }
 
             if (targetType === 'doc') {
+                addCtxItem('워크스페이스로 이동', function() {
+                    moveDocToFolder(targetId, null);
+                });
                 addCtxItem('이름 변경', function() {
                     var doc = treeDocs.find(function(d) { return d.id === targetId; });
                     var cur = doc ? (doc.title || doc.filename) : '';
@@ -2222,11 +2215,10 @@
         $tpNewFolder.addEventListener('click', function() {
             var name = prompt('새 폴더 이름:');
             if (!name || !name.trim()) return;
-            var parentId = selectedFolderId || null;
             fetch(API + '/api/translator/folders', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name.trim(), parent_id: parentId }),
+                body: JSON.stringify({ name: name.trim(), parent_id: null }),
                 credentials: 'include',
             }).then(function(r) {
                 if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail); });
@@ -2245,7 +2237,7 @@
             // 루트
             var rootBtn = document.createElement('button');
             rootBtn.className = 'folder-picker-item' + (fpSelectedFolder === null ? ' selected' : '');
-            rootBtn.textContent = '/ (루트)';
+            rootBtn.textContent = '워크스페이스 (폴더 해제)';
             rootBtn.addEventListener('click', function() {
                 fpSelectedFolder = null;
                 $fpList.querySelectorAll('.folder-picker-item').forEach(function(b) { b.classList.remove('selected'); });
