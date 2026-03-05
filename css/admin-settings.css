@@ -57,8 +57,10 @@ body[data-theme="dark"] .admin-settings-page {
     --as-restart-border: #78350f;
 }
 
-/* ── body 배경색 (admin.html 전용) ──────────────────────────────────────────── */
+/* ── body 리셋 + 배경색 (admin.html 전용) ─────────────────────────────────── */
 body:has(.admin-settings-page) {
+    margin: 0;
+    padding: 0;
     background-color: #f5f7fa;
 }
 
@@ -76,11 +78,27 @@ body[data-theme="dark"]:has(.admin-settings-page) {
     min-height: calc(100vh - 100px);
 }
 
-/* ── 페이지 헤더 보정 (content.css 변수 보완) ──────────────────────────────── */
+/* ── 페이지 헤더 ──────────────────────────────────────────────────────────── */
 .admin-settings-page .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
     padding-bottom: 15px;
     margin-bottom: 20px;
     border-bottom: 3px solid #001f3f;
+}
+
+.admin-settings-page .page-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-settings-page .page-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
 }
 
 body[data-theme="dark"] .admin-settings-page .page-header {
@@ -134,6 +152,25 @@ body[data-theme="dark"] .admin-settings-page .page-header h1.ph-icon-settings::b
     gap: 4px;
     position: sticky;
     top: 80px;
+}
+
+.admin-sidebar-group {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--as-text-light);
+    opacity: 0.6;
+    padding: 0 14px 6px;
+    margin-top: 20px;
+    border-top: 1px solid var(--as-border);
+    padding-top: 14px;
+}
+
+.admin-sidebar-group:first-child {
+    margin-top: 0;
+    border-top: none;
+    padding-top: 0;
 }
 
 .admin-sidebar-btn {

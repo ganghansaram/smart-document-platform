@@ -19,45 +19,15 @@ body[data-theme="dark"] .platform-footer {
 .pf-inner {
     max-width: 900px;
     margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    flex-wrap: wrap;
 }
 
 .pf-copyright {
     color: inherit;
 }
 
-.pf-contact {
-    color: inherit;
-}
-
-.pf-contact a {
-    color: #0066cc;
-    text-decoration: none;
-}
-
-.pf-contact a:hover {
-    text-decoration: underline;
-}
-
-body[data-theme="dark"] .pf-contact a {
-    color: #5ba3f5;
-}
-
-.pf-divider {
-    opacity: 0.4;
-    margin: 0 2px;
-}
-
-/* ── Explorer content-panel 내 블리드 ───────────────────────────────────────── */
-.content-panel .platform-footer {
-    margin-left: -40px;
-    margin-right: -40px;
-    margin-top: 60px;
-    padding: 28px 40px;
+/* ── Translator: 푸터를 바닥에 고정 ─────────────────────────────────────────── */
+.view-list > #translator-footer {
+    margin-top: auto;
 }
 
 /* ── Launcher 전용 (투명 배경, 밝은 텍스트) ──────────────────────────────────── */
@@ -65,22 +35,4 @@ body[data-theme="dark"] .pf-contact a {
 body:has(.launcher-main) .platform-footer {
     border-top: none;
     color: rgba(255, 255, 255, 0.3);
-}
-
-body:has(.launcher-main) .platform-footer .pf-contact a {
-    color: rgba(255, 255, 255, 0.5);
-}
-
-/* ── 반응형 ────────────────────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-    .pf-inner {
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .content-panel .platform-footer {
-        margin-left: -20px;
-        margin-right: -20px;
-        padding: 20px;
-    }
 }

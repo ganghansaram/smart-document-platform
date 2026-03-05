@@ -159,9 +159,12 @@ body.resizing img {
     background-color: var(--white);
     overflow-y: auto;
     overflow-x: auto;
-    padding: 40px;
     display: flex;
     flex-direction: column;
+}
+
+.content-panel > .main-content {
+    padding: 40px;
 }
 
 /* 우측 패널 */

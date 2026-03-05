@@ -29,15 +29,18 @@ var SETTINGS_SCHEMA = {
             id: 'users',
             label: '계정 관리',
             custom: true,
+            group: '관리',
         },
         {
             id: 'dashboard',
             label: '대시보드',
             custom: true,
+            group: '관리',
         },
         {
             id: 'common',
             label: '공통',
+            group: '시스템 설정',
             tabs: [
                 {
                     tabId: 'tab-security',
@@ -63,6 +66,7 @@ var SETTINGS_SCHEMA = {
         {
             id: 'explorer',
             label: 'Explorer',
+            group: '시스템 설정',
             tabs: [
                 {
                     tabId: 'tab-ai',
@@ -234,6 +238,7 @@ var SETTINGS_SCHEMA = {
         {
             id: 'translator',
             label: 'Translator',
+            group: '시스템 설정',
             tabs: [
                 {
                     tabId: 'tab-translator',
@@ -365,7 +370,12 @@ function _renderAdminSettingsUI(container, settings) {
 
     // 사이드바
     html += '<nav class="admin-sidebar">';
+    var _lastGroup = '';
     SETTINGS_SCHEMA.systems.forEach(function(sys, idx) {
+        if (sys.group && sys.group !== _lastGroup) {
+            _lastGroup = sys.group;
+            html += '<div class="admin-sidebar-group">' + _escHtml(sys.group) + '</div>';
+        }
         html += '<button class="admin-sidebar-btn' + (idx === 0 ? ' active' : '') +
                 '" data-system="' + sys.id + '" onclick="_adminSwitchSystem(\'' + sys.id + '\')">' +
                 _escHtml(sys.label) + '</button>';

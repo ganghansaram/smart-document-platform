@@ -74,8 +74,11 @@ function renderGlossaryPage() {
         // 페이지 구조 생성
         var html = '<div class="glossary-page">';
 
-        // 제목
-        html += '<h1 class="glossary-title">Aviation Glossary</h1>';
+        // 제목 (.page-header 공통 패턴)
+        html += '<div class="page-header">';
+        html += '<div class="page-header-info">';
+        html += '<h1 class="ph-icon-glossary">Aviation Glossary</h1>';
+        html += '</div></div>';
 
         // 툴바: 검색 + 통계
         html += '<div class="glossary-toolbar">';

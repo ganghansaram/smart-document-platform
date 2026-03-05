@@ -82,7 +82,13 @@ function initPlatformHeader(config) {
         var dropdown = null;
 
         function closeDropdown() {
-            if (dropdown) { dropdown.remove(); dropdown = null; }
+            if (!dropdown) return;
+            var d = dropdown;
+            dropdown = null;
+            d.classList.remove('open');
+            d.addEventListener('transitionend', function() { d.remove(); });
+            // 폴백: 트랜지션이 안 끝날 경우
+            setTimeout(function() { if (d.parentNode) d.remove(); }, 200);
         }
 
         function openDropdown() {
@@ -96,7 +102,7 @@ function initPlatformHeader(config) {
                 var item = document.createElement('a');
                 item.href = sys.href;
                 item.className = 'ph-system-item' + (sys.id === config.currentSystem ? ' current' : '');
-                item.innerHTML = '<span class="ph-system-icon">' + sys.icon + '</span>' + sys.label;
+                item.textContent = sys.label;
                 dropdown.appendChild(item);
             });
 
@@ -104,6 +110,11 @@ function initPlatformHeader(config) {
             dropdown.style.top = (rect.bottom + 4) + 'px';
             dropdown.style.left = rect.left + 'px';
             document.body.appendChild(dropdown);
+
+            // 다음 프레임에서 open 클래스 추가 (트랜지션 트리거)
+            requestAnimationFrame(function() {
+                if (dropdown) dropdown.classList.add('open');
+            });
 
             setTimeout(function() {
                 document.addEventListener('click', onOutsideClick);

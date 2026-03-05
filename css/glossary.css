@@ -8,14 +8,6 @@
     padding-bottom: 40px;
 }
 
-.glossary-title {
-    font-size: 28px;
-    color: var(--text-dark);
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid var(--primary-navy);
-}
-
 /* 툴바: 검색 + 통계 */
 .glossary-toolbar {
     display: flex;

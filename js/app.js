@@ -36,8 +36,6 @@ async function initializeApp() {
                 { id: 'search-trigger', label: 'Search' },
                 { id: 'nav-auth-login', label: 'Login',
                   onClick: function() { showLoginModal(); } },
-                { id: 'nav-auth-users', label: 'Users', className: 'auth-admin-only', hidden: true,
-                  onClick: function() { window.location.href = 'admin.html'; } },
             ],
         });
     }
@@ -91,7 +89,7 @@ async function initializeApp() {
 
     // 푸터 초기화
     if (typeof initPlatformFooter === 'function') {
-        initPlatformFooter('explorer-footer', { showContact: true });
+        initPlatformFooter('explorer-footer');
     }
 
     // URL 파라미터 페이지 또는 기본 홈 로드

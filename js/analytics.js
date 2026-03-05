@@ -107,20 +107,12 @@
             })
             .catch(function(err) {
                 target.innerHTML = '<div class="analytics-dashboard">' +
-                    '<div class="page-header"><div class="page-header-info">' +
-                    '<h1 class="ph-icon-dashboard">Analytics Dashboard</h1>' +
-                    '</div></div>' +
                     '<div class="ad-no-data">' + err.message + '</div></div>';
             });
     };
 
     function _renderDashboardHTML(container, data) {
         var html = '<div class="analytics-dashboard">';
-        html += '<div class="page-header">';
-        html += '<div class="page-header-info">';
-        html += '<h1 class="ph-icon-dashboard">Analytics Dashboard</h1>';
-        html += '</div>';
-        html += '</div>';
 
         // Summary cards
         html += '<div class="ad-summary">';
