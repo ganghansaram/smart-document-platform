@@ -119,7 +119,7 @@ FastAPI Backend (:8000)
   - `done`: 번역 PDF 표시
   - `error`: 에러 메시지 + 재시도
   - `legacy`: 레거시 통번역 PDF 표시
-- **헤더 내비게이션**: Home 버튼 (목록 복귀), Platform 링크
+- **헤더 내비게이션**: Home 버튼 (목록 복귀), 시스템 스위처 (격자 아이콘)
 - **페이지 이동**: ◀ ▶ 버튼, 키보드 ← →
 - **줌**: −/+ 버튼, 퍼센트 표시, 좌우 패널 독립 줌
 - **스크롤 동기화**: 토글 버튼으로 좌우 패널 동기 스크롤
@@ -299,9 +299,11 @@ pdf2zh --ollama --ollama-model gemma3:4b --ollama-host http://localhost:11434 \
 ```
 프론트엔드
 ├── translator.html                     ← Translator SPA (트리 + 카드 + 듀얼 뷰어)
-├── css/platform-header.css             ← 공통 헤더 스타일
+├── css/platform-header.css             ← 공통 헤더 스타일 (시스템 스위처 포함)
+├── css/platform-footer.css             ← 공통 푸터 스타일
 ├── css/tree-menu.css                   ← 트리 메뉴 스타일 (Explorer 공유)
 ├── js/platform-header.js               ← 공통 헤더 컴포넌트
+├── js/platform-footer.js               ← 공통 푸터 컴포넌트
 ├── js/lib/pdfjs/                       ← PDF.js v3.11.174 (legacy ES5)
 └── js/config.js                        ← AUTH_CONFIG (backendUrl)
 

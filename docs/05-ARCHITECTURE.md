@@ -173,9 +173,11 @@ smart-document-platform/
 │   ├── menu.json                   # 트리 메뉴 구조
 │   ├── search-index.json           # 키워드 검색 인덱스
 │   ├── auth.db                     # 사용자/세션 SQLite DB (자동 생성)
-│   └── vector-index/               # FAISS 벡터 인덱스
-│       ├── vector-index.faiss      # FAISS 인덱스 파일
-│       └── vector-index_meta.json  # 메타데이터 (title, content, url 등)
+│   ├── vector-index/               # FAISS 벡터 인덱스
+│   │   ├── vector-index.faiss      # FAISS 인덱스 파일
+│   │   └── vector-index_meta.json  # 메타데이터 (title, content, url 등)
+│   └── translator/                 # Translator 개인 작업공간
+│       └── {username}/             # 유저별 디렉토리
 │
 ├── models/                         # 로컬 ML 모델
 │   └── bge-reranker-v2-m3/         # Cross-encoder 리랭커
@@ -191,7 +193,29 @@ smart-document-platform/
 │   ├── create-admin.py             # CLI admin 계정 생성/관리
 │   └── converter/                  # 문서 변환기 (DOCX/PDF → HTML, 수식 변환, COM 전처리 포함)
 │
-└── (기존 프론트엔드 파일들)
+├── index.html                     # Explorer (문서 탐색)
+├── translator.html                # Translator (논문 번역)
+├── launcher.html                  # 런처 (시스템 선택)
+├── admin.html                     # 관리자 설정
+├── login.html                     # 로그인
+│
+├── js/
+│   ├── platform-header.js         # 공통 헤더 (시스템 스위처 포함)
+│   ├── platform-footer.js         # 공통 푸터
+│   ├── admin-settings.js          # 관리자 설정 GUI
+│   ├── analytics.js               # 접속 통계 (heartbeat, 대시보드)
+│   ├── app.js                     # Explorer 코어 (로딩, 스크롤, 설정)
+│   ├── auth.js                    # 3-role RBAC, 로그인 리다이렉트
+│   ├── config.js                  # DISPLAY/AI/EDITOR/UPLOAD/AUTH_CONFIG
+│   └── ...                        # (기타 Explorer 모듈)
+│
+├── css/
+│   ├── platform-header.css        # 공통 헤더 스타일
+│   ├── platform-footer.css        # 공통 푸터 스타일
+│   ├── admin-settings.css         # 관리자 설정 스타일
+│   └── ...                        # (기타 스타일)
+│
+└── contents/                      # Explorer HTML 콘텐츠
 ```
 
 ---
@@ -393,9 +417,9 @@ Response:
 { "success": true }
 ```
 
-- 시스템 항목(홈/용어집/정보/대시보드/관리자설정)은 서버에서 자동 보존
+- 시스템 항목(홈/용어집/정보)은 서버에서 자동 보존
 - GET 시 시스템 항목을 제거한 콘텐츠만 반환
-- POST 시 홈 → [클라이언트 콘텐츠] → 용어집/정보/대시보드/관리자설정 순으로 재조립
+- POST 시 홈 → [클라이언트 콘텐츠] → 용어집/정보 순으로 재조립
 - 원자적 저장: tmp 파일 → rename
 
 ---
