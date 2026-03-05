@@ -647,6 +647,254 @@ body[data-theme="dark"] .admin-spinner {
    메뉴 에디터
    ══════════════════════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   공용 토스트 (admin.html용 — main.css 미로드)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    padding: 12px 24px;
+    background-color: #333;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 5000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 500px;
+    text-align: center;
+    pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background-color: #22c55e; }
+.toast.error { background-color: #ef4444; }
+.toast.warning { background-color: #f59e0b; }
+
+body[data-theme="dark"] .toast { background-color: #2d2f3e; color: #e0e0e0; }
+body[data-theme="dark"] .toast.success { background-color: #22c55e; color: #fff; }
+body[data-theme="dark"] .toast.error { background-color: #ef4444; color: #fff; }
+body[data-theme="dark"] .toast.warning { background-color: #f59e0b; color: #fff; }
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   계정 관리 (Users 패널)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 사용자 테이블 ─────────────────────────────────────────────────────────── */
+.admin-users-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.admin-users-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--as-text-sub);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 8px 10px;
+    border-bottom: 2px solid var(--as-border);
+}
+
+.admin-users-table td {
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--as-border-light);
+    color: var(--as-text);
+    vertical-align: middle;
+}
+
+.admin-users-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-users-table tbody tr:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+body[data-theme="dark"] .admin-users-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* ── 역할 배지 ─────────────────────────────────────────────────────────────── */
+.admin-role-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+}
+
+.admin-role-badge.role-viewer {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.admin-role-badge.role-editor {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.admin-role-badge.role-admin {
+    background: #fce7f3;
+    color: #9d174d;
+}
+
+body[data-theme="dark"] .admin-role-badge.role-viewer {
+    background: #0c4a6e;
+    color: #7dd3fc;
+}
+
+body[data-theme="dark"] .admin-role-badge.role-editor {
+    background: #78350f;
+    color: #fde68a;
+}
+
+body[data-theme="dark"] .admin-role-badge.role-admin {
+    background: #831843;
+    color: #f9a8d4;
+}
+
+/* ── 액션 버튼 (테이블 내) ─────────────────────────────────────────────────── */
+.admin-users-actions {
+    display: flex;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.admin-btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--as-border);
+    border-radius: 5px;
+    background: transparent;
+    color: var(--as-text-sub);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.admin-btn-sm:hover {
+    background: var(--as-border-light);
+    color: var(--as-primary);
+    border-color: var(--as-primary);
+}
+
+.admin-btn-sm.admin-btn-danger:hover {
+    color: var(--as-danger);
+    border-color: var(--as-danger);
+    background: #fef2f2;
+}
+
+body[data-theme="dark"] .admin-btn-sm.admin-btn-danger:hover {
+    background: #2d1515;
+}
+
+/* ── 사용자 추가 폼 ────────────────────────────────────────────────────────── */
+.admin-users-add-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.admin-users-add-form .admin-input {
+    max-width: 200px;
+}
+
+.admin-users-add-form .admin-select {
+    max-width: 120px;
+}
+
+/* ── 모달 오버레이 ─────────────────────────────────────────────────────────── */
+.admin-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: admin-fade-in 0.15s ease;
+}
+
+body[data-theme="dark"] .admin-modal-overlay {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.admin-modal {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px 28px;
+    min-width: 360px;
+    max-width: 480px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+    color: #1a1a2e;
+}
+
+body[data-theme="dark"] .admin-modal {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+.admin-modal h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 20px;
+}
+
+/* modal 내부 input/select — body에 직접 추가되므로 CSS 변수 직접 지정 */
+.admin-modal .admin-input,
+.admin-modal .admin-select {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #1a1a2e;
+}
+
+body[data-theme="dark"] .admin-modal .admin-input,
+body[data-theme="dark"] .admin-modal .admin-select {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+.admin-modal .admin-btn-reset {
+    color: #5a6c7d;
+    border: 1px solid #e2e8f0;
+}
+
+body[data-theme="dark"] .admin-modal .admin-btn-reset {
+    color: #94a3b8;
+    border-color: #334155;
+}
+
+.admin-modal .admin-btn-save {
+    background: #0066cc;
+    color: #fff;
+}
+
+body[data-theme="dark"] .admin-modal .admin-btn-save {
+    background: #5ba3f5;
+}
+
+@keyframes admin-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   메뉴 에디터
+   ══════════════════════════════════════════════════════════════════════════════ */
+
 .menu-editor {
     min-height: 120px;
 }

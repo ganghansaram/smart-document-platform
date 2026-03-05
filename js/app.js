@@ -37,7 +37,7 @@ async function initializeApp() {
                 { id: 'nav-auth-login', label: 'Login',
                   onClick: function() { showLoginModal(); } },
                 { id: 'nav-auth-users', label: 'Users', className: 'auth-admin-only', hidden: true,
-                  onClick: function() { showUsersModal(); } },
+                  onClick: function() { window.location.href = 'admin.html'; } },
             ],
         });
     }
@@ -87,6 +87,11 @@ async function initializeApp() {
     // Analytics 초기화
     if (typeof initAnalytics === 'function') {
         initAnalytics();
+    }
+
+    // 푸터 초기화
+    if (typeof initPlatformFooter === 'function') {
+        initPlatformFooter('explorer-footer', { showContact: true });
     }
 
     // URL 파라미터 페이지 또는 기본 홈 로드
@@ -354,14 +359,9 @@ function loadContent(url) {
         return;
     }
 
-    // 대시보드 페이지: API 기반 동적 렌더링
+    // 대시보드 → Settings 페이지로 이동
     if (url === 'analytics:dashboard') {
-        if (typeof pauseSlideshow === 'function') pauseSlideshow();
-        AppState.currentPage = url;
-        updatePageUrl(url);
-        if (typeof highlightCurrentPage === 'function') highlightCurrentPage(url);
-        if (typeof renderAnalyticsDashboard === 'function') renderAnalyticsDashboard();
-        updateBreadcrumb(url);
+        window.location.href = 'admin.html';
         return;
     }
 

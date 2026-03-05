@@ -77,11 +77,16 @@
     /**
      * Render the analytics dashboard into #main-content
      */
-    window.renderAnalyticsDashboard = function() {
-        var mainContent = document.getElementById('main-content');
-        if (!mainContent) return;
+    /**
+     * @param {string|HTMLElement} [container] - container element or ID (default: '#main-content')
+     */
+    window.renderAnalyticsDashboard = function(container) {
+        var target = (typeof container === 'string')
+            ? document.getElementById(container)
+            : (container || document.getElementById('main-content'));
+        if (!target) return;
 
-        mainContent.innerHTML = '<div class="analytics-dashboard"><div class="ad-loading">Loading dashboard...</div></div>';
+        target.innerHTML = '<div class="analytics-dashboard"><div class="ad-loading">Loading dashboard...</div></div>';
         if (typeof updateSectionNav === 'function') updateSectionNav();
 
         fetch(_backendUrl + '/api/analytics/dashboard', { credentials: 'include' })
@@ -98,10 +103,10 @@
                 return r.json();
             })
             .then(function(data) {
-                _renderDashboardHTML(mainContent, data);
+                _renderDashboardHTML(target, data);
             })
             .catch(function(err) {
-                mainContent.innerHTML = '<div class="analytics-dashboard">' +
+                target.innerHTML = '<div class="analytics-dashboard">' +
                     '<div class="page-header"><div class="page-header-info">' +
                     '<h1 class="ph-icon-dashboard">Analytics Dashboard</h1>' +
                     '</div></div>' +
@@ -198,10 +203,10 @@
                     if (!r.ok) throw new Error('Seed failed');
                     return r.json();
                 }).then(function() {
-                    showToast('데모 데이터 생성 완료', 'success');
-                    renderAnalyticsDashboard();
+                    if (typeof showToast === 'function') showToast('데모 데이터 생성 완료', 'success');
+                    renderAnalyticsDashboard(container);
                 }).catch(function(err) {
-                    showToast('오류: ' + err.message, 'error');
+                    if (typeof showToast === 'function') showToast('오류: ' + err.message, 'error');
                     seedBtn.disabled = false;
                     seedBtn.textContent = '데모 데이터 생성';
                 });
@@ -219,10 +224,10 @@
                     if (!r.ok) throw new Error('Reset failed');
                     return r.json();
                 }).then(function() {
-                    showToast('데이터 초기화 완료', 'success');
-                    renderAnalyticsDashboard();
+                    if (typeof showToast === 'function') showToast('데이터 초기화 완료', 'success');
+                    renderAnalyticsDashboard(container);
                 }).catch(function(err) {
-                    showToast('오류: ' + err.message, 'error');
+                    if (typeof showToast === 'function') showToast('오류: ' + err.message, 'error');
                     resetBtn.disabled = false;
                     resetBtn.textContent = '데이터 초기화';
                 });

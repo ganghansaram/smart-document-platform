@@ -1012,72 +1012,7 @@ body[data-theme="dark"] .search-glossary-abbr {
 }
 
 
-/* ===================================
-   푸터 스타일
-   =================================== */
-
-.content-footer {
-    margin-top: 60px;
-    margin-left: -40px;
-    margin-right: -40px;
-    margin-bottom: -40px;
-    padding: 30px 40px;
-    background-color: var(--bg-gray);
-    border-top: 1px solid var(--border-color);
-    width: calc(100% + 80px);
-}
-
-.footer-inner {
-    max-width: 900px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-}
-
-.footer-copyright {
-    font-size: 13px;
-    color: var(--medium-gray);
-}
-
-.footer-contact {
-    font-size: 13px;
-    color: var(--text-light);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.footer-divider {
-    color: var(--border-color);
-}
-
-.footer-contact a {
-    color: var(--active-color);
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-.footer-contact a:hover {
-    color: var(--primary-navy);
-    text-decoration: underline;
-}
-
-.footer-version {
-    font-size: 12px;
-    color: var(--medium-gray);
-    font-family: 'Consolas', 'Monaco', monospace;
-}
-
-/* 반응형 - 좁은 화면에서 세로 정렬 */
-@media (max-width: 768px) {
-    .footer-inner {
-        flex-direction: column;
-        text-align: center;
-    }
-}
+/* 푸터: platform-footer.css로 이전됨 */
 
 @media (max-width: 640px) {
     .page-header {
@@ -1146,10 +1081,6 @@ body[data-theme="dark"] .banner-dot.active {
     background-color: #ffffff;
 }
 
-/* 푸터 링크 호버 */
-body[data-theme="dark"] .footer-contact a:hover {
-    color: #5ba3f5;
-}
 
 /* 각주 */
 body[data-theme="dark"] .main-content .fn-ref {

@@ -2,12 +2,39 @@
    관리자 설정 페이지 — renderAdminSettings()
    =================================== */
 
+// ── showToast 폴백 (admin.html에서 app.js 미로드 시) ──────────────────────────
+if (typeof showToast === 'undefined') {
+    window.showToast = function(message, type) {
+        var toast = document.getElementById('app-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'app-toast';
+            toast.className = 'toast';
+            document.body.appendChild(toast);
+        }
+        clearTimeout(toast._timer);
+        toast.textContent = message;
+        toast.className = 'toast' + (type ? ' ' + type : '') + ' show';
+        toast._timer = setTimeout(function() { toast.classList.remove('show'); }, 3000);
+    };
+}
+
 // ── 재시작 대기 상태 (페이지 재진입 시 배너 복원용) ──────────────────────────
 var _pendingRestartItems = [];
 
 // ── 설정 스키마 (시스템 > 탭 2-depth) ────────────────────────────────────────
 var SETTINGS_SCHEMA = {
     systems: [
+        {
+            id: 'users',
+            label: '계정 관리',
+            custom: true,
+        },
+        {
+            id: 'dashboard',
+            label: '대시보드',
+            custom: true,
+        },
         {
             id: 'common',
             label: '공통',
@@ -393,7 +420,7 @@ function _adminSwitchSystem(systemId) {
 function _syncCurrentFields() {
     var sys = null;
     SETTINGS_SCHEMA.systems.forEach(function(s) { if (s.id === _activeSystemId) sys = s; });
-    if (!sys) return;
+    if (!sys || sys.custom) return;
 
     sys.tabs.forEach(function(tab) {
         tab.sections.forEach(function(section) {
@@ -425,6 +452,14 @@ function _syncCurrentFields() {
 function _renderSystemContent(sys) {
     var area = document.getElementById('admin-content-area');
     if (!area) return;
+
+    // 커스텀 패널
+    if (sys.custom) {
+        if (sys.id === 'users') { _renderUsersPanel(area); return; }
+        if (sys.id === 'dashboard') { _renderDashboardPanel(area); return; }
+        area.innerHTML = '';
+        return;
+    }
 
     var firstTab = sys.tabs[0];
     _activeTabId = firstTab ? firstTab.tabId : null;
@@ -983,5 +1018,204 @@ async function _menuSave() {
         _showNotice('error', '\u2717 \uBA54\uB274 \uC800\uC7A5 \uC2E4\uD328: ' + _escHtml(e.message));
     } finally {
         if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '\uC800\uC7A5'; }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  계정 관리 패널
+// ══════════════════════════════════════════════════════════════════════════════
+
+function _renderUsersPanel(area) {
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+
+    area.innerHTML =
+        '<div class="admin-section">' +
+            '<h3 class="admin-section-title">사용자 목록</h3>' +
+            '<table class="admin-users-table">' +
+                '<thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>' +
+                '<tbody id="admin-users-tbody"></tbody>' +
+            '</table>' +
+        '</div>' +
+        '<div class="admin-section">' +
+            '<h3 class="admin-section-title">사용자 추가</h3>' +
+            '<div class="admin-users-add-form">' +
+                '<input type="text" class="admin-input" id="admin-new-user-name" placeholder="Username">' +
+                '<input type="password" class="admin-input" id="admin-new-user-pw" placeholder="Password">' +
+                '<select class="admin-select" id="admin-new-user-role">' +
+                    '<option value="viewer">viewer</option>' +
+                    '<option value="editor">editor</option>' +
+                    '<option value="admin">admin</option>' +
+                '</select>' +
+                '<button class="admin-btn admin-btn-save" id="admin-add-user-btn">추가</button>' +
+            '</div>' +
+        '</div>';
+
+    _loadUsersTable(backendUrl);
+
+    document.getElementById('admin-add-user-btn').addEventListener('click', function() {
+        _addUser(backendUrl);
+    });
+    document.getElementById('admin-new-user-pw').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') _addUser(backendUrl);
+    });
+}
+
+async function _loadUsersTable(backendUrl) {
+    var tbody = document.getElementById('admin-users-tbody');
+    if (!tbody) return;
+
+    try {
+        var r = await fetch(backendUrl + '/api/auth/users', { credentials: 'include' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        var data = await r.json();
+
+        tbody.innerHTML = '';
+        data.users.forEach(function(u) {
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td>' + u.id + '</td>' +
+                '<td>' + _escHtml(u.username) + '</td>' +
+                '<td><span class="admin-role-badge role-' + u.role + '">' + u.role + '</span></td>' +
+                '<td>' + (u.created_at || '-') + '</td>' +
+                '<td class="admin-users-actions">' +
+                    '<button class="admin-btn-sm" data-action="edit" data-id="' + u.id + '" data-name="' + _escHtml(u.username) + '" data-role="' + u.role + '">Edit</button>' +
+                    '<button class="admin-btn-sm admin-btn-danger" data-action="delete" data-id="' + u.id + '" data-name="' + _escHtml(u.username) + '">Delete</button>' +
+                '</td>';
+            tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll('[data-action="edit"]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                _editUserInline(backendUrl, this.dataset.id, this.dataset.name, this.dataset.role);
+            });
+        });
+        tbody.querySelectorAll('[data-action="delete"]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                _deleteUser(backendUrl, this.dataset.id, this.dataset.name);
+            });
+        });
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5">Failed to load users</td></tr>';
+    }
+}
+
+async function _addUser(backendUrl) {
+    var nameEl = document.getElementById('admin-new-user-name');
+    var pwEl = document.getElementById('admin-new-user-pw');
+    var roleEl = document.getElementById('admin-new-user-role');
+    var username = nameEl.value.trim();
+    var password = pwEl.value;
+    var role = roleEl.value;
+
+    if (!username || !password) {
+        _showNotice('error', 'Username and password are required.');
+        return;
+    }
+
+    try {
+        var r = await fetch(backendUrl + '/api/auth/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ username: username, password: password, role: role })
+        });
+        if (r.ok) {
+            nameEl.value = '';
+            pwEl.value = '';
+            _loadUsersTable(backendUrl);
+            _showNotice('ok', '✓ 사용자가 추가되었습니다: ' + _escHtml(username));
+        } else {
+            var err = await r.json();
+            _showNotice('error', '✗ ' + (err.detail || 'Failed to add user'));
+        }
+    } catch (e) {
+        _showNotice('error', '✗ 서버 오류');
+    }
+}
+
+function _editUserInline(backendUrl, userId, currentName, currentRole) {
+    var existing = document.getElementById('admin-edit-user-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'admin-edit-user-overlay';
+    overlay.className = 'admin-modal-overlay';
+    overlay.innerHTML =
+        '<div class="admin-modal">' +
+            '<h3>Edit User: ' + _escHtml(currentName) + '</h3>' +
+            '<div class="admin-field" style="margin-bottom:12px">' +
+                '<label class="admin-field-label">New Password <span style="font-weight:normal;opacity:.6">(leave empty to keep)</span></label>' +
+                '<input type="password" class="admin-input" id="admin-edit-pw" autocomplete="new-password">' +
+            '</div>' +
+            '<div class="admin-field" style="margin-bottom:16px">' +
+                '<label class="admin-field-label">Role</label>' +
+                '<select class="admin-select" id="admin-edit-role">' +
+                    '<option value="viewer"' + (currentRole === 'viewer' ? ' selected' : '') + '>viewer</option>' +
+                    '<option value="editor"' + (currentRole === 'editor' ? ' selected' : '') + '>editor</option>' +
+                    '<option value="admin"' + (currentRole === 'admin' ? ' selected' : '') + '>admin</option>' +
+                '</select>' +
+            '</div>' +
+            '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+                '<button class="admin-btn admin-btn-reset" id="admin-edit-cancel">Cancel</button>' +
+                '<button class="admin-btn admin-btn-save" id="admin-edit-save">Save</button>' +
+            '</div>' +
+        '</div>';
+
+    document.body.appendChild(overlay);
+
+    function close() { overlay.remove(); }
+    document.getElementById('admin-edit-cancel').addEventListener('click', close);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+
+    document.getElementById('admin-edit-save').addEventListener('click', function() {
+        var newPw = document.getElementById('admin-edit-pw').value;
+        var newRole = document.getElementById('admin-edit-role').value;
+        var body = {};
+        if (newPw) body.password = newPw;
+        if (newRole !== currentRole) body.role = newRole;
+        if (Object.keys(body).length === 0) { close(); return; }
+
+        fetch(backendUrl + '/api/auth/users/' + userId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(body)
+        }).then(function(r) {
+            if (r.ok) {
+                _loadUsersTable(backendUrl);
+                _showNotice('ok', '✓ 사용자가 수정되었습니다.');
+                close();
+            } else {
+                r.json().then(function(err) { _showNotice('error', '✗ ' + (err.detail || 'Failed')); });
+            }
+        }).catch(function() { _showNotice('error', '✗ 서버 오류'); });
+    });
+}
+
+function _deleteUser(backendUrl, userId, name) {
+    if (!confirm('"' + name + '" 사용자를 삭제하시겠습니까?')) return;
+
+    fetch(backendUrl + '/api/auth/users/' + userId, {
+        method: 'DELETE',
+        credentials: 'include'
+    }).then(function(r) {
+        if (r.ok) {
+            _loadUsersTable(backendUrl);
+            _showNotice('ok', '✓ 사용자가 삭제되었습니다.');
+        } else {
+            r.json().then(function(err) { _showNotice('error', '✗ ' + (err.detail || 'Failed')); });
+        }
+    }).catch(function() { _showNotice('error', '✗ 서버 오류'); });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  대시보드 패널
+// ══════════════════════════════════════════════════════════════════════════════
+
+function _renderDashboardPanel(area) {
+    if (typeof renderAnalyticsDashboard === 'function') {
+        renderAnalyticsDashboard(area);
+    } else {
+        area.innerHTML = '<div class="admin-section"><p>analytics.js가 로드되지 않았습니다.</p></div>';
     }
 }

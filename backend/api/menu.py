@@ -18,7 +18,6 @@ SYSTEM_URLS = {
     "contents/home.html",
     "glossary:terms",
     "contents/about.html",
-    "analytics:dashboard",
 }
 
 
@@ -69,7 +68,7 @@ def _reassemble(content: list, system_items: dict) -> list:
             result.append(node)
 
     # 후미 시스템 항목 (순서 고정)
-    for url in ["glossary:terms", "contents/about.html", "analytics:dashboard"]:
+    for url in ["glossary:terms", "contents/about.html"]:
         item = system_items.get(url)
         if item:
             result.append(item)

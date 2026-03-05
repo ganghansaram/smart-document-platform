@@ -6,6 +6,7 @@
     <title>Smart Document Platform</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/platform-header.css">
+    <link rel="stylesheet" href="css/platform-footer.css">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -165,17 +166,6 @@
             backdrop-filter: blur(4px);
         }
 
-        /* 푸터 */
-        .launcher-footer {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            padding: 16px;
-            font-size: 11px;
-            color: rgba(255,255,255,0.3);
-            letter-spacing: 0.3px;
-        }
-
         /* 페이지 전환 */
         body.fade-in {
             animation: fadeIn 0.5s ease forwards;
@@ -234,12 +224,11 @@
         </div>
     </div>
 
-    <footer class="launcher-footer">
-        &copy; 2025 Korea Aerospace Industries, Ltd. &middot; Smart Document Platform
-    </footer>
+    <div id="launcher-footer"></div>
 
     <script src="js/config.js"></script>
     <script src="js/platform-header.js"></script>
+    <script src="js/platform-footer.js"></script>
     <script>
         initPlatformHeader({
             title: 'Platform',
@@ -277,6 +266,9 @@
                 window.location.href = 'admin.html';
             }, 400);
         });
+
+        // 푸터
+        initPlatformFooter('launcher-footer');
     </script>
 </body>
 </html>

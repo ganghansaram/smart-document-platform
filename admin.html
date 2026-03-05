@@ -8,12 +8,17 @@
     <link rel="stylesheet" href="css/platform-header.css">
     <link rel="stylesheet" href="css/content.css">
     <link rel="stylesheet" href="css/admin-settings.css">
+    <link rel="stylesheet" href="css/analytics.css">
+    <link rel="stylesheet" href="css/platform-footer.css">
 </head>
 <body style="visibility:hidden">
     <div id="main-content"></div>
+    <div id="admin-footer"></div>
 
     <script src="js/config.js"></script>
     <script src="js/platform-header.js"></script>
+    <script src="js/platform-footer.js"></script>
+    <script src="js/analytics.js"></script>
     <script src="js/admin-settings.js"></script>
     <script>
     // ── 테마 초기화 ──
@@ -36,6 +41,9 @@
             renderAdminSettings();
         }
     });
+
+    // ── 푸터 ──
+    initPlatformFooter('admin-footer');
 
     // ── 테마 토글 ──
     var $themeToggle = document.getElementById('theme-toggle');

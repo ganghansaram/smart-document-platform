@@ -186,9 +186,5 @@
   {
     "label": "정보",
     "url": "contents/about.html"
-  },
-  {
-    "label": "대시보드",
-    "url": "analytics:dashboard"
   }
 ]

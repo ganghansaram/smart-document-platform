@@ -1,0 +1,86 @@
+/* ===================================
+   공통 푸터 스타일
+   =================================== */
+
+.platform-footer {
+    padding: 20px 24px;
+    text-align: center;
+    font-size: 12px;
+    color: #8a95a0;
+    border-top: 1px solid #e2e8f0;
+    background: transparent;
+}
+
+body[data-theme="dark"] .platform-footer {
+    color: #64748b;
+    border-top-color: #1e293b;
+}
+
+.pf-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pf-copyright {
+    color: inherit;
+}
+
+.pf-contact {
+    color: inherit;
+}
+
+.pf-contact a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.pf-contact a:hover {
+    text-decoration: underline;
+}
+
+body[data-theme="dark"] .pf-contact a {
+    color: #5ba3f5;
+}
+
+.pf-divider {
+    opacity: 0.4;
+    margin: 0 2px;
+}
+
+/* ── Explorer content-panel 내 블리드 ───────────────────────────────────────── */
+.content-panel .platform-footer {
+    margin-left: -40px;
+    margin-right: -40px;
+    margin-top: 60px;
+    padding: 28px 40px;
+}
+
+/* ── Launcher 전용 (투명 배경, 밝은 텍스트) ──────────────────────────────────── */
+.launcher-main ~ .platform-footer,
+body:has(.launcher-main) .platform-footer {
+    border-top: none;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+body:has(.launcher-main) .platform-footer .pf-contact a {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── 반응형 ────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .pf-inner {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .content-panel .platform-footer {
+        margin-left: -20px;
+        margin-right: -20px;
+        padding: 20px;
+    }
+}

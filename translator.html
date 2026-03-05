@@ -6,6 +6,7 @@
     <title>Translator — Smart Document Platform</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/platform-header.css">
+    <link rel="stylesheet" href="css/platform-footer.css">
     <link rel="stylesheet" href="css/tree-menu.css">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -942,6 +943,7 @@
                 <input type="file" id="file-input" accept=".pdf">
             </div>
             <div class="doc-grid" id="doc-grid"></div>
+            <div id="translator-footer"></div>
         </div>
 
         <!-- State 2: Dual Panel Viewer -->
@@ -1013,6 +1015,7 @@
     <script src="js/config.js"></script>
     <script src="js/lib/pdfjs/pdf.min.js"></script>
     <script src="js/platform-header.js"></script>
+    <script src="js/platform-footer.js"></script>
     <script>
     // ── 테마 초기화 ──
     (function() {
@@ -1050,6 +1053,11 @@
                 loadModels();
             }
         });
+
+        // ── 푸터 ──
+        if (typeof initPlatformFooter === 'function') {
+            initPlatformFooter('translator-footer');
+        }
 
         // ── 테마 토글 ──
         var $themeToggle = document.getElementById('theme-toggle');
