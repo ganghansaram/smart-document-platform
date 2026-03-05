@@ -135,6 +135,46 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             padding-right: 24px;
+            position: relative;
+        }
+
+        .doc-card-title .title-edit-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .doc-card-title .title-edit-btn svg {
+            width: 13px;
+            height: 13px;
+            fill: #95a5a6;
+        }
+
+        .doc-card:hover .title-edit-btn { opacity: 1; }
+        .doc-card-title .title-edit-btn:hover svg { fill: #0066cc; }
+
+        .doc-card-title .title-edit-input {
+            width: 100%;
+            font-size: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            border: 1px solid #0066cc;
+            border-radius: 4px;
+            padding: 2px 4px;
+            outline: none;
+            background: #fff;
         }
 
         .doc-card-meta {
@@ -538,6 +578,9 @@
         body[data-theme="dark"] .doc-card { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
         body[data-theme="dark"] .doc-card:hover { border-color: rgba(88,166,255,0.4); }
         body[data-theme="dark"] .doc-card-title { color: #e6edf3; }
+        body[data-theme="dark"] .doc-card-title .title-edit-btn svg { fill: #8b949e; }
+        body[data-theme="dark"] .doc-card-title .title-edit-btn:hover svg { fill: #58a6ff; }
+        body[data-theme="dark"] .doc-card-title .title-edit-input { background: #21262d; color: #e6edf3; border-color: #58a6ff; }
         body[data-theme="dark"] .doc-card-meta { color: rgba(255,255,255,0.4); }
         body[data-theme="dark"] .doc-empty { color: rgba(255,255,255,0.3); }
 
@@ -1215,8 +1258,20 @@
 
             var title = document.createElement('div');
             title.className = 'doc-card-title';
-            title.textContent = doc.title || doc.filename;
+            var titleText = document.createElement('span');
+            titleText.textContent = doc.title || doc.filename;
             title.title = doc.title || doc.filename;
+            title.appendChild(titleText);
+
+            var editBtn = document.createElement('button');
+            editBtn.className = 'title-edit-btn';
+            editBtn.title = '이름 변경';
+            editBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+            editBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                startTitleEdit(title, titleText, doc);
+            });
+            title.appendChild(editBtn);
             card.appendChild(title);
 
             var meta = document.createElement('div');
@@ -1278,6 +1333,54 @@
             });
 
             return card;
+        }
+
+        function startTitleEdit(titleDiv, titleSpan, doc) {
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'title-edit-input';
+            input.value = doc.title || doc.filename;
+
+            var editBtn = titleDiv.querySelector('.title-edit-btn');
+            titleSpan.style.display = 'none';
+            if (editBtn) editBtn.style.display = 'none';
+            titleDiv.appendChild(input);
+            input.focus();
+            input.select();
+
+            // 드래그 방지 (편집 중 카드 드래그 차단)
+            var card = titleDiv.closest('.doc-card');
+            if (card) card.setAttribute('draggable', 'false');
+
+            var finished = false;
+            function finish(save) {
+                if (finished) return;
+                finished = true;
+                var newTitle = input.value.trim();
+                if (input.parentNode) input.parentNode.removeChild(input);
+                titleSpan.style.display = '';
+                if (editBtn) editBtn.style.display = '';
+                if (card) card.setAttribute('draggable', 'true');
+
+                if (save && newTitle && newTitle !== (doc.title || doc.filename)) {
+                    fetch(API + '/api/translator/document/' + doc.id, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ title: newTitle }),
+                    }).then(function(r) {
+                        if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail); });
+                        loadTreeData(); // 카드 + 트리 동기화
+                    }).catch(function(err) { alert('이름 변경 실패: ' + err.message); });
+                }
+            }
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+                if (e.key === 'Escape') { finish(false); }
+            });
+            input.addEventListener('blur', function() { finish(true); });
+            input.addEventListener('click', function(e) { e.stopPropagation(); });
         }
 
         // ══════════════════════════════════════
