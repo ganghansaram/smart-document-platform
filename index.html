@@ -13,6 +13,7 @@
     <link rel="preload" href="css/images/kf21_video_sample.mp4" as="video">
 
     <!-- CSS -->
+    <link rel="stylesheet" href="css/platform-header.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/tree-menu.css">
     <link rel="stylesheet" href="css/content.css">
@@ -27,51 +28,6 @@
     <link rel="stylesheet" href="css/lib/katex.min.css">
 </head>
 <body style="visibility:hidden">
-    <!-- 상단 헤더 -->
-    <header class="header">
-        <div class="header-container">
-            <a href="#" onclick="loadContent('contents/home.html'); return false;" class="logo-link">
-                <div class="logo">
-                    <img src="css/images/kai_logo.png" alt="KAI 로고" class="logo-img">
-                    <h1>WebBook</h1>
-                </div>
-            </a>
-            <nav class="main-nav">
-                <ul>
-                    <li><a href="launcher.html">Platform</a></li>
-                    <li id="nav-edit-item" class="auth-editor-only" style="display: none;"><a href="#" id="nav-edit-btn" onclick="openEditor(); return false;">Edit</a></li>
-                    <li><a href="#" onclick="loadContent('contents/home.html'); return false;">Home</a></li>
-                    <li><a href="#" onclick="loadContent('contents/about.html'); return false;">About</a></li>
-                    <li><a href="#" id="bookmarks-trigger">Bookmarks</a></li>
-                    <li><a href="#" id="search-trigger">Search</a></li>
-                    <li id="nav-auth-login"><a href="#" onclick="showLoginModal(); return false;">Login</a></li>
-                    <li id="nav-auth-users" class="auth-admin-only" style="display:none;"><a href="#" onclick="showUsersModal(); return false;">Users</a></li>
-                    <li id="nav-auth-userinfo" style="display:none;" class="auth-nav-item"><span id="auth-display-username" class="auth-username"></span><span class="auth-separator">|</span><a href="#" onclick="handleLogout(); return false;">Logout</a></li>
-                    <li>
-                        <button id="theme-toggle" class="theme-toggle-btn" title="Switch theme">
-                            <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18">
-                                <circle cx="12" cy="12" r="5" fill="currentColor"/>
-                                <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                    <line x1="12" y1="1" x2="12" y2="3"/>
-                                    <line x1="12" y1="21" x2="12" y2="23"/>
-                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                                    <line x1="1" y1="12" x2="3" y2="12"/>
-                                    <line x1="21" y1="12" x2="23" y2="12"/>
-                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                                </g>
-                            </svg>
-                            <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18">
-                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/>
-                            </svg>
-                        </button>
-                    </li>
-                </ul>
-            </nav>
-        </div>
-    </header>
-
     <!-- 검색 오버레이 -->
     <div id="search-overlay" class="search-overlay">
         <div class="search-container">
@@ -261,6 +217,7 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="js/platform-header.js"></script>
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/bookmarks.js"></script>

@@ -24,7 +24,8 @@
 
     var _headerResult = initPlatformHeader({
         title: 'Settings',
-        navItems: [{ id: 'back-launcher', label: 'Platform', href: 'launcher.html' }],
+        currentSystem: 'settings',
+        navItems: [],
         showThemeToggle: true,
         onAuth: function(user) {
             if (user.role !== 'admin') {

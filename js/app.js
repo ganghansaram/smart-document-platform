@@ -18,6 +18,30 @@ document.addEventListener('DOMContentLoaded', function() {
  * 앱 초기화
  */
 async function initializeApp() {
+    // 공통 헤더 초기화 (Explorer용)
+    if (typeof initPlatformHeader === 'function') {
+        initPlatformHeader({
+            title: 'WebBook',
+            currentSystem: 'explorer',
+            logoClick: function() { loadContent('contents/home.html'); },
+            authRequired: false,
+            onLogout: function() { handleLogout(); },
+            showThemeToggle: true,
+            navItems: [
+                { id: 'nav-edit-item', label: 'Edit', className: 'auth-editor-only', hidden: true,
+                  onClick: function() { openEditor(); } },
+                { label: 'Home', onClick: function() { loadContent('contents/home.html'); } },
+                { label: 'About', onClick: function() { loadContent('contents/about.html'); } },
+                { id: 'bookmarks-trigger', label: 'Bookmarks' },
+                { id: 'search-trigger', label: 'Search' },
+                { id: 'nav-auth-login', label: 'Login',
+                  onClick: function() { showLoginModal(); } },
+                { id: 'nav-auth-users', label: 'Users', className: 'auth-admin-only', hidden: true,
+                  onClick: function() { showUsersModal(); } },
+            ],
+        });
+    }
+
     // 표시 설정 적용 (body에 설정하여 팝업 등 전역 적용)
     applyDisplayConfig();
 
@@ -290,7 +314,7 @@ function applyDisplayConfig() {
     if (typeof DISPLAY_CONFIG === 'undefined') return;
 
     if (DISPLAY_CONFIG.siteTitle) {
-        var logoH1 = document.querySelector('.logo h1');
+        var logoH1 = document.querySelector('.platform-header-logo h1') || document.querySelector('.logo h1');
         if (logoH1) logoH1.textContent = DISPLAY_CONFIG.siteTitle;
         document.title = DISPLAY_CONFIG.siteTitle;
     }

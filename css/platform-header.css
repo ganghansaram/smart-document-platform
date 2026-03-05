@@ -25,6 +25,20 @@
     width: auto;
 }
 
+/* 로고 링크 (Explorer용 클릭 가능 로고) */
+.ph-logo-link {
+    text-decoration: none;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: opacity 0.2s ease;
+}
+
+.ph-logo-link:hover {
+    opacity: 0.9;
+}
+
 .platform-header-logo h1 {
     font-size: 25px;
     font-weight: 600;
@@ -100,22 +114,110 @@
     color: #ffffff;
 }
 
-/* 기본(다크): sun 표시 → "라이트로 전환" 암시 */
+/* 기본(라이트): moon 표시 → "다크로 전환" 암시 */
 .platform-header .theme-toggle-btn .icon-sun {
-    display: block;
+    display: none;
 }
 
 .platform-header .theme-toggle-btn .icon-moon {
-    display: none;
-}
-
-/* 라이트 모드: moon 표시 → "다크로 전환" 암시 */
-body[data-theme="light"] .platform-header .theme-toggle-btn .icon-sun {
-    display: none;
-}
-
-body[data-theme="light"] .platform-header .theme-toggle-btn .icon-moon {
     display: block;
+}
+
+/* 다크 모드: sun 표시 → "라이트로 전환" 암시 */
+body[data-theme="dark"] .platform-header .theme-toggle-btn .icon-sun {
+    display: block;
+}
+
+body[data-theme="dark"] .platform-header .theme-toggle-btn .icon-moon {
+    display: none;
+}
+
+/* 다크 모드 */
+body[data-theme="dark"] .platform-header {
+    background: linear-gradient(135deg, #121218 0%, #1a1a2e 100%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* ── 시스템 스위처 ── */
+.ph-switcher-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 5px;
+    color: rgba(255,255,255,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+}
+
+.ph-switcher-btn:hover {
+    color: #fff;
+    border-color: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.1);
+}
+
+.ph-system-dropdown {
+    position: fixed;
+    z-index: 10000;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    padding: 6px 0;
+    min-width: 180px;
+}
+
+.ph-system-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.15s;
+}
+
+.ph-system-item:hover {
+    background: #f0f4ff;
+}
+
+.ph-system-item.current {
+    background: #e8f0fe;
+    color: #0066cc;
+    font-weight: 600;
+}
+
+.ph-system-icon {
+    font-size: 16px;
+    width: 22px;
+    text-align: center;
+}
+
+/* 다크 모드 스위처 */
+body[data-theme="dark"] .ph-switcher-btn {
+    border-color: rgba(255,255,255,0.15);
+}
+
+body[data-theme="dark"] .ph-system-dropdown {
+    background: #1e1e2e;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+
+body[data-theme="dark"] .ph-system-item {
+    color: #e0e0e0;
+}
+
+body[data-theme="dark"] .ph-system-item:hover {
+    background: rgba(88,166,255,0.1);
+}
+
+body[data-theme="dark"] .ph-system-item.current {
+    background: rgba(88,166,255,0.15);
+    color: #58a6ff;
 }
 
 /* 중간 슬롯 (page-nav 등) */
