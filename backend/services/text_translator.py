@@ -146,9 +146,12 @@ def _detect_layout_yolo(page: fitz.Page) -> tuple[list[dict], list[dict]]:
         conf = float(box.conf)
 
         if cls_name in TRANSLATE_CLASSES:
-            text = page.get_text("text", clip=bbox).strip()
+            text = _extract_text_with_bullets(page, bbox)
+            if not text:
+                text = page.get_text("text", clip=bbox).strip()
             if not text:
                 continue
+
             # 컬럼 판별
             mid_x = bbox.x0 + bbox.width / 2
             if bbox.width / page.rect.width > 0.6:
@@ -202,12 +205,8 @@ def _detect_layout_fallback(page: fitz.Page) -> tuple[list[dict], list[dict]]:
         if block.get("type") != 0:  # 텍스트 블록만
             continue
         bbox = fitz.Rect(block["bbox"])
-        # 텍스트 추출
-        lines_text = []
-        for line in block.get("lines", []):
-            for span in line.get("spans", []):
-                lines_text.append(span.get("text", ""))
-        text = " ".join(lines_text).strip()
+
+        text = _extract_text_with_bullets(page, bbox)
         if not text:
             continue
 
@@ -252,6 +251,40 @@ def _get_dominant_font_size(page: fitz.Page, bbox: fitz.Rect) -> float:
     if not size_counts:
         return 10.0
     return max(size_counts, key=size_counts.get)
+
+
+# ── 심볼 폰트 불릿 치환 ──────────────────────────────────────────
+
+# 불릿 기호로 사용되는 심볼 폰트 패밀리 (소문자 비교)
+_SYMBOL_FONTS = {"symbolmt", "symbol", "wingdings", "zapfdingbats", "webdings"}
+
+
+def _extract_text_with_bullets(page: fitz.Page, bbox: fitz.Rect) -> str:
+    """
+    get_text("dict")로 텍스트를 추출하되,
+    심볼 폰트의 단독 문자(불릿)를 "•"로 치환.
+    """
+    dict_data = page.get_text("dict", clip=bbox)
+    lines = []
+
+    for block in dict_data.get("blocks", []):
+        if block.get("type") != 0:
+            continue
+        for line in block.get("lines", []):
+            parts = []
+            for span in line.get("spans", []):
+                text = span.get("text", "")
+                font = span.get("font", "").lower()
+                # 심볼 폰트의 짧은 텍스트(1~2자) → 불릿 치환
+                if font in _SYMBOL_FONTS and len(text.strip()) <= 2:
+                    parts.append("\u2022")  # •
+                else:
+                    parts.append(text)
+            joined = "".join(parts).strip()
+            if joined:
+                lines.append(joined)
+
+    return "\n".join(lines)
 
 
 # ══════════════════════════════════════
@@ -385,9 +418,12 @@ def _build_translated_pdf(
             f"color: black; line-height: 1.3;}}"
         )
 
+        # \n → <br> 변환 (insert_htmlbox는 HTML 렌더러이므로 \n은 공백 취급)
+        html_text = translated.replace("\n", "<br>")
+
         # 단일 호출: min_scale 하한으로 한 번만 렌더링 (이중 호출 방지)
         effective_min = max(min_scale, 0.25)  # 최소 25% (너무 작으면 읽을 수 없음)
-        spare, scale = new_page.insert_htmlbox(bbox, translated, css=css, scale_low=effective_min)
+        spare, scale = new_page.insert_htmlbox(bbox, html_text, css=css, scale_low=effective_min)
 
         # 매핑 데이터 (향후 마킹 동기화용)
         mapping_blocks.append({

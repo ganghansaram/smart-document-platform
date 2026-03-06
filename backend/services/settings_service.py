@@ -59,8 +59,10 @@ DEFAULT_SETTINGS: dict = {
             "## Rules\n"
             "1. Translate ALL human-readable content into Korean.\n"
             "2. If the entire input is pure code/identifiers, return it unchanged.\n"
-            "3. Preserve list markers (bullets, numbering) in their original format.\n"
-            "4. If you see '---' separators, keep them in the output.\n\n"
+            "3. For bullet lists, always use the bullet character as the marker.\n"
+            "4. For numbered lists, use \"1.\" \"2.\" \"3.\" format.\n"
+            "5. Preserve the original line break structure.\n"
+            "6. If you see '---' separators, keep them in the output.\n\n"
             "## Output\n"
             "Output ONLY the translated Korean text. No explanations, no extra text."
         ),
