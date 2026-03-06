@@ -254,22 +254,59 @@ var SETTINGS_SCHEMA = {
                         },
                         {
                             title: '번역 품질',
-                            fields: [
-                                { group: 'translator', key: 'custom_prompt',
-                                  label: '시스템 프롬프트 (role block)', type: 'textarea', restart: false,
-                                  rows: 4,
-                                  desc: '--custom-system-prompt 값. 비워두면 BabelDOC 기본 프롬프트 사용. $lang_out 변수 사용 가능',
-                                  placeholder: 'You are a professional $lang_out native translator who needs to fluently translate text into $lang_out.' },
-                                { group: 'translator', key: 'disable_rich_text',
-                                  label: '리치텍스트 번역 비활성화', type: 'toggle', restart: false,
-                                  desc: '<style> 태그 손상 방지. 볼드/이탤릭 서식이 번역에서 제외됨' },
-                                { group: 'translator', key: 'translate_table_text',
-                                  label: '테이블 텍스트 번역', type: 'toggle', restart: false,
-                                  desc: '표 안의 텍스트도 번역 대상에 포함' },
-                                { group: 'translator', key: 'min_text_length',
-                                  label: '최소 텍스트 길이', type: 'number', restart: false,
-                                  min: 0, max: 100, step: 1,
-                                  desc: '이 글자 수 미만의 텍스트 블록은 번역 건너뜀' },
+                            subtabs: [
+                                {
+                                    subtabId: 'quality-pdf',
+                                    subtabLabel: 'PDF (pdf2zh)',
+                                    fields: [
+                                        { group: 'translator', key: 'custom_prompt',
+                                          label: '시스템 프롬프트 (role block)', type: 'textarea', restart: false,
+                                          rows: 4,
+                                          desc: '--custom-system-prompt 값. 비워두면 BabelDOC 기본 프롬프트 사용. $lang_out 변수 사용 가능',
+                                          placeholder: 'You are a professional $lang_out native translator who needs to fluently translate text into $lang_out.' },
+                                        { group: 'translator', key: 'disable_rich_text',
+                                          label: '리치텍스트 번역 비활성화', type: 'toggle', restart: false,
+                                          desc: '<style> 태그 손상 방지. 볼드/이탤릭 서식이 번역에서 제외됨' },
+                                        { group: 'translator', key: 'translate_table_text',
+                                          label: '테이블 텍스트 번역', type: 'toggle', restart: false,
+                                          desc: '표 안의 텍스트도 번역 대상에 포함' },
+                                        { group: 'translator', key: 'min_text_length',
+                                          label: '최소 텍스트 길이', type: 'number', restart: false,
+                                          min: 0, max: 100, step: 1,
+                                          desc: '이 글자 수 미만의 텍스트 블록은 번역 건너뜀' },
+                                        { group: 'translator', key: 'ocr_workaround',
+                                          label: 'OCR 우회', type: 'toggle', restart: false,
+                                          desc: '스캔 PDF에서 OCR 처리 활성화' },
+                                        { group: 'translator', key: 'enhance_compatibility',
+                                          label: '호환성 강화', type: 'toggle', restart: false,
+                                          desc: '일부 PDF 뷰어 호환성 문제 해결' },
+                                    ]
+                                },
+                                {
+                                    subtabId: 'quality-text',
+                                    subtabLabel: '텍스트',
+                                    fields: [
+                                        { group: 'translator', key: 'text_custom_prompt',
+                                          label: '시스템 프롬프트', type: 'textarea', restart: false,
+                                          rows: 8,
+                                          desc: '텍스트 번역 시 Ollama에 전달되는 system 프롬프트' },
+                                        { group: 'translator', key: 'text_font_scale',
+                                          label: '폰트 스케일', type: 'number', restart: false,
+                                          min: 0.3, max: 1.5, step: 0.05,
+                                          desc: '원문 대비 번역 폰트 크기 비율. EN→KR은 0.75 권장 (한글이 영문보다 넓음)' },
+                                        { group: 'translator', key: 'text_min_scale',
+                                          label: '최소 축소 한도', type: 'number', restart: false,
+                                          min: 0.1, max: 1.0, step: 0.05,
+                                          desc: '자동 축소 최소 비율. 번역이 박스에 안 맞을 때 이 비율까지 축소 허용' },
+                                        { group: 'translator', key: 'text_font_family',
+                                          label: '폰트 패밀리', type: 'text', restart: false,
+                                          desc: '번역 텍스트에 적용할 CSS 폰트 패밀리 (예: sans-serif, serif, monospace)' },
+                                        { group: 'translator', key: 'text_min_text_length',
+                                          label: '최소 텍스트 길이', type: 'number', restart: false,
+                                          min: 0, max: 100, step: 1,
+                                          desc: '이 글자 수 미만의 텍스트 블록은 번역 건너뜀' },
+                                    ]
+                                },
                             ]
                         },
                         {
@@ -287,17 +324,6 @@ var SETTINGS_SCHEMA = {
                                   label: 'QPS 제한', type: 'number', restart: false,
                                   min: 0, max: 100, step: 1,
                                   desc: 'Ollama 초당 요청 수 제한. 0이면 무제한' },
-                            ]
-                        },
-                        {
-                            title: 'PDF 처리',
-                            fields: [
-                                { group: 'translator', key: 'ocr_workaround',
-                                  label: 'OCR 우회', type: 'toggle', restart: false,
-                                  desc: '스캔 PDF에서 OCR 처리 활성화' },
-                                { group: 'translator', key: 'enhance_compatibility',
-                                  label: '호환성 강화', type: 'toggle', restart: false,
-                                  desc: '일부 PDF 뷰어 호환성 문제 해결' },
                             ]
                         },
                     ]
@@ -425,6 +451,18 @@ function _adminSwitchSystem(systemId) {
     _renderSystemContent(sys);
 }
 
+// ── 섹션 내 모든 필드 순회 헬퍼 (subtabs 포함) ─────────────────────────────
+
+function _forEachSectionField(section, callback) {
+    if (section.subtabs) {
+        section.subtabs.forEach(function(st) {
+            st.fields.forEach(callback);
+        });
+    } else if (section.fields) {
+        section.fields.forEach(callback);
+    }
+}
+
 // ── DOM → _currentSettings 동기화 (시스템 전환 전) ───────────────────────────
 
 function _syncCurrentFields() {
@@ -434,7 +472,7 @@ function _syncCurrentFields() {
 
     sys.tabs.forEach(function(tab) {
         tab.sections.forEach(function(section) {
-            section.fields.forEach(function(field) {
+            _forEachSectionField(section, function(field) {
                 var id = 'as-' + field.group + '-' + field.key;
                 var el = document.getElementById(id);
                 if (!el) return;
@@ -492,11 +530,33 @@ function _renderSystemContent(sys) {
         tab.sections.forEach(function(section) {
             html += '<div class="admin-section">';
             html += '<h3 class="admin-section-title">' + _escHtml(section.title) + '</h3>';
-            html += '<div class="admin-fields">';
-            section.fields.forEach(function(field) {
-                html += _renderField(field, _currentSettings);
-            });
-            html += '</div>';
+
+            if (section.subtabs) {
+                // 서브탭 렌더링
+                html += '<div class="admin-subtabs">';
+                section.subtabs.forEach(function(st, stIdx) {
+                    html += '<button class="admin-subtab-btn' + (stIdx === 0 ? ' active' : '') +
+                            '" data-subtab="' + st.subtabId + '" onclick="_adminSwitchSubtab(\'' + st.subtabId + '\',this)">' +
+                            _escHtml(st.subtabLabel) + '</button>';
+                });
+                html += '</div>';
+                section.subtabs.forEach(function(st, stIdx) {
+                    html += '<div class="admin-subtab-panel' + (stIdx === 0 ? ' active' : '') + '" id="' + st.subtabId + '">';
+                    html += '<div class="admin-fields">';
+                    st.fields.forEach(function(field) {
+                        html += _renderField(field, _currentSettings);
+                    });
+                    html += '</div>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<div class="admin-fields">';
+                section.fields.forEach(function(field) {
+                    html += _renderField(field, _currentSettings);
+                });
+                html += '</div>';
+            }
+
             html += '</div>';
         });
         html += '</div>';
@@ -590,6 +650,19 @@ function _adminSwitchTab(tabId) {
     });
 }
 
+// ── 서브탭 전환 ──────────────────────────────────────────────────────────────
+
+function _adminSwitchSubtab(subtabId, btn) {
+    var section = btn.closest('.admin-section');
+    if (!section) return;
+    section.querySelectorAll('.admin-subtab-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.subtab === subtabId);
+    });
+    section.querySelectorAll('.admin-subtab-panel').forEach(function(panel) {
+        panel.classList.toggle('active', panel.id === subtabId);
+    });
+}
+
 // ── 설정값 수집 ───────────────────────────────────────────────────────────────
 
 function _collectSettings() {
@@ -599,9 +672,10 @@ function _collectSettings() {
     // _currentSettings에서 스키마에 정의된 모든 필드를 수집
     var result = {};
     SETTINGS_SCHEMA.systems.forEach(function(sys) {
+        if (sys.custom || !sys.tabs) return;
         sys.tabs.forEach(function(tab) {
             tab.sections.forEach(function(section) {
-                section.fields.forEach(function(field) {
+                _forEachSectionField(section, function(field) {
                     if (!result[field.group]) result[field.group] = {};
                     var groupData = _currentSettings[field.group];
                     if (groupData && field.key in groupData) {

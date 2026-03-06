@@ -772,6 +772,150 @@ def get_doc_page_summary(username: str, doc_id: str) -> Optional[dict]:
     }
 
 
+# ══════════════════════════════════════
+# 텍스트 번역 (폴백 엔진)
+# ══════════════════════════════════════
+
+# 텍스트 번역 전용 작업 추적 (pdf2zh와 독립)
+_text_active_tasks: dict[str, asyncio.Task] = {}
+_text_page_progress: dict[str, str] = {}
+
+
+def start_text_translation(username: str, doc_id: str, page_num: int,
+                           model: Optional[str] = None, font_scale: Optional[float] = None):
+    """텍스트 번역 시작 → asyncio.Task 생성, 즉시 반환"""
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        raise FileNotFoundError(f"문서 없음: {doc_id}")
+
+    total = meta.get("pages", 0)
+    if page_num < 1 or page_num > total:
+        raise ValueError(f"유효하지 않은 페이지 번호: {page_num} (1~{total})")
+
+    # 동시성 제어: 이 문서에서 텍스트 번역 진행 중이면 거부
+    key = f"tt:{doc_id}:{page_num}"
+    if key in _text_active_tasks and not _text_active_tasks[key].done():
+        raise RuntimeError("이 페이지에서 텍스트 번역이 진행 중입니다")
+
+    effective_model = model or config.TRANSLATOR_TRANSLATION_MODEL or config.OLLAMA_MODEL
+
+    # meta.json에 텍스트 번역 상태 기록
+    page_status = meta.get("page_status", {})
+    ps = page_status.get(str(page_num), {})
+    ps["text_translate"] = {
+        "status": "translating",
+        "model": effective_model,
+        "font_scale": font_scale,
+        "started_at": datetime.now().isoformat(),
+    }
+    page_status[str(page_num)] = ps
+    meta["page_status"] = page_status
+    _save_meta(username, doc_id, meta)
+
+    _text_page_progress[key] = "번역 준비 중..."
+    task = asyncio.create_task(
+        _run_text_translation(username, doc_id, page_num, effective_model, font_scale, key)
+    )
+    _text_active_tasks[key] = task
+
+
+async def _run_text_translation(username: str, doc_id: str, page_num: int,
+                                 model: str, font_scale: Optional[float], key: str):
+    """텍스트 번역 비동기 래퍼 (동기 함수를 스레드 풀에서 실행)"""
+    from services.text_translator import translate_page
+
+    src_path = _doc_dir(username, doc_id) / "original.pdf"
+    output_dir = _doc_dir(username, doc_id) / "pages" / str(page_num)
+
+    def progress_cb(stage: str):
+        _text_page_progress[key] = stage
+
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            lambda: translate_page(
+                original_pdf_path=src_path,
+                output_dir=output_dir,
+                page_num=page_num,
+                model=model,
+                font_scale=font_scale,
+                progress_callback=progress_cb,
+            ),
+        )
+
+        # 성공 — meta.json 업데이트
+        meta = _load_meta(username, doc_id)
+        if meta:
+            ps = meta.get("page_status", {}).get(str(page_num), {})
+            ps["text_translate"] = {
+                "status": "done",
+                "model": model,
+                "font_scale": result.get("font_scale", 0.75),
+                "translated_at": datetime.now().isoformat(),
+                "elapsed_sec": result.get("elapsed_sec", 0),
+            }
+            meta["page_status"][str(page_num)] = ps
+            _save_meta(username, doc_id, meta)
+
+    except Exception as e:
+        meta = _load_meta(username, doc_id)
+        if meta:
+            ps = meta.get("page_status", {}).get(str(page_num), {})
+            ps["text_translate"] = {
+                "status": "error",
+                "error": str(e),
+            }
+            meta["page_status"][str(page_num)] = ps
+            _save_meta(username, doc_id, meta)
+    finally:
+        _text_active_tasks.pop(key, None)
+        _text_page_progress.pop(key, None)
+
+
+def get_text_translation_status(username: str, doc_id: str, page_num: int) -> Optional[dict]:
+    """텍스트 번역 상태"""
+    key = f"tt:{doc_id}:{page_num}"
+    if key in _text_active_tasks and not _text_active_tasks[key].done():
+        return {
+            "status": "translating",
+            "progress_stage": _text_page_progress.get(key, "번역 준비 중..."),
+        }
+
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        return None
+
+    ps = meta.get("page_status", {}).get(str(page_num), {})
+    tt = ps.get("text_translate")
+    if not tt:
+        return {"status": "pending"}
+    return tt
+
+
+def get_text_translated_pdf_path(username: str, doc_id: str, page_num: int) -> Optional[Path]:
+    """텍스트 번역 PDF 경로"""
+    path = _doc_dir(username, doc_id) / "pages" / str(page_num) / "text_translated.pdf"
+    return path if path.exists() else None
+
+
+def cancel_text_translation(username: str, doc_id: str, page_num: int) -> bool:
+    """텍스트 번역 취소"""
+    key = f"tt:{doc_id}:{page_num}"
+    task = _text_active_tasks.pop(key, None)
+    if task and not task.done():
+        task.cancel()
+    _text_page_progress.pop(key, None)
+
+    meta = _load_meta(username, doc_id)
+    if meta:
+        ps = meta.get("page_status", {}).get(str(page_num), {})
+        ps.pop("text_translate", None)
+        meta["page_status"][str(page_num)] = ps
+        _save_meta(username, doc_id, meta)
+    return True
+
+
 # ── 헬퍼 ──
 
 def _update_page_progress(username: str, doc_id: str, page_num: int, stage: str):

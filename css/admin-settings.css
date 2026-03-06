@@ -360,6 +360,54 @@ body[data-theme="dark"] .admin-tab-btn:hover:not(.active) {
     display: block;
 }
 
+/* ── 서브탭 (섹션 내부 PDF/텍스트 분리용) ───────────────────────────────────── */
+.admin-subtabs {
+    display: flex;
+    gap: 2px;
+    background: var(--as-tab-bg);
+    border-radius: 7px;
+    padding: 3px;
+    margin-bottom: 16px;
+}
+
+.admin-subtab-btn {
+    flex: 0 1 auto;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--as-tab-text);
+    background: transparent;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+
+.admin-subtab-btn:hover:not(.active) {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--as-text);
+}
+
+body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-subtab-btn.active {
+    background: var(--as-tab-active);
+    color: var(--as-tab-active-text);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.admin-subtab-panel {
+    display: none;
+}
+
+.admin-subtab-panel.active {
+    display: block;
+}
+
 /* ── 섹션 ───────────────────────────────────────────────────────────────────── */
 .admin-section {
     background: var(--as-bg-card);
