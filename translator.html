@@ -552,6 +552,21 @@
             background: rgba(0, 100, 200, 0.3);
         }
 
+        .annotation-layer {
+            position: absolute;
+            left: 0; top: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 4;
+        }
+        .annotation-layer .highlight {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            border-radius: 2px;
+            mix-blend-mode: multiply;
+            transition: background-color 0.15s ease;
+        }
+
         /* 우측 패널 상태별 표시 */
         .right-panel-placeholder {
             display: flex;
@@ -1040,6 +1055,7 @@
                     <div class="pdf-page-container" id="left-page-container">
                         <canvas id="left-canvas"></canvas>
                         <div class="text-layer" id="left-text-layer"></div>
+                        <div class="annotation-layer" id="left-annotation-layer"></div>
                     </div>
                 </div>
                 <!-- Right: Translation -->
@@ -1047,6 +1063,7 @@
                     <span class="panel-label">번역</span>
                     <div class="pdf-page-container" id="right-page-container" style="display:none">
                         <canvas id="right-canvas"></canvas>
+                        <div class="text-layer" id="right-text-layer"></div>
                     </div>
                     <div class="right-panel-placeholder" id="right-placeholder">
                         <div class="placeholder-icon">&#128221;</div>
@@ -1170,11 +1187,13 @@
         var $leftCanvas     = document.getElementById('left-canvas');
         var $leftContainer  = document.getElementById('left-page-container');
         var $leftTextLayer  = document.getElementById('left-text-layer');
+        var $leftAnnotationLayer = document.getElementById('left-annotation-layer');
 
         // Right panel
         var $panelRight     = document.getElementById('panel-right');
         var $rightCanvas    = document.getElementById('right-canvas');
         var $rightContainer = document.getElementById('right-page-container');
+        var $rightTextLayer = document.getElementById('right-text-layer');
         var $rightPlaceholder = document.getElementById('right-placeholder');
 
         // Toolbar
@@ -1551,6 +1570,9 @@
                 $leftTextLayer.style.width = scaledViewport.width + 'px';
                 $leftTextLayer.style.height = scaledViewport.height + 'px';
 
+                $leftAnnotationLayer.style.width = scaledViewport.width + 'px';
+                $leftAnnotationLayer.style.height = scaledViewport.height + 'px';
+
                 var ctx = $leftCanvas.getContext('2d');
                 leftRenderTask = page.render({ canvasContext: ctx, viewport: scaledViewport });
                 leftRenderTask.promise.then(function() {
@@ -1754,10 +1776,24 @@
                 $rightContainer.style.width = scaledViewport.width + 'px';
                 $rightContainer.style.height = scaledViewport.height + 'px';
 
+                $rightTextLayer.innerHTML = '';
+                $rightTextLayer.style.width = scaledViewport.width + 'px';
+                $rightTextLayer.style.height = scaledViewport.height + 'px';
+
                 var ctx = $rightCanvas.getContext('2d');
                 rightRenderTask = page.render({ canvasContext: ctx, viewport: scaledViewport });
                 rightRenderTask.promise.then(function() {
                     rightRenderTask = null;
+                    return page.getTextContent();
+                }).then(function(textContent) {
+                    if (textContent) {
+                        pdfjsLib.renderTextLayer({
+                            textContent: textContent,
+                            container: $rightTextLayer,
+                            viewport: scaledViewport,
+                            textDivs: [],
+                        });
+                    }
                 }).catch(function() { rightRenderTask = null; });
             });
         }

@@ -16,6 +16,7 @@ from services.translator_service import (
     move_document_to_folder,
     start_text_translation, get_text_translation_status,
     get_text_translated_pdf_path, cancel_text_translation,
+    get_annotations, create_annotation, update_annotation, delete_annotation,
 )
 import config
 
@@ -86,6 +87,60 @@ async def api_move_document(
             raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    return {"success": True}
+
+
+# ── 마킹 (annotations) CRUD ──
+
+@router.get("/document/{doc_id}/annotations")
+async def api_get_annotations(doc_id: str, user: dict = Depends(get_current_user)):
+    """문서의 전체 마킹 목록"""
+    try:
+        return get_annotations(user["username"], doc_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+
+
+@router.post("/document/{doc_id}/annotations")
+async def api_create_annotation(
+    doc_id: str,
+    body: dict = Body(...),
+    user: dict = Depends(get_current_user),
+):
+    """마킹 생성"""
+    if "page" not in body or "rects" not in body:
+        raise HTTPException(status_code=400, detail="page, rects 필수")
+    try:
+        return create_annotation(user["username"], doc_id, body)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+
+
+@router.put("/document/{doc_id}/annotations/{ann_id}")
+async def api_update_annotation(
+    doc_id: str,
+    ann_id: str,
+    body: dict = Body(...),
+    user: dict = Depends(get_current_user),
+):
+    """마킹 수정 (memo, color)"""
+    try:
+        return update_annotation(user["username"], doc_id, ann_id, body)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.delete("/document/{doc_id}/annotations/{ann_id}")
+async def api_delete_annotation(
+    doc_id: str,
+    ann_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """마킹 삭제"""
+    try:
+        delete_annotation(user["username"], doc_id, ann_id)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     return {"success": True}
 
 
