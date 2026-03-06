@@ -358,6 +358,14 @@ def delete_document(username: str, doc_id: str) -> bool:
 
     if doc_path.exists():
         shutil.rmtree(doc_path, ignore_errors=True)
+        # Windows 파일 잠금 등으로 삭제 실패 시 재시도
+        if doc_path.exists():
+            import time, gc
+            gc.collect()
+            time.sleep(0.5)
+            shutil.rmtree(doc_path, ignore_errors=True)
+        if doc_path.exists():
+            print(f"[Translator] WARNING: 디렉토리 삭제 실패 (잠금?) — {doc_path}")
 
     # 인덱스에서 제거
     index = _load_user_index(username)
