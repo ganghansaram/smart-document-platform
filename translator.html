@@ -549,7 +549,7 @@
         }
 
         .text-layer ::selection {
-            background: rgba(0, 100, 200, 0.3);
+            background: transparent;
         }
 
         .annotation-layer {
@@ -2369,9 +2369,48 @@
             return merged;
         }
 
+        // ── 커스텀 selection overlay (Phase 2.5) ──
+
+        var isDragging = false;
+        var selectionOverlay = document.createElement('div');
+        selectionOverlay.id = 'selection-overlay';
+        selectionOverlay.style.cssText = 'position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:3;';
+        $leftContainer.appendChild(selectionOverlay);
+
+        function renderSelectionOverlay() {
+            selectionOverlay.innerHTML = '';
+            var selection = window.getSelection();
+            if (!selection || selection.isCollapsed) return;
+            var rects = selectionToPercentRects(selection);
+            if (!rects) return;
+            for (var i = 0; i < rects.length; i++) {
+                var r = rects[i];
+                var div = document.createElement('div');
+                div.style.cssText = 'position:absolute;background:rgba(0,100,200,0.3);border-radius:2px;pointer-events:none;';
+                div.style.left   = r.x + '%';
+                div.style.top    = r.y + '%';
+                div.style.width  = r.w + '%';
+                div.style.height = r.h + '%';
+                selectionOverlay.appendChild(div);
+            }
+        }
+
+        $leftTextLayer.addEventListener('mousedown', function() {
+            isDragging = true;
+            selectionOverlay.innerHTML = '';
+        });
+
+        document.addEventListener('mousemove', function() {
+            if (!isDragging) return;
+            requestAnimationFrame(renderSelectionOverlay);
+        });
+
         // ── mouseup 이벤트: 텍스트 선택 → 하이라이트 생성 ──
 
         $leftTextLayer.addEventListener('mouseup', function(e) {
+            isDragging = false;
+            selectionOverlay.innerHTML = '';
+
             if (!currentDocId) return;
             var selection = window.getSelection();
             if (!selection || selection.isCollapsed) return;
@@ -2411,6 +2450,14 @@
             }).catch(function(err) {
                 console.error('[Annotations] create error:', err);
             });
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                // text-layer 밖에서 마우스를 놓은 경우 overlay 정리
+                setTimeout(function() { selectionOverlay.innerHTML = ''; }, 100);
+            }
         });
 
         // ── 더블클릭 삭제 (Phase 3 popover 전 임시) ──
