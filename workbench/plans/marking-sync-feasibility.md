@@ -1,130 +1,401 @@
-# 마킹(형광펜) 동기화 기능 — 타당성 분석
+# 마킹(형광펜/메모) 기능 — 설계 문서
 
 ## 1. 요구사항
 
-- 한쪽 패널에 형광펜 마킹 → 반대쪽 동일 영역 자동 동기화
+- 좌측(원문) 패널에서 텍스트 드래그 → 형광펜 마킹
 - 마킹에 메모/노트 기록 가능
-- 섹션 클릭 시 반대쪽 동일 섹션 하이라이트 + 스크롤 이동
-- Explorer 웹 에디터의 하이라이트 방식과 유사한 UX
+- 마킹 목록에서 검색/탐색 → 해당 페이지 이동
+- 번역 모드(PDF/텍스트)에 관계없이 동일하게 동작
 
-## 2. 결론: 현재 아키텍처 변경 없이 구현 가능
+## 2. 설계 원칙
 
-### PDF.js 레이어 구조
+### 좌측 원문 전용 액션
 
-```
-[3] annotation-layer (HTML div overlay)  ← 하이라이트/메모 렌더링
-[2] text-layer (투명 span)               ← 클릭/선택 이벤트 캡처
-[1] canvas (PDF 렌더링)                   ← 변경 불필요
-```
-
-하이라이트/메모는 HTML overlay div로 구현 → PDF 파일 수정 불필요.
-기존 PDF.js 뷰어 위에 얹는 방식.
-
-### 양쪽 동기화 핵심: 블록 매핑 데이터
-
-번역 시 사이드카 매핑 파일 생성:
-```json
-{
-  "blocks": [
-    {
-      "id": 1,
-      "source_rect": [57, 207, 300, 489],
-      "target_rect": [57, 207, 300, 489],
-      "source_text": "The proposed method...",
-      "target_text": "제안된 방법은..."
-    }
-  ]
-}
-```
-
-- **pdf2zh 모드**: 후처리로 블록 좌표 매핑 추출 가능
-- **텍스트 번역 모드**: YOLO bbox → 번역 파이프라인에서 매핑 자연 생성
-- 텍스트 번역 모드가 매핑 기능에 더 유리함
-
-### 하이라이트 구현 방식
-
-두 가지 접근법 존재:
-
-| 방식 | 설명 | 장단점 |
-|------|------|--------|
-| **% 좌표 div** | 페이지 크기 대비 % 좌표로 div 배치 | 줌 변경 시 자동 대응, 재계산 불필요 |
-| **SVG overlay** | SVG 요소로 하이라이트 렌더링 | 자유형 드로잉에 유리, 하이라이트엔 과도 |
-
-권장: **% 좌표 div** (react-pdf-highlighter 패턴, Vanilla JS 구현 가능)
-
-### 메모/노트 저장
+**모든 마킹/메모 액션은 좌측(원문) 패널에서만 생성한다.**
 
 ```
-data/translator/{username}/{doc_id}/pages/{N}/
-  ├── translated.pdf
-  ├── text_translated.pdf
-  ├── text_mapping.json      ← 블록 매핑 (번역 시 자동 생성)
-  └── annotations.json       ← 사용자 마킹/메모 (UI에서 생성)
+[좌측 원문]                          [우측 번역]
+━━━━━━━━━━━━━━━━━━━━━━              ━━━━━━━━━━━━━━━━━━━━━━
+ 텍스트 드래그 → 형광펜                (표시 없음)
+ 형광펜 클릭 → 메모 작성               (표시 없음)
+ 형광펜 삭제                          (표시 없음)
+━━━━━━━━━━━━━━━━━━━━━━              ━━━━━━━━━━━━━━━━━━━━━━
+ ● 능동: 생성/편집/삭제               ● 수동: 변경 없음
 ```
 
-```json
-// annotations.json 예시
-{
-  "highlights": [
-    {
-      "id": "h1",
-      "block_id": 3,
-      "side": "source",
-      "color": "#ffff00",
-      "memo": "핵심 결론 부분",
-      "created_at": "2026-03-06T..."
-    }
-  ]
-}
-```
+### 우측 동기화 하이라이트 — 제외
+
+검토 결과, 우측 동기화 하이라이트는 **이번 범위에서 제외**한다.
+
+**제외 사유:**
+1. A4 한 페이지 내에서 블록 단위 동기화는 시각적 이득이 크지 않음
+2. 블록(섹션) 단위 매핑은 정밀도가 낮아 실용적 가치 부족
+3. PDF 모드에서는 매핑 데이터 부재로 동기화 불가 → 모드 간 기능 차이 발생
+4. 기존 스크롤 동기화로 양쪽 대조에 충분
+5. **일관된 경험 우선**: 모드에 따라 되기도/안 되기도 하는 기능은 신뢰를 해침
+
+> 추후 사용자 피드백으로 동기화 수요가 확인되면, 텍스트 모드 한정으로 추가 가능.
+> (text_mapping.json 블록 매핑 데이터가 이미 존재하므로 확장 용이)
+
+### 결과: 번역 모드 무관 동일 경험
+
+| 기능 | PDF 모드 | 텍스트 모드 |
+|------|---------|-----------|
+| 좌측 형광펜 | ✅ | ✅ |
+| 좌측 메모 | ✅ | ✅ |
+| 마킹 목록 | ✅ | ✅ |
+| 우측 동기화 | — | — |
+| 번역 텍스트 복사 | ✅ (text-layer) | ✅ (text-layer) |
+
+→ 사용자에게 모드 차이를 설명할 필요 없음.
 
 ---
 
-## 3. 외부 사례 조사
+## 3. 아키텍처
 
-| 제품 | 방식 | 참고점 |
-|------|------|--------|
-| **PDFRead (hourread.ai)** | 좌=원문 우=번역, 문장 hover 시 반대쪽 하이라이트 | 우리와 거의 동일한 UX 목표 |
-| **Overleaf SyncTeX** | 소스↔PDF 양방향 클릭 이동, `.synctex.gz` 매핑 | 사이드카 매핑 파일 패턴 |
-| **Hypothes.is** | TextQuoteSelector (텍스트+전후 문맥으로 앵커링) | 문서 변경에도 하이라이트 유지 |
-| **react-pdf-highlighter** | PDF.js 위 % 좌표 div overlay | Vanilla JS 동일 구현 가능, 줌 자동 대응 |
-| **Bilingual Reader (확장)** | 단락 선택 시 반대쪽 단락 하이라이트 | 단락 단위 동기화 UX |
-| **pdf-annotate.js** | SVG overlay + StoreAdapter 패턴 | 백엔드 추상화 참고 |
-| **MateCat/Memsource** | 세그먼트 그리드 (원문+번역 테이블) | 세그먼트 인덱스 매핑 |
-
-### PDF.js 하이라이트 구현 핵심
+### 뷰어 레이어 구조 (변경 후)
 
 ```
-1. text-layer에서 mouseup 이벤트 캡처
+좌측 패널 (원문)                    우측 패널 (번역)
+├── canvas (PDF 렌더링)            ├── canvas (PDF 렌더링)
+├── text-layer (투명 span) ✅       ├── text-layer ← 신규 추가
+└── annotation-layer ← 신규 추가   └── (annotation-layer 불필요)
+```
+
+**변경 사항**:
+- **우측 text-layer 추가** (PDF 모드 / 텍스트 모드 공통)
+  - `page.getTextContent()` → `renderTextLayer()` 호출 추가
+  - 부수 효과: 번역 텍스트 복사 가능 (기존에는 불가)
+- **좌측 annotation-layer 추가** (형광펜 div overlay)
+  - 우측에는 불필요 (동기화 제외)
+
+### 하이라이트 구현 방식
+
+**% 좌표 div overlay** (react-pdf-highlighter 패턴)
+- 페이지 크기 대비 % 좌표로 div 배치
+- 줌 변경 시 자동 대응, 재계산 불필요
+- Vanilla JS로 구현 가능
+
+```
+1. 좌측 text-layer에서 mouseup 이벤트 캡처
 2. window.getSelection() → Range 객체
 3. range.getClientRects() → 선택 영역 좌표
 4. 좌표를 페이지 크기 대비 %로 변환
 5. annotation-layer에 하이라이트 div 렌더링
-6. 블록 매핑으로 반대쪽 대응 영역 조회
-7. 반대쪽 annotation-layer에도 하이라이트 렌더링
+6. annotations.json에 저장 (백엔드 API)
 ```
 
 ---
 
-## 4. 폴백 번역 작업과의 관계
+## 4. UI 설계
 
-**독립적으로 진행 가능.** 사전 준비 사항:
+### 4.1 형광펜 색상
 
-- `text_translated.pdf` 생성 시 `text_mapping.json` 함께 저장
-- 각 블록에 `source_rect`, `target_rect`, `source_text`, `target_text` 기록
-- 이 매핑 데이터가 마킹 동기화의 기반이 됨
+**4색 팔레트**: 노랑(기본), 초록, 빨강, 파랑
 
-→ 폴백 번역 엔진 구현 시 매핑 저장만 추가하면 충분.
+- 마킹 생성 시 기본 노랑 적용
+- 생성 후 색상 변경 가능 (popover 내)
+- 색상에 라벨(중요/동의 등)은 부여하지 않음 — 사용자마다 용도가 다름
+
+### 4.2 메모 UI — 인라인 popover
+
+형광펜 클릭 → 마킹 위에 popover 등장:
+- 메모 입력/편집 (textarea)
+- 색상 변경 (4색 팔레트)
+- 삭제 버튼
+- popover 외부 클릭 시 자동 닫힘 + 저장
+
+```
+┌─────────────────────────┐
+│ ■ ■ ■ ■  (색상 팔레트)   │
+│                         │
+│ 핵심 결론 부분            │
+│ (textarea)              │
+│                         │
+│              [삭제]      │
+└─────────────────────────┘
+```
+
+### 4.3 마킹 목록 — 오버레이 팝업
+
+웹북(Explorer)의 **북마크 UI 패턴을 재사용**한다.
+
+- 뷰어 툴바에 "마킹" 버튼 추가
+- 클릭 → 중앙 오버레이 팝업 등장 (bookmarks-overlay 패턴)
+- ESC / 배경 클릭으로 닫기
+
+**목록 구성**:
+- 페이지별 그룹핑 (Page 1, Page 2, ...)
+- 각 항목: 색상 뱃지 + 선택 텍스트 미리보기 + 메모 미리보기
+- 항목 클릭 → 팝업 닫힘 → 해당 페이지 이동 + 마킹 강조
+- 항목별 삭제(×) 버튼, 상단 전체 삭제(Clear All)
+
+```
+┌──────────────────────────────────────────┐
+│  Markings                    Clear All ✕ │
+├──────────────────────────────────────────┤
+│  PAGE 2                                  │
+│  ──────────────────────────────────────  │
+│  🟡 "The proposed method achieves..."  ✕ │
+│     └ 핵심 결론 부분                      │
+│  🔴 "experimental results show..."     ✕ │
+│                                          │
+│  PAGE 5                                  │
+│  ──────────────────────────────────────  │
+│  🟢 "In conclusion, the framework..."  ✕ │
+│     └ 최종 요약 - 보고서에 인용           │
+└──────────────────────────────────────────┘
+```
+
+**재사용 요소** (웹북 bookmarks):
+- `bookmarks-overlay` CSS 구조 (오버레이 + 컨테이너 + blur 배경)
+- 그룹 헤더 + 항목 리스트 레이아웃
+- 항목 hover → 삭제 버튼 표시 패턴
+- 다크 모드 대응
 
 ---
 
-## 5. 구현 난이도 평가
+## 5. 데이터 구조
+
+### 저장 위치
+
+```
+data/translator/{username}/{doc_id}/
+  ├── original.pdf
+  ├── meta.json
+  ├── annotations.json       ← 마킹/메모 (문서 단위)
+  └── pages/
+      └── {N}/
+          ├── translated.pdf
+          └── text_translated.pdf
+```
+
+### annotations.json 스키마
+
+```json
+{
+  "highlights": [
+    {
+      "id": "h_20260306_abc123",
+      "page": 2,
+      "rects": [
+        { "x": 10.2, "y": 30.5, "w": 80.1, "h": 2.3 }
+      ],
+      "color": "#ffff00",
+      "text": "selected text snippet",
+      "memo": "핵심 결론 부분",
+      "created_at": "2026-03-06T14:30:00"
+    }
+  ]
+}
+```
+
+- `rects`: 페이지 크기 대비 % 좌표 (다중 라인 선택 시 rect 여러 개)
+- `text`: 선택한 텍스트 (목록 미리보기 + 앵커링 검증용)
+- `memo`: 사용자 메모 (빈 문자열이면 메모 없음)
+- `color`: 형광펜 색상 (`#ffff00`, `#90ee90`, `#ffb3b3`, `#add8e6`)
+
+---
+
+## 6. API 설계
+
+| 엔드포인트 | 메서드 | 설명 |
+|-----------|--------|------|
+| `/document/{doc_id}/annotations` | GET | 마킹/메모 목록 |
+| `/document/{doc_id}/annotations` | POST | 마킹 생성 |
+| `/document/{doc_id}/annotations/{id}` | PUT | 메모 수정 / 색상 변경 |
+| `/document/{doc_id}/annotations/{id}` | DELETE | 마킹 삭제 |
+
+---
+
+## 7. 외부 사례 참고
+
+| 제품 | 방식 | 참고점 |
+|------|------|--------|
+| **react-pdf-highlighter** | PDF.js 위 % 좌표 div overlay | Vanilla JS 동일 구현 가능, 줌 자동 대응 |
+| **Hypothes.is** | TextQuoteSelector (텍스트+전후 문맥으로 앵커링) | 문서 변경에도 하이라이트 유지 |
+| **pdf-annotate.js** | SVG overlay + StoreAdapter 패턴 | 백엔드 추상화 참고 |
+| **Explorer 웹북 Bookmarks** | 오버레이 팝업 + 그룹 목록 + 클릭 이동 | 마킹 목록 UI 기반 |
+
+---
+
+## 8. 구현 난이도 평가
 
 | 기능 | 난이도 | 비고 |
 |------|--------|------|
-| 섹션 클릭 → 반대쪽 하이라이트 | 중 | 블록 매핑만 있으면 직관적 |
-| 사용자 형광펜 마킹 | 중 | text-layer 선택 → overlay div |
-| 양쪽 마킹 동기화 | 중~상 | 블록 매핑 + 부분 텍스트 대응 필요 |
-| 마킹에 메모 첨부 | 하 | tooltip/popover UI |
-| pdf2zh 모드 매핑 추출 | 상 | pdf2zh 출력에서 역으로 매핑 재구성 필요 |
-| 텍스트 모드 매핑 | 하 | 파이프라인에서 자연 생성 |
+| 우측 text-layer 추가 | 하 | renderRightPage 수정, 텍스트 복사 보너스 |
+| 좌측 annotation-layer + 형광펜 | 중 | getSelection → % 좌표 → overlay div |
+| 메모 popover UI | 하 | 클릭 → popover (textarea + 색상 + 삭제) |
+| 형광펜 4색 팔레트 | 하 | 기본 노랑, popover 내 색상 변경 |
+| 마킹 목록 오버레이 | 하~중 | bookmarks UI 패턴 재사용, 페이지별 그룹핑 |
+| annotations.json CRUD API | 하 | 단순 파일 읽기/쓰기 |
+| 페이지 이동 시 마킹 복원 | 하~중 | 해당 페이지 annotations 필터 → div 재생성 |
+
+---
+
+## 9. 구현 단계별 계획
+
+### Phase 1: 기반 인프라
+
+우측 text-layer 추가 + 좌측 annotation-layer 추가 + 백엔드 API.
+이 단계 완료 시: 우측 번역 텍스트 복사 가능, API 준비 완료.
+
+**백엔드:**
+1. `backend/api/translator.py` — annotations CRUD 엔드포인트 4개 추가
+   - GET/POST `/document/{doc_id}/annotations`
+   - PUT/DELETE `/document/{doc_id}/annotations/{id}`
+2. `backend/services/translator_service.py` — annotations.json 읽기/쓰기 함수 추가
+
+**프론트엔드:**
+3. `translator.html` — 우측 패널에 text-layer div 추가
+   ```html
+   <div class="text-layer" id="right-text-layer"></div>
+   ```
+4. `translator.html` — 좌측 패널에 annotation-layer div 추가
+   ```html
+   <div class="annotation-layer" id="left-annotation-layer"></div>
+   ```
+5. `renderRightPage()` — text-layer 렌더링 추가
+   - `page.getTextContent()` → `pdfjsLib.renderTextLayer()` 호출
+   - PDF 모드 / 텍스트 모드 공통 적용
+6. annotation-layer CSS — 좌측 canvas 위 absolute 배치
+   ```css
+   .annotation-layer {
+       position: absolute;
+       left: 0; top: 0; right: 0; bottom: 0;
+       pointer-events: none;  /* 기본: 이벤트 통과 → text-layer가 받음 */
+       z-index: 3;            /* canvas(1) < text-layer(2) < annotation(3) */
+   }
+   .annotation-layer .highlight {
+       pointer-events: auto;  /* 하이라이트 div만 클릭 가능 */
+   }
+   ```
+
+---
+
+### Phase 2: 형광펜 마킹
+
+텍스트 선택 → 하이라이트 생성/저장/복원. 이 단계 완료 시: 기본 형광펜 동작.
+
+**프론트엔드 (`translator.html` 인라인 또는 별도 `js/annotations.js`):**
+1. text-layer `mouseup` 이벤트 핸들러
+   - `window.getSelection()` → Range 존재 시 처리
+   - `range.getClientRects()` → 선택 영역 좌표 배열
+   - canvas 컨테이너 기준 상대 좌표 → 페이지 크기 대비 % 변환
+   - 선택 텍스트 추출 (`selection.toString()`)
+2. 하이라이트 생성
+   - annotation-layer에 div 추가 (% 좌표, `position: absolute`)
+   - 기본 색상: 노랑 (`rgba(255, 255, 0, 0.3)`)
+   - POST `/annotations` → 서버 저장
+3. 페이지 이동 시 마킹 복원
+   - `renderLeftPage()` 완료 후 → GET `/annotations` → 현재 페이지 필터
+   - annotation-layer에 저장된 하이라이트 div 재생성
+4. 하이라이트 삭제
+   - 하이라이트 div 우클릭 또는 클릭 후 삭제 (Phase 3 popover에서 처리)
+   - 이 단계에서는 더블클릭 삭제로 임시 처리
+
+**스타일 가이드라인:**
+- 하이라이트 배경: `rgba()` 반투명 (아래 텍스트 가독성 유지)
+- 노랑: `rgba(255, 255, 0, 0.3)` — 인쇄물 형광펜 느낌
+- border-radius: `2px` (텍스트 라인에 맞게 미세 라운드)
+- transition: `background-color 0.15s ease` (색상 변경 시)
+- 줌 변경 시: % 좌표이므로 자동 대응 (재계산 불필요)
+
+---
+
+### Phase 3: 메모 + 색상
+
+popover UI 추가. 이 단계 완료 시: 메모 작성, 색상 변경, 삭제 가능.
+
+**프론트엔드:**
+1. popover 컴포넌트
+   - 하이라이트 클릭 → 해당 div 위에 popover 표시
+   - 구성: 색상 팔레트(4색) + 메모 textarea + 삭제 버튼
+   - popover 외부 클릭 → 자동 닫힘 + 변경사항 저장 (PUT `/annotations/{id}`)
+2. 4색 팔레트
+   - 노랑 `#ffff00`, 초록 `#90ee90`, 빨강 `#ffb3b3`, 파랑 `#add8e6`
+   - 각 색상을 작은 원형 버튼으로 표시, 선택 시 체크 표시
+   - 클릭 즉시 하이라이트 색상 반영 + 서버 저장
+3. 메모 입력
+   - textarea (2~3줄 높이, 자동 확장 없음)
+   - placeholder: "메모 추가..."
+   - 입력 후 popover 닫힘 시 자동 저장
+4. 삭제 버튼
+   - popover 하단 "삭제" 텍스트 버튼 (빨간색)
+   - 클릭 → DELETE `/annotations/{id}` → 하이라이트 div 제거
+
+**스타일 가이드라인:**
+- popover 배경: `var(--white)`, 테두리: `1px solid var(--border-color)`
+- border-radius: `8px`, box-shadow: `0 4px 16px rgba(0, 0, 0, 0.15)`
+- padding: `12px`
+- 색상 팔레트 원형: 20px × 20px, border-radius: `50%`, gap: `8px`
+- textarea: font-size `13px`, border `1px solid var(--border-color)`, border-radius `6px`
+- 삭제 버튼: font-size `13px`, color `var(--medium-gray)`, hover `#e74c3c`
+- 다크 모드: `var()` 변수로 자동 대응
+- popover 등장 transition: `opacity 0.15s ease, transform 0.15s ease`
+- transform: 살짝 위로 (`translateY(-4px)`) → 등장 시 자연스러운 느낌
+
+```
+┌─────────────────────────────┐
+│  ● ● ● ●  (노/초/빨/파)     │
+│  ─────────────────────────  │
+│  메모 추가...                │
+│  (textarea)                 │
+│                             │
+│                      삭제   │
+└─────────────────────────────┘
+```
+
+---
+
+### Phase 4: 마킹 목록
+
+오버레이 팝업으로 전체 마킹 탐색. 이 단계 완료 시: 전체 기능 완성.
+
+**프론트엔드:**
+1. 뷰어 툴바에 마킹 목록 버튼 추가
+   - 툴바 우측에 아이콘 버튼 (형광펜 또는 목록 아이콘)
+   - 마킹이 있으면 뱃지 카운트 표시 (선택사항)
+2. 오버레이 팝업 — bookmarks UI 패턴 재사용
+   - `markings-overlay` (bookmarks-overlay 구조 동일)
+   - 중앙 모달, max-width `600px`, backdrop blur
+   - 헤더: "Markings" + Clear All + 닫기(×)
+   - 본문: 스크롤 가능 목록
+3. 목록 항목 구성
+   - 페이지별 그룹 헤더 (`Page 1`, `Page 2`, ...)
+   - 각 항목:
+     ```
+     ● "selected text preview..."              ✕
+       └ 메모 미리보기 (있을 경우)
+     ```
+   - 색상 뱃지: `8px` 원형, 해당 하이라이트 색상
+   - 텍스트 미리보기: 최대 50자 말줄임 (`text-overflow: ellipsis`)
+   - 메모 미리보기: font-size `12px`, color `var(--medium-gray)`, 최대 1줄
+   - 삭제(×): hover 시 표시 (bookmarks 패턴)
+4. 항목 클릭 동작
+   - 팝업 닫힘
+   - 해당 페이지로 이동 (`goToPage()`)
+   - 해당 하이라이트에 포커스 효과 (일시적 강조 → 2초 후 복귀)
+
+**스타일 가이드라인:**
+- bookmarks.css 구조 재사용 (overlay, container, header, list, item, empty)
+- 그룹 헤더: font-size `12px`, weight `600`, uppercase, letter-spacing `0.5px`
+- 항목: padding `8px 12px`, hover background `var(--hover-bg)`
+- 색상 뱃지: `display: inline-block`, `width: 8px`, `height: 8px`, `border-radius: 50%`
+- 메모 서브텍스트: `margin-left: 16px` (뱃지 아래 들여쓰기)
+- 빈 상태: "저장된 마킹이 없습니다." + 안내 텍스트
+- 다크 모드: bookmarks.css의 다크 오버라이드 패턴 동일 적용
+- 포커스 효과: `box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.4)` → transition out `2s`
+
+---
+
+### Phase 요약
+
+| Phase | 기능 | 산출물 | 선행 |
+|-------|------|--------|------|
+| 1 | 기반 인프라 | text-layer, annotation-layer, API | — |
+| 2 | 형광펜 마킹 | 텍스트 선택 → 하이라이트 생성/복원 | Phase 1 |
+| 3 | 메모 + 색상 | popover UI, 메모 편집, 4색 팔레트 | Phase 2 |
+| 4 | 마킹 목록 | 오버레이 팝업, 페이지 이동 | Phase 2 |
+
+> 순차 진행: Phase 1 → 2 → 3 → 4. 각 Phase 완료 후 테스트 → 다음 Phase.
