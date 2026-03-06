@@ -77,5 +77,8 @@ pmt_test_out/
 # Playwright MCP
 .playwright-mcp/
 
+# Workbench (test/dev artifacts)
+workbench/screenshots/
+
 # Screenshots (test artifacts in repo root)
 /*.png

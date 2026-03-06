@@ -63,6 +63,23 @@ TRANSLATOR_QPS = 0                      # --qps (0=무제한)
 TRANSLATOR_OCR_WORKAROUND = False       # --ocr-workaround
 TRANSLATOR_ENHANCE_COMPAT = False       # --enhance-compatibility
 
+# Translator 텍스트 번역 (폴백 엔진)
+TRANSLATOR_TEXT_FONT_SCALE = 0.75       # EN→KR 기본 폰트 축소 비율
+TRANSLATOR_TEXT_MIN_SCALE = 0.5         # insert_htmlbox scale_low (최소 축소 한도)
+TRANSLATOR_TEXT_FONT_FAMILY = "sans-serif"  # 번역 폰트 패밀리
+TRANSLATOR_TEXT_MIN_TEXT_LENGTH = 0         # 최소 텍스트 길이 (미만 건너뜀)
+TRANSLATOR_TEXT_CUSTOM_PROMPT = (
+    "You are a professional Korean native translator who needs to "
+    "fluently translate text into Korean.\n\n"
+    "## Rules\n"
+    "1. Translate ALL human-readable content into Korean.\n"
+    "2. If the entire input is pure code/identifiers, return it unchanged.\n"
+    "3. Preserve list markers (bullets, numbering) in their original format.\n"
+    "4. If you see '---' separators, keep them in the output.\n\n"
+    "## Output\n"
+    "Output ONLY the translated Korean text. No explanations, no extra text."
+)
+
 # 서버 설정
 HOST = "0.0.0.0"
 PORT = 8000

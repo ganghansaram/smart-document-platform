@@ -49,6 +49,21 @@ DEFAULT_SETTINGS: dict = {
         "qps": 0,
         "ocr_workaround": False,
         "enhance_compatibility": False,
+        "text_font_scale": 0.75,
+        "text_min_scale": 0.5,
+        "text_font_family": "sans-serif",
+        "text_min_text_length": 0,
+        "text_custom_prompt": (
+            "You are a professional Korean native translator who needs to "
+            "fluently translate text into Korean.\n\n"
+            "## Rules\n"
+            "1. Translate ALL human-readable content into Korean.\n"
+            "2. If the entire input is pure code/identifiers, return it unchanged.\n"
+            "3. Preserve list markers (bullets, numbering) in their original format.\n"
+            "4. If you see '---' separators, keep them in the output.\n\n"
+            "## Output\n"
+            "Output ONLY the translated Korean text. No explanations, no extra text."
+        ),
     },
     "upload": {
         "word_com_preprocess": False,
@@ -102,6 +117,8 @@ _NO_RESTART = {
     "translator.translate_table_text", "translator.min_text_length",
     "translator.max_concurrent", "translator.page_timeout",
     "translator.qps", "translator.ocr_workaround", "translator.enhance_compatibility",
+    "translator.text_font_scale", "translator.text_min_scale", "translator.text_font_family",
+    "translator.text_min_text_length", "translator.text_custom_prompt",
     "frontend",  # prefix match
 }
 # 나머지(ollama_url, ollama_model, embedding_model, session_expiry_hours,
@@ -197,6 +214,11 @@ def apply_to_config(settings: dict) -> list[str]:
     _set(rdr, "qps",                  "TRANSLATOR_QPS",                 restart_needed, immediate=True)
     _set(rdr, "ocr_workaround",       "TRANSLATOR_OCR_WORKAROUND",      restart_needed, immediate=True)
     _set(rdr, "enhance_compatibility","TRANSLATOR_ENHANCE_COMPAT",      restart_needed, immediate=True)
+    _set(rdr, "text_font_scale",     "TRANSLATOR_TEXT_FONT_SCALE",     restart_needed, immediate=True)
+    _set(rdr, "text_min_scale",      "TRANSLATOR_TEXT_MIN_SCALE",      restart_needed, immediate=True)
+    _set(rdr, "text_font_family",    "TRANSLATOR_TEXT_FONT_FAMILY",    restart_needed, immediate=True)
+    _set(rdr, "text_min_text_length","TRANSLATOR_TEXT_MIN_TEXT_LENGTH", restart_needed, immediate=True)
+    _set(rdr, "text_custom_prompt",  "TRANSLATOR_TEXT_CUSTOM_PROMPT",   restart_needed, immediate=True)
 
     upl = settings.get("upload", {})
     _set(upl, "word_com_preprocess", "WORD_COM_PREPROCESS", restart_needed, immediate=True)

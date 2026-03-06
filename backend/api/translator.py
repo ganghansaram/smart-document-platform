@@ -14,6 +14,8 @@ from services.translator_service import (
     get_ollama_models,
     get_folders, create_folder, rename_folder, delete_folder,
     move_document_to_folder,
+    start_text_translation, get_text_translation_status,
+    get_text_translated_pdf_path, cancel_text_translation,
 )
 import config
 
@@ -278,6 +280,69 @@ async def api_serve_dual_pdf(doc_id: str, user: dict = Depends(get_current_user)
     if not path:
         raise HTTPException(status_code=404, detail="이중언어 PDF가 없습니다")
     return FileResponse(path=str(path), media_type="application/pdf")
+
+
+# ── 텍스트 번역 (폴백 엔진) ──
+
+@router.post("/text-translate/{doc_id}/page/{page_num}")
+async def api_start_text_translation(
+    doc_id: str,
+    page_num: int,
+    body: dict = Body(default={}),
+    user: dict = Depends(get_current_user),
+):
+    """텍스트 번역 시작 → 202 Accepted"""
+    model = body.get("model")
+    font_scale = body.get("font_scale")
+    try:
+        start_text_translation(user["username"], doc_id, page_num, model, font_scale)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return JSONResponse(
+        status_code=202,
+        content={"status": "translating", "doc_id": doc_id, "page": page_num, "mode": "text"},
+    )
+
+
+@router.get("/text-translate/{doc_id}/page/{page_num}/status")
+async def api_text_translation_status(
+    doc_id: str,
+    page_num: int,
+    user: dict = Depends(get_current_user),
+):
+    """텍스트 번역 상태"""
+    status = get_text_translation_status(user["username"], doc_id, page_num)
+    if status is None:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    return status
+
+
+@router.get("/text-translated-pdf/{doc_id}/page/{page_num}")
+async def api_serve_text_translated_pdf(
+    doc_id: str,
+    page_num: int,
+    user: dict = Depends(get_current_user),
+):
+    """텍스트 번역 PDF 서빙"""
+    path = get_text_translated_pdf_path(user["username"], doc_id, page_num)
+    if not path:
+        raise HTTPException(status_code=404, detail="텍스트 번역 PDF가 없습니다")
+    return FileResponse(path=str(path), media_type="application/pdf")
+
+
+@router.post("/text-translate/{doc_id}/page/{page_num}/cancel")
+async def api_cancel_text_translation(
+    doc_id: str,
+    page_num: int,
+    user: dict = Depends(get_current_user),
+):
+    """텍스트 번역 취소"""
+    cancel_text_translation(user["username"], doc_id, page_num)
+    return {"success": True, "status": "cancelled"}
 
 
 @router.get("/models")
