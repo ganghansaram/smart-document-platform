@@ -254,6 +254,85 @@ def move_document_to_folder(username: str, doc_id: str, folder_id: Optional[str]
 
 
 # ══════════════════════════════════════
+# 마킹 (annotations) CRUD
+# ══════════════════════════════════════
+
+def _annotations_path(username: str, doc_id: str) -> Path:
+    return _doc_dir(username, doc_id) / "annotations.json"
+
+
+def _load_annotations(username: str, doc_id: str) -> dict:
+    path = _annotations_path(username, doc_id)
+    if not path.exists():
+        return {"highlights": []}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"highlights": []}
+
+
+def _save_annotations(username: str, doc_id: str, data: dict):
+    with open(_annotations_path(username, doc_id), "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def get_annotations(username: str, doc_id: str) -> dict:
+    """문서의 전체 마킹 목록 반환"""
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        raise FileNotFoundError(f"문서를 찾을 수 없습니다: {doc_id}")
+    return _load_annotations(username, doc_id)
+
+
+def create_annotation(username: str, doc_id: str, annotation: dict) -> dict:
+    """마킹 생성 → ID 자동 부여 후 반환"""
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        raise FileNotFoundError(f"문서를 찾을 수 없습니다: {doc_id}")
+
+    ann_id = "h_" + _generate_id()
+    highlight = {
+        "id": ann_id,
+        "page": annotation["page"],
+        "rects": annotation["rects"],
+        "color": annotation.get("color", "yellow"),
+        "text": annotation.get("text", ""),
+        "memo": annotation.get("memo", ""),
+        "created_at": datetime.now().isoformat(),
+    }
+
+    data = _load_annotations(username, doc_id)
+    data["highlights"].append(highlight)
+    _save_annotations(username, doc_id, data)
+    return highlight
+
+
+def update_annotation(username: str, doc_id: str, ann_id: str, updates: dict) -> dict:
+    """마킹 수정 (memo, color 등)"""
+    data = _load_annotations(username, doc_id)
+    for h in data["highlights"]:
+        if h["id"] == ann_id:
+            for key in ("memo", "color"):
+                if key in updates:
+                    h[key] = updates[key]
+            _save_annotations(username, doc_id, data)
+            return h
+    raise FileNotFoundError(f"마킹을 찾을 수 없습니다: {ann_id}")
+
+
+def delete_annotation(username: str, doc_id: str, ann_id: str) -> bool:
+    """마킹 삭제"""
+    data = _load_annotations(username, doc_id)
+    before = len(data["highlights"])
+    data["highlights"] = [h for h in data["highlights"] if h["id"] != ann_id]
+    if len(data["highlights"]) == before:
+        raise FileNotFoundError(f"마킹을 찾을 수 없습니다: {ann_id}")
+    _save_annotations(username, doc_id, data)
+    return True
+
+
+# ══════════════════════════════════════
 # 업로드
 # ══════════════════════════════════════
 

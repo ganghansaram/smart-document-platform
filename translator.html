@@ -549,7 +549,176 @@
         }
 
         .text-layer ::selection {
-            background: rgba(0, 100, 200, 0.3);
+            background: rgba(0, 100, 200, 0.5);
+        }
+        .text-layer br::selection {
+            background: transparent;
+        }
+
+        .annotation-layer {
+            position: absolute;
+            left: 0; top: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 4;
+        }
+        .annotation-layer .highlight-group {
+            position: absolute;
+            left: 0; top: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+        }
+        .annotation-layer .highlight-group.color-yellow { opacity: 0.35; }
+        .annotation-layer .highlight-group.color-green  { opacity: 0.35; }
+        .annotation-layer .highlight-group.color-red    { opacity: 0.35; }
+        .annotation-layer .highlight-group.color-blue   { opacity: 0.35; }
+        .annotation-layer .highlight {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .annotation-layer .highlight.color-yellow { background-color: rgb(255, 255, 0); }
+        .annotation-layer .highlight.color-green  { background-color: rgb(144, 238, 144); }
+        .annotation-layer .highlight.color-red    { background-color: rgb(255, 179, 179); }
+        .annotation-layer .highlight.color-blue   { background-color: rgb(173, 216, 230); }
+
+        .annotation-layer .margin-marker {
+            position: absolute;
+            left: 0;
+            width: 4px;
+            border-radius: 0 2px 2px 0;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: width 0.15s ease;
+        }
+        .annotation-layer .margin-marker:hover {
+            width: 8px;
+        }
+        .annotation-layer .margin-marker.color-yellow { background-color: rgba(255, 200, 0, 0.8); }
+        .annotation-layer .margin-marker.color-green  { background-color: rgba(100, 200, 100, 0.8); }
+        .annotation-layer .margin-marker.color-red    { background-color: rgba(255, 120, 120, 0.8); }
+        .annotation-layer .margin-marker.color-blue   { background-color: rgba(100, 170, 230, 0.8); }
+
+        .marking-action-btn {
+            position: absolute;
+            z-index: 10;
+            pointer-events: auto;
+            background: var(--white, #fff);
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            white-space: nowrap;
+            user-select: none;
+            transition: opacity 0.15s ease;
+        }
+        .marking-action-btn:hover {
+            background: var(--hover-bg, #f0f0f0);
+        }
+
+        /* ── 마킹 popover ── */
+        .marking-popover {
+            position: absolute;
+            z-index: 11;
+            pointer-events: auto;
+            background: var(--white, #fff);
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            width: 340px;
+            text-align: left;
+            user-select: none;
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .marking-popover.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .marking-popover .color-palette {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .marking-popover .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.15s ease;
+        }
+        .marking-popover .color-dot:hover {
+            border-color: var(--medium-gray, #888);
+        }
+        .marking-popover .color-dot.active {
+            border-color: var(--text-color, #333);
+        }
+        .marking-popover .color-dot.dot-yellow { background: rgb(255, 255, 0); }
+        .marking-popover .color-dot.dot-green  { background: rgb(144, 238, 144); }
+        .marking-popover .color-dot.dot-red    { background: rgb(255, 179, 179); }
+        .marking-popover .color-dot.dot-blue   { background: rgb(173, 216, 230); }
+        .marking-popover textarea {
+            width: 100%;
+            min-height: 48px;
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 13px;
+            resize: vertical;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .marking-popover .memo-display {
+            font-size: 13px;
+            color: var(--text-color, #333);
+            line-height: 1.5;
+            padding: 6px 8px;
+            background: var(--hover-bg, #f5f5f5);
+            border-radius: 6px;
+            cursor: text;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .marking-popover .popover-delete-btn {
+            margin-top: 8px;
+            text-align: right;
+            font-size: 13px;
+            color: var(--medium-gray, #888);
+            cursor: pointer;
+        }
+        .marking-popover .popover-delete-btn:hover {
+            color: #e74c3c;
+        }
+        .marking-popover .delete-confirm {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #e74c3c;
+            text-align: right;
+        }
+        .marking-popover .delete-confirm span {
+            cursor: pointer;
+            margin-left: 8px;
+            text-decoration: underline;
+        }
+
+        /* 메모 표시점 */
+        .annotation-layer .highlight.has-memo::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-color, #333);
+            pointer-events: none;
         }
 
         /* 우측 패널 상태별 표시 */
@@ -649,7 +818,31 @@
         body[data-theme="dark"] .right-panel-placeholder .placeholder-hint { color: rgba(255,255,255,0.25); }
         body[data-theme="dark"] .page-spinner { border-color: rgba(255,255,255,0.1); border-top-color: #58a6ff; }
 
-
+        body[data-theme="dark"] .marking-popover {
+            background: #1e1e2e;
+            border-color: rgba(255,255,255,0.08);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+        body[data-theme="dark"] .marking-popover textarea {
+            background: #2a2a3e;
+            border-color: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+        }
+        body[data-theme="dark"] .marking-popover .memo-display {
+            background: #2a2a3e;
+            color: #e0e0e0;
+        }
+        body[data-theme="dark"] .marking-action-btn {
+            background: #1e1e2e;
+            border-color: rgba(255,255,255,0.12);
+            color: #e0e0e0;
+        }
+        body[data-theme="dark"] .marking-action-btn:hover {
+            background: #2a2a3e;
+        }
+        body[data-theme="dark"] .highlight.has-memo::after {
+            background: #e0e0e0;
+        }
 
         /* ══════════════════════════════════════
            트리 패널 (오버레이)
@@ -767,6 +960,160 @@
             overflow-y: auto;
             flex: 1;
             min-height: 0;
+        }
+
+        /* ── 마킹 플로팅 위젯 ── */
+        .marking-float {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            z-index: 6;
+        }
+        .mf-trigger {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 6px;
+            cursor: pointer;
+            color: #95a5a6;
+            font-size: 12px;
+            transition: color 0.15s, background 0.15s;
+        }
+        .mf-trigger:hover {
+            color: #0066cc;
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .mf-count {
+            font-size: 11px;
+            font-weight: 600;
+            color: #0066cc;
+        }
+        .mf-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0;
+            padding-top: 4px;
+            width: 280px;
+            max-height: 400px;
+            background: var(--white, #fff);
+            border: 1px solid var(--border-color, #dde4e8);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transform: translateY(-4px);
+            pointer-events: none;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .marking-float:hover .mf-dropdown {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .mf-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color, #dde4e8);
+            flex-shrink: 0;
+        }
+        .mf-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color, #333);
+        }
+        .mf-badge {
+            font-size: 11px;
+            font-weight: 600;
+            background: #e8f4f8;
+            color: #0066cc;
+            border-radius: 8px;
+            padding: 0 6px;
+        }
+        .mf-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        /* ── 마킹 목록 아이템 ── */
+        .marking-list-empty {
+            padding: 32px 16px;
+            text-align: center;
+            color: #95a5a6;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .ml-page-group {
+            margin-bottom: 4px;
+        }
+        .ml-page-header {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #7f8c8d;
+            cursor: pointer;
+            user-select: none;
+            border-radius: 4px;
+        }
+        .ml-page-header:hover { background: rgba(0,0,0,0.03); }
+        .ml-page-header .ml-toggle { font-size: 10px; width: 12px; }
+        .ml-page-header.current-page { color: #0066cc; }
+        .ml-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 6px 8px 6px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .ml-item:hover { background: var(--hover-bg, #f0f0f0); }
+        .ml-color-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        .ml-color-dot.dot-yellow { background: rgb(255, 200, 0); }
+        .ml-color-dot.dot-green  { background: rgb(100, 200, 100); }
+        .ml-color-dot.dot-red    { background: rgb(255, 120, 120); }
+        .ml-color-dot.dot-blue   { background: rgb(100, 170, 230); }
+        .ml-text {
+            flex: 1;
+            min-width: 0;
+        }
+        .ml-text-preview {
+            font-size: 13px;
+            color: var(--text-color, #333);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ml-memo-preview {
+            font-size: 12px;
+            color: #95a5a6;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 1px;
+        }
+        /* 포커스 효과 */
+        .highlight-group.focus-flash {
+            animation: markingFlash 3s ease forwards;
+        }
+        @keyframes markingFlash {
+            0%   { filter: brightness(1.3) drop-shadow(0 0 6px rgba(0, 102, 204, 0.5)); }
+            100% { filter: none; }
         }
 
         /* 트리 폴더 drag-over 하이라이트 */
@@ -912,6 +1259,22 @@
         body[data-theme="dark"] .tp-btn:hover { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
         body[data-theme="dark"] .tp-btn.pinned { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
 
+        body[data-theme="dark"] .mf-trigger { background: rgba(30,30,46,0.85); color: rgba(255,255,255,0.4); }
+        body[data-theme="dark"] .mf-trigger:hover { color: #58a6ff; background: rgba(30,30,46,0.95); }
+        body[data-theme="dark"] .mf-count { color: #58a6ff; }
+        body[data-theme="dark"] .mf-dropdown { background: #1e1e2e; border-color: rgba(255,255,255,0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+        body[data-theme="dark"] .mf-header { border-bottom-color: rgba(255,255,255,0.08); }
+        body[data-theme="dark"] .mf-title { color: #e0e0e0; }
+        body[data-theme="dark"] .mf-badge { background: rgba(88,166,255,0.15); color: #58a6ff; }
+
+        body[data-theme="dark"] .ml-page-header { color: rgba(255,255,255,0.4); }
+        body[data-theme="dark"] .ml-page-header:hover { background: rgba(255,255,255,0.04); }
+        body[data-theme="dark"] .ml-page-header.current-page { color: #58a6ff; }
+        body[data-theme="dark"] .ml-item:hover { background: rgba(255,255,255,0.06); }
+        body[data-theme="dark"] .ml-text-preview { color: #e0e0e0; }
+        body[data-theme="dark"] .ml-memo-preview { color: rgba(255,255,255,0.35); }
+        body[data-theme="dark"] .marking-list-empty { color: rgba(255,255,255,0.3); }
+
         body[data-theme="dark"] .tp-context-menu { background: #1e1e2e; border-color: rgba(255,255,255,0.12); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
         body[data-theme="dark"] .tp-context-menu .ctx-item { color: #e0e0e0; }
         body[data-theme="dark"] .tp-context-menu .ctx-item:hover { background: rgba(88,166,255,0.15); color: #58a6ff; }
@@ -1040,13 +1403,30 @@
                     <div class="pdf-page-container" id="left-page-container">
                         <canvas id="left-canvas"></canvas>
                         <div class="text-layer" id="left-text-layer"></div>
+                        <div class="annotation-layer" id="left-annotation-layer"></div>
                     </div>
                 </div>
                 <!-- Right: Translation -->
                 <div class="viewer-panel" id="panel-right">
                     <span class="panel-label">번역</span>
+                    <!-- 마킹 플로팅 위젯 -->
+                    <div class="marking-float" id="marking-float">
+                        <div class="mf-trigger" id="mf-trigger">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+                            <span class="mf-count" id="mf-count" style="display:none">0</span>
+                        </div>
+                        <div class="mf-dropdown" id="mf-dropdown">
+                            <div class="mf-header">
+                                <span class="mf-title">마킹</span>
+                                <span class="mf-badge" id="mf-badge">0</span>
+                            </div>
+                            <div class="mf-body" id="mf-body"></div>
+                        </div>
+                    </div>
                     <div class="pdf-page-container" id="right-page-container" style="display:none">
                         <canvas id="right-canvas"></canvas>
+                        <div class="text-layer" id="right-text-layer"></div>
+                        <div class="annotation-layer" id="right-annotation-layer"></div>
                     </div>
                     <div class="right-panel-placeholder" id="right-placeholder">
                         <div class="placeholder-icon">&#128221;</div>
@@ -1129,6 +1509,7 @@
         var modelsList = [];
         var defaultModel = '';
         var pageStatusCache = {};  // page_num → { status, ... }
+        var annotationsCache = null; // { highlights: [...] } — 문서 단위 캐시
         var hasLegacyTranslation = false;
         var pollingTimer = null;
 
@@ -1170,12 +1551,21 @@
         var $leftCanvas     = document.getElementById('left-canvas');
         var $leftContainer  = document.getElementById('left-page-container');
         var $leftTextLayer  = document.getElementById('left-text-layer');
+        var $leftAnnotationLayer = document.getElementById('left-annotation-layer');
 
         // Right panel
         var $panelRight     = document.getElementById('panel-right');
         var $rightCanvas    = document.getElementById('right-canvas');
         var $rightContainer = document.getElementById('right-page-container');
+        var $rightTextLayer = document.getElementById('right-text-layer');
+        var $rightAnnotationLayer = document.getElementById('right-annotation-layer');
         var $rightPlaceholder = document.getElementById('right-placeholder');
+
+        // 마킹 플로팅 위젯
+        var $markingFloat = document.getElementById('marking-float');
+        var $mfBody  = document.getElementById('mf-body');
+        var $mfBadge = document.getElementById('mf-badge');
+        var $mfCount = document.getElementById('mf-count');
 
         // Toolbar
         var $toolbarStatus  = document.getElementById('toolbar-page-status');
@@ -1463,11 +1853,13 @@
             $zoomLevel.textContent = '100%';
 
             showViewer();
+            annotationsCache = null;
 
             // 페이지 상태 요약 로드 후 렌더링
             fetchPageSummary(function() {
                 loadLeftPdf();
                 updateRightPanel();
+                loadAnnotations(); // 마킹 데이터 로드 → renderLeftPage 내에서 렌더
             });
         }
 
@@ -1485,6 +1877,7 @@
             header.midSlot.classList.remove('visible');
             header.nav['back-list'].style.display = 'none';
             currentDocId = null;
+            annotationsCache = null;
             stopPolling();
             destroyPdfs();
             loadDocuments();
@@ -1550,6 +1943,10 @@
                 $leftTextLayer.innerHTML = '';
                 $leftTextLayer.style.width = scaledViewport.width + 'px';
                 $leftTextLayer.style.height = scaledViewport.height + 'px';
+                $leftTextLayer.style.setProperty('--scale-factor', scale);
+
+                $leftAnnotationLayer.style.width = scaledViewport.width + 'px';
+                $leftAnnotationLayer.style.height = scaledViewport.height + 'px';
 
                 var ctx = $leftCanvas.getContext('2d');
                 leftRenderTask = page.render({ canvasContext: ctx, viewport: scaledViewport });
@@ -1559,12 +1956,14 @@
                 }).then(function(textContent) {
                     if (textContent) {
                         pdfjsLib.renderTextLayer({
-                            textContent: textContent,
+                            textContentSource: textContent,
                             container: $leftTextLayer,
                             viewport: scaledViewport,
                             textDivs: [],
                         });
                     }
+                    // 마킹 복원
+                    if (typeof renderAnnotations === 'function') renderAnnotations();
                 }).catch(function() { leftRenderTask = null; });
             });
         }
@@ -1754,10 +2153,30 @@
                 $rightContainer.style.width = scaledViewport.width + 'px';
                 $rightContainer.style.height = scaledViewport.height + 'px';
 
+                $rightTextLayer.innerHTML = '';
+                $rightTextLayer.style.width = scaledViewport.width + 'px';
+                $rightTextLayer.style.height = scaledViewport.height + 'px';
+                $rightTextLayer.style.setProperty('--scale-factor', scale);
+
+                $rightAnnotationLayer.style.width = scaledViewport.width + 'px';
+                $rightAnnotationLayer.style.height = scaledViewport.height + 'px';
+
                 var ctx = $rightCanvas.getContext('2d');
                 rightRenderTask = page.render({ canvasContext: ctx, viewport: scaledViewport });
                 rightRenderTask.promise.then(function() {
                     rightRenderTask = null;
+                    return page.getTextContent();
+                }).then(function(textContent) {
+                    if (textContent) {
+                        pdfjsLib.renderTextLayer({
+                            textContentSource: textContent,
+                            container: $rightTextLayer,
+                            viewport: scaledViewport,
+                            textDivs: [],
+                        });
+                    }
+                    // 우측 마킹 동기화
+                    if (typeof renderAnnotationsRight === 'function') renderAnnotationsRight();
                 }).catch(function() { rightRenderTask = null; });
             });
         }
@@ -2078,6 +2497,8 @@
 
         function goToPage(page) {
             if (page < 1 || page > totalPages) return;
+            hidePopover(true);
+            hideMarkingBtn();
             stopPolling();
             stopTextPolling();
             currentPage = page;
@@ -2138,6 +2559,8 @@
         });
 
         function rerenderBothPanels() {
+            hidePopover(true);
+            hideMarkingBtn();
             renderLeftPage(currentPage);
             // Right: 상태에 따라
             var ps = pageStatusCache[String(currentPage)];
@@ -2181,6 +2604,496 @@
         });
         $panelRight.addEventListener('scroll', function() {
             syncScroll($panelRight, $panelLeft);
+        });
+
+        // ══════════════════════════════════════
+        // Annotations (마킹/형광펜)
+        // ══════════════════════════════════════
+
+        var HIGHLIGHT_COLORS = {
+            yellow: 'color-yellow',
+            green:  'color-green',
+            red:    'color-red',
+            blue:   'color-blue',
+        };
+
+        // ── 하이라이트 div 생성 ──
+
+        function createHighlightDiv(h) {
+            var colorClass = HIGHLIGHT_COLORS[h.color] || 'color-yellow';
+            var group = document.createElement('div');
+            group.className = 'highlight-group ' + colorClass;
+            group.dataset.annId = h.id;
+            var rects = h.rects || [];
+            // 줄 높이 통일 (최대 높이 사용)
+            var maxH = 0;
+            for (var i = 0; i < rects.length; i++) {
+                if (rects[i].h > maxH) maxH = rects[i].h;
+            }
+            var pad = 0.3; // 좌우 여백 (%)
+            for (var i = 0; i < rects.length; i++) {
+                var r = rects[i];
+                var div = document.createElement('div');
+                div.className = 'highlight ' + colorClass;
+                // 첫 번째 rect + 메모 있으면 표시점
+                if (i === 0 && h.memo) {
+                    div.classList.add('has-memo');
+                }
+                div.style.left   = Math.max(0, r.x - pad) + '%';
+                div.style.top    = r.y + '%';
+                div.style.width  = Math.min(100 - r.x + pad, r.w + pad * 2) + '%';
+                div.style.height = maxH + '%';
+                div.dataset.annId = h.id;
+                div.title = h.memo || h.text || '';
+                group.appendChild(div);
+            }
+            return group;
+        }
+
+        // ── 현재 페이지 마킹 렌더 (좌측) ──
+
+        function renderAnnotations() {
+            // popover 보존: render 전 분리, render 후 재부착
+            var savedPopover = $popover;
+            if (savedPopover && savedPopover.parentNode) {
+                savedPopover.parentNode.removeChild(savedPopover);
+            }
+            $leftAnnotationLayer.innerHTML = '';
+            if (!annotationsCache || !annotationsCache.highlights) return;
+            var page = currentPage;
+            var highlights = annotationsCache.highlights;
+            for (var i = 0; i < highlights.length; i++) {
+                if (highlights[i].page === page) {
+                    $leftAnnotationLayer.appendChild(createHighlightDiv(highlights[i]));
+                }
+            }
+            // popover 재부착
+            if (savedPopover) {
+                $leftAnnotationLayer.appendChild(savedPopover);
+            }
+        }
+
+        // ── 우측 마진 마커 div 생성 ──
+
+        function createMarginMarkerDiv(h) {
+            var frag = document.createDocumentFragment();
+            var rects = h.rects || [];
+            if (!rects.length) return frag;
+            var minY = rects[0].y, maxYH = rects[0].y + rects[0].h;
+            for (var i = 1; i < rects.length; i++) {
+                minY = Math.min(minY, rects[i].y);
+                maxYH = Math.max(maxYH, rects[i].y + rects[i].h);
+            }
+            var div = document.createElement('div');
+            div.className = 'margin-marker ' + (HIGHLIGHT_COLORS[h.color] || 'color-yellow');
+            div.style.top = minY + '%';
+            div.style.height = (maxYH - minY) + '%';
+            div.dataset.annId = h.id;
+            div.title = h.memo || h.text || '';
+            frag.appendChild(div);
+            return frag;
+        }
+
+        // ── 현재 페이지 마킹 렌더 (우측 마진 마커) ──
+
+        function renderAnnotationsRight() {
+            $rightAnnotationLayer.innerHTML = '';
+            if (!annotationsCache || !annotationsCache.highlights) return;
+            if ($rightContainer.style.display === 'none') return;
+            var page = currentPage;
+            var highlights = annotationsCache.highlights;
+            for (var i = 0; i < highlights.length; i++) {
+                if (highlights[i].page === page) {
+                    $rightAnnotationLayer.appendChild(createMarginMarkerDiv(highlights[i]));
+                }
+            }
+        }
+
+        // ── annotations 서버 로드 ──
+
+        function loadAnnotations(callback) {
+            if (!currentDocId) return;
+            fetch(API + '/api/translator/document/' + currentDocId + '/annotations', {
+                credentials: 'include',
+            }).then(function(r) { return r.json(); })
+              .then(function(data) {
+                annotationsCache = data;
+                updateMarkingBadge();
+                if (callback) callback();
+            }).catch(function() {
+                annotationsCache = { highlights: [] };
+                updateMarkingBadge();
+                if (callback) callback();
+            });
+        }
+
+        // ── 선택 좌표 → % 변환 ──
+
+        function selectionToPercentRects(selection) {
+            if (!selection.rangeCount) return null;
+            var range = selection.getRangeAt(0);
+            var clientRects = range.getClientRects();
+            if (!clientRects.length) return null;
+
+            var containerRect = $leftContainer.getBoundingClientRect();
+            var cW = containerRect.width;
+            var cH = containerRect.height;
+            if (cW === 0 || cH === 0) return null;
+
+            var rects = [];
+            for (var i = 0; i < clientRects.length; i++) {
+                var cr = clientRects[i];
+                // 컨테이너 범위 내의 rect만
+                var x = ((cr.left - containerRect.left) / cW) * 100;
+                var y = ((cr.top - containerRect.top) / cH) * 100;
+                var w = (cr.width / cW) * 100;
+                var h = (cr.height / cH) * 100;
+                // 매우 작은 rect 무시 (선택 아티팩트)
+                if (w < 0.5 || h < 0.1) continue;
+                // 비정상적으로 큰 rect 무시 (브라우저가 range 전체 bounding box 반환)
+                if (h > 6) continue;
+                // 컨테이너 밖 rect 무시
+                if (x < -1 || y < -1 || x + w > 101 || y + h > 101) continue;
+                rects.push({
+                    x: Math.round(x * 100) / 100,
+                    y: Math.round(y * 100) / 100,
+                    w: Math.round(w * 100) / 100,
+                    h: Math.round(h * 100) / 100,
+                });
+            }
+            // 인접 rect 병합 (같은 줄의 span 여러 개 → 하나로)
+            rects = mergeAdjacentRects(rects);
+            return rects.length ? rects : null;
+        }
+
+        function mergeAdjacentRects(rects) {
+            if (rects.length <= 1) return rects;
+            // y 기준 정렬
+            rects.sort(function(a, b) { return a.y - b.y || a.x - b.x; });
+
+            // Step 1: 같은 줄 rects 그룹핑 (y 중심이 겹치면 같은 줄)
+            var lines = [[rects[0]]];
+            for (var i = 1; i < rects.length; i++) {
+                var curr = rects[i];
+                var lineRef = lines[lines.length - 1][0];
+                var lineCenter = lineRef.y + lineRef.h / 2;
+                var currCenter = curr.y + curr.h / 2;
+                if (Math.abs(currCenter - lineCenter) < Math.max(lineRef.h, curr.h) * 0.6) {
+                    lines[lines.length - 1].push(curr);
+                } else {
+                    lines.push([curr]);
+                }
+            }
+
+            // Step 2: 각 줄을 하나의 rect로 병합 (높이 통일)
+            var merged = [];
+            for (var l = 0; l < lines.length; l++) {
+                var lr = lines[l];
+                var minX = lr[0].x, maxXW = lr[0].x + lr[0].w;
+                var minY = lr[0].y, maxYH = lr[0].y + lr[0].h;
+                for (var j = 1; j < lr.length; j++) {
+                    minX = Math.min(minX, lr[j].x);
+                    maxXW = Math.max(maxXW, lr[j].x + lr[j].w);
+                    minY = Math.min(minY, lr[j].y);
+                    maxYH = Math.max(maxYH, lr[j].y + lr[j].h);
+                }
+                merged.push({
+                    x: Math.round(minX * 100) / 100,
+                    y: Math.round(minY * 100) / 100,
+                    w: Math.round((maxXW - minX) * 100) / 100,
+                    h: Math.round((maxYH - minY) * 100) / 100,
+                });
+            }
+
+            // Step 3: 줄 간 gap 제거 (줄 높이의 60% 이하 gap → 채움)
+            for (var k = 0; k < merged.length - 1; k++) {
+                var cur = merged[k];
+                var nxt = merged[k + 1];
+                var gap = nxt.y - (cur.y + cur.h);
+                if (gap > 0 && gap < cur.h * 0.6) {
+                    var half = gap / 2;
+                    cur.h = Math.round((cur.h + half) * 100) / 100;
+                    nxt.y = Math.round((nxt.y - half) * 100) / 100;
+                    nxt.h = Math.round((nxt.h + half) * 100) / 100;
+                }
+            }
+
+            return merged;
+        }
+
+        // ── 마킹 생성 — 미니 액션 버튼 ──
+
+        var $markingBtn = null;
+
+        function hideMarkingBtn() {
+            if ($markingBtn) {
+                $markingBtn.parentNode.removeChild($markingBtn);
+                $markingBtn = null;
+            }
+        }
+
+        function showMarkingBtn(selection) {
+            hideMarkingBtn();
+            var rects = selectionToPercentRects(selection);
+            if (!rects || !rects.length) return;
+            var text = selection.toString().trim();
+            if (!text) return;
+
+            var lastRect = rects[rects.length - 1];
+            var btnX = lastRect.x + lastRect.w;
+            var btnY = lastRect.y + lastRect.h + 0.5;
+
+            $markingBtn = document.createElement('button');
+            $markingBtn.className = 'marking-action-btn';
+            $markingBtn.textContent = '마킹';
+            $markingBtn.style.left = btnX + '%';
+            $markingBtn.style.top = btnY + '%';
+            $leftAnnotationLayer.appendChild($markingBtn);
+
+            $markingBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                createMarkingFromSelection(rects, text);
+                hideMarkingBtn();
+                window.getSelection().removeAllRanges();
+            });
+        }
+
+        function createMarkingFromSelection(rects, text) {
+            if (!currentDocId) return;
+            var body = {
+                page: currentPage,
+                rects: rects,
+                color: 'yellow',
+                text: text.substring(0, 500),
+            };
+            fetch(API + '/api/translator/document/' + currentDocId + '/annotations', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            }).then(function(r) { return r.json(); })
+              .then(function(h) {
+                if (!annotationsCache) annotationsCache = { highlights: [] };
+                annotationsCache.highlights.push(h);
+                $leftAnnotationLayer.appendChild(createHighlightDiv(h));
+                if ($rightContainer.style.display !== 'none') {
+                    $rightAnnotationLayer.appendChild(createMarginMarkerDiv(h));
+                }
+                updateMarkingBadge();
+                renderMarkingList();
+            }).catch(function(err) {
+                console.error('[Annotations] create error:', err);
+            });
+        }
+
+        $leftTextLayer.addEventListener('mouseup', function() {
+            setTimeout(function() {
+                var selection = window.getSelection();
+                if (!selection || selection.isCollapsed) {
+                    hideMarkingBtn();
+                    return;
+                }
+                showMarkingBtn(selection);
+            }, 10);
+        });
+
+        document.addEventListener('mousedown', function(e) {
+            if ($markingBtn && !$markingBtn.contains(e.target)) {
+                hideMarkingBtn();
+            }
+            // popover 외부 클릭 시 닫기 (메모 저장)
+            if ($popover && !$popover.contains(e.target) && !e.target.classList.contains('highlight')) {
+                hidePopover(true);
+            }
+        });
+
+        // ── 마킹 popover (Phase 3) ──
+
+        var $popover = null;
+        var popoverAnnId = null;
+
+        function findAnnotation(annId) {
+            if (!annotationsCache || !annotationsCache.highlights) return null;
+            for (var i = 0; i < annotationsCache.highlights.length; i++) {
+                if (annotationsCache.highlights[i].id === annId) return annotationsCache.highlights[i];
+            }
+            return null;
+        }
+
+        function showPopover(annId, anchorEl) {
+            hidePopover(true);
+            var ann = findAnnotation(annId);
+            if (!ann) return;
+            popoverAnnId = annId;
+
+            $popover = document.createElement('div');
+            $popover.className = 'marking-popover';
+
+            // 색상 팔레트
+            var palette = document.createElement('div');
+            palette.className = 'color-palette';
+            ['yellow', 'green', 'red', 'blue'].forEach(function(color) {
+                var dot = document.createElement('div');
+                dot.className = 'color-dot dot-' + color + (ann.color === color ? ' active' : '');
+                dot.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    changeColor(annId, color);
+                    palette.querySelectorAll('.color-dot').forEach(function(d) { d.classList.remove('active'); });
+                    dot.classList.add('active');
+                });
+                palette.appendChild(dot);
+            });
+            $popover.appendChild(palette);
+
+            // 메모 영역: 있으면 읽기 모드, 없으면 바로 편집
+            var hasMemo = ann.memo && ann.memo.trim();
+            if (hasMemo) {
+                // 읽기 모드
+                var memoDisplay = document.createElement('div');
+                memoDisplay.className = 'memo-display';
+                memoDisplay.textContent = ann.memo;
+                memoDisplay.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // 읽기 → 편집 전환
+                    var textarea = document.createElement('textarea');
+                    textarea.placeholder = '메모 추가...';
+                    textarea.value = ann.memo || '';
+                    memoDisplay.parentNode.replaceChild(textarea, memoDisplay);
+                    textarea.focus();
+                });
+                $popover.appendChild(memoDisplay);
+            } else {
+                var textarea = document.createElement('textarea');
+                textarea.placeholder = '메모 추가...';
+                textarea.value = '';
+                $popover.appendChild(textarea);
+            }
+
+            // 삭제 버튼 (메모 있으면 확인 단계)
+            var delBtn = document.createElement('div');
+            delBtn.className = 'popover-delete-btn';
+            delBtn.textContent = '삭제';
+            delBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var currentAnn = findAnnotation(annId);
+                var currentHasMemo = currentAnn && currentAnn.memo && currentAnn.memo.trim();
+                if (currentHasMemo) {
+                    // 확인 문구 표시
+                    var existing = $popover.querySelector('.delete-confirm');
+                    if (existing) return; // 이미 표시됨
+                    var confirm = document.createElement('div');
+                    confirm.className = 'delete-confirm';
+                    confirm.innerHTML = '메모가 포함된 마킹입니다. <span class="confirm-yes">삭제</span> <span class="confirm-no">취소</span>';
+                    confirm.querySelector('.confirm-yes').addEventListener('click', function(ev) {
+                        ev.stopPropagation();
+                        deleteAnnotation(annId);
+                        hidePopover(false);
+                    });
+                    confirm.querySelector('.confirm-no').addEventListener('click', function(ev) {
+                        ev.stopPropagation();
+                        confirm.parentNode.removeChild(confirm);
+                    });
+                    delBtn.parentNode.appendChild(confirm);
+                } else {
+                    deleteAnnotation(annId);
+                    hidePopover(false);
+                }
+            });
+            $popover.appendChild(delBtn);
+
+            // 위치: anchorEl 아래에 배치
+            var rect = anchorEl.getBoundingClientRect();
+            var containerRect = $leftContainer.getBoundingClientRect();
+            var x = ((rect.left - containerRect.left) / containerRect.width) * 100;
+            var y = ((rect.bottom - containerRect.top) / containerRect.height) * 100 + 0.5;
+            $popover.style.left = x + '%';
+            $popover.style.top = y + '%';
+
+            $leftAnnotationLayer.appendChild($popover);
+            requestAnimationFrame(function() { $popover.classList.add('visible'); });
+        }
+
+        function hidePopover(save) {
+            if (!$popover) return;
+            if (save && popoverAnnId) {
+                // textarea가 있을 때만 저장 (읽기 모드면 textarea 없음)
+                var textarea = $popover.querySelector('textarea');
+                var ann = findAnnotation(popoverAnnId);
+                if (textarea && ann && textarea.value !== (ann.memo || '')) {
+                    saveMemo(popoverAnnId, textarea.value);
+                }
+            }
+            if ($popover.parentNode) {
+                $popover.parentNode.removeChild($popover);
+            }
+            $popover = null;
+            popoverAnnId = null;
+        }
+
+        function changeColor(annId, color) {
+            fetch(API + '/api/translator/document/' + currentDocId + '/annotations/' + annId, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ color: color }),
+            }).then(function(r) { return r.json(); })
+              .then(function() {
+                var ann = findAnnotation(annId);
+                if (ann) ann.color = color;
+                renderAnnotations();
+                renderAnnotationsRight();
+            });
+        }
+
+        function saveMemo(annId, memo) {
+            fetch(API + '/api/translator/document/' + currentDocId + '/annotations/' + annId, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ memo: memo }),
+            }).then(function(r) { return r.json(); })
+              .then(function() {
+                var ann = findAnnotation(annId);
+                if (ann) ann.memo = memo;
+                renderAnnotations();
+                renderAnnotationsRight();
+            });
+        }
+
+        function deleteAnnotation(annId) {
+            fetch(API + '/api/translator/document/' + currentDocId + '/annotations/' + annId, {
+                method: 'DELETE',
+                credentials: 'include',
+            }).then(function(r) {
+                if (r.ok) {
+                    if (annotationsCache) {
+                        annotationsCache.highlights = annotationsCache.highlights.filter(
+                            function(h) { return h.id !== annId; }
+                        );
+                    }
+                    ['left', 'right'].forEach(function(side) {
+                        var layer = side === 'left' ? $leftAnnotationLayer : $rightAnnotationLayer;
+                        var divs = layer.querySelectorAll('[data-ann-id="' + annId + '"]');
+                        for (var i = 0; i < divs.length; i++) {
+                            divs[i].parentNode.removeChild(divs[i]);
+                        }
+                    });
+                    updateMarkingBadge();
+                    renderMarkingList();
+                }
+            }).catch(function(err) {
+                console.error('[Annotations] delete error:', err);
+            });
+        }
+
+        // 하이라이트 클릭 → popover
+        $leftAnnotationLayer.addEventListener('click', function(e) {
+            var target = e.target;
+            if (!target.classList.contains('highlight')) return;
+            e.stopPropagation();
+            var annId = target.dataset.annId;
+            if (!annId || !currentDocId) return;
+            showPopover(annId, target);
         });
 
         // ══════════════════════════════════════
@@ -2645,6 +3558,156 @@
                 loadTreeData();
             }).catch(function(err) { alert('이동 실패: ' + err.message); });
         }
+
+        // ══════════════════════════════════════
+        // 마킹 플로팅 위젯 (Phase 4)
+        // ══════════════════════════════════════
+
+        // ── 마킹 뱃지 카운트 갱신 ──
+
+        function updateMarkingBadge() {
+            var count = (annotationsCache && annotationsCache.highlights)
+                ? annotationsCache.highlights.length : 0;
+            // 트리거 옆 숫자
+            $mfCount.textContent = count;
+            $mfCount.style.display = count > 0 ? '' : 'none';
+            // 드롭다운 헤더 뱃지
+            $mfBadge.textContent = count;
+        }
+
+        // ── 마킹 목록 렌더 ──
+
+        function renderMarkingList() {
+            $mfBody.innerHTML = '';
+
+            if (!currentDocId) {
+                $mfBody.innerHTML = '<div class="marking-list-empty">문서를 열어주세요.</div>';
+                return;
+            }
+
+            if (!annotationsCache || !annotationsCache.highlights || !annotationsCache.highlights.length) {
+                $mfBody.innerHTML = '<div class="marking-list-empty">저장된 마킹이 없습니다.<br>원문에서 텍스트를 드래그하여<br>마킹할 수 있습니다.</div>';
+                return;
+            }
+
+            // 페이지별 그룹핑
+            var pageMap = {};
+            var highlights = annotationsCache.highlights;
+            for (var i = 0; i < highlights.length; i++) {
+                var h = highlights[i];
+                var p = h.page || 1;
+                if (!pageMap[p]) pageMap[p] = [];
+                pageMap[p].push(h);
+            }
+
+            var pages = Object.keys(pageMap).sort(function(a, b) { return Number(a) - Number(b); });
+
+            for (var pi = 0; pi < pages.length; pi++) {
+                var pageNum = Number(pages[pi]);
+                var items = pageMap[pageNum];
+
+                var group = document.createElement('div');
+                group.className = 'ml-page-group';
+
+                // 페이지 헤더
+                var header = document.createElement('div');
+                header.className = 'ml-page-header' + (pageNum === currentPage ? ' current-page' : '');
+                header.innerHTML = '<span class="ml-toggle">▾</span> ' + pageNum + '페이지 (' + items.length + ')';
+                header.dataset.page = pageNum;
+
+                var itemsContainer = document.createElement('div');
+                itemsContainer.className = 'ml-items';
+
+                header.addEventListener('click', (function(container, hdr) {
+                    return function() {
+                        var collapsed = container.style.display === 'none';
+                        container.style.display = collapsed ? '' : 'none';
+                        hdr.querySelector('.ml-toggle').textContent = collapsed ? '▾' : '▸';
+                    };
+                })(itemsContainer, header));
+
+                // 항목들
+                for (var j = 0; j < items.length; j++) {
+                    var h = items[j];
+                    var item = document.createElement('div');
+                    item.className = 'ml-item';
+                    item.dataset.annId = h.id;
+                    item.dataset.page = pageNum;
+
+                    var colorClass = HIGHLIGHT_COLORS[h.color] || 'dot-yellow';
+                    var dotClass = colorClass.replace('color-', 'dot-');
+
+                    var dot = document.createElement('div');
+                    dot.className = 'ml-color-dot ' + dotClass;
+
+                    var textWrap = document.createElement('div');
+                    textWrap.className = 'ml-text';
+
+                    var preview = document.createElement('div');
+                    preview.className = 'ml-text-preview';
+                    preview.textContent = (h.text || '').substring(0, 40) || '(텍스트 없음)';
+
+                    textWrap.appendChild(preview);
+
+                    if (h.memo && h.memo.trim()) {
+                        var memo = document.createElement('div');
+                        memo.className = 'ml-memo-preview';
+                        memo.textContent = h.memo.substring(0, 50);
+                        textWrap.appendChild(memo);
+                    }
+
+                    item.appendChild(dot);
+                    item.appendChild(textWrap);
+
+                    item.addEventListener('click', (function(annId, pg) {
+                        return function() {
+                            if (pg !== currentPage) {
+                                goToPage(pg);
+                                // 렌더 완료 후 포커스 효과
+                                setTimeout(function() { flashHighlight(annId); }, 500);
+                            } else {
+                                flashHighlight(annId);
+                            }
+                        };
+                    })(h.id, pageNum));
+
+                    itemsContainer.appendChild(item);
+                }
+
+                group.appendChild(header);
+                group.appendChild(itemsContainer);
+                $mfBody.appendChild(group);
+            }
+        }
+
+        // ── 하이라이트 포커스 효과 ──
+
+        function flashHighlight(annId) {
+            var el = $leftAnnotationLayer.querySelector('.highlight-group[data-ann-id="' + annId + '"]');
+            if (!el) return;
+            el.classList.remove('focus-flash');
+            // 리플로우 강제 → 애니메이션 재시작
+            void el.offsetWidth;
+            el.classList.add('focus-flash');
+            el.addEventListener('animationend', function() {
+                el.classList.remove('focus-flash');
+            }, { once: true });
+        }
+
+        // ── 마킹 변경 시 목록 갱신 훅 ──
+
+        var _origRenderAnnotations = renderAnnotations;
+        renderAnnotations = function() {
+            _origRenderAnnotations();
+            updateMarkingBadge();
+            renderMarkingList();
+        };
+
+        var _origRenderAnnotationsRight = renderAnnotationsRight;
+        renderAnnotationsRight = function() {
+            _origRenderAnnotationsRight();
+            updateMarkingBadge();
+        };
 
 
     })();
