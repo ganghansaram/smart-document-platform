@@ -239,7 +239,7 @@ data/translator/{username}/{doc_id}/
 | 커스텀 selection overlay | 하 | ✅ Phase 2.5 (네이티브 ::selection으로 대체) |
 | 메모 popover UI | 하 | ✅ Phase 3 |
 | 형광펜 4색 팔레트 | 하 | ✅ Phase 3 |
-| 마킹 목록 오버레이 | 하~중 | 대기 (Phase 4) |
+| 마킹 목록 (트리 패널 탭) | 하~중 | ✅ Phase 4 |
 
 ---
 
@@ -353,44 +353,37 @@ popover UI 추가. 메모 작성, 색상 변경, 삭제 가능.
 
 ---
 
-### Phase 4: 마킹 목록
+### Phase 4: 마킹 목록 — ✅ 완료
 
-오버레이 팝업으로 전체 마킹 탐색. 이 단계 완료 시: 전체 기능 완성.
+트리 패널 탭 방식으로 마킹 목록 제공. 기존 모달 오버레이 설계에서 사이드바 탭으로 재설계.
 
-**프론트엔드:**
-1. 뷰어 툴바에 마킹 목록 버튼 추가
-   - 툴바 우측에 아이콘 버튼 (형광펜 또는 목록 아이콘)
-   - 마킹이 있으면 뱃지 카운트 표시 (선택사항)
-2. 오버레이 팝업 — bookmarks UI 패턴 재사용
-   - `markings-overlay` (bookmarks-overlay 구조 동일)
-   - 중앙 모달, max-width `600px`, backdrop blur
-   - 헤더: "Markings" + Clear All + 닫기(×)
-   - 본문: 스크롤 가능 목록
-3. 목록 항목 구성
-   - 페이지별 그룹 헤더 (`Page 1`, `Page 2`, ...)
-   - 각 항목:
-     ```
-     ● "selected text preview..."              ✕
-       └ 메모 미리보기 (있을 경우)
-     ```
-   - 색상 뱃지: `8px` 원형, 해당 하이라이트 색상
-   - 텍스트 미리보기: 최대 50자 말줄임 (`text-overflow: ellipsis`)
-   - 메모 미리보기: font-size `12px`, color `var(--medium-gray)`, 최대 1줄
-   - 삭제(×): hover 시 표시 (bookmarks 패턴)
-4. 항목 클릭 동작
-   - 팝업 닫힘
-   - 해당 페이지로 이동 (`goToPage()`)
-   - 해당 하이라이트에 포커스 효과 (일시적 강조 → 2초 후 복귀)
+**재설계 사유:**
+- 업계 표준 (Adobe Acrobat, Foxit Reader 등)이 사이드바 패널 방식
+- 모달은 문서를 가려서 컨텍스트 손실
+- 기존 트리 패널 인프라 재활용 가능
 
-**스타일 가이드라인:**
-- bookmarks.css 구조 재사용 (overlay, container, header, list, item, empty)
-- 그룹 헤더: font-size `12px`, weight `600`, uppercase, letter-spacing `0.5px`
-- 항목: padding `8px 12px`, hover background `var(--hover-bg)`
-- 색상 뱃지: `display: inline-block`, `width: 8px`, `height: 8px`, `border-radius: 50%`
-- 메모 서브텍스트: `margin-left: 16px` (뱃지 아래 들여쓰기)
-- 빈 상태: "저장된 마킹이 없습니다." + 안내 텍스트
-- 다크 모드: bookmarks.css의 다크 오버라이드 패턴 동일 적용
-- 포커스 효과: `box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.4)` → transition out `2s`
+**구현된 기능:**
+1. 트리 패널 헤더를 "문서 | 마킹(N)" 탭으로 확장
+   - `switchTab('docs'|'marks')` — 탭 전환, 콘텐츠 교체
+   - 마킹 탭 선택 시 "새 폴더" 버튼 숨김
+   - 뱃지 카운트: 현재 문서의 총 마킹 수 실시간 갱신
+2. `renderMarkingList()` — 페이지별 그룹 목록 렌더
+   - 접기/펼치기 가능한 페이지 그룹 헤더 ("▾ N페이지 (M)")
+   - 현재 페이지 그룹 강조 (파란색)
+   - 항목: 색상 뱃지(8px) + 텍스트 미리보기(40자) + 메모 미리보기
+3. 항목 클릭 동작
+   - 같은 페이지: 포커스 효과만
+   - 다른 페이지: `goToPage()` + 렌더 완료 후 포커스 효과
+   - 패널은 닫지 않음 (연속 탐색 지원)
+4. `flashHighlight(annId)` — 3초 brightness+drop-shadow 애니메이션
+5. 마킹 생성/삭제/변경 시 목록 + 뱃지 자동 갱신
+6. 빈 상태 메시지: "저장된 마킹이 없습니다." / "문서를 열어주세요."
+7. 다크 모드 지원
+
+**제거된 항목 (기존 설계 대비):**
+- Clear All 버튼 — 위험, 개별 삭제로 충분
+- 항목별 삭제(×) — popover에 위임, 목록은 탐색 전용
+- 중앙 모달 — 사이드바 탭으로 대체
 
 ---
 
@@ -402,6 +395,6 @@ popover UI 추가. 메모 작성, 색상 변경, 삭제 가능.
 | 2 | 마킹 생성 (미니 버튼) + 우측 마진 마커 | ✅ 완료 | `0c3f891` |
 | 2.5 | 텍스트 선택 품질 개선 (--scale-factor, br 숨김) | ✅ 완료 | `7018b03` |
 | 3 | 메모 + 색상 (popover UI, 4색 팔레트) | ✅ 완료 | `fa7a8a6` |
-| 4 | 마킹 목록 (오버레이 팝업, 페이지 이동) | 대기 | — |
+| 4 | 마킹 목록 (트리 패널 탭, 페이지 이동) | ✅ 완료 | — |
 
-> 순차 진행.
+> 전체 마킹 기능 완성.

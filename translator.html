@@ -962,6 +962,120 @@
             min-height: 0;
         }
 
+        /* ── 트리 패널 탭 ── */
+        .tp-tabs {
+            display: flex;
+            gap: 2px;
+            flex: 1;
+        }
+        .tp-tab {
+            padding: 4px 10px;
+            border: none;
+            background: none;
+            font-size: 13px;
+            font-weight: 500;
+            color: #7f8c8d;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s, border-color 0.15s;
+            font-family: inherit;
+        }
+        .tp-tab:hover { color: #2c3e50; }
+        .tp-tab.active {
+            color: #2c3e50;
+            border-bottom-color: #0066cc;
+        }
+        .tp-tab-badge {
+            font-size: 11px;
+            font-weight: 600;
+            background: #e8f4f8;
+            color: #0066cc;
+            border-radius: 8px;
+            padding: 0 5px;
+            margin-left: 3px;
+        }
+
+        /* ── 마킹 목록 ── */
+        .marking-list {
+            padding: 8px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+        .marking-list-empty {
+            padding: 32px 16px;
+            text-align: center;
+            color: #95a5a6;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .ml-page-group {
+            margin-bottom: 4px;
+        }
+        .ml-page-header {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #7f8c8d;
+            cursor: pointer;
+            user-select: none;
+            border-radius: 4px;
+        }
+        .ml-page-header:hover { background: rgba(0,0,0,0.03); }
+        .ml-page-header .ml-toggle { font-size: 10px; width: 12px; }
+        .ml-page-header.current-page { color: #0066cc; }
+        .ml-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 6px 8px 6px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .ml-item:hover { background: var(--hover-bg, #f0f0f0); }
+        .ml-color-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        .ml-color-dot.dot-yellow { background: rgb(255, 200, 0); }
+        .ml-color-dot.dot-green  { background: rgb(100, 200, 100); }
+        .ml-color-dot.dot-red    { background: rgb(255, 120, 120); }
+        .ml-color-dot.dot-blue   { background: rgb(100, 170, 230); }
+        .ml-text {
+            flex: 1;
+            min-width: 0;
+        }
+        .ml-text-preview {
+            font-size: 13px;
+            color: var(--text-color, #333);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ml-memo-preview {
+            font-size: 12px;
+            color: #95a5a6;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 1px;
+        }
+        /* 포커스 효과 */
+        .highlight-group.focus-flash {
+            animation: markingFlash 3s ease forwards;
+        }
+        @keyframes markingFlash {
+            0%   { filter: brightness(1.3) drop-shadow(0 0 6px rgba(0, 102, 204, 0.5)); }
+            100% { filter: none; }
+        }
+
         /* 트리 폴더 drag-over 하이라이트 */
         .tree-item.drag-over {
             background: rgba(0,102,204,0.12) !important;
@@ -1105,6 +1219,18 @@
         body[data-theme="dark"] .tp-btn:hover { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
         body[data-theme="dark"] .tp-btn.pinned { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
 
+        body[data-theme="dark"] .tp-tab { color: rgba(255,255,255,0.4); }
+        body[data-theme="dark"] .tp-tab:hover { color: #e0e0e0; }
+        body[data-theme="dark"] .tp-tab.active { color: #e0e0e0; border-bottom-color: #58a6ff; }
+        body[data-theme="dark"] .tp-tab-badge { background: rgba(88,166,255,0.15); color: #58a6ff; }
+        body[data-theme="dark"] .ml-page-header { color: rgba(255,255,255,0.4); }
+        body[data-theme="dark"] .ml-page-header:hover { background: rgba(255,255,255,0.04); }
+        body[data-theme="dark"] .ml-page-header.current-page { color: #58a6ff; }
+        body[data-theme="dark"] .ml-item:hover { background: rgba(255,255,255,0.06); }
+        body[data-theme="dark"] .ml-text-preview { color: #e0e0e0; }
+        body[data-theme="dark"] .ml-memo-preview { color: rgba(255,255,255,0.35); }
+        body[data-theme="dark"] .marking-list-empty { color: rgba(255,255,255,0.3); }
+
         body[data-theme="dark"] .tp-context-menu { background: #1e1e2e; border-color: rgba(255,255,255,0.12); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
         body[data-theme="dark"] .tp-context-menu .ctx-item { color: #e0e0e0; }
         body[data-theme="dark"] .tp-context-menu .ctx-item:hover { background: rgba(88,166,255,0.15); color: #58a6ff; }
@@ -1139,7 +1265,10 @@
         <!-- Tree Panel: overlay -->
         <div class="tree-panel-overlay" id="tp-overlay">
             <div class="tp-header">
-                <span class="tp-header-title">내 문서</span>
+                <div class="tp-tabs">
+                    <button class="tp-tab active" id="tp-tab-docs" data-tab="docs">문서</button>
+                    <button class="tp-tab" id="tp-tab-marks" data-tab="marks">마킹 <span class="tp-tab-badge" id="tp-mark-count" style="display:none">0</span></button>
+                </div>
                 <button class="tp-btn" id="tp-new-folder" title="새 폴더">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
                 </button>
@@ -1148,6 +1277,7 @@
                 </button>
             </div>
             <div class="tree-menu" id="tp-tree"></div>
+            <div class="marking-list" id="tp-marking-list" style="display:none"></div>
         </div>
 
         <!-- Tree Panel: trigger handle -->
@@ -2528,9 +2658,11 @@
             }).then(function(r) { return r.json(); })
               .then(function(data) {
                 annotationsCache = data;
+                updateMarkingBadge();
                 if (callback) callback();
             }).catch(function() {
                 annotationsCache = { highlights: [] };
+                updateMarkingBadge();
                 if (callback) callback();
             });
         }
@@ -2687,6 +2819,8 @@
                 if ($rightContainer.style.display !== 'none') {
                     $rightAnnotationLayer.appendChild(createMarginMarkerDiv(h));
                 }
+                updateMarkingBadge();
+                if (tpActiveTab === 'marks') renderMarkingList();
             }).catch(function(err) {
                 console.error('[Annotations] create error:', err);
             });
@@ -2884,6 +3018,8 @@
                             divs[i].parentNode.removeChild(divs[i]);
                         }
                     });
+                    updateMarkingBadge();
+                    if (tpActiveTab === 'marks') renderMarkingList();
                 }
             }).catch(function(err) {
                 console.error('[Annotations] delete error:', err);
@@ -2928,8 +3064,13 @@
         var $tpTrigger  = document.getElementById('tp-trigger');
         var $tpOverlay  = document.getElementById('tp-overlay');
         var $tpTree     = document.getElementById('tp-tree');
+        var $tpMarkingList = document.getElementById('tp-marking-list');
+        var $tpTabDocs  = document.getElementById('tp-tab-docs');
+        var $tpTabMarks = document.getElementById('tp-tab-marks');
+        var $tpMarkCount = document.getElementById('tp-mark-count');
         var $tpPin      = document.getElementById('tp-pin');
         var $tpNewFolder = document.getElementById('tp-new-folder');
+        var tpActiveTab = 'docs'; // 'docs' | 'marks'
         var $ctxMenu    = document.getElementById('tp-ctx-menu');
         var $fpOverlay  = document.getElementById('fp-overlay');
         var $fpList     = document.getElementById('fp-list');
@@ -3362,6 +3503,174 @@
                 loadTreeData();
             }).catch(function(err) { alert('이동 실패: ' + err.message); });
         }
+
+        // ══════════════════════════════════════
+        // 마킹 목록 탭 (Phase 4)
+        // ══════════════════════════════════════
+
+        function switchTab(tab) {
+            tpActiveTab = tab;
+            $tpTabDocs.classList.toggle('active', tab === 'docs');
+            $tpTabMarks.classList.toggle('active', tab === 'marks');
+            $tpTree.style.display = tab === 'docs' ? '' : 'none';
+            $tpMarkingList.style.display = tab === 'marks' ? '' : 'none';
+            // 문서 탭 전용 버튼 표시/숨김
+            $tpNewFolder.style.display = tab === 'docs' ? '' : 'none';
+            if (tab === 'marks') renderMarkingList();
+        }
+
+        $tpTabDocs.addEventListener('click', function() { switchTab('docs'); });
+        $tpTabMarks.addEventListener('click', function() { switchTab('marks'); });
+
+        // ── 마킹 뱃지 카운트 갱신 ──
+
+        function updateMarkingBadge() {
+            if (!annotationsCache || !annotationsCache.highlights) {
+                $tpMarkCount.style.display = 'none';
+                return;
+            }
+            var count = annotationsCache.highlights.length;
+            if (count > 0) {
+                $tpMarkCount.textContent = count;
+                $tpMarkCount.style.display = '';
+            } else {
+                $tpMarkCount.style.display = 'none';
+            }
+        }
+
+        // ── 마킹 목록 렌더 ──
+
+        function renderMarkingList() {
+            $tpMarkingList.innerHTML = '';
+
+            if (!currentDocId) {
+                $tpMarkingList.innerHTML = '<div class="marking-list-empty">문서를 열어주세요.</div>';
+                return;
+            }
+
+            if (!annotationsCache || !annotationsCache.highlights || !annotationsCache.highlights.length) {
+                $tpMarkingList.innerHTML = '<div class="marking-list-empty">저장된 마킹이 없습니다.<br>원문에서 텍스트를 드래그하여<br>마킹할 수 있습니다.</div>';
+                return;
+            }
+
+            // 페이지별 그룹핑
+            var pageMap = {};
+            var highlights = annotationsCache.highlights;
+            for (var i = 0; i < highlights.length; i++) {
+                var h = highlights[i];
+                var p = h.page || 1;
+                if (!pageMap[p]) pageMap[p] = [];
+                pageMap[p].push(h);
+            }
+
+            var pages = Object.keys(pageMap).sort(function(a, b) { return Number(a) - Number(b); });
+
+            for (var pi = 0; pi < pages.length; pi++) {
+                var pageNum = Number(pages[pi]);
+                var items = pageMap[pageNum];
+
+                var group = document.createElement('div');
+                group.className = 'ml-page-group';
+
+                // 페이지 헤더
+                var header = document.createElement('div');
+                header.className = 'ml-page-header' + (pageNum === currentPage ? ' current-page' : '');
+                header.innerHTML = '<span class="ml-toggle">▾</span> ' + pageNum + '페이지 (' + items.length + ')';
+                header.dataset.page = pageNum;
+
+                var itemsContainer = document.createElement('div');
+                itemsContainer.className = 'ml-items';
+
+                header.addEventListener('click', (function(container, hdr) {
+                    return function() {
+                        var collapsed = container.style.display === 'none';
+                        container.style.display = collapsed ? '' : 'none';
+                        hdr.querySelector('.ml-toggle').textContent = collapsed ? '▾' : '▸';
+                    };
+                })(itemsContainer, header));
+
+                // 항목들
+                for (var j = 0; j < items.length; j++) {
+                    var h = items[j];
+                    var item = document.createElement('div');
+                    item.className = 'ml-item';
+                    item.dataset.annId = h.id;
+                    item.dataset.page = pageNum;
+
+                    var colorClass = HIGHLIGHT_COLORS[h.color] || 'dot-yellow';
+                    var dotClass = colorClass.replace('color-', 'dot-');
+
+                    var dot = document.createElement('div');
+                    dot.className = 'ml-color-dot ' + dotClass;
+
+                    var textWrap = document.createElement('div');
+                    textWrap.className = 'ml-text';
+
+                    var preview = document.createElement('div');
+                    preview.className = 'ml-text-preview';
+                    preview.textContent = (h.text || '').substring(0, 40) || '(텍스트 없음)';
+
+                    textWrap.appendChild(preview);
+
+                    if (h.memo && h.memo.trim()) {
+                        var memo = document.createElement('div');
+                        memo.className = 'ml-memo-preview';
+                        memo.textContent = h.memo.substring(0, 50);
+                        textWrap.appendChild(memo);
+                    }
+
+                    item.appendChild(dot);
+                    item.appendChild(textWrap);
+
+                    item.addEventListener('click', (function(annId, pg) {
+                        return function() {
+                            if (pg !== currentPage) {
+                                goToPage(pg);
+                                // 렌더 완료 후 포커스 효과
+                                setTimeout(function() { flashHighlight(annId); }, 500);
+                            } else {
+                                flashHighlight(annId);
+                            }
+                        };
+                    })(h.id, pageNum));
+
+                    itemsContainer.appendChild(item);
+                }
+
+                group.appendChild(header);
+                group.appendChild(itemsContainer);
+                $tpMarkingList.appendChild(group);
+            }
+        }
+
+        // ── 하이라이트 포커스 효과 ──
+
+        function flashHighlight(annId) {
+            var el = $leftAnnotationLayer.querySelector('.highlight-group[data-ann-id="' + annId + '"]');
+            if (!el) return;
+            el.classList.remove('focus-flash');
+            // 리플로우 강제 → 애니메이션 재시작
+            void el.offsetWidth;
+            el.classList.add('focus-flash');
+            el.addEventListener('animationend', function() {
+                el.classList.remove('focus-flash');
+            }, { once: true });
+        }
+
+        // ── 마킹 변경 시 목록 갱신 훅 ──
+
+        var _origRenderAnnotations = renderAnnotations;
+        renderAnnotations = function() {
+            _origRenderAnnotations();
+            updateMarkingBadge();
+            if (tpActiveTab === 'marks') renderMarkingList();
+        };
+
+        var _origRenderAnnotationsRight = renderAnnotationsRight;
+        renderAnnotationsRight = function() {
+            _origRenderAnnotationsRight();
+            updateMarkingBadge();
+        };
 
 
     })();
