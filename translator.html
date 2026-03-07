@@ -962,46 +962,86 @@
             min-height: 0;
         }
 
-        /* ── 트리 패널 탭 ── */
-        .tp-tabs {
+        /* ── 마킹 플로팅 위젯 ── */
+        .marking-float {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            z-index: 6;
+        }
+        .mf-trigger {
             display: flex;
-            gap: 2px;
-            flex: 1;
-        }
-        .tp-tab {
-            padding: 4px 10px;
-            border: none;
-            background: none;
-            font-size: 13px;
-            font-weight: 500;
-            color: #7f8c8d;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 6px;
             cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: color 0.15s, border-color 0.15s;
-            font-family: inherit;
+            color: #95a5a6;
+            font-size: 12px;
+            transition: color 0.15s, background 0.15s;
         }
-        .tp-tab:hover { color: #2c3e50; }
-        .tp-tab.active {
-            color: #2c3e50;
-            border-bottom-color: #0066cc;
+        .mf-trigger:hover {
+            color: #0066cc;
+            background: rgba(255, 255, 255, 0.95);
         }
-        .tp-tab-badge {
+        .mf-count {
+            font-size: 11px;
+            font-weight: 600;
+            color: #0066cc;
+        }
+        .mf-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0;
+            padding-top: 4px;
+            width: 280px;
+            max-height: 400px;
+            background: var(--white, #fff);
+            border: 1px solid var(--border-color, #dde4e8);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transform: translateY(-4px);
+            pointer-events: none;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .marking-float:hover .mf-dropdown {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .mf-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color, #dde4e8);
+            flex-shrink: 0;
+        }
+        .mf-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color, #333);
+        }
+        .mf-badge {
             font-size: 11px;
             font-weight: 600;
             background: #e8f4f8;
             color: #0066cc;
             border-radius: 8px;
-            padding: 0 5px;
-            margin-left: 3px;
+            padding: 0 6px;
+        }
+        .mf-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
         }
 
-        /* ── 마킹 목록 ── */
-        .marking-list {
-            padding: 8px;
-            overflow-y: auto;
-            flex: 1;
-            min-height: 0;
-        }
+        /* ── 마킹 목록 아이템 ── */
         .marking-list-empty {
             padding: 32px 16px;
             text-align: center;
@@ -1219,10 +1259,14 @@
         body[data-theme="dark"] .tp-btn:hover { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
         body[data-theme="dark"] .tp-btn.pinned { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
 
-        body[data-theme="dark"] .tp-tab { color: rgba(255,255,255,0.4); }
-        body[data-theme="dark"] .tp-tab:hover { color: #e0e0e0; }
-        body[data-theme="dark"] .tp-tab.active { color: #e0e0e0; border-bottom-color: #58a6ff; }
-        body[data-theme="dark"] .tp-tab-badge { background: rgba(88,166,255,0.15); color: #58a6ff; }
+        body[data-theme="dark"] .mf-trigger { background: rgba(30,30,46,0.85); color: rgba(255,255,255,0.4); }
+        body[data-theme="dark"] .mf-trigger:hover { color: #58a6ff; background: rgba(30,30,46,0.95); }
+        body[data-theme="dark"] .mf-count { color: #58a6ff; }
+        body[data-theme="dark"] .mf-dropdown { background: #1e1e2e; border-color: rgba(255,255,255,0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+        body[data-theme="dark"] .mf-header { border-bottom-color: rgba(255,255,255,0.08); }
+        body[data-theme="dark"] .mf-title { color: #e0e0e0; }
+        body[data-theme="dark"] .mf-badge { background: rgba(88,166,255,0.15); color: #58a6ff; }
+
         body[data-theme="dark"] .ml-page-header { color: rgba(255,255,255,0.4); }
         body[data-theme="dark"] .ml-page-header:hover { background: rgba(255,255,255,0.04); }
         body[data-theme="dark"] .ml-page-header.current-page { color: #58a6ff; }
@@ -1265,10 +1309,7 @@
         <!-- Tree Panel: overlay -->
         <div class="tree-panel-overlay" id="tp-overlay">
             <div class="tp-header">
-                <div class="tp-tabs">
-                    <button class="tp-tab active" id="tp-tab-docs" data-tab="docs">문서</button>
-                    <button class="tp-tab" id="tp-tab-marks" data-tab="marks">마킹 <span class="tp-tab-badge" id="tp-mark-count" style="display:none">0</span></button>
-                </div>
+                <span class="tp-header-title">내 문서</span>
                 <button class="tp-btn" id="tp-new-folder" title="새 폴더">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
                 </button>
@@ -1277,7 +1318,6 @@
                 </button>
             </div>
             <div class="tree-menu" id="tp-tree"></div>
-            <div class="marking-list" id="tp-marking-list" style="display:none"></div>
         </div>
 
         <!-- Tree Panel: trigger handle -->
@@ -1369,6 +1409,20 @@
                 <!-- Right: Translation -->
                 <div class="viewer-panel" id="panel-right">
                     <span class="panel-label">번역</span>
+                    <!-- 마킹 플로팅 위젯 -->
+                    <div class="marking-float" id="marking-float">
+                        <div class="mf-trigger" id="mf-trigger">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+                            <span class="mf-count" id="mf-count" style="display:none">0</span>
+                        </div>
+                        <div class="mf-dropdown" id="mf-dropdown">
+                            <div class="mf-header">
+                                <span class="mf-title">마킹</span>
+                                <span class="mf-badge" id="mf-badge">0</span>
+                            </div>
+                            <div class="mf-body" id="mf-body"></div>
+                        </div>
+                    </div>
                     <div class="pdf-page-container" id="right-page-container" style="display:none">
                         <canvas id="right-canvas"></canvas>
                         <div class="text-layer" id="right-text-layer"></div>
@@ -1506,6 +1560,12 @@
         var $rightTextLayer = document.getElementById('right-text-layer');
         var $rightAnnotationLayer = document.getElementById('right-annotation-layer');
         var $rightPlaceholder = document.getElementById('right-placeholder');
+
+        // 마킹 플로팅 위젯
+        var $markingFloat = document.getElementById('marking-float');
+        var $mfBody  = document.getElementById('mf-body');
+        var $mfBadge = document.getElementById('mf-badge');
+        var $mfCount = document.getElementById('mf-count');
 
         // Toolbar
         var $toolbarStatus  = document.getElementById('toolbar-page-status');
@@ -2820,7 +2880,7 @@
                     $rightAnnotationLayer.appendChild(createMarginMarkerDiv(h));
                 }
                 updateMarkingBadge();
-                if (tpActiveTab === 'marks') renderMarkingList();
+                renderMarkingList();
             }).catch(function(err) {
                 console.error('[Annotations] create error:', err);
             });
@@ -3019,7 +3079,7 @@
                         }
                     });
                     updateMarkingBadge();
-                    if (tpActiveTab === 'marks') renderMarkingList();
+                    renderMarkingList();
                 }
             }).catch(function(err) {
                 console.error('[Annotations] delete error:', err);
@@ -3064,13 +3124,8 @@
         var $tpTrigger  = document.getElementById('tp-trigger');
         var $tpOverlay  = document.getElementById('tp-overlay');
         var $tpTree     = document.getElementById('tp-tree');
-        var $tpMarkingList = document.getElementById('tp-marking-list');
-        var $tpTabDocs  = document.getElementById('tp-tab-docs');
-        var $tpTabMarks = document.getElementById('tp-tab-marks');
-        var $tpMarkCount = document.getElementById('tp-mark-count');
         var $tpPin      = document.getElementById('tp-pin');
         var $tpNewFolder = document.getElementById('tp-new-folder');
-        var tpActiveTab = 'docs'; // 'docs' | 'marks'
         var $ctxMenu    = document.getElementById('tp-ctx-menu');
         var $fpOverlay  = document.getElementById('fp-overlay');
         var $fpList     = document.getElementById('fp-list');
@@ -3505,51 +3560,33 @@
         }
 
         // ══════════════════════════════════════
-        // 마킹 목록 탭 (Phase 4)
+        // 마킹 플로팅 위젯 (Phase 4)
         // ══════════════════════════════════════
-
-        function switchTab(tab) {
-            tpActiveTab = tab;
-            $tpTabDocs.classList.toggle('active', tab === 'docs');
-            $tpTabMarks.classList.toggle('active', tab === 'marks');
-            $tpTree.style.display = tab === 'docs' ? '' : 'none';
-            $tpMarkingList.style.display = tab === 'marks' ? '' : 'none';
-            // 문서 탭 전용 버튼 표시/숨김
-            $tpNewFolder.style.display = tab === 'docs' ? '' : 'none';
-            if (tab === 'marks') renderMarkingList();
-        }
-
-        $tpTabDocs.addEventListener('click', function() { switchTab('docs'); });
-        $tpTabMarks.addEventListener('click', function() { switchTab('marks'); });
 
         // ── 마킹 뱃지 카운트 갱신 ──
 
         function updateMarkingBadge() {
-            if (!annotationsCache || !annotationsCache.highlights) {
-                $tpMarkCount.style.display = 'none';
-                return;
-            }
-            var count = annotationsCache.highlights.length;
-            if (count > 0) {
-                $tpMarkCount.textContent = count;
-                $tpMarkCount.style.display = '';
-            } else {
-                $tpMarkCount.style.display = 'none';
-            }
+            var count = (annotationsCache && annotationsCache.highlights)
+                ? annotationsCache.highlights.length : 0;
+            // 트리거 옆 숫자
+            $mfCount.textContent = count;
+            $mfCount.style.display = count > 0 ? '' : 'none';
+            // 드롭다운 헤더 뱃지
+            $mfBadge.textContent = count;
         }
 
         // ── 마킹 목록 렌더 ──
 
         function renderMarkingList() {
-            $tpMarkingList.innerHTML = '';
+            $mfBody.innerHTML = '';
 
             if (!currentDocId) {
-                $tpMarkingList.innerHTML = '<div class="marking-list-empty">문서를 열어주세요.</div>';
+                $mfBody.innerHTML = '<div class="marking-list-empty">문서를 열어주세요.</div>';
                 return;
             }
 
             if (!annotationsCache || !annotationsCache.highlights || !annotationsCache.highlights.length) {
-                $tpMarkingList.innerHTML = '<div class="marking-list-empty">저장된 마킹이 없습니다.<br>원문에서 텍스트를 드래그하여<br>마킹할 수 있습니다.</div>';
+                $mfBody.innerHTML = '<div class="marking-list-empty">저장된 마킹이 없습니다.<br>원문에서 텍스트를 드래그하여<br>마킹할 수 있습니다.</div>';
                 return;
             }
 
@@ -3639,7 +3676,7 @@
 
                 group.appendChild(header);
                 group.appendChild(itemsContainer);
-                $tpMarkingList.appendChild(group);
+                $mfBody.appendChild(group);
             }
         }
 
@@ -3663,7 +3700,7 @@
         renderAnnotations = function() {
             _origRenderAnnotations();
             updateMarkingBadge();
-            if (tpActiveTab === 'marks') renderMarkingList();
+            renderMarkingList();
         };
 
         var _origRenderAnnotationsRight = renderAnnotationsRight;
