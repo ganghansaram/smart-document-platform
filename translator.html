@@ -618,6 +618,109 @@
             background: var(--hover-bg, #f0f0f0);
         }
 
+        /* ── 마킹 popover ── */
+        .marking-popover {
+            position: absolute;
+            z-index: 11;
+            pointer-events: auto;
+            background: var(--white, #fff);
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            width: 340px;
+            text-align: left;
+            user-select: none;
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .marking-popover.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .marking-popover .color-palette {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .marking-popover .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.15s ease;
+        }
+        .marking-popover .color-dot:hover {
+            border-color: var(--medium-gray, #888);
+        }
+        .marking-popover .color-dot.active {
+            border-color: var(--text-color, #333);
+        }
+        .marking-popover .color-dot.dot-yellow { background: rgb(255, 255, 0); }
+        .marking-popover .color-dot.dot-green  { background: rgb(144, 238, 144); }
+        .marking-popover .color-dot.dot-red    { background: rgb(255, 179, 179); }
+        .marking-popover .color-dot.dot-blue   { background: rgb(173, 216, 230); }
+        .marking-popover textarea {
+            width: 100%;
+            min-height: 48px;
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 13px;
+            resize: vertical;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .marking-popover .memo-display {
+            font-size: 13px;
+            color: var(--text-color, #333);
+            line-height: 1.5;
+            padding: 6px 8px;
+            background: var(--hover-bg, #f5f5f5);
+            border-radius: 6px;
+            cursor: text;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .marking-popover .popover-delete-btn {
+            margin-top: 8px;
+            text-align: right;
+            font-size: 13px;
+            color: var(--medium-gray, #888);
+            cursor: pointer;
+        }
+        .marking-popover .popover-delete-btn:hover {
+            color: #e74c3c;
+        }
+        .marking-popover .delete-confirm {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #e74c3c;
+            text-align: right;
+        }
+        .marking-popover .delete-confirm span {
+            cursor: pointer;
+            margin-left: 8px;
+            text-decoration: underline;
+        }
+
+        /* 메모 표시점 */
+        .annotation-layer .highlight.has-memo::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-color, #333);
+            pointer-events: none;
+        }
+
         /* 우측 패널 상태별 표시 */
         .right-panel-placeholder {
             display: flex;
@@ -715,7 +818,31 @@
         body[data-theme="dark"] .right-panel-placeholder .placeholder-hint { color: rgba(255,255,255,0.25); }
         body[data-theme="dark"] .page-spinner { border-color: rgba(255,255,255,0.1); border-top-color: #58a6ff; }
 
-
+        body[data-theme="dark"] .marking-popover {
+            background: #1e1e2e;
+            border-color: rgba(255,255,255,0.08);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+        body[data-theme="dark"] .marking-popover textarea {
+            background: #2a2a3e;
+            border-color: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+        }
+        body[data-theme="dark"] .marking-popover .memo-display {
+            background: #2a2a3e;
+            color: #e0e0e0;
+        }
+        body[data-theme="dark"] .marking-action-btn {
+            background: #1e1e2e;
+            border-color: rgba(255,255,255,0.12);
+            color: #e0e0e0;
+        }
+        body[data-theme="dark"] .marking-action-btn:hover {
+            background: #2a2a3e;
+        }
+        body[data-theme="dark"] .highlight.has-memo::after {
+            background: #e0e0e0;
+        }
 
         /* ══════════════════════════════════════
            트리 패널 (오버레이)
@@ -2180,6 +2307,8 @@
 
         function goToPage(page) {
             if (page < 1 || page > totalPages) return;
+            hidePopover(true);
+            hideMarkingBtn();
             stopPolling();
             stopTextPolling();
             currentPage = page;
@@ -2240,6 +2369,8 @@
         });
 
         function rerenderBothPanels() {
+            hidePopover(true);
+            hideMarkingBtn();
             renderLeftPage(currentPage);
             // Right: 상태에 따라
             var ps = pageStatusCache[String(currentPage)];
@@ -2314,6 +2445,10 @@
                 var r = rects[i];
                 var div = document.createElement('div');
                 div.className = 'highlight ' + colorClass;
+                // 첫 번째 rect + 메모 있으면 표시점
+                if (i === 0 && h.memo) {
+                    div.classList.add('has-memo');
+                }
                 div.style.left   = Math.max(0, r.x - pad) + '%';
                 div.style.top    = r.y + '%';
                 div.style.width  = Math.min(100 - r.x + pad, r.w + pad * 2) + '%';
@@ -2328,6 +2463,11 @@
         // ── 현재 페이지 마킹 렌더 (좌측) ──
 
         function renderAnnotations() {
+            // popover 보존: render 전 분리, render 후 재부착
+            var savedPopover = $popover;
+            if (savedPopover && savedPopover.parentNode) {
+                savedPopover.parentNode.removeChild(savedPopover);
+            }
             $leftAnnotationLayer.innerHTML = '';
             if (!annotationsCache || !annotationsCache.highlights) return;
             var page = currentPage;
@@ -2336,6 +2476,10 @@
                 if (highlights[i].page === page) {
                     $leftAnnotationLayer.appendChild(createHighlightDiv(highlights[i]));
                 }
+            }
+            // popover 재부착
+            if (savedPopover) {
+                $leftAnnotationLayer.appendChild(savedPopover);
             }
         }
 
@@ -2563,40 +2707,197 @@
             if ($markingBtn && !$markingBtn.contains(e.target)) {
                 hideMarkingBtn();
             }
+            // popover 외부 클릭 시 닫기 (메모 저장)
+            if ($popover && !$popover.contains(e.target) && !e.target.classList.contains('highlight')) {
+                hidePopover(true);
+            }
         });
 
-        // ── 더블클릭 삭제 (Phase 3 popover 전 임시) ──
+        // ── 마킹 popover (Phase 3) ──
 
-        $leftAnnotationLayer.addEventListener('dblclick', function(e) {
-            var target = e.target;
-            if (!target.classList.contains('highlight')) return;
-            var annId = target.dataset.annId;
-            if (!annId || !currentDocId) return;
+        var $popover = null;
+        var popoverAnnId = null;
 
+        function findAnnotation(annId) {
+            if (!annotationsCache || !annotationsCache.highlights) return null;
+            for (var i = 0; i < annotationsCache.highlights.length; i++) {
+                if (annotationsCache.highlights[i].id === annId) return annotationsCache.highlights[i];
+            }
+            return null;
+        }
+
+        function showPopover(annId, anchorEl) {
+            hidePopover(true);
+            var ann = findAnnotation(annId);
+            if (!ann) return;
+            popoverAnnId = annId;
+
+            $popover = document.createElement('div');
+            $popover.className = 'marking-popover';
+
+            // 색상 팔레트
+            var palette = document.createElement('div');
+            palette.className = 'color-palette';
+            ['yellow', 'green', 'red', 'blue'].forEach(function(color) {
+                var dot = document.createElement('div');
+                dot.className = 'color-dot dot-' + color + (ann.color === color ? ' active' : '');
+                dot.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    changeColor(annId, color);
+                    palette.querySelectorAll('.color-dot').forEach(function(d) { d.classList.remove('active'); });
+                    dot.classList.add('active');
+                });
+                palette.appendChild(dot);
+            });
+            $popover.appendChild(palette);
+
+            // 메모 영역: 있으면 읽기 모드, 없으면 바로 편집
+            var hasMemo = ann.memo && ann.memo.trim();
+            if (hasMemo) {
+                // 읽기 모드
+                var memoDisplay = document.createElement('div');
+                memoDisplay.className = 'memo-display';
+                memoDisplay.textContent = ann.memo;
+                memoDisplay.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // 읽기 → 편집 전환
+                    var textarea = document.createElement('textarea');
+                    textarea.placeholder = '메모 추가...';
+                    textarea.value = ann.memo || '';
+                    memoDisplay.parentNode.replaceChild(textarea, memoDisplay);
+                    textarea.focus();
+                });
+                $popover.appendChild(memoDisplay);
+            } else {
+                var textarea = document.createElement('textarea');
+                textarea.placeholder = '메모 추가...';
+                textarea.value = '';
+                $popover.appendChild(textarea);
+            }
+
+            // 삭제 버튼 (메모 있으면 확인 단계)
+            var delBtn = document.createElement('div');
+            delBtn.className = 'popover-delete-btn';
+            delBtn.textContent = '삭제';
+            delBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var currentAnn = findAnnotation(annId);
+                var currentHasMemo = currentAnn && currentAnn.memo && currentAnn.memo.trim();
+                if (currentHasMemo) {
+                    // 확인 문구 표시
+                    var existing = $popover.querySelector('.delete-confirm');
+                    if (existing) return; // 이미 표시됨
+                    var confirm = document.createElement('div');
+                    confirm.className = 'delete-confirm';
+                    confirm.innerHTML = '메모가 포함된 마킹입니다. <span class="confirm-yes">삭제</span> <span class="confirm-no">취소</span>';
+                    confirm.querySelector('.confirm-yes').addEventListener('click', function(ev) {
+                        ev.stopPropagation();
+                        deleteAnnotation(annId);
+                        hidePopover(false);
+                    });
+                    confirm.querySelector('.confirm-no').addEventListener('click', function(ev) {
+                        ev.stopPropagation();
+                        confirm.parentNode.removeChild(confirm);
+                    });
+                    delBtn.parentNode.appendChild(confirm);
+                } else {
+                    deleteAnnotation(annId);
+                    hidePopover(false);
+                }
+            });
+            $popover.appendChild(delBtn);
+
+            // 위치: anchorEl 아래에 배치
+            var rect = anchorEl.getBoundingClientRect();
+            var containerRect = $leftContainer.getBoundingClientRect();
+            var x = ((rect.left - containerRect.left) / containerRect.width) * 100;
+            var y = ((rect.bottom - containerRect.top) / containerRect.height) * 100 + 0.5;
+            $popover.style.left = x + '%';
+            $popover.style.top = y + '%';
+
+            $leftAnnotationLayer.appendChild($popover);
+            requestAnimationFrame(function() { $popover.classList.add('visible'); });
+        }
+
+        function hidePopover(save) {
+            if (!$popover) return;
+            if (save && popoverAnnId) {
+                // textarea가 있을 때만 저장 (읽기 모드면 textarea 없음)
+                var textarea = $popover.querySelector('textarea');
+                var ann = findAnnotation(popoverAnnId);
+                if (textarea && ann && textarea.value !== (ann.memo || '')) {
+                    saveMemo(popoverAnnId, textarea.value);
+                }
+            }
+            if ($popover.parentNode) {
+                $popover.parentNode.removeChild($popover);
+            }
+            $popover = null;
+            popoverAnnId = null;
+        }
+
+        function changeColor(annId, color) {
+            fetch(API + '/api/translator/document/' + currentDocId + '/annotations/' + annId, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ color: color }),
+            }).then(function(r) { return r.json(); })
+              .then(function() {
+                var ann = findAnnotation(annId);
+                if (ann) ann.color = color;
+                renderAnnotations();
+                renderAnnotationsRight();
+            });
+        }
+
+        function saveMemo(annId, memo) {
+            fetch(API + '/api/translator/document/' + currentDocId + '/annotations/' + annId, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ memo: memo }),
+            }).then(function(r) { return r.json(); })
+              .then(function() {
+                var ann = findAnnotation(annId);
+                if (ann) ann.memo = memo;
+                renderAnnotations();
+                renderAnnotationsRight();
+            });
+        }
+
+        function deleteAnnotation(annId) {
             fetch(API + '/api/translator/document/' + currentDocId + '/annotations/' + annId, {
                 method: 'DELETE',
                 credentials: 'include',
             }).then(function(r) {
                 if (r.ok) {
-                    // 캐시에서 제거
                     if (annotationsCache) {
                         annotationsCache.highlights = annotationsCache.highlights.filter(
                             function(h) { return h.id !== annId; }
                         );
                     }
-                    // 해당 div 모두 제거 (좌+우)
-                    var divs = $leftAnnotationLayer.querySelectorAll('[data-ann-id="' + annId + '"]');
-                    for (var i = 0; i < divs.length; i++) {
-                        divs[i].parentNode.removeChild(divs[i]);
-                    }
-                    var rDivs = $rightAnnotationLayer.querySelectorAll('[data-ann-id="' + annId + '"]');
-                    for (var j = 0; j < rDivs.length; j++) {
-                        rDivs[j].parentNode.removeChild(rDivs[j]);
-                    }
+                    ['left', 'right'].forEach(function(side) {
+                        var layer = side === 'left' ? $leftAnnotationLayer : $rightAnnotationLayer;
+                        var divs = layer.querySelectorAll('[data-ann-id="' + annId + '"]');
+                        for (var i = 0; i < divs.length; i++) {
+                            divs[i].parentNode.removeChild(divs[i]);
+                        }
+                    });
                 }
             }).catch(function(err) {
                 console.error('[Annotations] delete error:', err);
             });
+        }
+
+        // 하이라이트 클릭 → popover
+        $leftAnnotationLayer.addEventListener('click', function(e) {
+            var target = e.target;
+            if (!target.classList.contains('highlight')) return;
+            e.stopPropagation();
+            var annId = target.dataset.annId;
+            if (!annId || !currentDocId) return;
+            showPopover(annId, target);
         });
 
         // ══════════════════════════════════════
