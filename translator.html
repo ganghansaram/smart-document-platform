@@ -561,18 +561,26 @@
             pointer-events: none;
             z-index: 4;
         }
+        .annotation-layer .highlight-group {
+            position: absolute;
+            left: 0; top: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+        }
+        .annotation-layer .highlight-group.color-yellow { opacity: 0.35; }
+        .annotation-layer .highlight-group.color-green  { opacity: 0.35; }
+        .annotation-layer .highlight-group.color-red    { opacity: 0.35; }
+        .annotation-layer .highlight-group.color-blue   { opacity: 0.35; }
         .annotation-layer .highlight {
             position: absolute;
             pointer-events: auto;
             cursor: pointer;
-            border-radius: 2px;
-            mix-blend-mode: multiply;
-            transition: background-color 0.15s ease;
+            border-radius: 4px;
         }
-        .annotation-layer .highlight.color-yellow { background-color: rgba(255, 255, 0, 0.3); }
-        .annotation-layer .highlight.color-green  { background-color: rgba(144, 238, 144, 0.3); }
-        .annotation-layer .highlight.color-red    { background-color: rgba(255, 179, 179, 0.3); }
-        .annotation-layer .highlight.color-blue   { background-color: rgba(173, 216, 230, 0.3); }
+        .annotation-layer .highlight.color-yellow { background-color: rgb(255, 255, 0); }
+        .annotation-layer .highlight.color-green  { background-color: rgb(144, 238, 144); }
+        .annotation-layer .highlight.color-red    { background-color: rgb(255, 179, 179); }
+        .annotation-layer .highlight.color-blue   { background-color: rgb(173, 216, 230); }
 
         .annotation-layer .margin-marker {
             position: absolute;
@@ -2290,22 +2298,31 @@
 
         // ── 하이라이트 div 생성 ──
 
-        function createHighlightDiv(h, containerW, containerH) {
-            var frag = document.createDocumentFragment();
+        function createHighlightDiv(h) {
+            var colorClass = HIGHLIGHT_COLORS[h.color] || 'color-yellow';
+            var group = document.createElement('div');
+            group.className = 'highlight-group ' + colorClass;
+            group.dataset.annId = h.id;
             var rects = h.rects || [];
+            // 줄 높이 통일 (최대 높이 사용)
+            var maxH = 0;
+            for (var i = 0; i < rects.length; i++) {
+                if (rects[i].h > maxH) maxH = rects[i].h;
+            }
+            var pad = 0.3; // 좌우 여백 (%)
             for (var i = 0; i < rects.length; i++) {
                 var r = rects[i];
                 var div = document.createElement('div');
-                div.className = 'highlight ' + (HIGHLIGHT_COLORS[h.color] || 'color-yellow');
-                div.style.left   = r.x + '%';
+                div.className = 'highlight ' + colorClass;
+                div.style.left   = Math.max(0, r.x - pad) + '%';
                 div.style.top    = r.y + '%';
-                div.style.width  = r.w + '%';
-                div.style.height = r.h + '%';
+                div.style.width  = Math.min(100 - r.x + pad, r.w + pad * 2) + '%';
+                div.style.height = maxH + '%';
                 div.dataset.annId = h.id;
                 div.title = h.memo || h.text || '';
-                frag.appendChild(div);
+                group.appendChild(div);
             }
-            return frag;
+            return group;
         }
 
         // ── 현재 페이지 마킹 렌더 (좌측) ──
