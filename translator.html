@@ -549,7 +549,7 @@
         }
 
         .text-layer ::selection {
-            background: rgba(0, 100, 200, 0.3);
+            background: rgba(0, 100, 200, 0.5);
         }
         .text-layer br::selection {
             background: transparent;
@@ -573,6 +573,42 @@
         .annotation-layer .highlight.color-green  { background-color: rgba(144, 238, 144, 0.3); }
         .annotation-layer .highlight.color-red    { background-color: rgba(255, 179, 179, 0.3); }
         .annotation-layer .highlight.color-blue   { background-color: rgba(173, 216, 230, 0.3); }
+
+        .annotation-layer .margin-marker {
+            position: absolute;
+            left: 0;
+            width: 4px;
+            border-radius: 0 2px 2px 0;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: width 0.15s ease;
+        }
+        .annotation-layer .margin-marker:hover {
+            width: 8px;
+        }
+        .annotation-layer .margin-marker.color-yellow { background-color: rgba(255, 200, 0, 0.8); }
+        .annotation-layer .margin-marker.color-green  { background-color: rgba(100, 200, 100, 0.8); }
+        .annotation-layer .margin-marker.color-red    { background-color: rgba(255, 120, 120, 0.8); }
+        .annotation-layer .margin-marker.color-blue   { background-color: rgba(100, 170, 230, 0.8); }
+
+        .marking-action-btn {
+            position: absolute;
+            z-index: 10;
+            pointer-events: auto;
+            background: var(--white, #fff);
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            white-space: nowrap;
+            user-select: none;
+            transition: opacity 0.15s ease;
+        }
+        .marking-action-btn:hover {
+            background: var(--hover-bg, #f0f0f0);
+        }
 
         /* 우측 패널 상태별 표시 */
         .right-panel-placeholder {
@@ -2286,18 +2322,38 @@
             }
         }
 
-        // ── 현재 페이지 마킹 렌더 (우측 동기화) ──
+        // ── 우측 마진 마커 div 생성 ──
+
+        function createMarginMarkerDiv(h) {
+            var frag = document.createDocumentFragment();
+            var rects = h.rects || [];
+            if (!rects.length) return frag;
+            var minY = rects[0].y, maxYH = rects[0].y + rects[0].h;
+            for (var i = 1; i < rects.length; i++) {
+                minY = Math.min(minY, rects[i].y);
+                maxYH = Math.max(maxYH, rects[i].y + rects[i].h);
+            }
+            var div = document.createElement('div');
+            div.className = 'margin-marker ' + (HIGHLIGHT_COLORS[h.color] || 'color-yellow');
+            div.style.top = minY + '%';
+            div.style.height = (maxYH - minY) + '%';
+            div.dataset.annId = h.id;
+            div.title = h.memo || h.text || '';
+            frag.appendChild(div);
+            return frag;
+        }
+
+        // ── 현재 페이지 마킹 렌더 (우측 마진 마커) ──
 
         function renderAnnotationsRight() {
             $rightAnnotationLayer.innerHTML = '';
             if (!annotationsCache || !annotationsCache.highlights) return;
-            // 우측 패널이 보이는 상태에서만
             if ($rightContainer.style.display === 'none') return;
             var page = currentPage;
             var highlights = annotationsCache.highlights;
             for (var i = 0; i < highlights.length; i++) {
                 if (highlights[i].page === page) {
-                    $rightAnnotationLayer.appendChild(createHighlightDiv(highlights[i]));
+                    $rightAnnotationLayer.appendChild(createMarginMarkerDiv(highlights[i]));
                 }
             }
         }
@@ -2412,8 +2468,85 @@
             return merged;
         }
 
-        // ── 마킹 생성은 Phase 3에서 구현 (선택 후 팝오버 UI) ──
-        // 현재는 네이티브 ::selection으로 텍스트 선택/복사만 지원
+        // ── 마킹 생성 — 미니 액션 버튼 ──
+
+        var $markingBtn = null;
+
+        function hideMarkingBtn() {
+            if ($markingBtn) {
+                $markingBtn.parentNode.removeChild($markingBtn);
+                $markingBtn = null;
+            }
+        }
+
+        function showMarkingBtn(selection) {
+            hideMarkingBtn();
+            var rects = selectionToPercentRects(selection);
+            if (!rects || !rects.length) return;
+            var text = selection.toString().trim();
+            if (!text) return;
+
+            var lastRect = rects[rects.length - 1];
+            var btnX = lastRect.x + lastRect.w;
+            var btnY = lastRect.y + lastRect.h + 0.5;
+
+            $markingBtn = document.createElement('button');
+            $markingBtn.className = 'marking-action-btn';
+            $markingBtn.textContent = '마킹';
+            $markingBtn.style.left = btnX + '%';
+            $markingBtn.style.top = btnY + '%';
+            $leftAnnotationLayer.appendChild($markingBtn);
+
+            $markingBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                createMarkingFromSelection(rects, text);
+                hideMarkingBtn();
+                window.getSelection().removeAllRanges();
+            });
+        }
+
+        function createMarkingFromSelection(rects, text) {
+            if (!currentDocId) return;
+            var body = {
+                page: currentPage,
+                rects: rects,
+                color: 'yellow',
+                text: text.substring(0, 500),
+            };
+            fetch(API + '/api/translator/document/' + currentDocId + '/annotations', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            }).then(function(r) { return r.json(); })
+              .then(function(h) {
+                if (!annotationsCache) annotationsCache = { highlights: [] };
+                annotationsCache.highlights.push(h);
+                $leftAnnotationLayer.appendChild(createHighlightDiv(h));
+                if ($rightContainer.style.display !== 'none') {
+                    $rightAnnotationLayer.appendChild(createMarginMarkerDiv(h));
+                }
+            }).catch(function(err) {
+                console.error('[Annotations] create error:', err);
+            });
+        }
+
+        $leftTextLayer.addEventListener('mouseup', function() {
+            setTimeout(function() {
+                var selection = window.getSelection();
+                if (!selection || selection.isCollapsed) {
+                    hideMarkingBtn();
+                    return;
+                }
+                showMarkingBtn(selection);
+            }, 10);
+        });
+
+        document.addEventListener('mousedown', function(e) {
+            if ($markingBtn && !$markingBtn.contains(e.target)) {
+                hideMarkingBtn();
+            }
+        });
 
         // ── 더블클릭 삭제 (Phase 3 popover 전 임시) ──
 
