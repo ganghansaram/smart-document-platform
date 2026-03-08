@@ -883,11 +883,14 @@ body[data-theme="dark"] .admin-btn-sm.admin-btn-danger:hover {
 }
 
 .admin-users-add-form .admin-input {
-    max-width: 200px;
+    flex: 1;
+    min-width: 120px;
+    max-width: none;
 }
 
 .admin-users-add-form .admin-select {
-    max-width: 120px;
+    flex: 0 0 auto;
+    width: auto;
 }
 
 /* ── 모달 오버레이 ─────────────────────────────────────────────────────────── */
@@ -932,16 +935,35 @@ body[data-theme="dark"] .admin-modal {
 /* modal 내부 input/select — body에 직접 추가되므로 CSS 변수 직접 지정 */
 .admin-modal .admin-input,
 .admin-modal .admin-select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-size: 13px;
     background: #ffffff;
-    border-color: #cbd5e1;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
     color: #1a1a2e;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.admin-modal .admin-input:focus,
+.admin-modal .admin-select:focus {
+    border-color: #0066cc;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.12);
 }
 
 body[data-theme="dark"] .admin-modal .admin-input,
 body[data-theme="dark"] .admin-modal .admin-select {
     background: #0f172a;
-    border-color: #334155;
+    border: 1px solid #334155;
     color: #e2e8f0;
+}
+
+body[data-theme="dark"] .admin-modal .admin-input:focus,
+body[data-theme="dark"] .admin-modal .admin-select:focus {
+    border-color: #5ba3f5;
+    box-shadow: 0 0 0 2px rgba(91, 163, 245, 0.18);
 }
 
 .admin-modal .admin-btn-reset {
@@ -959,8 +981,28 @@ body[data-theme="dark"] .admin-modal .admin-btn-reset {
     color: #fff;
 }
 
+.admin-modal .admin-btn-save:hover:not(:disabled) {
+    background: #0055aa;
+}
+
+.admin-modal .admin-btn-reset:hover:not(:disabled) {
+    color: #e53e3e;
+    border-color: #e53e3e;
+    background: #fef2f2;
+}
+
 body[data-theme="dark"] .admin-modal .admin-btn-save {
     background: #5ba3f5;
+}
+
+body[data-theme="dark"] .admin-modal .admin-btn-save:hover:not(:disabled) {
+    background: #7bbcff;
+}
+
+body[data-theme="dark"] .admin-modal .admin-btn-reset:hover:not(:disabled) {
+    color: #fca5a5;
+    border-color: #fca5a5;
+    background: #2d1515;
 }
 
 @keyframes admin-fade-in {
