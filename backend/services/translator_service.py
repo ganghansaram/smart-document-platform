@@ -381,8 +381,10 @@ def upload_pdf(pdf_bytes: bytes, filename: str, username: str) -> dict:
 
     # 페이지 수 추출
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    pages = len(doc)
-    doc.close()
+    try:
+        pages = len(doc)
+    finally:
+        doc.close()
 
     # meta.json 생성
     meta = {
@@ -719,25 +721,28 @@ async def _run_pmt_pages(username: str, doc_id: str, pages_str: str, page_list: 
 
         # PyMuPDF로 페이지별 분리 저장
         result_doc = fitz.open(str(mono_file))
-        result_pages = len(result_doc)
+        try:
+            result_pages = len(result_doc)
 
-        if result_pages != len(page_list):
-            _log(f"WARNING: 결과 PDF {result_pages}페이지, 요청 {len(page_list)}페이지")
+            if result_pages != len(page_list):
+                _log(f"WARNING: 결과 PDF {result_pages}페이지, 요청 {len(page_list)}페이지")
 
-        for i, pnum in enumerate(page_list):
-            if i >= result_pages:
-                _mark_page_error(username, doc_id, pnum, f"결과 PDF에 해당 페이지 없음 (인덱스 {i})")
-                continue
+            for i, pnum in enumerate(page_list):
+                if i >= result_pages:
+                    _mark_page_error(username, doc_id, pnum, f"결과 PDF에 해당 페이지 없음 (인덱스 {i})")
+                    continue
 
-            page_dir = _doc_dir(username, doc_id) / "pages" / str(pnum)
-            page_dir.mkdir(parents=True, exist_ok=True)
+                page_dir = _doc_dir(username, doc_id) / "pages" / str(pnum)
+                page_dir.mkdir(parents=True, exist_ok=True)
 
-            single = fitz.open()
-            single.insert_pdf(result_doc, from_page=i, to_page=i)
-            single.save(str(page_dir / "translated.pdf"))
-            single.close()
-
-        result_doc.close()
+                single = fitz.open()
+                try:
+                    single.insert_pdf(result_doc, from_page=i, to_page=i)
+                    single.save(str(page_dir / "translated.pdf"))
+                finally:
+                    single.close()
+        finally:
+            result_doc.close()
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
         # 성공 — 메타 업데이트
@@ -762,6 +767,7 @@ async def _run_pmt_pages(username: str, doc_id: str, pages_str: str, page_list: 
     except asyncio.CancelledError:
         try:
             proc.kill()
+            await proc.wait()
         except Exception:
             pass
         shutil.rmtree(tmp_dir, ignore_errors=True)

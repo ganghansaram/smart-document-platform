@@ -619,8 +619,13 @@
         }
 
         function showRightTranslatedPage() {
-            $rightPlaceholder.style.display = 'none';
-            $rightContainer.style.display = 'inline-block';
+            // 로딩 상태 표시 (placeholder 유지)
+            var textEl = $rightPlaceholder.querySelector('.placeholder-text');
+            var hintEl = $rightPlaceholder.querySelector('.placeholder-hint');
+            if (textEl) textEl.textContent = '번역 PDF 로드 중...';
+            if (hintEl) hintEl.textContent = '';
+            $rightPlaceholder.style.display = 'flex';
+            $rightContainer.style.display = 'none';
 
             // 페이지별 번역 PDF 로드 (1페이지짜리)
             if (rightPdfDoc && rightPdfDoc !== legacyPdfDoc) { rightPdfDoc.destroy(); }
@@ -628,6 +633,8 @@
             var url = API + '/api/translator/translated-pdf/' + currentDocId + '/page/' + currentPage;
             pdfjsLib.getDocument({ url: url, withCredentials: true }).promise.then(function(pdf) {
                 rightPdfDoc = pdf;
+                $rightPlaceholder.style.display = 'none';
+                $rightContainer.style.display = 'inline-block';
                 renderRightPage(1); // 1페이지짜리 PDF의 첫 페이지
             }).catch(function(err) {
                 console.error('[PDF.js] right page load error:', err);
@@ -636,8 +643,13 @@
         }
 
         function showRightTextTranslatedPage() {
-            $rightPlaceholder.style.display = 'none';
-            $rightContainer.style.display = 'inline-block';
+            // 로딩 상태 표시 (placeholder 유지)
+            var textEl = $rightPlaceholder.querySelector('.placeholder-text');
+            var hintEl = $rightPlaceholder.querySelector('.placeholder-hint');
+            if (textEl) textEl.textContent = '번역 PDF 로드 중...';
+            if (hintEl) hintEl.textContent = '';
+            $rightPlaceholder.style.display = 'flex';
+            $rightContainer.style.display = 'none';
 
             // 텍스트 번역 PDF 로드
             if (rightPdfDoc && rightPdfDoc !== legacyPdfDoc) { rightPdfDoc.destroy(); }
@@ -645,6 +657,8 @@
             var url = API + '/api/translator/text-translated-pdf/' + currentDocId + '/page/' + currentPage;
             pdfjsLib.getDocument({ url: url, withCredentials: true }).promise.then(function(pdf) {
                 rightPdfDoc = pdf;
+                $rightPlaceholder.style.display = 'none';
+                $rightContainer.style.display = 'inline-block';
                 renderRightPage(1);
             }).catch(function(err) {
                 console.error('[PDF.js] text-translated page load error:', err);
@@ -1374,6 +1388,36 @@
         var $aiPopover = null;
         var _selRects = null;
         var _selText = null;
+        var _aiAbortController = null;
+
+        /** 팝오버가 뷰포트(스크롤 영역) 밖으로 넘치면 안쪽으로 당김 */
+        function clampPopoverToViewport(el) {
+            var elRect = el.getBoundingClientRect();
+            var vpRect = $panelLeft.getBoundingClientRect();
+            var parentRect = $leftAnnotationLayer.getBoundingClientRect();
+            var margin = 8;
+            var dx = 0, dy = 0;
+
+            if (elRect.right > vpRect.right - margin) {
+                dx = vpRect.right - margin - elRect.right;
+            }
+            if (elRect.bottom > vpRect.bottom - margin) {
+                dy = vpRect.bottom - margin - elRect.bottom;
+            }
+            if (elRect.left + dx < vpRect.left + margin) {
+                dx = vpRect.left + margin - elRect.left;
+            }
+            if (elRect.top + dy < vpRect.top + margin) {
+                dy = vpRect.top + margin - elRect.top;
+            }
+
+            if (dx !== 0 || dy !== 0) {
+                var pw = parentRect.width || 1;
+                var ph = parentRect.height || 1;
+                el.style.left = (parseFloat(el.style.left) + dx / pw * 100) + '%';
+                el.style.top = (parseFloat(el.style.top) + dy / ph * 100) + '%';
+            }
+        }
 
         function hideActionBar() {
             if ($actionBar) {
@@ -1383,6 +1427,10 @@
         }
 
         function hideAiPopover() {
+            if (_aiAbortController) {
+                _aiAbortController.abort();
+                _aiAbortController = null;
+            }
             if ($aiPopover) {
                 $aiPopover.parentNode.removeChild($aiPopover);
                 $aiPopover = null;
@@ -1391,7 +1439,6 @@
 
         function showActionBar(selection) {
             hideActionBar();
-            hideAiPopover();
             _selRects = selectionToPercentRects(selection);
             if (!_selRects || !_selRects.length) return;
             _selText = selection.toString().trim();
@@ -1429,6 +1476,7 @@
             });
 
             $leftAnnotationLayer.appendChild($actionBar);
+            clampPopoverToViewport($actionBar);
         }
 
         // ── AI 결과 팝오버 ──
@@ -1489,6 +1537,7 @@
             $aiPopover.appendChild(body);
             $aiPopover.appendChild(footer);
             $leftAnnotationLayer.appendChild($aiPopover);
+            clampPopoverToViewport($aiPopover);
 
             requestAnimationFrame(function() {
                 $aiPopover && $aiPopover.classList.add('visible');
@@ -1498,12 +1547,14 @@
             var modelSel = document.getElementById('model-select');
             var model = modelSel ? modelSel.value : undefined;
 
-            // API 호출
+            // API 호출 (AbortController로 취소 가능)
+            _aiAbortController = new AbortController();
             fetch(API + '/api/translator/ai/selection', {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: text, action: action, model: model }),
+                signal: _aiAbortController.signal,
             }).then(function(r) {
                 if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail || '오류'); });
                 return r.json();
@@ -1555,6 +1606,7 @@
                     });
                 });
             }).catch(function(err) {
+                if (err && err.name === 'AbortError') return; // 팝오버 닫힘으로 인한 취소
                 if (!$aiPopover) return;
                 body.textContent = err.message || 'AI 서비스에 연결할 수 없습니다';
                 body.style.color = '#e74c3c';
@@ -1604,12 +1656,17 @@
             if ($actionBar && !$actionBar.contains(e.target)) {
                 hideActionBar();
             }
-            if ($aiPopover && !$aiPopover.contains(e.target)) {
-                hideAiPopover();
-            }
+            // AI 결과 팝오버는 바깥 클릭으로 닫지 않음 (X 버튼으로만 닫기)
             // popover 외부 클릭 시 닫기 (메모 저장)
             if ($popover && !$popover.contains(e.target) && !e.target.classList.contains('highlight')) {
                 hidePopover(true);
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if ($aiPopover) { hideAiPopover(); }
+                if ($actionBar) { hideActionBar(); }
             }
         });
 
@@ -1716,6 +1773,7 @@
             $popover.style.top = y + '%';
 
             $leftAnnotationLayer.appendChild($popover);
+            clampPopoverToViewport($popover);
             requestAnimationFrame(function() { $popover.classList.add('visible'); });
         }
 

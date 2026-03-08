@@ -12,8 +12,8 @@
 }
 
 body[data-theme="dark"] .platform-footer {
-    color: #64748b;
-    border-top-color: #1e293b;
+    color: var(--text-light);
+    border-top-color: var(--border-color);
 }
 
 .pf-inner {

@@ -76,3 +76,9 @@ body[data-theme="dark"] {
     /* 포커스 링 */
     --focus-ring: 0 0 0 2px rgba(91,163,245,0.2);
 }
+
+/* 글로벌 키보드 포커스 링 */
+:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}

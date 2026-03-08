@@ -248,8 +248,7 @@ function displaySearchResults(results, query, glossaryMatches) {
         html += '<div class="search-glossary-group">';
         html += '<div class="search-group-header">용어집 (' + glossaryMatches.total + '건)</div>';
         glossaryMatches.items.forEach(function(item) {
-            var escapedEn = escapeHtml(item.en).replace(/'/g, "\\'");
-            html += '<div class="search-glossary-item" onclick="loadGlossaryFromSearch(null, \'' + escapedEn + '\')">';
+            html += '<div class="search-glossary-item" data-action="glossary" data-query="' + escapeHtml(item.en) + '">';
             html += '<span class="search-glossary-abbr">' + highlightSearchTerm(item.abbr, query) + '</span>';
             html += '<span class="search-glossary-en">' + highlightSearchTerm(item.en, query) + '</span>';
             if (item.ko) {
@@ -258,7 +257,7 @@ function displaySearchResults(results, query, glossaryMatches) {
             html += '</div>';
         });
         if (glossaryMatches.total > 3) {
-            html += '<div class="search-glossary-more" onclick="loadGlossaryFromSearch(null, \'' + escapeHtml(query).replace(/'/g, "\\'") + '\')">용어집에서 ' + glossaryMatches.total + '건 모두 보기</div>';
+            html += '<div class="search-glossary-more" data-action="glossary" data-query="' + escapeHtml(query) + '">용어집에서 ' + glossaryMatches.total + '건 모두 보기</div>';
         }
         html += '</div>';
     }
@@ -268,22 +267,39 @@ function displaySearchResults(results, query, glossaryMatches) {
         if (hasGlossary) {
             html += '<div class="search-group-header">문서 (' + results.length + '건)</div>';
         }
-        const escapedQuery = escapeHtml(query).replace(/'/g, "\\'");
-        results.forEach(result => {
-            const highlightedSnippet = highlightSearchTerm(result.snippet, query);
-            const sectionIdAttr = result.sectionId ? `'${escapeHtml(result.sectionId)}'` : 'null';
+        results.forEach(function(result) {
+            var highlightedSnippet = highlightSearchTerm(result.snippet, query);
+            var sectionAttr = result.sectionId ? ' data-section="' + escapeHtml(result.sectionId) + '"' : '';
 
-            html += `
-                <div class="search-result-item" onclick="loadSearchResult('${escapeHtml(result.url)}', ${sectionIdAttr}, '${escapedQuery}')">
-                    <div class="search-result-title">${escapeHtml(result.title)}</div>
-                    <div class="search-result-path">${escapeHtml(result.path)}</div>
-                    <div class="search-result-snippet">${highlightedSnippet}</div>
-                </div>
-            `;
+            html += '<div class="search-result-item" data-action="result" data-url="' + escapeHtml(result.url) + '"' + sectionAttr + ' data-query="' + escapeHtml(query) + '">';
+            html += '<div class="search-result-title">' + escapeHtml(result.title) + '</div>';
+            html += '<div class="search-result-path">' + escapeHtml(result.path) + '</div>';
+            html += '<div class="search-result-snippet">' + highlightedSnippet + '</div>';
+            html += '</div>';
         });
     }
 
     searchResults.innerHTML = html;
+
+    // 이벤트 위임 (중복 방지: 리스너가 없을 때만 등록)
+    if (!searchResults._delegated) {
+        searchResults._delegated = true;
+        searchResults.addEventListener('click', function(e) {
+            var target = e.target.closest('[data-action]');
+            if (!target) return;
+
+            var action = target.getAttribute('data-action');
+            if (action === 'glossary') {
+                loadGlossaryFromSearch(null, target.getAttribute('data-query'));
+            } else if (action === 'result') {
+                loadSearchResult(
+                    target.getAttribute('data-url'),
+                    target.getAttribute('data-section') || null,
+                    target.getAttribute('data-query')
+                );
+            }
+        });
+    }
 }
 
 /**
