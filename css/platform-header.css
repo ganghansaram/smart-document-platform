@@ -2,7 +2,7 @@
 
 /* 헤더 컨테이너 */
 .platform-header {
-    background: linear-gradient(135deg, #001f3f 0%, #003d7a 100%);
+    background: linear-gradient(135deg, var(--primary-navy) 0%, var(--secondary-navy) 100%);
     height: 60px;
     padding: 0 30px;
     display: flex;
@@ -132,9 +132,8 @@ body[data-theme="dark"] .platform-header .theme-toggle-btn .icon-moon {
     display: none;
 }
 
-/* 다크 모드 */
+/* 다크 모드 — 그라디언트는 --primary-navy/--secondary-navy 자동 해결 */
 body[data-theme="dark"] .platform-header {
-    background: linear-gradient(135deg, #121218 0%, #1a1a2e 100%);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
@@ -162,9 +161,9 @@ body[data-theme="dark"] .platform-header {
 .ph-system-dropdown {
     position: fixed;
     z-index: 10000;
-    background: #fff;
+    background: var(--white);
     border-radius: 8px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-lg);
     padding: 6px 0;
     min-width: 180px;
     opacity: 0;
@@ -182,7 +181,7 @@ body[data-theme="dark"] .platform-header {
     align-items: center;
     gap: 10px;
     padding: 10px 16px;
-    color: #333;
+    color: var(--text-dark);
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
@@ -190,12 +189,12 @@ body[data-theme="dark"] .platform-header {
 }
 
 .ph-system-item:hover {
-    background: #f0f4ff;
+    background: var(--hover-bg);
 }
 
 .ph-system-item.current {
-    background: #e8f0fe;
-    color: #0066cc;
+    background: var(--hover-bg);
+    color: var(--active-color);
     font-weight: 600;
 }
 
@@ -222,8 +221,8 @@ body[data-theme="dark"] .platform-header {
     margin-left: auto;
     font-size: 10px;
     font-weight: 500;
-    color: #888;
-    background: #f0f0f0;
+    color: var(--text-light);
+    background: var(--light-gray);
     border-radius: 3px;
     padding: 1px 6px;
     white-space: nowrap;
@@ -231,7 +230,7 @@ body[data-theme="dark"] .platform-header {
 
 .ph-system-separator {
     height: 1px;
-    background: #e5e5e5;
+    background: var(--border-color);
     margin: 4px 12px;
 }
 
@@ -241,30 +240,7 @@ body[data-theme="dark"] .ph-switcher-btn {
 }
 
 body[data-theme="dark"] .ph-system-dropdown {
-    background: #1e1e2e;
     box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-}
-
-body[data-theme="dark"] .ph-system-item {
-    color: #e0e0e0;
-}
-
-body[data-theme="dark"] .ph-system-item:hover {
-    background: rgba(88,166,255,0.1);
-}
-
-body[data-theme="dark"] .ph-system-item.current {
-    background: rgba(88,166,255,0.15);
-    color: #58a6ff;
-}
-
-body[data-theme="dark"] .ph-system-badge {
-    background: rgba(255,255,255,0.08);
-    color: #888;
-}
-
-body[data-theme="dark"] .ph-system-separator {
-    background: rgba(255,255,255,0.08);
 }
 
 /* 중간 슬롯 (page-nav 등) */

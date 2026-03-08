@@ -10,7 +10,7 @@
 > |-------|------|------|
 > | Phase 1 | ✅ 완료 | theme-guide.md 작성 + 정비, /review-ui 스킬 생성, 프로토타입 삭제 |
 > | Phase 2 | ✅ 완료 | tokens.css 분리 + 토큰 통합 |
-> | Phase 3 | 🔲 대기 | |
+> | Phase 3 | ✅ 완료 | 헤더/푸터/login 하드코딩 색상 → 토큰 변수화, 다크 오버라이드 6개 제거 |
 > | Phase 4 | 🔲 대기 | |
 > | Phase 5 | 🔲 대기 | |
 > | Phase 6 | 🔲 대기 | |
@@ -262,70 +262,53 @@ Phase 2를 진행해줘. theme-guide.md를 참조해서 작업해.
 
 ---
 
-### Phase 3: 플랫폼 공통 (login, launcher, 헤더/푸터)
+### Phase 3: 플랫폼 공통 (헤더/푸터, login, launcher) — 하드코딩 색상 → 토큰 변수화
 
-> **목표**: login.html, launcher.html의 인라인 CSS를 정리하고, 공유 컴포넌트 기본 클래스를 추가한다.
-> **영향 파일**: `login.html`, `launcher.html`, `css/main.css`, `css/platform-header.css`, `css/platform-footer.css`
-> **위험도**: 낮음 (독립 페이지, 다른 시스템에 영향 없음)
+> **목표**: 플랫폼 공통 CSS와 독립 페이지의 하드코딩 색상을 tokens.css 변수로 교체하여 유지보수성을 확보한다.
+> **영향 파일**: `css/platform-header.css`, `css/platform-footer.css`, `login.html`, `launcher.html`
+> **위험도**: 낮음 (독립 페이지 + 공통 헤더/푸터, 기능 변경 없음)
+> **방침**: 공유 컴포넌트 클래스(.btn, .overlay 등)는 이 단계에서 만들지 않는다. Phase 4(Explorer) 진행 시 실제로 필요해지는 시점에 생성한다. 사용처 없는 범용 클래스를 미리 만드는 것은 과도한 엔지니어링이다.
 
 #### 현재 문제
 
 ```
-login.html     → 210줄 인라인 CSS, 다크모드 없음, 하드코딩 색상 15종
-launcher.html  → 174줄 인라인 CSS, 다크모드 없음, 하드코딩 색상 7종
-                 둘 다 폼/버튼/카드 스타일이 Explorer와 불일치
+platform-header.css → 하드코딩 색상 다수 (#fff, #e2e8f0, rgba 등)
+platform-footer.css → 하드코딩 색상 있을 수 있음
+login.html          → 210줄 인라인 CSS, 하드코딩 색상 15종 (고정 다크 배경, 테마 전환 불필요)
+launcher.html       → 174줄 인라인 CSS, 하드코딩 색상 7종 (고정 다크 배경, 테마 전환 불필요)
 ```
 
 #### 작업 지시
 
 ```
 Phase 3를 진행해줘. theme-guide.md를 참조해서 작업해.
+공유 컴포넌트 클래스 생성은 하지 않는다 (Phase 4에서 필요 시 생성).
 
-[3-1] 공유 컴포넌트 기본 클래스를 tokens.css에 추가
-   theme-guide.md의 컴포넌트 규격을 기반으로 tokens.css 하단에 추가:
+[3-1] platform-header.css 점검
+   - 하드코딩 색상을 tokens.css CSS 변수로 교체
+   - 시스템 스위처 드롭다운의 z-index를 theme-guide.md 체계에 맞게 조정
+   - SVG data-URI 아이콘의 다크모드 처리 방식 검토 및 개선
 
-   - 버튼 기본 클래스:
-     .btn (기본), .btn--primary, .btn--secondary, .btn--ghost, .btn--danger, .btn--icon
-   - 오버레이/모달 기본 클래스:
-     .overlay (배경), .modal (컨테이너)
-   - 폼 입력 기본 클래스:
-     .form-input, .form-select, .form-textarea
-   - 카드 기본 클래스:
-     .card
-   - 배지 기본 클래스:
-     .badge, .badge--success, .badge--warning, .badge--danger, .badge--info
+[3-2] platform-footer.css 점검
+   - 하드코딩 색상을 CSS 변수로 교체 (있는 경우)
 
-   이 클래스들은 범용이므로 특정 시스템에 종속되면 안 됨.
-   기존 CSS와 충돌하지 않도록 새 클래스명 사용 (기존 클래스는 아직 건드리지 않음).
-
-[3-2] login.html 정리
-   - 인라인 CSS에서 하드코딩 색상을 Phase 2에서 선언한 CSS 변수로 교체
-   - 폼 입력에 .form-input 클래스 적용 가능한 부분 적용
-   - 로그인 버튼에 .btn 계열 클래스 적용 가능한 부분 적용
-   - 다크모드 고려: login은 항상 다크 배경이므로 테마 전환 불필요,
+[3-3] login.html 정리
+   - 인라인 CSS에서 하드코딩 색상을 tokens.css 변수로 교체
+   - login은 항상 다크 배경이므로 테마 전환 불필요,
      다만 색상값은 CSS 변수로 교체하여 유지보수성 확보
    - 인라인 CSS는 유지 (login은 독립 페이지이므로 외부 분리 불필요)
 
-[3-3] launcher.html 정리
+[3-4] launcher.html 정리
    - 인라인 CSS에서 하드코딩 색상을 CSS 변수로 교체
    - 카드 스타일에 공통 토큰(radius, shadow, transition) 적용
    - launcher도 고정 그라디언트 배경이므로 테마 전환 불필요,
      색상값만 CSS 변수 기반으로 정리
    - 인라인 CSS는 유지
 
-[3-4] platform-header.css 점검
-   - 하드코딩 색상을 CSS 변수로 교체
-   - 시스템 스위처 드롭다운의 z-index를 theme-guide.md 체계에 맞게 조정
-   - SVG data-URI 아이콘의 다크모드 처리 방식 검토 및 개선
-
-[3-5] platform-footer.css 점검
-   - 하드코딩 색상을 CSS 변수로 교체 (있는 경우)
-
 완료 후:
-- 각 파일별 변경 요약
-- 적용된 공유 클래스 목록
+- 각 파일별 변경 요약 (교체한 하드코딩 색상 수)
 - 브라우저에서 확인할 페이지: login.html, launcher.html
-- Playwright 스크린샷 촬영 (login 라이트/다크 배경, launcher 전체)
+- Playwright 스크린샷 촬영 (login, launcher)
 ```
 
 #### [추가] Phase 3+: 로그인 화면 2-컬럼 레이아웃 + CSS 애니메이션 소개
@@ -347,7 +330,7 @@ Phase 3를 진행해줘. theme-guide.md를 참조해서 작업해.
 
 ### Phase 4: Explorer
 
-> **목표**: Explorer(index.html)의 14개 외부 CSS 파일을 점검하고, Phase 2 토큰과 Phase 3 공유 클래스를 적용한다.
+> **목표**: Explorer(index.html)의 14개 외부 CSS 파일을 점검하고, Phase 2 토큰을 적용한다. 필요 시 공유 컴포넌트 클래스(.btn, .overlay 등)를 tokens.css에 생성한다.
 > **영향 파일**: `css/main.css`(레이아웃), `css/tree-menu.css`, `css/content.css`, `css/ai-chat.css`, `css/editor.css`, `css/figure-popup.css`, `css/bookmarks.css`, `css/glossary.css`, `css/auth.css`, `css/search관련(main.css 내)`
 > **위험도**: 중간 (가장 많은 CSS 파일, 점진적 교체 필요)
 

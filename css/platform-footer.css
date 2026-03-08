@@ -6,8 +6,8 @@
     padding: 20px 24px;
     text-align: center;
     font-size: 12px;
-    color: #8a95a0;
-    border-top: 1px solid #e2e8f0;
+    color: var(--text-light);
+    border-top: 1px solid var(--border-color);
     background: transparent;
 }
 
