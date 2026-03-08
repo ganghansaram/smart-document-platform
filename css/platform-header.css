@@ -200,9 +200,39 @@ body[data-theme="dark"] .platform-header {
 }
 
 .ph-system-icon {
-    font-size: 16px;
-    width: 22px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    flex-shrink: 0;
+}
+
+.ph-system-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.ph-system-item.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: default;
+}
+
+.ph-system-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 500;
+    color: #888;
+    background: #f0f0f0;
+    border-radius: 3px;
+    padding: 1px 6px;
+    white-space: nowrap;
+}
+
+.ph-system-separator {
+    height: 1px;
+    background: #e5e5e5;
+    margin: 4px 12px;
 }
 
 /* 다크 모드 스위처 */
@@ -226,6 +256,15 @@ body[data-theme="dark"] .ph-system-item:hover {
 body[data-theme="dark"] .ph-system-item.current {
     background: rgba(88,166,255,0.15);
     color: #58a6ff;
+}
+
+body[data-theme="dark"] .ph-system-badge {
+    background: rgba(255,255,255,0.08);
+    color: #888;
+}
+
+body[data-theme="dark"] .ph-system-separator {
+    background: rgba(255,255,255,0.08);
 }
 
 /* 중간 슬롯 (page-nav 등) */

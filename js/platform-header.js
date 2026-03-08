@@ -72,14 +72,23 @@ function initPlatformHeader(config) {
             '</svg>';
         logo.appendChild(switcherBtn);
 
+        var _svgAttr = 'viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
         var systems = [
-            { id: 'platform',   label: 'Platform',    icon: '◈', href: 'launcher.html' },
-            { id: 'explorer',   label: 'Explorer',    icon: '📖', href: 'index.html' },
-            { id: 'translator', label: 'Translator',  icon: '🔄', href: 'translator.html' },
-            { id: 'settings',   label: 'Settings',    icon: '⚙', href: 'admin.html', adminOnly: true },
+            { id: 'platform',   label: 'Platform',   href: 'launcher.html',
+              icon: '<svg ' + _svgAttr + '><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>' },
+            { id: 'explorer',   label: 'Explorer',   href: 'index.html',
+              icon: '<svg ' + _svgAttr + '><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' },
+            { id: 'translator', label: 'Translator', href: 'translator.html',
+              icon: '<svg ' + _svgAttr + '><path d="M5 8l6 0"/><path d="M4 14l6 0"/><path d="M2 5h12"/><path d="M7 2v3"/><path d="M11 3a13.4 13.4 0 0 1-4 9"/><path d="M5 12a13 13 0 0 0 4-9"/><path d="M14 14l4 6"/><path d="M18 14l-4 6"/><path d="M15 17h4"/></svg>' },
+            { id: 'compare',    label: 'Compare',    href: '#', disabled: true, badge: '개발 예정',
+              icon: '<svg ' + _svgAttr + '><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>' },
+            { id: 'settings',   label: 'Settings',   href: 'admin.html', adminOnly: true, separator: true,
+              icon: '<svg ' + _svgAttr + '><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' },
         ];
 
         var dropdown = null;
+        var _hoverOpenTimer = null;
+        var _hoverCloseTimer = null;
 
         function closeDropdown() {
             if (!dropdown) return;
@@ -87,22 +96,56 @@ function initPlatformHeader(config) {
             dropdown = null;
             d.classList.remove('open');
             d.addEventListener('transitionend', function() { d.remove(); });
-            // 폴백: 트랜지션이 안 끝날 경우
             setTimeout(function() { if (d.parentNode) d.remove(); }, 200);
+            document.removeEventListener('click', onOutsideClick);
         }
 
         function openDropdown() {
-            if (dropdown) { closeDropdown(); return; }
+            if (dropdown) return;
             dropdown = document.createElement('div');
             dropdown.className = 'ph-system-dropdown';
 
             systems.forEach(function(sys) {
                 var user = _phUser || (typeof AuthState !== 'undefined' && AuthState.user);
                 if (sys.adminOnly && (!user || user.role !== 'admin')) return;
+
+                // separator
+                if (sys.separator) {
+                    var sep = document.createElement('div');
+                    sep.className = 'ph-system-separator';
+                    dropdown.appendChild(sep);
+                }
+
                 var item = document.createElement('a');
-                item.href = sys.href;
-                item.className = 'ph-system-item' + (sys.id === config.currentSystem ? ' current' : '');
-                item.textContent = sys.label;
+                item.href = sys.disabled ? 'javascript:void(0)' : sys.href;
+                var cls = 'ph-system-item';
+                if (sys.id === config.currentSystem) cls += ' current';
+                if (sys.disabled) cls += ' disabled';
+                item.className = cls;
+
+                // icon
+                var iconSpan = document.createElement('span');
+                iconSpan.className = 'ph-system-icon';
+                iconSpan.innerHTML = sys.icon;
+                item.appendChild(iconSpan);
+
+                // label
+                var labelSpan = document.createElement('span');
+                labelSpan.textContent = sys.label;
+                item.appendChild(labelSpan);
+
+                // badge
+                if (sys.badge) {
+                    var badge = document.createElement('span');
+                    badge.className = 'ph-system-badge';
+                    badge.textContent = sys.badge;
+                    item.appendChild(badge);
+                }
+
+                if (sys.disabled) {
+                    item.addEventListener('click', function(e) { e.preventDefault(); });
+                }
+
                 dropdown.appendChild(item);
             });
 
@@ -111,9 +154,16 @@ function initPlatformHeader(config) {
             dropdown.style.left = rect.left + 'px';
             document.body.appendChild(dropdown);
 
-            // 다음 프레임에서 open 클래스 추가 (트랜지션 트리거)
             requestAnimationFrame(function() {
                 if (dropdown) dropdown.classList.add('open');
+            });
+
+            // 드롭다운 호버 유지
+            dropdown.addEventListener('mouseenter', function() {
+                clearTimeout(_hoverCloseTimer);
+            });
+            dropdown.addEventListener('mouseleave', function() {
+                _hoverCloseTimer = setTimeout(closeDropdown, 300);
             });
 
             setTimeout(function() {
@@ -122,15 +172,27 @@ function initPlatformHeader(config) {
         }
 
         function onOutsideClick(e) {
-            if (dropdown && !dropdown.contains(e.target) && e.target !== switcherBtn) {
+            if (dropdown && !dropdown.contains(e.target) && !switcherBtn.contains(e.target)) {
                 closeDropdown();
-                document.removeEventListener('click', onOutsideClick);
             }
         }
 
+        // 호버 트리거 (150ms 딜레이)
+        switcherBtn.addEventListener('mouseenter', function() {
+            clearTimeout(_hoverCloseTimer);
+            _hoverOpenTimer = setTimeout(openDropdown, 150);
+        });
+        switcherBtn.addEventListener('mouseleave', function() {
+            clearTimeout(_hoverOpenTimer);
+            _hoverCloseTimer = setTimeout(closeDropdown, 300);
+        });
+
+        // 클릭 폴백 유지
         switcherBtn.addEventListener('click', function(e) {
             e.stopPropagation();
-            openDropdown();
+            clearTimeout(_hoverOpenTimer);
+            clearTimeout(_hoverCloseTimer);
+            if (dropdown) { closeDropdown(); } else { openDropdown(); }
         });
     }
 
