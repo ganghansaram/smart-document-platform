@@ -66,6 +66,17 @@ DEFAULT_SETTINGS: dict = {
             "## Output\n"
             "Output ONLY the translated Korean text. No explanations, no extra text."
         ),
+        "ai_selection_timeout": 30,
+        "ai_translate_prompt": (
+            "다음 텍스트를 한국어로 자연스럽게 번역하세요. "
+            "원문의 기술 용어는 괄호 안에 영문을 병기하세요. "
+            "번역문만 출력하세요."
+        ),
+        "ai_summarize_prompt": (
+            "다음 텍스트를 한국어로 3문장 이내로 요약하세요. "
+            "핵심 논점만 간결하게 전달하세요. "
+            "요약문만 출력하세요."
+        ),
     },
     "upload": {
         "word_com_preprocess": False,
@@ -121,6 +132,8 @@ _NO_RESTART = {
     "translator.qps", "translator.ocr_workaround", "translator.enhance_compatibility",
     "translator.text_font_scale", "translator.text_min_scale", "translator.text_font_family",
     "translator.text_min_text_length", "translator.text_custom_prompt",
+    "translator.ai_selection_timeout", "translator.ai_translate_prompt",
+    "translator.ai_summarize_prompt",
     "frontend",  # prefix match
 }
 # 나머지(ollama_url, ollama_model, embedding_model, session_expiry_hours,
@@ -221,6 +234,9 @@ def apply_to_config(settings: dict) -> list[str]:
     _set(rdr, "text_font_family",    "TRANSLATOR_TEXT_FONT_FAMILY",    restart_needed, immediate=True)
     _set(rdr, "text_min_text_length","TRANSLATOR_TEXT_MIN_TEXT_LENGTH", restart_needed, immediate=True)
     _set(rdr, "text_custom_prompt",  "TRANSLATOR_TEXT_CUSTOM_PROMPT",   restart_needed, immediate=True)
+    _set(rdr, "ai_selection_timeout", "TRANSLATOR_AI_SELECTION_TIMEOUT", restart_needed, immediate=True)
+    _set(rdr, "ai_translate_prompt",  "TRANSLATOR_AI_TRANSLATE_PROMPT",  restart_needed, immediate=True)
+    _set(rdr, "ai_summarize_prompt",  "TRANSLATOR_AI_SUMMARIZE_PROMPT",  restart_needed, immediate=True)
 
     upl = settings.get("upload", {})
     _set(upl, "word_com_preprocess", "WORD_COM_PREPROCESS", restart_needed, immediate=True)

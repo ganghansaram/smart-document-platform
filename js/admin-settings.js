@@ -307,6 +307,24 @@ var SETTINGS_SCHEMA = {
                                           desc: '이 글자 수 미만의 텍스트 블록은 번역 건너뜀' },
                                     ]
                                 },
+                                {
+                                    subtabId: 'quality-ai-selection',
+                                    subtabLabel: 'AI 선택',
+                                    fields: [
+                                        { group: 'translator', key: 'ai_translate_prompt',
+                                          label: '번역 프롬프트', type: 'textarea', restart: false,
+                                          rows: 4,
+                                          desc: '텍스트 선택 → 번역 시 Ollama에 전달되는 system 프롬프트' },
+                                        { group: 'translator', key: 'ai_summarize_prompt',
+                                          label: '요약 프롬프트', type: 'textarea', restart: false,
+                                          rows: 4,
+                                          desc: '텍스트 선택 → 요약 시 Ollama에 전달되는 system 프롬프트' },
+                                        { group: 'translator', key: 'ai_selection_timeout',
+                                          label: '타임아웃 (초)', type: 'number', restart: false,
+                                          min: 5, max: 120, step: 5,
+                                          desc: '선택 번역/요약 최대 대기 시간. 짧은 텍스트 대상이므로 30초 권장' },
+                                    ]
+                                },
                             ]
                         },
                         {

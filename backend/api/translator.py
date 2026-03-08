@@ -17,6 +17,7 @@ from services.translator_service import (
     start_text_translation, get_text_translation_status,
     get_text_translated_pdf_path, cancel_text_translation,
     get_annotations, create_annotation, update_annotation, delete_annotation,
+    ai_selection_query,
 )
 import config
 
@@ -142,6 +143,33 @@ async def api_delete_annotation(
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return {"success": True}
+
+
+# ── AI 선택 번역/요약 ──
+
+@router.post("/ai/selection")
+async def api_ai_selection(
+    body: dict = Body(...),
+    user: dict = Depends(get_current_user),
+):
+    """선택 텍스트 번역/요약"""
+    text = (body.get("text") or "").strip()
+    action = body.get("action", "")
+    model = body.get("model")
+
+    if not text:
+        raise HTTPException(status_code=400, detail="텍스트가 비어있습니다")
+    if len(text) > 3000:
+        text = text[:3000]
+    if action not in ("translate", "summarize"):
+        raise HTTPException(status_code=400, detail="action은 translate 또는 summarize")
+
+    try:
+        return ai_selection_query(text, action, model)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"AI 서비스 오류: {e}")
 
 
 # ── 업로드 ──

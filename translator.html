@@ -599,23 +599,141 @@
         .annotation-layer .margin-marker.color-red    { background-color: rgba(255, 120, 120, 0.8); }
         .annotation-layer .margin-marker.color-blue   { background-color: rgba(100, 170, 230, 0.8); }
 
-        .marking-action-btn {
+        .marking-action-bar {
             position: absolute;
             z-index: 10;
             pointer-events: auto;
+            display: flex;
             background: var(--white, #fff);
             border: 1px solid var(--border-color, #ddd);
             border-radius: 6px;
-            padding: 4px 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            user-select: none;
+            overflow: hidden;
+        }
+        .marking-action-bar button {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
             font-size: 12px;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            border: none;
+            background: transparent;
+            color: var(--text-color, #333);
             white-space: nowrap;
-            user-select: none;
-            transition: opacity 0.15s ease;
+            transition: background 0.12s ease;
         }
-        .marking-action-btn:hover {
+        .marking-action-bar button:hover {
             background: var(--hover-bg, #f0f0f0);
+        }
+        .marking-action-bar button + button {
+            border-left: 1px solid var(--border-color, #ddd);
+        }
+        .marking-action-bar button svg {
+            width: 13px;
+            height: 13px;
+            flex-shrink: 0;
+        }
+
+        /* ── AI 결과 팝오버 ── */
+        .ai-result-popover {
+            position: absolute;
+            z-index: 11;
+            pointer-events: auto;
+            background: var(--white, #fff);
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            width: 300px;
+            user-select: text;
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .ai-result-popover.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .ai-result-popover .ai-pop-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color, #ddd);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-color, #333);
+        }
+        .ai-result-popover .ai-pop-header svg {
+            width: 14px; height: 14px;
+        }
+        .ai-result-popover .ai-pop-close {
+            cursor: pointer;
+            color: var(--medium-gray, #888);
+            background: none; border: none; padding: 2px;
+        }
+        .ai-result-popover .ai-pop-close:hover {
+            color: var(--text-color, #333);
+        }
+        .ai-result-popover .ai-pop-body {
+            padding: 10px 12px;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 240px;
+            overflow-y: auto;
+            color: var(--text-color, #333);
+            text-align: left;
+        }
+        .ai-result-popover .ai-pop-model {
+            font-size: 11px;
+            color: var(--medium-gray, #999);
+            font-weight: 400;
+        }
+        .ai-result-popover .ai-pop-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+            padding: 6px 12px 8px;
+            border-top: 1px solid var(--border-color, #ddd);
+        }
+        .ai-result-popover .ai-pop-footer button {
+            padding: 4px 10px;
+            font-size: 12px;
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 4px;
+            background: var(--white, #fff);
+            color: var(--text-color, #333);
+            cursor: pointer;
+            transition: background 0.12s ease;
+        }
+        .ai-result-popover .ai-pop-footer button:hover {
+            background: var(--hover-bg, #f0f0f0);
+        }
+        .ai-result-popover .ai-pop-footer button:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        /* skeleton shimmer */
+        .ai-skeleton {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .ai-skeleton .sk-line {
+            height: 12px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%);
+            background-size: 200% 100%;
+            animation: sk-shimmer 1.5s ease-in-out infinite;
+        }
+        .ai-skeleton .sk-line:nth-child(1) { width: 90%; }
+        .ai-skeleton .sk-line:nth-child(2) { width: 70%; }
+        .ai-skeleton .sk-line:nth-child(3) { width: 80%; }
+        @keyframes sk-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
 
         /* ── 마킹 popover ── */
@@ -832,13 +950,46 @@
             background: #2a2a3e;
             color: #e0e0e0;
         }
-        body[data-theme="dark"] .marking-action-btn {
+        body[data-theme="dark"] .marking-action-bar {
             background: #1e1e2e;
             border-color: rgba(255,255,255,0.12);
+        }
+        body[data-theme="dark"] .marking-action-bar button {
             color: #e0e0e0;
         }
-        body[data-theme="dark"] .marking-action-btn:hover {
+        body[data-theme="dark"] .marking-action-bar button:hover {
             background: #2a2a3e;
+        }
+        body[data-theme="dark"] .marking-action-bar button + button {
+            border-left-color: rgba(255,255,255,0.12);
+        }
+        body[data-theme="dark"] .ai-result-popover {
+            background: #1e1e2e;
+            border-color: rgba(255,255,255,0.08);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+        body[data-theme="dark"] .ai-result-popover .ai-pop-header {
+            border-bottom-color: rgba(255,255,255,0.08);
+            color: #e0e0e0;
+        }
+        body[data-theme="dark"] .ai-result-popover .ai-pop-body {
+            color: #e0e0e0;
+        }
+        body[data-theme="dark"] .ai-result-popover .ai-pop-footer {
+            border-top-color: rgba(255,255,255,0.08);
+        }
+        body[data-theme="dark"] .ai-result-popover .ai-pop-footer button {
+            background: #2a2a3e;
+            border-color: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+        }
+        body[data-theme="dark"] .ai-result-popover .ai-pop-footer button:hover {
+            background: #353550;
+        }
+        body[data-theme="dark"] .ai-skeleton .sk-line {
+            background: linear-gradient(90deg, #2a2a3e 25%, #353550 50%, #2a2a3e 75%);
+            background-size: 200% 100%;
+            animation: sk-shimmer 1.5s ease-in-out infinite;
         }
         body[data-theme="dark"] .highlight.has-memo::after {
             background: #e0e0e0;
@@ -964,9 +1115,10 @@
 
         /* ── 마킹 플로팅 위젯 ── */
         .marking-float {
-            position: absolute;
+            position: sticky;
             top: 8px;
-            right: 12px;
+            float: right;
+            margin-right: 12px;
             z-index: 6;
         }
         .mf-trigger {
@@ -2498,7 +2650,7 @@
         function goToPage(page) {
             if (page < 1 || page > totalPages) return;
             hidePopover(true);
-            hideMarkingBtn();
+            hideActionBar(); hideAiPopover();
             stopPolling();
             stopTextPolling();
             currentPage = page;
@@ -2560,7 +2712,7 @@
 
         function rerenderBothPanels() {
             hidePopover(true);
-            hideMarkingBtn();
+            hideActionBar(); hideAiPopover();
             renderLeftPage(currentPage);
             // Right: 상태에 따라
             var ps = pageStatusCache[String(currentPage)];
@@ -2821,40 +2973,196 @@
             return merged;
         }
 
-        // ── 마킹 생성 — 미니 액션 버튼 ──
+        // ── 텍스트 선택 액션 바 (마킹/번역/요약) ──
 
-        var $markingBtn = null;
+        var $actionBar = null;
+        var $aiPopover = null;
+        var _selRects = null;
+        var _selText = null;
 
-        function hideMarkingBtn() {
-            if ($markingBtn) {
-                $markingBtn.parentNode.removeChild($markingBtn);
-                $markingBtn = null;
+        function hideActionBar() {
+            if ($actionBar) {
+                $actionBar.parentNode.removeChild($actionBar);
+                $actionBar = null;
             }
         }
 
-        function showMarkingBtn(selection) {
-            hideMarkingBtn();
-            var rects = selectionToPercentRects(selection);
-            if (!rects || !rects.length) return;
-            var text = selection.toString().trim();
-            if (!text) return;
+        function hideAiPopover() {
+            if ($aiPopover) {
+                $aiPopover.parentNode.removeChild($aiPopover);
+                $aiPopover = null;
+            }
+        }
 
-            var lastRect = rects[rects.length - 1];
+        function showActionBar(selection) {
+            hideActionBar();
+            hideAiPopover();
+            _selRects = selectionToPercentRects(selection);
+            if (!_selRects || !_selRects.length) return;
+            _selText = selection.toString().trim();
+            if (!_selText) return;
+
+            var lastRect = _selRects[_selRects.length - 1];
             var btnX = lastRect.x + lastRect.w;
             var btnY = lastRect.y + lastRect.h + 0.5;
 
-            $markingBtn = document.createElement('button');
-            $markingBtn.className = 'marking-action-btn';
-            $markingBtn.textContent = '마킹';
-            $markingBtn.style.left = btnX + '%';
-            $markingBtn.style.top = btnY + '%';
-            $leftAnnotationLayer.appendChild($markingBtn);
+            $actionBar = document.createElement('div');
+            $actionBar.className = 'marking-action-bar';
+            $actionBar.style.left = btnX + '%';
+            $actionBar.style.top = btnY + '%';
 
-            $markingBtn.addEventListener('click', function(e) {
+            var actions = [
+                { label: '마킹',  icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>', action: 'mark' },
+                { label: '번역',  icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8l6 10"/><path d="M4 14h8"/><path d="M10 2h1c4.4 0 8 3.6 8 8v1"/><path d="M15 16l4 4"/><path d="M19 16l-4 4"/></svg>', action: 'translate' },
+                { label: '요약',  icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="14" y2="12"/><line x1="7" y1="16" x2="11" y2="16"/></svg>', action: 'summarize' },
+            ];
+
+            actions.forEach(function(a) {
+                var btn = document.createElement('button');
+                btn.innerHTML = a.icon + '<span>' + a.label + '</span>';
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (a.action === 'mark') {
+                        createMarkingFromSelection(_selRects, _selText);
+                        hideActionBar();
+                        window.getSelection().removeAllRanges();
+                    } else {
+                        showAiPopover(a.action, a.label, btnX, btnY);
+                    }
+                });
+                $actionBar.appendChild(btn);
+            });
+
+            $leftAnnotationLayer.appendChild($actionBar);
+        }
+
+        // ── AI 결과 팝오버 ──
+
+        function showAiPopover(action, label, posX, posY) {
+            hideActionBar();
+            hideAiPopover();
+            window.getSelection().removeAllRanges();
+
+            var text = _selText;
+            var rects = _selRects;
+            if (!text || !currentDocId) return;
+
+            $aiPopover = document.createElement('div');
+            $aiPopover.className = 'ai-result-popover';
+            $aiPopover.style.left = posX + '%';
+            $aiPopover.style.top = posY + '%';
+
+            // 헤더
+            var header = document.createElement('div');
+            header.className = 'ai-pop-header';
+            var titleSpan = document.createElement('span');
+            titleSpan.textContent = label;
+            var modelSpan = document.createElement('span');
+            modelSpan.className = 'ai-pop-model';
+            modelSpan.style.display = 'none';
+            var closeBtn = document.createElement('button');
+            closeBtn.className = 'ai-pop-close';
+            closeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+            closeBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                createMarkingFromSelection(rects, text);
-                hideMarkingBtn();
-                window.getSelection().removeAllRanges();
+                hideAiPopover();
+            });
+            var titleWrap = document.createElement('span');
+            titleWrap.appendChild(titleSpan);
+            titleWrap.appendChild(modelSpan);
+            header.appendChild(titleWrap);
+            header.appendChild(closeBtn);
+
+            // 본문 (스켈레톤)
+            var body = document.createElement('div');
+            body.className = 'ai-pop-body';
+            body.innerHTML = '<div class="ai-skeleton"><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div></div>';
+
+            // 하단 버튼
+            var footer = document.createElement('div');
+            footer.className = 'ai-pop-footer';
+            var copyBtn = document.createElement('button');
+            copyBtn.textContent = '복사';
+            copyBtn.disabled = true;
+            var markMemoBtn = document.createElement('button');
+            markMemoBtn.textContent = '마킹+메모';
+            markMemoBtn.disabled = true;
+            footer.appendChild(copyBtn);
+            footer.appendChild(markMemoBtn);
+
+            $aiPopover.appendChild(header);
+            $aiPopover.appendChild(body);
+            $aiPopover.appendChild(footer);
+            $leftAnnotationLayer.appendChild($aiPopover);
+
+            requestAnimationFrame(function() {
+                $aiPopover && $aiPopover.classList.add('visible');
+            });
+
+            // 현재 선택된 모델
+            var modelSel = document.getElementById('model-select');
+            var model = modelSel ? modelSel.value : undefined;
+
+            // API 호출
+            fetch(API + '/api/translator/ai/selection', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text, action: action, model: model }),
+            }).then(function(r) {
+                if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail || '오류'); });
+                return r.json();
+            }).then(function(data) {
+                if (!$aiPopover) return;
+                var resultText = data.result || '(결과 없음)';
+                body.textContent = resultText;
+                if (data.model) {
+                    modelSpan.textContent = ' (' + data.model + ')';
+                    modelSpan.style.display = '';
+                }
+                copyBtn.disabled = false;
+                markMemoBtn.disabled = false;
+
+                copyBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(resultText).then(function() {
+                        copyBtn.textContent = '복사됨 ✓';
+                        setTimeout(function() { copyBtn.textContent = '복사'; }, 1500);
+                    });
+                });
+
+                markMemoBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // 마킹 생성 + AI 결과를 memo로
+                    var markBody = {
+                        page: currentPage,
+                        rects: rects,
+                        color: 'yellow',
+                        text: text.substring(0, 500),
+                        memo: resultText,
+                    };
+                    fetch(API + '/api/translator/document/' + currentDocId + '/annotations', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(markBody),
+                    }).then(function(r) { return r.json(); })
+                      .then(function(h) {
+                        if (!annotationsCache) annotationsCache = { highlights: [] };
+                        annotationsCache.highlights.push(h);
+                        $leftAnnotationLayer.appendChild(createHighlightDiv(h));
+                        if ($rightContainer.style.display !== 'none') {
+                            $rightAnnotationLayer.appendChild(createMarginMarkerDiv(h));
+                        }
+                        updateMarkingBadge();
+                        renderMarkingList();
+                        hideAiPopover();
+                    });
+                });
+            }).catch(function(err) {
+                if (!$aiPopover) return;
+                body.textContent = err.message || 'AI 서비스에 연결할 수 없습니다';
+                body.style.color = '#e74c3c';
             });
         }
 
@@ -2890,16 +3198,19 @@
             setTimeout(function() {
                 var selection = window.getSelection();
                 if (!selection || selection.isCollapsed) {
-                    hideMarkingBtn();
+                    hideActionBar();
                     return;
                 }
-                showMarkingBtn(selection);
+                showActionBar(selection);
             }, 10);
         });
 
         document.addEventListener('mousedown', function(e) {
-            if ($markingBtn && !$markingBtn.contains(e.target)) {
-                hideMarkingBtn();
+            if ($actionBar && !$actionBar.contains(e.target)) {
+                hideActionBar();
+            }
+            if ($aiPopover && !$aiPopover.contains(e.target)) {
+                hideAiPopover();
             }
             // popover 외부 클릭 시 닫기 (메모 저장)
             if ($popover && !$popover.contains(e.target) && !e.target.classList.contains('highlight')) {

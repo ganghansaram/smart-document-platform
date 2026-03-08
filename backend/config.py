@@ -82,6 +82,19 @@ TRANSLATOR_TEXT_CUSTOM_PROMPT = (
     "Output ONLY the translated Korean text. No explanations, no extra text."
 )
 
+# Translator AI 선택 번역/요약
+TRANSLATOR_AI_SELECTION_TIMEOUT = 30       # 초
+TRANSLATOR_AI_TRANSLATE_PROMPT = (
+    "다음 텍스트를 한국어로 자연스럽게 번역하세요. "
+    "원문의 기술 용어는 괄호 안에 영문을 병기하세요. "
+    "번역문만 출력하세요."
+)
+TRANSLATOR_AI_SUMMARIZE_PROMPT = (
+    "다음 텍스트를 한국어로 3문장 이내로 요약하세요. "
+    "핵심 논점만 간결하게 전달하세요. "
+    "요약문만 출력하세요."
+)
+
 # 서버 설정
 HOST = "0.0.0.0"
 PORT = 8000

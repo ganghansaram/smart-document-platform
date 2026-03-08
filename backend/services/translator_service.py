@@ -333,6 +333,38 @@ def delete_annotation(username: str, doc_id: str, ann_id: str) -> bool:
 
 
 # ══════════════════════════════════════
+# AI 선택 번역/요약
+# ══════════════════════════════════════
+
+def ai_selection_query(text: str, action: str, model: Optional[str] = None) -> str:
+    """선택 텍스트에 대해 Ollama로 번역/요약 수행"""
+    import requests
+
+    if action == "translate":
+        system_prompt = config.TRANSLATOR_AI_TRANSLATE_PROMPT
+    elif action == "summarize":
+        system_prompt = config.TRANSLATOR_AI_SUMMARIZE_PROMPT
+    else:
+        raise ValueError(f"지원하지 않는 액션: {action}")
+
+    use_model = model or config.TRANSLATOR_TRANSLATION_MODEL or config.OLLAMA_MODEL
+
+    resp = requests.post(
+        f"{config.OLLAMA_URL}/api/generate",
+        json={
+            "model": use_model,
+            "system": system_prompt,
+            "prompt": text,
+            "stream": False,
+            "options": {"temperature": 0.3},
+        },
+        timeout=config.TRANSLATOR_AI_SELECTION_TIMEOUT,
+    )
+    resp.raise_for_status()
+    return {"result": resp.json().get("response", "").strip(), "model": use_model}
+
+
+# ══════════════════════════════════════
 # 업로드
 # ══════════════════════════════════════
 
