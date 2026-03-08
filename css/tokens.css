@@ -28,6 +28,8 @@
 
     /* 시맨틱 색상 */
     --color-success: #22c55e;
+    --color-success-btn: #238636;
+    --color-success-btn-hover: #2ea043;
     --color-warning: #f59e0b;
     --color-error: #ef4444;
     --color-info: #3b82f6;
@@ -59,6 +61,8 @@ body[data-theme="dark"] {
 
     /* 시맨틱 색상 */
     --color-success: #4ade80;
+    --color-success-btn: #2ea043;
+    --color-success-btn-hover: #3fb950;
     --color-warning: #fbbf24;
     --color-error: #f87171;
     --color-info: #60a5fa;
