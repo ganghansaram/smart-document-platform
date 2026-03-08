@@ -212,7 +212,7 @@ body[data-theme="dark"] .figure-popup-modal {
 
 /* 캡션 텍스트 */
 body[data-theme="dark"] .figure-popup-caption {
-    color: #5ba3f5;
+    color: var(--active-color);
 }
 
 body[data-theme="dark"] [data-fig-ref]:hover {

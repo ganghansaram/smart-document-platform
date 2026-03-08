@@ -365,11 +365,11 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: var(--success-color, #22c55e);
+    background-color: var(--color-success);
 }
 
 .editor-status .status-indicator.modified {
-    background-color: var(--warning-color, #f59e0b);
+    background-color: var(--color-warning);
 }
 
 .editor-status .status-indicator.saving {
@@ -499,8 +499,8 @@
 }
 
 .editor-confirm-actions .confirm-yes {
-    background-color: var(--error-color, #ef4444);
-    color: var(--white);
+    background-color: var(--color-error);
+    color: #fff;
     border: none;
 }
 
@@ -523,23 +523,23 @@
    =================================== */
 /* 에디터 — var(--white)가 텍스트로 쓰이는 곳 밝은 색 강제 */
 body[data-theme="dark"] .editor-title h3 {
-    color: #5ba3f5;
+    color: var(--active-color);
 }
 
 body[data-theme="dark"] .editor-save-btn {
-    color: #e0e0e0;
+    color: var(--text-dark);
 }
 
 body[data-theme="dark"] #nav-edit-item a:hover {
-    color: #e0e0e0 !important;
+    color: var(--text-dark) !important;
 }
 
 body[data-theme="dark"] .editor-login-btn {
-    color: #e0e0e0;
+    color: var(--text-dark);
 }
 
 body[data-theme="dark"] .editor-confirm-actions .confirm-yes {
-    color: #e0e0e0;
+    color: var(--text-dark);
 }
 
 body[data-theme="dark"] .editor-modal {

@@ -421,6 +421,8 @@
     border-radius: 24px;
     font-size: 14px;
     outline: none;
+    background-color: var(--white);
+    color: var(--text-dark);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     resize: none;
     max-height: 100px;
@@ -526,7 +528,7 @@
     background-color: #fef2f2;
     border: 1px solid #fecaca;
     border-radius: 8px;
-    color: #dc2626;
+    color: var(--color-error);
     font-size: 13px;
     margin: 8px 0;
 }
@@ -663,7 +665,7 @@
    다크 테마 — AI 챗봇 오버라이드
    =================================== */
 body[data-theme="dark"] .ai-chat-fab {
-    background: linear-gradient(135deg, #2d2f3e 0%, #1e1e2e 100%);
+    background: linear-gradient(135deg, var(--hover-bg) 0%, var(--white) 100%);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
@@ -672,18 +674,8 @@ body[data-theme="dark"] .ai-chat-container {
 }
 
 body[data-theme="dark"] .ai-chat-header {
-    background: linear-gradient(135deg, #121218 0%, #1a1a2e 100%);
-    color: #e0e0e0;
-}
-
-/* 채팅 입력 다크 */
-body[data-theme="dark"] .ai-chat-input {
-    background-color: #252738;
-    color: #e0e0e0;
-}
-
-body[data-theme="dark"] .ai-chat-input::placeholder {
-    color: #a0a4b8;
+    background: linear-gradient(135deg, var(--primary-navy) 0%, var(--secondary-navy) 100%);
+    color: var(--text-dark);
 }
 
 /* 유저 메시지 — 밝은 글자 */
@@ -732,13 +724,13 @@ body[data-theme="dark"] .ai-chat-input:focus {
 }
 
 body[data-theme="dark"] .ai-chat-send-btn {
-    background: linear-gradient(135deg, #2d2f3e 0%, #1e1e2e 100%);
+    background: linear-gradient(135deg, var(--hover-bg) 0%, var(--white) 100%);
 }
 
 body[data-theme="dark"] .ai-chat-error {
     background-color: #2a1215;
     border-color: #5c2329;
-    color: #f87171;
+    color: var(--color-error);
 }
 
 /* KaTeX 수식 — 챗봇 내 색상 상속 */

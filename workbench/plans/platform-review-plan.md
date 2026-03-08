@@ -11,7 +11,7 @@
 > | Phase 1 | ✅ 완료 | theme-guide.md 작성 + 정비, /review-ui 스킬 생성, 프로토타입 삭제 |
 > | Phase 2 | ✅ 완료 | tokens.css 분리 + 토큰 통합 |
 > | Phase 3 | ✅ 완료 | 헤더/푸터/login 하드코딩 색상 → 토큰 변수화, 다크 오버라이드 6개 제거 |
-> | Phase 4 | 🔲 대기 | |
+> | Phase 4 | ✅ 완료 | Explorer 14개 CSS: 하드코딩 색상→토큰, 불필요 다크 오버라이드 제거, 시맨틱 색상 통일 |
 > | Phase 5 | 🔲 대기 | |
 > | Phase 6 | 🔲 대기 | |
 > | Phase 7 | 🔲 대기 | (선택) |

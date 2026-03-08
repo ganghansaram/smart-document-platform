@@ -80,11 +80,11 @@
 }
 
 .bookmarks-clear-all:hover {
-    color: #e74c3c;
+    color: var(--color-error);
 }
 
 body[data-theme="dark"] .bookmarks-clear-all:hover {
-    color: #ff6b6b;
+    color: var(--color-error);
 }
 
 .bookmarks-close {
@@ -177,7 +177,7 @@ body[data-theme="dark"] .bookmarks-clear-all:hover {
 }
 
 .bookmarks-item-delete:hover {
-    color: #e74c3c;
+    color: var(--color-error);
 }
 
 /* 빈 상태 */
@@ -246,5 +246,5 @@ body[data-theme="dark"] .bookmarks-container {
 }
 
 body[data-theme="dark"] .bookmarks-item-delete:hover {
-    color: #ff6b6b;
+    color: var(--color-error);
 }

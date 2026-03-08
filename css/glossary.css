@@ -232,7 +232,7 @@ body[data-theme="dark"] .glossary-card-letter {
 }
 
 body[data-theme="dark"] .glossary-table th {
-    background: #2a2a3e;
+    background: var(--hover-bg);
 }
 
 .glossary-table td {
@@ -261,7 +261,7 @@ body[data-theme="dark"] .glossary-table th {
 .glossary-abbr {
     font-family: 'Consolas', 'Monaco', monospace;
     font-weight: 700;
-    color: #001f3f;
+    color: var(--primary-navy);
     white-space: nowrap;
 }
 
@@ -504,14 +504,14 @@ body[data-theme="dark"] .glossary-lookup-badge {
 
 /* 다크모드 — 팝업 */
 body[data-theme="dark"] .glossary-lookup-popup {
-    background: #1e1e2e;
-    border-color: #3a3a4e;
+    background: var(--white);
+    border-color: var(--border-color);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 body[data-theme="dark"] .glossary-lookup-header {
-    background: #2a2a3e;
-    border-color: #3a3a4e;
+    background: var(--hover-bg);
+    border-color: var(--border-color);
 }
 
 body[data-theme="dark"] .glossary-lookup-abbr {
@@ -519,12 +519,12 @@ body[data-theme="dark"] .glossary-lookup-abbr {
 }
 
 body[data-theme="dark"] .glossary-lookup-item {
-    border-color: #3a3a4e;
+    border-color: var(--border-color);
 }
 
 body[data-theme="dark"] .glossary-lookup-footer {
-    background: #2a2a3e;
-    border-color: #3a3a4e;
+    background: var(--hover-bg);
+    border-color: var(--border-color);
 }
 
 /* ===================================

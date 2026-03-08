@@ -174,7 +174,7 @@ body.resizing img {
     background-color: transparent;
     border: none;
     cursor: pointer;
-    border-radius: 5px;
+    border-radius: 6px;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
@@ -338,7 +338,13 @@ body.resizing img {
     border: 2px solid var(--border-color);
     border-radius: 6px;
     outline: none;
+    background-color: var(--white);
+    color: var(--text-dark);
     transition: border-color 0.2s ease;
+}
+
+#search-input::placeholder {
+    color: var(--text-light);
 }
 
 #search-input:focus {
@@ -489,17 +495,6 @@ body[data-theme="dark"] .search-overlay {
 
 body[data-theme="dark"] .search-container {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-}
-
-/* 검색 입력 필드 다크 */
-body[data-theme="dark"] #search-input {
-    background-color: #252738;
-    color: #e0e0e0;
-    border-color: #3d3f50;
-}
-
-body[data-theme="dark"] #search-input::placeholder {
-    color: #a0a4b8;
 }
 
 body[data-theme="dark"] .search-term-highlight {
@@ -674,10 +669,6 @@ body[data-theme="dark"] .shortcuts-modal {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
-body[data-theme="dark"] .shortcut-row kbd {
-    box-shadow: 0 1px 0 #3d3f50;
-}
-
 /* ===================================
    공용 토스트 알림
    =================================== */
@@ -700,14 +691,14 @@ body[data-theme="dark"] .shortcut-row kbd {
     pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.success { background-color: #22c55e; }
-.toast.error { background-color: #ef4444; }
-.toast.warning { background-color: #f59e0b; }
+.toast.success { background-color: var(--color-success); }
+.toast.error { background-color: var(--color-error); }
+.toast.warning { background-color: var(--color-warning); }
 
 body[data-theme="dark"] .toast { background-color: #2d2f3e; color: #e0e0e0; }
-body[data-theme="dark"] .toast.success { background-color: #22c55e; color: #fff; }
-body[data-theme="dark"] .toast.error { background-color: #ef4444; color: #fff; }
-body[data-theme="dark"] .toast.warning { background-color: #f59e0b; color: #fff; }
+body[data-theme="dark"] .toast.success { background-color: var(--color-success); color: #fff; }
+body[data-theme="dark"] .toast.error { background-color: var(--color-error); color: #fff; }
+body[data-theme="dark"] .toast.warning { background-color: var(--color-warning); color: #fff; }
 
 /* 페이지 진입 fade-in */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

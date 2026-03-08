@@ -448,13 +448,13 @@ body[data-theme="dark"] .tree-item .item-icon.icon-settings {
 
 .step-icon.active {
     border: 3px solid var(--border-color);
-    border-top-color: var(--primary-navy);
+    border-top-color: var(--active-color);
     background: transparent;
     animation: spin 0.8s linear infinite;
 }
 
 .step-icon.completed {
-    background: #28a745;
+    background: var(--color-success);
 }
 
 .step-icon.completed::after {
@@ -470,7 +470,7 @@ body[data-theme="dark"] .tree-item .item-icon.icon-settings {
 }
 
 .step-icon.skipped {
-    background: #6c757d;
+    background: var(--medium-gray);
 }
 
 .step-icon.skipped::after {
@@ -490,7 +490,7 @@ body[data-theme="dark"] .tree-item .item-icon.icon-settings {
 }
 
 .step-icon.error {
-    background: #dc3545;
+    background: var(--color-error);
 }
 
 .step-icon.error::after {
@@ -542,12 +542,12 @@ body[data-theme="dark"] .tree-item .item-icon.icon-settings {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background-color: var(--success-color, #22c55e);
+    background-color: var(--color-success);
     flex-shrink: 0;
 }
 
 .index-status-dot.outdated {
-    background-color: var(--warning-color, #f59e0b);
+    background-color: var(--color-warning);
 }
 
 .index-status-dot.checking {
@@ -644,23 +644,7 @@ body[data-theme="dark"] .step-icon {
     background: var(--border-color);
 }
 
-body[data-theme="dark"] .step-icon.active {
-    border-color: var(--border-color);
-    border-top-color: #5ba3f5;
-    background: transparent;
-}
-
-body[data-theme="dark"] .step-icon.completed {
-    background: #22c55e;
-}
-
-body[data-theme="dark"] .step-icon.skipped {
-    background: #6b7280;
-}
-
-body[data-theme="dark"] .step-icon.error {
-    background: #ef4444;
-}
+/* step-icon 다크 오버라이드 불필요 — CSS 변수가 자동 전환 */
 
 /* 아이콘 다크 모드 색상 전환 — SVG hardcoded 아이콘들 */
 body[data-theme="dark"] .tree-item.has-children .item-icon {
@@ -709,11 +693,6 @@ body[data-theme="dark"] .tree-item .item-icon.icon-analytics {
 
 body[data-theme="dark"] .tree-item:hover .item-icon.icon-analytics {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235ba3f5'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z'/%3E%3C/svg%3E");
-}
-
-/* 트리 토글/패널 아이콘 다크 */
-body[data-theme="dark"] .tree-item.has-children .toggle-icon::before {
-    color: #a0a4b8;
 }
 
 body[data-theme="dark"] .tree-search-icon {

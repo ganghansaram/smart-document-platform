@@ -44,10 +44,6 @@
     max-width: 300px;
 }
 
-body[data-theme="dark"] .breadcrumb-current {
-    color: var(--text-dark);
-}
-
 @media print {
     .breadcrumb {
         display: none;
@@ -164,7 +160,7 @@ body[data-theme="dark"] .breadcrumb-current {
 }
 
 body[data-theme="dark"] .page-header {
-    border-bottom-color: #5ba3f5;
+    border-bottom-color: var(--active-color);
 }
 
 .page-header-info {
@@ -186,7 +182,7 @@ body[data-theme="dark"] .page-header {
 }
 
 body[data-theme="dark"] .main-content .page-header h1 {
-    color: #5ba3f5;
+    color: var(--active-color);
 }
 
 .page-header-subtitle {
@@ -766,7 +762,7 @@ body[data-theme="dark"] .section-nav a.active {
     font-family: 'Consolas', 'Monaco', monospace;
     font-weight: 700;
     font-size: 15px;
-    color: #001f3f;
+    color: var(--primary-navy);
     flex-shrink: 0;
     min-width: 60px;
 }
@@ -1052,36 +1048,36 @@ body[data-theme="dark"] .loading-overlay {
 
 /* 콘텐츠 제목 — 변수가 배경용으로 어두워지므로 별도 지정 */
 body[data-theme="dark"] .main-content h1 {
-    color: #5ba3f5;
-    border-bottom-color: #5ba3f5;
+    color: var(--active-color);
+    border-bottom-color: var(--active-color);
 }
 
 body[data-theme="dark"] .main-content h2 {
-    color: #7db8f0;
+    color: #7db8f0; /* secondary-navy 계열, 고유 색상 유지 */
 }
 
 /* 검색 결과 제목 */
 body[data-theme="dark"] .search-result-title {
-    color: #5ba3f5;
+    color: var(--active-color);
 }
 
 /* 통계 스트립 */
 body[data-theme="dark"] .home-stats {
-    background: #1a1a2e;
-    border-bottom-color: #3a3a4e;
+    background: var(--secondary-navy);
+    border-bottom-color: var(--border-color);
 }
 
 body[data-theme="dark"] .home-stat-item {
-    border-right-color: #3a3a4e;
+    border-right-color: var(--border-color);
 }
 
 body[data-theme="dark"] .home-stat-value {
-    color: #5ba3f5;
+    color: var(--active-color);
 }
 
 /* 섹션 링크 */
 body[data-theme="dark"] .section-links a .link-title {
-    color: #5ba3f5;
+    color: var(--active-color);
 }
 
 /* 배너 오버레이 텍스트 — 흰색 유지 */
@@ -1101,19 +1097,19 @@ body[data-theme="dark"] .banner-dot.active {
 
 /* 각주 */
 body[data-theme="dark"] .main-content .fn-ref {
-    color: #5ba3f5;
+    color: var(--active-color);
 }
 
 /* bordered 테이블 헤더 — 다크에서도 밝은 글자 유지 */
 body[data-theme="dark"][data-table-style="bordered"] .main-content table th {
-    background-color: #2d2f3e;
-    color: #e0e0e0;
+    background-color: var(--hover-bg);
+    color: var(--text-dark);
 }
 
 /* bordered 팝업 테이블 헤더 */
 body[data-theme="dark"][data-table-style="bordered"] .figure-popup-body table th {
-    background-color: #2d2f3e;
-    color: #e0e0e0;
+    background-color: var(--hover-bg);
+    color: var(--text-dark);
 }
 
 /* 이미지 — 투명 배경 보호 */
@@ -1150,15 +1146,15 @@ body[data-theme="dark"] .search-result-snippet mark {
 
 /* 배너 슬라이드쇼 */
 body[data-theme="dark"] .banner-slideshow {
-    background-color: #121218;
+    background-color: var(--bg-gray);
 }
 
 /* 섹션 링크 호버 */
 body[data-theme="dark"] .section-links a:hover {
-    background-color: #2d2f3e;
+    background-color: var(--hover-bg);
 }
 
 body[data-theme="dark"] .section-links a:hover .link-title {
-    color: #5ba3f5;
+    color: var(--active-color);
 }
 

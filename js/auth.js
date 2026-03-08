@@ -466,7 +466,7 @@ function editUser(userId, currentName, currentRole) {
             '</div>' +
             '<div class="form-group">' +
                 '<label for="edit-user-role">Role</label>' +
-                '<select id="edit-user-role" class="users-role-select" style="width:100%;padding:8px 10px;border:1px solid var(--border-color,#ddd);border-radius:4px;font-size:14px;background:var(--bg-primary,#fff);color:var(--text-primary,#333);">' +
+                '<select id="edit-user-role">' +
                     '<option value="viewer"' + (currentRole === 'viewer' ? ' selected' : '') + '>viewer</option>' +
                     '<option value="editor"' + (currentRole === 'editor' ? ' selected' : '') + '>editor</option>' +
                     '<option value="admin"'  + (currentRole === 'admin'  ? ' selected' : '') + '>admin</option>' +
