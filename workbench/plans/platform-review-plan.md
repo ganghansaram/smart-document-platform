@@ -14,7 +14,7 @@
 > | Phase 4 | ✅ 완료 | Explorer 14개 CSS: 하드코딩 색상→토큰, 불필요 다크 오버라이드 제거, 시맨틱 색상 통일 |
 > | Phase 5 | ✅ 완료 | 인라인 CSS 1,435줄→css/translator.css 분리, ~115건 토큰화, --text-color 수정, 다크 오버라이드 18건 제거, --color-success-btn 토큰 신설 |
 > | Phase 6 | ✅ 완료 | admin-settings.css --as-* 20→7개로 통합, analytics.css --ad-* 다크 오버라이드 5개 제거, 포커스 링·헤더·스피너 토큰화 |
-> | Phase 7 | 🔲 대기 | (선택) |
+> | Phase 7 | ✅ 완료 | translator.html 인라인 JS 2,420줄 → js/translator.js 분리 (HTML 2,593→173줄) |
 > | Phase 8 | 🔲 대기 | (선택) |
 
 ---
@@ -604,25 +604,35 @@ Phase 6를 진행해줘. theme-guide.md를 참조해서 작업해.
 
 ---
 
-### Phase 7: JS 구조 개선 (선택)
+### Phase 7: Translator 인라인 JS 분리
 
-> **목표**: 페이지 간 공유 가능한 유틸리티를 추출하고, translator.html 인라인 JS를 외부 파일로 분리한다.
-> **영향 파일**: 새 파일 `js/utils.js`, `translator.html`, 기존 JS 파일들
-> **위험도**: 중간 (전역 함수 참조 변경, 로드 순서 주의)
+> **목표**: translator.html의 2,420줄 인라인 JS를 js/translator.js 외부 파일로 분리한다.
+> **영향 파일**: `translator.html`, 새 파일 `js/translator.js`
+> **위험도**: 낮음 (IIFE 자체가 자기완결형, 외부 의존 없음)
 
-#### 현재 문제
+#### 현재 상태 (재분석)
 
 ```
-- showToast(): app.js에만 정의, admin-settings.js와 translator.html에서 폴백 재구현
-- scrollToElementReliably(): app.js에만 정의, Explorer 6곳에서 사용
-- handleApiUnauthorized(): auth.js에 정의, 3개 파일에서 typeof 체크 후 호출
-- translator.html: 2,428줄 인라인 JS (별도 <script> 블록)
-- 각 페이지의 JS 로드:
-  · index.html: 16개 외부 JS
-  · translator.html: 4개 외부 + 인라인 2,428줄
-  · launcher.html: 3개 외부 + 인라인 40줄
-  · login.html: 1개 외부 + 인라인 77줄
-  · admin.html: 5개 외부 + 인라인 35줄
+translator.html (2,593줄):
+- 외부 스크립트 4개: config.js, pdfjs, platform-header.js, platform-footer.js
+- 인라인 블록 1: 테마 초기화 7줄 (FOUC 방지, 인라인 유지 필수)
+- 인라인 블록 2: 메인 IIFE 2,420줄 (171-2590줄)
+  · 완전한 자기완결형 IIFE — showToast, scrollToElementReliably 미사용
+  · 전역 스코프에 아무것도 노출하지 않음
+  · PDF.js만 외부 의존 (이전에 로드됨)
+```
+
+#### 원래 계획에서 삭제한 항목 및 이유
+
+```
+[삭제] utils.js 생성 (showToast + scrollToElementReliably 추출)
+  이유:
+  - scrollToElementReliably()는 #content-panel 의존 → Explorer 전용. 공유 유틸리티 아님.
+  - showToast()는 15줄. admin-settings.js의 typeof 가드 폴백은 빌드 시스템 없는
+    모놀리식 아키텍처에서 올바른 패턴 (페이지 독립성 유지).
+  - utils.js 도입 = 2개 HTML 로드순서 변경 + 페이지 간 불필요한 결합도 증가.
+  - translator.html은 showToast도 scrollToElementReliably도 사용하지 않음.
+  - ROI: 15줄 중복 제거 vs 새 의존성 파일 + 로드순서 리스크 → 과도한 엔지니어링.
 ```
 
 #### 작업 지시
@@ -630,40 +640,21 @@ Phase 6를 진행해줘. theme-guide.md를 참조해서 작업해.
 ```
 Phase 7을 진행해줘.
 
-[7-1] js/utils.js 생성 (공유 유틸리티)
-   app.js에서 다음 함수를 utils.js로 이동:
-   - showToast(message, type) — 토스트 알림
-   - scrollToElementReliably(el) — content-visibility 대응 스크롤
-
-   app.js에서 해당 함수 제거하고, app.js 상단에 주석으로 "utils.js 필요" 명시.
-   admin-settings.js의 showToast 폴백 코드 제거.
-
-   utils.js는 다른 JS보다 먼저 로드되어야 함.
-
-[7-2] 각 HTML에 utils.js 추가
-   - index.html: config.js 다음, auth.js 전에 <script src="js/utils.js"> 추가
-   - translator.html: config.js 다음에 추가
-   - admin.html: config.js 다음에 추가
-   - launcher.html, login.html: showToast 사용하지 않으면 불필요
-
-[7-3] translator.html 인라인 JS → js/translator.js 분리
-   - 인라인 <script> 블록의 JS를 js/translator.js로 이동
-   - translator.html에 <script src="js/translator.js"> 추가
+[7-1] translator.html 인라인 JS → js/translator.js 분리
+   - 인라인 블록 2(171-2590줄)의 IIFE 내용을 js/translator.js로 이동
+   - translator.html에 <script src="js/translator.js"></script> 추가
+     (platform-footer.js 다음, 테마 초기화 인라인 블록 다음)
    - 인라인 <script> 블록 제거
-   - 변수/함수 스코프 충돌 확인
+   - 테마 초기화 7줄 블록은 인라인 유지 (FOUC 방지)
 
-[7-4] 동작 검증
-   - 각 페이지에서 주요 기능 동작 확인:
-     · index.html: 토스트, 검색, AI 채팅, 북마크, 에디터
-     · translator.html: 문서 목록, 뷰어, 번역, 마킹
-     · admin.html: 설정 저장, 통계
-     · launcher.html: 카드 클릭, 시스템 전환
-     · login.html: 로그인
+[7-2] 동작 검증
+   - translator.html: 문서 목록, 뷰어 열기, 페이지 번역, 마킹, 폴더 트리
+   - 라이트/다크 모드 전환
+   - 다른 페이지 영향 없음 확인 (변경 파일이 translator만이므로 최소 범위)
 
 완료 후:
-- 파일별 줄 수 변화 테이블
 - translator.html Before/After 줄 수
-- JS 의존성 로드 순서 다이어그램
+- js/translator.js 줄 수
 ```
 
 ---
