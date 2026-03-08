@@ -12,7 +12,7 @@
 > | Phase 2 | ✅ 완료 | tokens.css 분리 + 토큰 통합 |
 > | Phase 3 | ✅ 완료 | 헤더/푸터/login 하드코딩 색상 → 토큰 변수화, 다크 오버라이드 6개 제거 |
 > | Phase 4 | ✅ 완료 | Explorer 14개 CSS: 하드코딩 색상→토큰, 불필요 다크 오버라이드 제거, 시맨틱 색상 통일 |
-> | Phase 5 | 🔲 대기 | |
+> | Phase 5 | ✅ 완료 | 인라인 CSS 1,435줄→css/translator.css 분리, ~115건 토큰화, --text-color 수정, 다크 오버라이드 18건 제거, --color-success-btn 토큰 신설 |
 > | Phase 6 | 🔲 대기 | |
 > | Phase 7 | 🔲 대기 | (선택) |
 > | Phase 8 | 🔲 대기 | (선택) |
