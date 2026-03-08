@@ -128,6 +128,7 @@ smart-document-platform/
 ├── launcher.html           # Launcher 통합 진입점
 ├── login.html              # 독립 로그인 페이지
 ├── css/                    # 스타일시트
+│   ├── tokens.css         # 디자인 토큰 (CSS 변수, 리셋, 포커스 링)
 │   ├── main.css           # 전체 레이아웃 및 테마
 │   ├── tree-menu.css      # 좌측 트리 메뉴
 │   ├── content.css        # 콘텐츠, 섹션 네비게이터, 렌더링 최적화
@@ -139,6 +140,9 @@ smart-document-platform/
 │   ├── auth.css           # 인증 UI
 │   ├── analytics.css      # 접속 통계 대시보드
 │   ├── admin-settings.css # 관리자 설정 페이지
+│   ├── translator.css     # Translator 뷰어 스타일
+│   ├── platform-header.css # 공통 헤더 스타일
+│   ├── platform-footer.css # 공통 푸터 스타일
 │   └── images/            # UI 이미지 (로고, 배너 등)
 ├── js/                     # JavaScript
 │   ├── app.js             # 메인 앱 로직, 렌더링 최적화, 스크롤 내비게이션
@@ -156,6 +160,7 @@ smart-document-platform/
 │   ├── keyboard.js        # 키보드 단축키
 │   ├── analytics.js       # 접속 통계
 │   ├── admin-settings.js  # 관리자 설정 페이지
+│   ├── translator.js      # Translator 뷰어 로직 (PDF.js, 마킹, AI 선택)
 │   └── lib/pdfjs/         # PDF.js v3.11.174 (Translator용)
 ├── data/                   # 데이터 파일
 │   ├── menu.json          # 메뉴 구조 정의

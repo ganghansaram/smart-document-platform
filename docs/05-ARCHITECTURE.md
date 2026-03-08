@@ -209,12 +209,15 @@ smart-document-platform/
 │   ├── app.js                     # Explorer 코어 (로딩, 스크롤, 설정)
 │   ├── auth.js                    # 3-role RBAC, 로그인 리다이렉트
 │   ├── config.js                  # DISPLAY/AI/EDITOR/UPLOAD/AUTH_CONFIG
+│   ├── translator.js              # Translator 뷰어 로직 (PDF.js, 마킹, AI 선택)
 │   └── ...                        # (기타 Explorer 모듈)
 │
 ├── css/
+│   ├── tokens.css                 # 디자인 토큰 (CSS 변수, 리셋, 글로벌 focus-visible)
 │   ├── platform-header.css        # 공통 헤더 스타일
 │   ├── platform-footer.css        # 공통 푸터 스타일
 │   ├── admin-settings.css         # 관리자 설정 스타일
+│   ├── translator.css             # Translator 뷰어 스타일
 │   └── ...                        # (기타 스타일)
 │
 └── contents/                      # Explorer HTML 콘텐츠
@@ -767,7 +770,8 @@ http://localhost:8080/?page=contents/samples/SWA_PMS/SWA_PMS.html
 
 | 항목 | 설명 |
 |------|------|
-| 테마 전환 | `body[data-theme="dark"]`에서 `:root` CSS 변수 12개 오버라이드 |
+| 디자인 토큰 | `css/tokens.css`에 라이트/다크 CSS 변수 통합 관리, 글로벌 `:focus-visible` 포커스 링 |
+| 테마 전환 | `body[data-theme="dark"]`에서 `:root` CSS 변수 오버라이드 |
 | 저장 | `localStorage.getItem('theme')` — `'light'` 또는 `'dark'` |
 | 기본값 | 라이트 모드 (저장된 값 없으면) |
 | 초기화 | `initTheme()` — `js/app.js`에서 `initializeApp()` 초반 호출 |

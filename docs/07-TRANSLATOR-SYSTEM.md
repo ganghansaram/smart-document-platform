@@ -160,8 +160,11 @@ FastAPI Backend (:8000)
   - 스켈레톤 로딩 애니메이션 → 결과 텍스트 페이드인
   - 사용 모델명 표시
   - 최대 높이 240px, 스크롤 가능
+  - **바깥 클릭으로 닫히지 않음** — X 버튼 또는 Esc 키로만 닫기 (결과 유실 방지)
+  - **AbortController**: popover 닫힘 시 진행 중인 AI 요청을 즉시 취소 (서버 자원 절약)
 - **복사 버튼**: 결과를 클립보드에 복사
 - **마킹+메모**: AI 결과를 메모로 첨부한 마킹을 한 번에 생성
+- **뷰포트 클램핑**: 모든 popover(액션 바, AI 결과, 마킹 편집)가 화면 밖으로 넘치지 않도록 자동 위치 보정
 - **설정 연동**: 관리자 설정에서 번역/요약 프롬프트, 타임아웃 변경 가능 (재시작 불필요)
 
 ---
@@ -431,9 +434,12 @@ pdf2zh --ollama --ollama-model gemma3:4b --ollama-host http://localhost:11434 \
 ```
 프론트엔드
 ├── translator.html                     ← Translator SPA (트리 + 카드 + 듀얼 뷰어)
+├── css/tokens.css                      ← 디자인 토큰 (CSS 변수, 리셋, 포커스 링)
+├── css/translator.css                  ← Translator 전용 스타일 (뷰어, 카드, 마킹, 다크모드)
 ├── css/platform-header.css             ← 공통 헤더 스타일 (시스템 스위처 포함)
 ├── css/platform-footer.css             ← 공통 푸터 스타일
 ├── css/tree-menu.css                   ← 트리 메뉴 스타일 (Explorer 공유)
+├── js/translator.js                    ← Translator 뷰어 로직 (PDF.js, 마킹, AI 선택, 폴링)
 ├── js/platform-header.js               ← 공통 헤더 컴포넌트
 ├── js/platform-footer.js               ← 공통 푸터 컴포넌트
 ├── js/lib/pdfjs/                       ← PDF.js v3.11.174 (legacy ES5)
