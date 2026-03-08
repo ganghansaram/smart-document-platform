@@ -251,6 +251,11 @@ UPLOAD_TEMP_DIR = None                # None이면 기본값 (backend/temp/)
 # pywin32 + Word 설치 필요. DRM 환경에서 COM 임시 파일이 암호화되어 실패 시 False
 WORD_COM_PREPROCESS = True
 
+# Translator AI 선택 메뉴 설정
+TRANSLATOR_AI_SELECTION_TIMEOUT = 30  # 번역/요약 타임아웃 (초)
+TRANSLATOR_AI_TRANSLATE_PROMPT = "다음 텍스트를 한국어로 자연스럽게 번역하세요..."
+TRANSLATOR_AI_SUMMARIZE_PROMPT = "다음 텍스트를 한국어로 3문장 이내로 요약하세요..."
+
 # 서버 설정
 HOST = "0.0.0.0"
 PORT = 8000

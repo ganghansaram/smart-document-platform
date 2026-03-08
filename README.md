@@ -19,14 +19,18 @@
 - **항공 용어집**: 26,000+ 용어 검색, 본문 약어 자동 인식 + 클릭 팝업
 
 ### Translator (PDF 번역 뷰어)
-- **PDFMathTranslate 기반**: 레이아웃/수식 보존 문서 단위 통번역 (pdf2zh CLI)
-- **PDF.js 뷰어**: 단일 패널, 3탭 전환 (번역PDF / 이중언어 / 원문)
+- **듀얼 번역 엔진**: PDF 모드 (PDFMathTranslate, 레이아웃 보존) + 텍스트 모드 (자체 렌더링, 폰트 조절)
+- **페이지별 온디맨드 번역**: 단일 또는 범위(최대 5페이지) 번역, 3초 폴링
+- **듀얼 패널 뷰어**: 좌측 원문 + 우측 번역 PDF, 스크롤 동기화
+- **텍스트 선택 AI 메뉴**: 원문 드래그 → 번역/요약/마킹 3버튼 액션 바
+- **마킹/메모**: 형광펜 4색, popover 편집, 페이지별 목록 탐색, 플로팅 위젯
+- **개인 폴더 트리**: 폴더 생성/이동/삭제, 드래그 앤 드롭
 - **카드 기반 문서 관리**: 상태별 UI (pending/translating/done/error)
-- **백그라운드 번역**: asyncio 비동기 실행, 실시간 상태 폴링
 - **개인 작업공간**: 사용자별 디렉토리 격리
 
 ### Launcher (통합 런처)
-- 각 시스템(Explorer, Translator)으로의 진입점
+- 각 시스템(Explorer, Translator, Settings)으로의 진입점
+- 시스템 스위처: SVG 아이콘, 호버 드롭다운, 미구현 시스템 뱃지 표시
 
 ### 공통 기능
 - **3단계 RBAC 인증**: viewer / editor / admin 역할 기반 접근 제어
@@ -153,12 +157,13 @@ smart-document-platform/
 │   ├── dependencies.py    # FastAPI 의존성
 │   ├── requirements.txt   # 의존성 패키지
 │   ├── api/               # API 엔드포인트
-│   │   ├── translator.py     # Translator API (업로드, 번역, PDF 서빙)
+│   │   ├── translator.py     # Translator API (업로드, 번역, PDF 서빙, AI 선택, 마킹)
 │   │   ├── settings.py   # 설정 API
 │   │   ├── analytics.py  # 통계 API
 │   │   └── auth.py       # 인증 API
 │   └── services/          # 비즈니스 로직
-│       ├── translator_service.py  # PMT 번역, 개인 작업공간, 메타 관리
+│       ├── translator_service.py  # PMT 번역, 개인 작업공간, 메타 관리, AI 선택
+│       ├── text_translator.py    # 텍스트 모드 번역 엔진 (PyMuPDF + YOLO + Ollama)
 │       ├── keyword_search.py  # 키워드 검색
 │       ├── vector_search.py   # FAISS 벡터 검색 + RRF 병합
 │       ├── reranker.py        # Cross-encoder 리랭킹

@@ -151,6 +151,19 @@ FastAPI Backend (:8000)
   - 항목 클릭 → 해당 페이지 이동 + 포커스 플래시 효과
 - **데이터**: `annotations.json` (문서 디렉토리 내, 서버 저장)
 
+### 3.5 AI 텍스트 선택 메뉴
+
+원문 PDF에서 텍스트를 드래그하면 마킹 외에 AI 번역/요약을 즉석으로 실행할 수 있는 기능.
+
+- **액션 바**: 텍스트 선택 후 3버튼 그룹 표시 — [마킹] [번역] [요약] (SVG 아이콘)
+- **AI 결과 popover**: 번역/요약 클릭 시 액션 바가 결과 popover로 교체
+  - 스켈레톤 로딩 애니메이션 → 결과 텍스트 페이드인
+  - 사용 모델명 표시
+  - 최대 높이 240px, 스크롤 가능
+- **복사 버튼**: 결과를 클립보드에 복사
+- **마킹+메모**: AI 결과를 메모로 첨부한 마킹을 한 번에 생성
+- **설정 연동**: 관리자 설정에서 번역/요약 프롬프트, 타임아웃 변경 가능 (재시작 불필요)
+
 ---
 
 ## 4. 백엔드 API
@@ -213,6 +226,17 @@ FastAPI Backend (:8000)
 | `/document/{doc_id}/annotations` | POST | viewer | 마킹 생성 `{ page, rects, color?, text?, memo? }` |
 | `/document/{doc_id}/annotations/{ann_id}` | PUT | viewer | 수정 `{ memo?, color? }` |
 | `/document/{doc_id}/annotations/{ann_id}` | DELETE | viewer | 삭제 |
+
+### AI 텍스트 선택 (번역/요약)
+
+| 엔드포인트 | 메서드 | 권한 | 설명 |
+|-----------|--------|------|------|
+| `/ai/selection` | POST | viewer | 선택 텍스트 번역 또는 요약 `{ text, action, model? }` |
+
+- `action`: `"translate"` (한국어 번역) 또는 `"summarize"` (3문장 요약)
+- `text`: 최대 3000자 (초과 시 자동 절단)
+- `model`: 생략 시 기본 Ollama 모델 사용
+- 응답: `{ "result": "...", "model": "gemma3:4b" }`
 
 ### 기타
 
@@ -454,4 +478,7 @@ pdf2zh --ollama --ollama-model gemma3:4b --ollama-host http://localhost:11434 \
 | `TRANSLATOR_TEXT_FONT_FAMILY` | `"sans-serif"` | 텍스트 모드: 번역 폰트 패밀리 |
 | `TRANSLATOR_TEXT_MIN_TEXT_LENGTH` | `0` | 텍스트 모드: 최소 텍스트 길이 (미만 건너뜀) |
 | `TRANSLATOR_TEXT_CUSTOM_PROMPT` | *(한국어 번역 프롬프트)* | 텍스트 모드: Ollama 시스템 프롬프트 |
+| `TRANSLATOR_AI_SELECTION_TIMEOUT` | `30` (초) | AI 선택 메뉴 타임아웃 |
+| `TRANSLATOR_AI_TRANSLATE_PROMPT` | *(한국어 번역 프롬프트)* | 텍스트 선택 번역 시스템 프롬프트 |
+| `TRANSLATOR_AI_SUMMARIZE_PROMPT` | *(3문장 요약 프롬프트)* | 텍스트 선택 요약 시스템 프롬프트 |
 | `OLLAMA_URL` | `http://localhost:11434` | Ollama 서버 주소 |

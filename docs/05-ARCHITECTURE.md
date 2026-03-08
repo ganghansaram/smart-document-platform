@@ -45,6 +45,8 @@ AI 챗봇 + 문서 편집기 백엔드 시스템 설계 및 배포 문서
 │                         │  POST /api/analytics/*  통계 API              │    │
 │                         │  GET/POST /api/settings 설정 API (admin) 🔒   │    │
 │                         │  GET/POST /api/menu    메뉴 관리 (admin) 🔒   │    │
+│                         │  /api/translator/*     Translator API          │    │
+│                         │  /api/translator/ai/*  AI 번역/요약 API        │    │
 │                         │                              │    │
 │                         │  Services:                   │    │
 │                         │  - Auth (SQLite sessions)    │    │
@@ -200,7 +202,7 @@ smart-document-platform/
 ├── login.html                     # 로그인
 │
 ├── js/
-│   ├── platform-header.js         # 공통 헤더 (시스템 스위처 포함)
+│   ├── platform-header.js         # 공통 헤더 (SVG 시스템 스위처, 호버 드롭다운)
 │   ├── platform-footer.js         # 공통 푸터
 │   ├── admin-settings.js          # 관리자 설정 GUI
 │   ├── analytics.js               # 접속 통계 (heartbeat, 대시보드)
@@ -1280,4 +1282,5 @@ app.add_middleware(
 - [06-RAG-PIPELINE.md](06-RAG-PIPELINE.md): 검색/AI 기술 상세 (청킹, 임베딩, 검색 전략)
 - [RAG-TECHNICAL-REPORT.md](RAG-TECHNICAL-REPORT.md): RAG 답변 품질 개선 기술 보고서
 - [02-INSTALLATION.md](02-INSTALLATION.md): Tomcat 기본 설치
+- [07-TRANSLATOR-SYSTEM.md](07-TRANSLATOR-SYSTEM.md): Translator 시스템 설계 (API, 데이터 구조, 번역 파이프라인)
 - [04-USER-GUIDE.md](04-USER-GUIDE.md): 콘텐츠 관리, 검색 인덱스 업데이트
