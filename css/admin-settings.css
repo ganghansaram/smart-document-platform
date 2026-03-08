@@ -4,53 +4,35 @@
 
 /* ── CSS 변수 (라이트 테마) ────────────────────────────────────────────────── */
 .admin-settings-page {
-    --as-primary:      var(--active-color);
-    --as-primary-hover:#0052a3;
-    --as-danger:       #dc2626;
-    --as-danger-hover: #b91c1c;
-    --as-success:      #16a34a;
-    --as-warning:      #d97706;
-    --as-text:         #1a1a2e;
-    --as-text-sub:     #5a6c7d;
-    --as-text-light:   #8a95a0;
-    --as-bg:           #f8fafc;
-    --as-bg-card:      #ffffff;
-    --as-border:       #e2e8f0;
-    --as-border-light: #f1f5f9;
-    --as-tab-bg:       #f1f5f9;
-    --as-tab-active:   #ffffff;
-    --as-tab-text:     #5a6c7d;
-    --as-tab-active-text: var(--active-color);
-    --as-input-bg:     #ffffff;
-    --as-input-border: #cbd5e1;
-    --as-toggle-off:   #cbd5e1;
-    --as-toggle-on:    var(--active-color);
-    --as-restart-bg:   #fef3c7;
-    --as-restart-text: #92400e;
+    /* tokens.css 참조 */
+    --as-primary:        var(--active-color);
+    --as-text:           var(--text-dark);
+    --as-text-sub:       var(--text-light);
+    --as-bg-card:        var(--white);
+    --as-border:         var(--border-color);
+    --as-danger:         var(--color-error);
+    --as-success:        var(--color-success);
+    --as-warning:        var(--color-warning);
+
+    /* 독자 값 (토큰에 없는 색상) */
+    --as-primary-hover:  #0052a3;
+    --as-danger-hover:   #b91c1c;
+    --as-border-light:   #f1f5f9;
+    --as-input-border:   #cbd5e1;
+    --as-restart-bg:     #fef3c7;
+    --as-restart-text:   #92400e;
     --as-restart-border: #fcd34d;
 }
 
 body[data-theme="dark"] .admin-settings-page {
-    --as-primary-hover:#7bbcff;
-    --as-danger:       #f87171;
-    --as-danger-hover: #fca5a5;
-    --as-success:      #4ade80;
-    --as-warning:      #fbbf24;
-    --as-text:         #e2e8f0;
-    --as-text-sub:     #94a3b8;
-    --as-text-light:   #64748b;
-    --as-bg:           #0f172a;
-    --as-bg-card:      #1e293b;
-    --as-border:       #334155;
-    --as-border-light: #1e293b;
-    --as-tab-bg:       #1e293b;
-    --as-tab-active:   #1e293b;
-    --as-tab-text:     #94a3b8;
-    --as-input-bg:     #0f172a;
-    --as-input-border: #334155;
-    --as-toggle-off:   #334155;
-    --as-restart-bg:   #292524;
-    --as-restart-text: #fcd34d;
+    /* tokens.css가 처리하는 변수: --as-text, --as-text-sub, --as-bg-card,
+       --as-border, --as-danger, --as-success, --as-warning — 오버라이드 불필요 */
+    --as-primary-hover:  #7bbcff;
+    --as-danger-hover:   #fca5a5;
+    --as-border-light:   #1e293b;
+    --as-input-border:   #334155;
+    --as-restart-bg:     #292524;
+    --as-restart-text:   #fcd34d;
     --as-restart-border: #78350f;
 }
 
@@ -79,7 +61,7 @@ body:has(.admin-settings-page) {
     gap: 16px;
     padding-bottom: 15px;
     margin-bottom: 20px;
-    border-bottom: 3px solid #001f3f;
+    border-bottom: 3px solid var(--primary-navy);
 }
 
 .admin-settings-page .page-header-info {
@@ -95,13 +77,13 @@ body:has(.admin-settings-page) {
 }
 
 body[data-theme="dark"] .admin-settings-page .page-header {
-    border-bottom-color: #5ba3f5;
+    border-bottom-color: var(--active-color);
 }
 
 .admin-settings-page .page-header h1 {
     font-size: 26px;
     font-weight: 700;
-    color: #001f3f;
+    color: var(--primary-navy);
     margin: 0;
     display: flex;
     align-items: center;
@@ -109,7 +91,7 @@ body[data-theme="dark"] .admin-settings-page .page-header {
 }
 
 body[data-theme="dark"] .admin-settings-page .page-header h1 {
-    color: #5ba3f5;
+    color: var(--active-color);
 }
 
 /* 톱니바퀴 아이콘 (standalone용 — content.css는 .main-content 스코프) */
@@ -152,7 +134,7 @@ body[data-theme="dark"] .admin-settings-page .page-header h1.ph-icon-settings::b
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.8px;
-    color: var(--as-text-light);
+    color: var(--as-text-sub);
     opacity: 0.6;
     padding: 0 14px 6px;
     margin-top: 20px;
@@ -174,7 +156,7 @@ body[data-theme="dark"] .admin-settings-page .page-header h1.ph-icon-settings::b
     font-size: 13px;
     font-weight: 500;
     text-align: left;
-    color: var(--as-tab-text);
+    color: var(--as-text-sub);
     background: transparent;
     border: none;
     border-radius: 8px;
@@ -187,8 +169,8 @@ body[data-theme="dark"] .admin-settings-page .page-header h1.ph-icon-settings::b
 }
 
 .admin-sidebar-btn.active {
-    background: var(--as-tab-active);
-    color: var(--as-tab-active-text);
+    background: var(--as-bg-card);
+    color: var(--as-primary);
     font-weight: 600;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
@@ -307,7 +289,7 @@ body[data-theme="dark"] .notice-error {
 .admin-tabs {
     display: flex;
     gap: 2px;
-    background: var(--as-tab-bg);
+    background: var(--as-border-light);
     border-radius: 10px;
     padding: 4px;
     margin-bottom: 24px;
@@ -319,7 +301,7 @@ body[data-theme="dark"] .notice-error {
     padding: 8px 12px;
     font-size: 13px;
     font-weight: 500;
-    color: var(--as-tab-text);
+    color: var(--as-text-sub);
     background: transparent;
     border: none;
     border-radius: 7px;
@@ -338,8 +320,8 @@ body[data-theme="dark"] .admin-tab-btn:hover:not(.active) {
 }
 
 .admin-tab-btn.active {
-    background: var(--as-tab-active);
-    color: var(--as-tab-active-text);
+    background: var(--as-bg-card);
+    color: var(--as-primary);
     font-weight: 600;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
@@ -357,7 +339,7 @@ body[data-theme="dark"] .admin-tab-btn:hover:not(.active) {
 .admin-subtabs {
     display: flex;
     gap: 2px;
-    background: var(--as-tab-bg);
+    background: var(--as-border-light);
     border-radius: 7px;
     padding: 3px;
     margin-bottom: 16px;
@@ -368,7 +350,7 @@ body[data-theme="dark"] .admin-tab-btn:hover:not(.active) {
     padding: 5px 14px;
     font-size: 12px;
     font-weight: 500;
-    color: var(--as-tab-text);
+    color: var(--as-text-sub);
     background: transparent;
     border: none;
     border-radius: 5px;
@@ -387,8 +369,8 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
 }
 
 .admin-subtab-btn.active {
-    background: var(--as-tab-active);
-    color: var(--as-tab-active-text);
+    background: var(--as-bg-card);
+    color: var(--as-primary);
     font-weight: 600;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -530,7 +512,7 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
     font-size: 13px;
     font-family: inherit;
     color: var(--as-text);
-    background: var(--as-input-bg);
+    background: var(--as-bg-card);
     border: 1px solid var(--as-input-border);
     border-radius: 6px;
     outline: none;
@@ -541,13 +523,7 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
 .admin-select:focus,
 .admin-textarea:focus {
     border-color: var(--as-primary);
-    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.12);
-}
-
-body[data-theme="dark"] .admin-input:focus,
-body[data-theme="dark"] .admin-select:focus,
-body[data-theme="dark"] .admin-textarea:focus {
-    box-shadow: 0 0 0 2px rgba(91, 163, 245, 0.18);
+    box-shadow: var(--focus-ring);
 }
 
 .admin-number {
@@ -580,7 +556,7 @@ body[data-theme="dark"] .admin-textarea:focus {
     position: absolute;
     cursor: pointer;
     inset: 0;
-    background: var(--as-toggle-off);
+    background: var(--as-input-border);
     border-radius: 24px;
     transition: background 0.2s;
 }
@@ -599,7 +575,7 @@ body[data-theme="dark"] .admin-textarea:focus {
 }
 
 .admin-toggle input:checked + .admin-toggle-slider {
-    background: var(--as-toggle-on);
+    background: var(--as-primary);
 }
 
 .admin-toggle input:checked + .admin-toggle-slider::before {
@@ -619,7 +595,7 @@ body[data-theme="dark"] .admin-textarea:focus {
     justify-content: center;
     gap: 14px;
     padding: 80px 20px;
-    color: var(--as-text-sub, #5a6c7d);
+    color: var(--as-text-sub);
     font-size: 14px;
 }
 
@@ -627,14 +603,14 @@ body[data-theme="dark"] .admin-textarea:focus {
     width: 32px;
     height: 32px;
     border: 3px solid rgba(0, 102, 204, 0.15);
-    border-top-color: #0066cc;
+    border-top-color: var(--active-color);
     border-radius: 50%;
     animation: admin-spin 0.7s linear infinite;
 }
 
 body[data-theme="dark"] .admin-spinner {
     border-color: rgba(91, 163, 245, 0.15);
-    border-top-color: #5ba3f5;
+    border-top-color: var(--active-color);
 }
 
 @keyframes admin-spin {
@@ -649,7 +625,7 @@ body[data-theme="dark"] .admin-spinner {
     gap: 10px;
     padding: 80px 20px;
     text-align: center;
-    color: var(--as-text-sub, #5a6c7d);
+    color: var(--as-text-sub);
 }
 
 .admin-settings-error span {
@@ -690,7 +666,7 @@ body[data-theme="dark"] .admin-spinner {
         position: static;
         gap: 2px;
         padding: 4px;
-        background: var(--as-tab-bg);
+        background: var(--as-border-light);
         border-radius: 10px;
         margin-bottom: 16px;
     }
@@ -753,9 +729,6 @@ body[data-theme="dark"] .admin-spinner {
 .toast.warning { background-color: #f59e0b; }
 
 body[data-theme="dark"] .toast { background-color: #2d2f3e; color: #e0e0e0; }
-body[data-theme="dark"] .toast.success { background-color: #22c55e; color: #fff; }
-body[data-theme="dark"] .toast.error { background-color: #ef4444; color: #fff; }
-body[data-theme="dark"] .toast.warning { background-color: #f59e0b; color: #fff; }
 
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -1050,7 +1023,7 @@ body[data-theme="dark"] .admin-modal .admin-btn-reset:hover:not(:disabled) {
 .menu-tree-empty {
     padding: 24px 16px;
     text-align: center;
-    color: var(--as-text-light);
+    color: var(--as-text-sub);
     font-size: 13px;
 }
 

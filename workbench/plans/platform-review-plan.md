@@ -13,7 +13,7 @@
 > | Phase 3 | ✅ 완료 | 헤더/푸터/login 하드코딩 색상 → 토큰 변수화, 다크 오버라이드 6개 제거 |
 > | Phase 4 | ✅ 완료 | Explorer 14개 CSS: 하드코딩 색상→토큰, 불필요 다크 오버라이드 제거, 시맨틱 색상 통일 |
 > | Phase 5 | ✅ 완료 | 인라인 CSS 1,435줄→css/translator.css 분리, ~115건 토큰화, --text-color 수정, 다크 오버라이드 18건 제거, --color-success-btn 토큰 신설 |
-> | Phase 6 | 🔲 대기 | |
+> | Phase 6 | ✅ 완료 | admin-settings.css --as-* 20→7개로 통합, analytics.css --ad-* 다크 오버라이드 5개 제거, 포커스 링·헤더·스피너 토큰화 |
 > | Phase 7 | 🔲 대기 | (선택) |
 > | Phase 8 | 🔲 대기 | (선택) |
 
@@ -517,23 +517,32 @@ Phase 5를 진행해줘. theme-guide.md를 참조해서 작업해.
 
 ---
 
-### Phase 6: 관리자 설정
+### Phase 6: 관리자 설정 & 통계
 
-> **목표**: admin-settings.css의 고유 변수를 정리하고, 공유 토큰을 적용한다.
+> **목표**: admin-settings.css·analytics.css의 커스텀 변수를 tokens.css로 최대한 통합하고, 하드코딩 색상을 변수로 교체한다.
 > **영향 파일**: `css/admin-settings.css`, `css/analytics.css`
-> **위험도**: 낮음 (Phase 2에서 변수 교체 완료, 컴포넌트 수준 정리)
+> **위험도**: 중간 (변수 통합 시 색상 미세 변화 수반, 모달 스코프 제약 존재)
+>
+> **방침**:
+> - 공유 컴포넌트 클래스(.btn, .card 등)는 생성하지 않음 — 사용처가 admin 1곳뿐이라 과도한 엔지니어링
+> - 모달이 `document.body`에 appendChild되는 스코프 버그(Phase 4에서 발견)는 JS 수정이 필요하므로 Phase 7로 이연. 모달 전용 하드코딩은 현 상태 유지
+> - `--as-*` / `--ad-*` 색상 차이는 비의도적이므로 tokens.css 변수로 통합
 
-#### 현재 문제
+#### 현재 문제 (재분석)
 
 ```
-admin-settings.css (867줄):
-- Phase 2에서 --as-* 변수의 색상을 :root 참조로 교체 완료 상태
-- 남은 작업: 버튼(.admin-btn), 입력(.admin-input), 토글(.admin-toggle),
-  모달(.admin-modal), 알림(.admin-settings-notice) 등의 토큰 적용
+admin-settings.css (1,208줄):
+- --as-* 커스텀 변수 20개 중 토큰 참조는 3개(15%)뿐
+- --as-text(#1a1a2e) ≠ --text-dark(#2c3e50) 등 비의도적 색상 차이 다수
+- --as-tab-bg = --as-border-light (중복), --as-tab-text = --as-text-sub (중복)
+- 변수 블록 외 하드코딩 색상 ~45건 (헤더, 토스트, 스피너, 역할 배지 등)
+- 모달 입력 필드: Phase 4 스코프 버그 우회로 하드코딩 (유지)
+- 포커스 링 --focus-ring 토큰 미사용 (3곳 하드코딩)
 
-analytics.css (278줄):
-- Phase 2에서 --ad-* 변수 교체 완료 상태
-- 남은 작업: 카드, 모달, 바 차트 등의 토큰 적용
+analytics.css (495줄):
+- --ad-* 변수 10개 중 4개(40%)가 토큰 참조 (상대적으로 양호)
+- 하드코딩 색상 1건 (#fff)
+- 모달에서 변수 재선언 패턴 (동일 스코프 이슈)
 ```
 
 #### 작업 지시
@@ -541,31 +550,56 @@ analytics.css (278줄):
 ```
 Phase 6를 진행해줘. theme-guide.md를 참조해서 작업해.
 
-[6-1] admin-settings.css 컴포넌트 정리
-   - .admin-btn → .btn 토큰 참조 (padding, radius 통일)
-   - .admin-input, .admin-select, .admin-textarea → .form-input 토큰 참조
-   - .admin-toggle → 토큰 적용 (radius, transition)
-   - .admin-modal → .modal 토큰 참조 (radius, shadow)
-   - .admin-section → .card 토큰 참조 (radius, shadow, border)
-   - .admin-settings-notice → 시맨틱 색상 변수 활용
-   - .admin-role-badge → .badge 토큰 참조
-   - border-radius, box-shadow 하드코딩 → 토큰 변수 교체
-   - 다크모드 블록 정리 (변수 기반 자동 전환으로 불필요한 재정의 제거)
+[6-1] admin-settings.css 변수 통합
+   --as-* 변수를 tokens.css 변수로 교체:
+   - --as-text → var(--text-dark)          (비의도적 차이, 통일)
+   - --as-text-sub → var(--text-light)     (비의도적 차이, 통일)
+   - --as-text-light → 제거 (--as-text-sub과 역할 중복)
+   - --as-bg → var(--bg-gray)              (거의 동일)
+   - --as-bg-card → var(--white)           (동일값)
+   - --as-border → var(--border-color)     (거의 동일)
+   - --as-tab-active → var(--white)        (동일값)
+   - --as-input-bg → var(--white)          (동일값)
+   - --as-danger → var(--color-error)      (톤 통일)
+   - --as-success → var(--color-success)   (톤 통일)
+   - --as-warning → var(--color-warning)   (톤 통일)
+   유지할 고유 변수:
+   - --as-primary-hover, --as-danger-hover (호버 색상, 토큰 없음)
+   - --as-border-light / --as-tab-bg (내부 중복 정리 후 1개만 유지)
+   - --as-input-border / --as-toggle-off (동일값, 1개로 통합)
+   - --as-restart-* 3개 (고유 알림 패턴)
+   다크 변수 블록에서 토큰으로 대체된 변수의 오버라이드 제거.
 
-[6-2] analytics.css 컴포넌트 정리
-   - .ad-card → .card 토큰 참조
-   - .ad-modal → .modal 토큰 참조
-   - 차트 바 색상(--ad-bar-color, --ad-bar-chat)은 고유 유지
-   - border-radius, box-shadow → 토큰 변수 교체
+[6-2] admin-settings.css 하드코딩 색상 교체
+   - 헤더 border #001f3f → var(--primary-navy)
+   - H1 color #001f3f → var(--primary-navy), 다크 #5ba3f5 → var(--active-color)
+   - 토스트 색상 → var(--color-success), var(--color-error), var(--color-warning)
+   - 스피너 #0066cc → var(--active-color)
+   - 포커스 링 → var(--focus-ring) 토큰
+   - 역할 배지 색상은 시맨틱 고유값이므로 유지
+   - 모달 내부 하드코딩은 유지 (Phase 4 스코프 버그 우회, Phase 7에서 JS 수정과 함께 해결)
+   불필요 다크 오버라이드 제거.
 
-[6-3] 최종 점검
-   - /check-theme 스킬로 admin-settings.css, analytics.css 점검
-   - 남아있는 --as-*, --ad-* 고유 변수가 정당한지 확인
+[6-3] analytics.css 변수 통합
+   - --ad-text → var(--text-dark)
+   - --ad-text-secondary → var(--text-light)
+   - --ad-bg-card → var(--white)
+   - --ad-border → var(--border-color)
+   - --ad-hover → var(--hover-bg) 또는 var(--light-gray)
+   - --ad-primary-light → 고유 유지 (tokens에 없는 accent 배경)
+   - --ad-bar-color, --ad-bar-chat → 고유 유지 (차트 색상)
+   모달 변수 재선언도 스코프 이슈이므로 유지, Phase 7에서 해결.
+   다크 변수 블록에서 토큰 대체된 항목 제거.
+
+[6-4] 브라우저 검증 & /review-ui 점검
+   - 관리자 설정: 각 탭(일반/AI/업로드/사용자) × 라이트/다크
+   - 접속 통계: 메인 + 모달 × 라이트/다크
+   - /review-ui css/admin-settings.css css/analytics.css
 
 완료 후:
 - 변경 파일별 줄 수 변화
-- 제거된 중복 코드 줄 수
-- 브라우저에서 확인: 관리자 설정 페이지 (각 탭), 접속 통계 (라이트/다크)
+- 제거/통합된 --as-*, --ad-* 변수 수
+- 남은 고유 변수 목록과 존재 이유
 ```
 
 ---

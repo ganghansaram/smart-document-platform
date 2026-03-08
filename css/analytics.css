@@ -4,29 +4,29 @@
 
 /* --- CSS Variables (light theme) --- */
 .analytics-dashboard {
-    --ad-primary: var(--active-color);
-    --ad-primary-light: #e8f0fe;
-    --ad-success: var(--color-success);
-    --ad-warning: var(--color-warning);
-    --ad-danger: var(--color-error);
-    --ad-text: #1a1a2e;
-    --ad-text-secondary: #5a6c7d;
-    --ad-bg-card: #ffffff;
-    --ad-border: #e2e8f0;
-    --ad-bar-color: #3b82f6;
-    --ad-bar-chat: #8b5cf6;
-    --ad-hover: #f1f5f9;
+    /* tokens.css 참조 */
+    --ad-primary:        var(--active-color);
+    --ad-success:        var(--color-success);
+    --ad-warning:        var(--color-warning);
+    --ad-danger:         var(--color-error);
+    --ad-text:           var(--text-dark);
+    --ad-text-secondary: var(--text-light);
+    --ad-bg-card:        var(--white);
+    --ad-border:         var(--border-color);
+    --ad-bar-color:      var(--color-info);
+
+    /* 독자 값 (토큰에 없는 색상) */
+    --ad-primary-light:  #e8f0fe;
+    --ad-bar-chat:       #8b5cf6;
+    --ad-hover:          #f1f5f9;
 }
 
 body[data-theme="dark"] .analytics-dashboard {
-    --ad-primary-light: #1e293b;
-    --ad-text: #e2e8f0;
-    --ad-text-secondary: #94a3b8;
-    --ad-bg-card: #1e293b;
-    --ad-border: #334155;
-    --ad-bar-color: #60a5fa;
-    --ad-bar-chat: #a78bfa;
-    --ad-hover: #334155;
+    /* tokens.css가 처리: --ad-text, --ad-text-secondary, --ad-bg-card,
+       --ad-border, --ad-bar-color — 오버라이드 불필요 */
+    --ad-primary-light:  #1e293b;
+    --ad-bar-chat:       #a78bfa;
+    --ad-hover:          #334155;
 }
 
 .analytics-dashboard {
