@@ -1,0 +1,74 @@
+/* ===================================
+   디자인 토큰 — 전 페이지 공유 변수
+   모든 HTML에서 첫 번째로 로드해야 합니다.
+   =================================== */
+
+/* 기본 리셋 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 루트 변수 - 라이트 테마 */
+:root {
+    /* 코어 색상 */
+    --primary-navy: #001f3f;
+    --secondary-navy: #003d7a;
+    --dark-gray: #2c3e50;
+    --medium-gray: #7f8c8d;
+    --light-gray: #ecf0f1;
+    --bg-gray: #f5f7fa;
+    --white: #ffffff;
+    --text-dark: #2c3e50;
+    --text-light: #7f8c8d;
+    --border-color: #dde4e8;
+    --hover-bg: #e8f4f8;
+    --active-color: #0066cc;
+
+    /* 시맨틱 색상 */
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+
+    /* 그림자 */
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.18);
+    --shadow-xl: 0 20px 60px rgba(0,0,0,0.3);
+
+    /* 포커스 링 */
+    --focus-ring: 0 0 0 2px rgba(0,102,204,0.15);
+}
+
+/* 다크 테마 변수 오버라이드 */
+body[data-theme="dark"] {
+    --primary-navy: #121218;
+    --secondary-navy: #1a1a2e;
+    --dark-gray: #e0e0e0;
+    --medium-gray: #a0a4b8;
+    --light-gray: #252738;
+    --bg-gray: #121218;
+    --white: #1e1e2e;
+    --text-dark: #e0e0e0;
+    --text-light: #a0a4b8;
+    --border-color: #3d3f50;
+    --hover-bg: #2d2f3e;
+    --active-color: #5ba3f5;
+
+    /* 시맨틱 색상 */
+    --color-success: #4ade80;
+    --color-warning: #fbbf24;
+    --color-error: #f87171;
+    --color-info: #60a5fa;
+
+    /* 그림자 */
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.15);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.25);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.35);
+    --shadow-xl: 0 20px 60px rgba(0,0,0,0.5);
+
+    /* 포커스 링 */
+    --focus-ring: 0 0 0 2px rgba(91,163,245,0.2);
+}

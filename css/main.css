@@ -1,48 +1,7 @@
 /* ===================================
-   KF-21 웹북 - 메인 스타일
-   록히드마틴 스타일: 네이비/그레이/화이트
+   KF-21 웹북 - 메인 스타일 (Explorer 레이아웃 + 컴포넌트)
+   디자인 토큰은 tokens.css에 정의
    =================================== */
-
-/* 기본 리셋 */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-/* 루트 변수 - 색상 테마 */
-:root {
-    --primary-navy: #001f3f;
-    --secondary-navy: #003d7a;
-    --dark-gray: #2c3e50;
-    --medium-gray: #7f8c8d;
-    --light-gray: #ecf0f1;
-    --bg-gray: #f5f7fa;
-    --white: #ffffff;
-    --text-dark: #2c3e50;
-    --text-light: #7f8c8d;
-    --border-color: #dde4e8;
-    --hover-bg: #e8f4f8;
-    --active-color: #0066cc;
-}
-
-/* ===================================
-   다크 테마 변수 오버라이드
-   =================================== */
-body[data-theme="dark"] {
-    --primary-navy: #121218;
-    --secondary-navy: #1a1a2e;
-    --dark-gray: #e0e0e0;
-    --medium-gray: #a0a4b8;
-    --light-gray: #252738;
-    --bg-gray: #121218;
-    --white: #1e1e2e;
-    --text-dark: #e0e0e0;
-    --text-light: #a0a4b8;
-    --border-color: #3d3f50;
-    --hover-bg: #2d2f3e;
-    --active-color: #5ba3f5;
-}
 
 /* ===================================
    테마 토글 버튼

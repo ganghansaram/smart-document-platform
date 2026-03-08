@@ -4,7 +4,7 @@
 
 /* ── CSS 변수 (라이트 테마) ────────────────────────────────────────────────── */
 .admin-settings-page {
-    --as-primary:      #0066cc;
+    --as-primary:      var(--active-color);
     --as-primary-hover:#0052a3;
     --as-danger:       #dc2626;
     --as-danger-hover: #b91c1c;
@@ -20,18 +20,17 @@
     --as-tab-bg:       #f1f5f9;
     --as-tab-active:   #ffffff;
     --as-tab-text:     #5a6c7d;
-    --as-tab-active-text: #0066cc;
+    --as-tab-active-text: var(--active-color);
     --as-input-bg:     #ffffff;
     --as-input-border: #cbd5e1;
     --as-toggle-off:   #cbd5e1;
-    --as-toggle-on:    #0066cc;
+    --as-toggle-on:    var(--active-color);
     --as-restart-bg:   #fef3c7;
     --as-restart-text: #92400e;
     --as-restart-border: #fcd34d;
 }
 
 body[data-theme="dark"] .admin-settings-page {
-    --as-primary:      #5ba3f5;
     --as-primary-hover:#7bbcff;
     --as-danger:       #f87171;
     --as-danger-hover: #fca5a5;
@@ -47,11 +46,9 @@ body[data-theme="dark"] .admin-settings-page {
     --as-tab-bg:       #1e293b;
     --as-tab-active:   #1e293b;
     --as-tab-text:     #94a3b8;
-    --as-tab-active-text: #5ba3f5;
     --as-input-bg:     #0f172a;
     --as-input-border: #334155;
     --as-toggle-off:   #334155;
-    --as-toggle-on:    #5ba3f5;
     --as-restart-bg:   #292524;
     --as-restart-text: #fcd34d;
     --as-restart-border: #78350f;
@@ -61,11 +58,7 @@ body[data-theme="dark"] .admin-settings-page {
 body:has(.admin-settings-page) {
     margin: 0;
     padding: 0;
-    background-color: #f5f7fa;
-}
-
-body[data-theme="dark"]:has(.admin-settings-page) {
-    background-color: #121218;
+    background-color: var(--bg-gray);
 }
 
 /* ── 페이지 레이아웃 ────────────────────────────────────────────────────────── */

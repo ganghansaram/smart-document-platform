@@ -4,11 +4,11 @@
 
 /* --- CSS Variables (light theme) --- */
 .analytics-dashboard {
-    --ad-primary: #0066cc;
+    --ad-primary: var(--active-color);
     --ad-primary-light: #e8f0fe;
-    --ad-success: #22c55e;
-    --ad-warning: #f59e0b;
-    --ad-danger: #ef4444;
+    --ad-success: var(--color-success);
+    --ad-warning: var(--color-warning);
+    --ad-danger: var(--color-error);
     --ad-text: #1a1a2e;
     --ad-text-secondary: #5a6c7d;
     --ad-bg-card: #ffffff;
@@ -19,11 +19,7 @@
 }
 
 body[data-theme="dark"] .analytics-dashboard {
-    --ad-primary: #5ba3f5;
     --ad-primary-light: #1e293b;
-    --ad-success: #4ade80;
-    --ad-warning: #fbbf24;
-    --ad-danger: #f87171;
     --ad-text: #e2e8f0;
     --ad-text-secondary: #94a3b8;
     --ad-bg-card: #1e293b;
