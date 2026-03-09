@@ -14,7 +14,7 @@ _SETTINGS_PATH = Path(_config.AUTH_DB_PATH).parent / "settings.json"
 
 DEFAULT_SETTINGS: dict = {
     "ai": {
-        "ollama_url": "http://localhost:11434",
+        "ollama_url": _config.OLLAMA_URL,
         "ollama_model": "gemma3:4b",
         "embedding_model": "bge-m3",
         "max_search_results": 5,
@@ -36,7 +36,7 @@ DEFAULT_SETTINGS: dict = {
     },
     "security": {
         "login_required": True,
-        "cors_origins": ["http://localhost:8080", "http://127.0.0.1:8080"],
+        "cors_origins": _config.CORS_ORIGINS,
     },
     "translator": {
         "translation_model": "",
