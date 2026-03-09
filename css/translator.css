@@ -110,6 +110,21 @@ body {
     z-index: 1;
 }
 
+.hero-features {
+    position: absolute;
+    bottom: 28px;
+    right: 48px;
+    z-index: 2;
+    display: flex;
+    gap: 32px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.hero-feature-icon svg {
+    width: 56px;
+    height: 56px;
+}
+
 body[data-theme="dark"] .hero-banner-img {
     filter: brightness(0.7);
 }

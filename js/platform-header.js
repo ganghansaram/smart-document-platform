@@ -235,6 +235,15 @@ function initPlatformHeader(config) {
         if (item.id) navRefs[item.id] = el;
     });
 
+    // Settings link (admin-only, shown after auth check; hidden on settings page)
+    var settingsLink = document.createElement('a');
+    settingsLink.href = 'admin.html';
+    settingsLink.className = 'ph-link ph-settings-link';
+    settingsLink.textContent = 'Settings';
+    settingsLink.style.display = 'none';
+    var _hideSettings = (config.currentSystem === 'settings');
+    if (!_hideSettings) nav.appendChild(settingsLink);
+
     // Auth group: username | Logout
     var authGroup = document.createElement('span');
     authGroup.id = 'nav-auth-userinfo';
@@ -300,6 +309,9 @@ function initPlatformHeader(config) {
                 _phUser = d.user;
                 usernameEl.textContent = d.user.username;
                 authGroup.style.display = '';
+                if (d.user.role === 'admin') {
+                    settingsLink.style.display = '';
+                }
                 onAuth(d.user);
             })
             .catch(function() { onUnauth(); });

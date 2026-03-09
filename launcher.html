@@ -214,14 +214,6 @@
                     <div class="launcher-card-desc">논문 번역 · PDF 뷰어</div>
                 </div>
             </div>
-            <div class="launcher-card active auth-admin-only" id="card-admin" style="display:none">
-                <div class="launcher-card-bg" style="background:linear-gradient(135deg,#1a2744,#2a3f6f)"></div>
-                <div class="launcher-card-overlay"></div>
-                <div class="launcher-card-body">
-                    <h3>Settings</h3>
-                    <div class="launcher-card-desc">시스템 관리 · 설정</div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -236,9 +228,6 @@
             currentSystem: 'platform',
             navItems: [],
             onAuth: function(user) {
-                if (user.role === 'admin') {
-                    document.getElementById('card-admin').style.display = '';
-                }
                 document.body.style.visibility = 'visible';
                 document.body.classList.add('fade-in');
             }
@@ -260,13 +249,6 @@
             }, 400);
         });
 
-        // Settings 카드 클릭
-        document.getElementById('card-admin').addEventListener('click', function() {
-            document.body.classList.add('fade-out');
-            setTimeout(function() {
-                window.location.href = 'admin.html';
-            }, 400);
-        });
 
         // 푸터
         initPlatformFooter('launcher-footer');
