@@ -18,10 +18,24 @@ from services.translator_service import (
     get_text_translated_pdf_path, cancel_text_translation,
     get_annotations, create_annotation, update_annotation, delete_annotation,
     ai_selection_query,
+    search_documents,
 )
 import config
 
 router = APIRouter(prefix="/translator", tags=["translator"])
+
+
+# ── 검색 ──
+
+@router.get("/search")
+async def api_search_documents(
+    q: str = "",
+    user: dict = Depends(get_current_user),
+):
+    """유저 문서 검색 (본문 + 메모)"""
+    if not q.strip():
+        return {"memos": [], "pages": [], "query": "", "total": 0}
+    return search_documents(user["username"], q)
 
 
 # ── 폴더 CRUD ──
