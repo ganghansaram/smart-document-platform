@@ -147,7 +147,7 @@
 
         $uploadZone.addEventListener('click', function() { $fileInput.click(); });
         $fileInput.addEventListener('change', function() {
-            if ($fileInput.files.length) uploadFile($fileInput.files[0]);
+            if ($fileInput.files.length) uploadFiles($fileInput.files);
         });
         $uploadZone.addEventListener('dragover', function(e) {
             e.preventDefault();
@@ -159,36 +159,63 @@
         $uploadZone.addEventListener('drop', function(e) {
             e.preventDefault();
             $uploadZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+            if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
         });
 
-        function uploadFile(file) {
-            if (!file.name.toLowerCase().endsWith('.pdf')) {
+        var _uploading = false;
+
+        function uploadFiles(fileList) {
+            if (_uploading) return;
+            var pdfFiles = [];
+            for (var i = 0; i < fileList.length; i++) {
+                if (fileList[i].name.toLowerCase().endsWith('.pdf')) pdfFiles.push(fileList[i]);
+            }
+            if (!pdfFiles.length) {
                 alert('PDF 파일만 업로드할 수 있습니다.');
                 return;
             }
-            var formData = new FormData();
-            formData.append('file', file);
 
+            _uploading = true;
             $uploadZone.style.pointerEvents = 'none';
-            $uploadZone.querySelector('.upload-zone-text').textContent = '업로드 중...';
+            var $text = $uploadZone.querySelector('.upload-zone-text');
+            var total = pdfFiles.length;
+            var errors = [];
+            var idx = 0;
 
-            fetch(API + '/api/translator/upload', {
-                method: 'POST',
-                body: formData,
-                credentials: 'include',
-            }).then(function(resp) {
-                if (!resp.ok) return resp.json().then(function(e) { throw new Error(e.detail || 'Upload failed'); });
-                return resp.json();
-            }).then(function() {
-                $fileInput.value = '';
-                loadDocuments();
-            }).catch(function(err) {
-                alert('업로드 오류: ' + err.message);
-            }).finally(function() {
-                $uploadZone.style.pointerEvents = '';
-                $uploadZone.querySelector('.upload-zone-text').textContent = 'PDF 파일을 드래그하거나 클릭하여 업로드';
-            });
+            function next() {
+                if (idx >= total) {
+                    _uploading = false;
+                    $uploadZone.style.pointerEvents = '';
+                    $text.textContent = 'PDF 파일을 드래그하거나 클릭하여 업로드';
+                    $fileInput.value = '';
+                    loadDocuments();
+                    if (errors.length) alert('업로드 실패 (' + errors.length + '건):\n' + errors.join('\n'));
+                    return;
+                }
+                var file = pdfFiles[idx];
+                $text.textContent = total > 1
+                    ? '업로드 중... (' + (idx + 1) + '/' + total + ') ' + file.name
+                    : '업로드 중...';
+                var formData = new FormData();
+                formData.append('file', file);
+
+                fetch(API + '/api/translator/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include',
+                }).then(function(resp) {
+                    if (!resp.ok) return resp.json().then(function(e) { throw new Error(e.detail || 'Upload failed'); });
+                    return resp.json();
+                }).then(function() {
+                    idx++;
+                    next();
+                }).catch(function(err) {
+                    errors.push(file.name + ': ' + err.message);
+                    idx++;
+                    next();
+                });
+            }
+            next();
         }
 
         // ══════════════════════════════════════

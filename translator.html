@@ -67,11 +67,19 @@
 
         <!-- State 1: Document List + Upload -->
         <div class="view-list" id="view-list">
+            <!-- Hero Banner -->
+            <div class="hero-banner">
+                <img class="hero-banner-img" src="css/images/translator_home.png" alt="" decoding="async">
+                <div class="hero-overlay">
+                    <h2>Your Paper, Your Language</h2>
+                </div>
+                <div class="hero-banner-fade"></div>
+            </div>
             <div class="upload-zone" id="upload-zone">
                 <div class="upload-zone-icon">&#128196;</div>
                 <div class="upload-zone-text">PDF 파일을 드래그하거나 클릭하여 업로드</div>
                 <div class="upload-zone-hint">최대 100MB</div>
-                <input type="file" id="file-input" accept=".pdf">
+                <input type="file" id="file-input" accept=".pdf" multiple>
             </div>
             <div class="doc-grid" id="doc-grid"></div>
             <div id="translator-footer"></div>
