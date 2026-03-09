@@ -15,27 +15,44 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background: linear-gradient(150deg, #0a1628 0%, #122a52 45%, #0e1f40 75%, #060c1a 100%);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
-            color: #e8edf5;
+            color: #fff;
+            overflow: hidden;
+            background: #0a1628;
             visibility: hidden;
         }
 
-        /* 배경 미세 격자 패턴 */
-        body::before {
-            content: '';
+        /* ── 비디오 배경 ── */
+        .bg-video {
             position: fixed;
             inset: 0;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-            background-size: 40px 40px;
-            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
         }
 
-        .platform-header { position: relative; z-index: 2; }
+        .bg-video video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
 
-        /* 메인 영역 */
+        .bg-video::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0);
+        }
+
+        /* ── 헤더 투명 오버라이드 ── */
+        .platform-header {
+            position: relative;
+            z-index: 2;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        /* ── 메인 ── */
         .launcher-main {
             position: relative;
             z-index: 1;
@@ -44,130 +61,113 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 40px 24px;
+            padding: 0 24px 60px;
         }
 
-        .launcher-title {
-            font-size: 26px;
+        /* 상징 문구 */
+        .hero-phrase {
+            font-size: 48px;
             font-weight: 700;
+            color: #fff;
             text-align: center;
-            margin-bottom: 8px;
-            letter-spacing: -0.3px;
+            letter-spacing: -1px;
+            margin-bottom: 56px;
+            text-shadow: 0 2px 30px rgba(0, 0, 0, 0.4);
+            line-height: 1.2;
         }
 
-        .launcher-subtitle {
-            font-size: 14px;
-            color: rgba(255,255,255,0.5);
-            text-align: center;
-            margin-bottom: 48px;
+        .hero-phrase span {
+            display: block;
+            font-size: 16px;
+            font-weight: 400;
+            color: #fff;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 12px;
+            text-shadow: none;
         }
 
-        /* 카드 그리드 */
-        .launcher-cards {
+        /* ── 시스템 카드 ── */
+        .system-cards {
             display: flex;
-            gap: 28px;
-            flex-wrap: wrap;
+            gap: 32px;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
-        .launcher-card {
-            position: relative;
-            width: 260px;
-            height: 300px;
-            border-radius: 12px;
-            overflow: hidden;
+        .system-card {
+            width: 240px;
+            padding: 40px 28px;
             text-align: center;
-            transition: transform 0.3s, box-shadow 0.3s;
+            border-radius: 12px;
+            border: 1.5px solid transparent;
+            cursor: pointer;
+            transition: border-color 0.3s, background 0.3s, transform 0.3s;
+            text-decoration: none;
+            color: #fff;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
         }
 
-        /* 카드 배경 이미지 */
-        .launcher-card-bg {
-            position: absolute;
-            inset: 0;
-            background-size: cover;
-            background-position: center;
-            transition: transform 0.4s ease;
+        .system-card:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-4px);
         }
 
-        /* 어두운 오버레이 (텍스트 가독성) */
-        .launcher-card-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.15) 100%);
-            transition: background 0.3s;
-        }
-
-        /* 카드 텍스트 영역 */
-        .launcher-card-body {
-            position: relative;
-            z-index: 1;
-            padding: 24px 20px;
-            color: #fff;
-        }
-
-        /* 활성 카드 */
-        .launcher-card.active {
-            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-            cursor: pointer;
-        }
-
-        .launcher-card.active:hover .launcher-card-bg {
-            transform: scale(1.08);
-        }
-
-        /* 비활성 카드 */
-        .launcher-card.disabled {
-            cursor: not-allowed;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-        }
-
-        .launcher-card.disabled .launcher-card-bg {
-            filter: grayscale(0.6) brightness(0.5);
-        }
-
-        .launcher-card.disabled .launcher-card-overlay {
-            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.3) 100%);
-        }
-
-        .launcher-card h3 {
-            font-size: 18px;
+        .system-card h3 {
+            font-size: 28px;
             font-weight: 700;
-            margin-bottom: 6px;
-            color: #fff;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
         }
 
-        .launcher-card-desc {
+        .system-card-desc {
             font-size: 13px;
+            font-weight: 400;
+            color: #fff;
             line-height: 1.5;
-            color: rgba(255,255,255,0.8);
-            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
 
-        .launcher-card.disabled .launcher-card-desc {
-            color: rgba(255,255,255,0.45);
+        .system-card.disabled {
+            cursor: not-allowed;
+            opacity: 0.4;
         }
 
-        /* 배지: 좌측 상단 고정 */
-        .launcher-card-badge {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            z-index: 2;
-            font-size: 11px;
+        .system-card.disabled:hover {
+            border-color: transparent;
+            background: none;
+            transform: none;
+        }
+
+        .system-card-badge {
+            font-size: 10px;
             font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 4px;
-            letter-spacing: 0.3px;
-            background: rgba(0,0,0,0.55);
-            color: rgba(255,255,255,0.7);
-            backdrop-filter: blur(4px);
+            padding: 3px 8px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
         }
 
-        /* 페이지 전환 */
+        /* ── 푸터 투명 오버라이드 ── */
+        .platform-footer {
+            position: relative;
+            z-index: 2;
+            background: transparent !important;
+            border-top-color: transparent !important;
+            color: rgba(255, 255, 255, 0.25) !important;
+        }
+
+        .platform-footer a {
+            color: rgba(255, 255, 255, 0.35) !important;
+        }
+
+        /* ── 페이지 전환 ── */
         body.fade-in {
             animation: fadeIn 0.5s ease forwards;
         }
@@ -184,35 +184,32 @@
     </style>
 </head>
 <body>
-    <div class="launcher-main">
-        <div class="launcher-title" id="launcher-title">Smart Document Platform</div>
-        <div class="launcher-subtitle">시스템을 선택하세요</div>
+    <!-- 비디오 배경 -->
+    <div class="bg-video">
+        <video autoplay muted loop playsinline>
+            <source src="css/images/cloud.mp4" type="video/mp4">
+        </video>
+    </div>
 
-        <div class="launcher-cards">
-            <div class="launcher-card active" id="card-explorer">
-                <div class="launcher-card-bg" style="background-image: url('css/images/1-1_KF-21.jpg')"></div>
-                <div class="launcher-card-overlay"></div>
-                <div class="launcher-card-body">
-                    <h3>Explorer</h3>
-                    <div class="launcher-card-desc">문서 탐색 · 검색 · AI 질의</div>
-                </div>
-            </div>
-            <div class="launcher-card disabled">
-                <div class="launcher-card-bg" style="background-image: url('css/images/1-3_KF-21.jpg')"></div>
-                <div class="launcher-card-overlay"></div>
-                <span class="launcher-card-badge">개발 예정</span>
-                <div class="launcher-card-body">
-                    <h3>Compare</h3>
-                    <div class="launcher-card-desc">문서 버전 비교 · 변경 추적</div>
-                </div>
-            </div>
-            <div class="launcher-card active" id="card-translator">
-                <div class="launcher-card-bg" style="background-image: url('css/images/1-2_KF-21.jpg')"></div>
-                <div class="launcher-card-overlay"></div>
-                <div class="launcher-card-body">
-                    <h3>Translator</h3>
-                    <div class="launcher-card-desc">논문 번역 · PDF 뷰어</div>
-                </div>
+    <div class="launcher-main">
+        <div class="hero-phrase">
+            Knowledge at Your Fingertips
+            <span>Select a system to begin</span>
+        </div>
+
+        <div class="system-cards">
+            <a class="system-card" id="card-explorer" href="index.html">
+                <h3>Explorer</h3>
+                <div class="system-card-desc">문서 탐색 · 검색 · AI 질의</div>
+            </a>
+            <a class="system-card" id="card-translator" href="translator.html">
+                <h3>Translator</h3>
+                <div class="system-card-desc">논문 번역 · PDF 뷰어</div>
+            </a>
+            <div class="system-card disabled">
+                <h3>Compare</h3>
+                <div class="system-card-desc">문서 버전 비교 · 변경 추적</div>
+                <span class="system-card-badge">COMING SOON</span>
             </div>
         </div>
     </div>
@@ -224,7 +221,7 @@
     <script src="js/platform-footer.js"></script>
     <script>
         initPlatformHeader({
-            title: 'Platform',
+            title: 'Smart Document Platform',
             currentSystem: 'platform',
             navItems: [],
             onAuth: function(user) {
@@ -233,22 +230,18 @@
             }
         });
 
-        // Explorer 카드 클릭
-        document.getElementById('card-explorer').addEventListener('click', function() {
+        // 카드 클릭 → fade-out 전환
+        document.getElementById('card-explorer').addEventListener('click', function(e) {
+            e.preventDefault();
             document.body.classList.add('fade-out');
-            setTimeout(function() {
-                window.location.href = 'index.html';
-            }, 400);
+            setTimeout(function() { window.location.href = 'index.html'; }, 400);
         });
 
-        // Translator 카드 클릭
-        document.getElementById('card-translator').addEventListener('click', function() {
+        document.getElementById('card-translator').addEventListener('click', function(e) {
+            e.preventDefault();
             document.body.classList.add('fade-out');
-            setTimeout(function() {
-                window.location.href = 'translator.html';
-            }, 400);
+            setTimeout(function() { window.location.href = 'translator.html'; }, 400);
         });
-
 
         // 푸터
         initPlatformFooter('launcher-footer');
