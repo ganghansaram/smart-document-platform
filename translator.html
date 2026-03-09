@@ -23,6 +23,15 @@
         </button>
     </div>
 
+    <!-- Search Overlay -->
+    <div class="ts-search-overlay" id="ts-search-overlay">
+        <div class="ts-search-container">
+            <input type="text" class="ts-search-input" id="ts-search-input" placeholder="문서 본문, 메모 검색..." autocomplete="off">
+            <button class="ts-search-close" id="ts-search-close">&times;</button>
+            <div class="ts-search-results" id="ts-search-results"></div>
+        </div>
+    </div>
+
     <div class="translator-body">
         <!-- Tree Panel: overlay -->
         <div class="tree-panel-overlay" id="tp-overlay">
@@ -58,11 +67,33 @@
 
         <!-- State 1: Document List + Upload -->
         <div class="view-list" id="view-list">
+            <!-- Hero Banner -->
+            <div class="hero-banner">
+                <img class="hero-banner-img" src="css/images/night_sky.png" alt="" decoding="async">
+                <div class="hero-overlay">
+                    <h2>Your Paper, Your Language</h2>
+                </div>
+                <div class="hero-features">
+                    <span class="hero-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                    </span>
+                    <span class="hero-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="8" height="18" rx="1"/><rect x="14" y="3" width="8" height="18" rx="1"/><path d="M6 8h0"/><path d="M6 12h0"/><path d="M18 8h0"/><path d="M18 12h0"/></svg>
+                    </span>
+                    <span class="hero-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+                    </span>
+                    <span class="hero-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </span>
+                </div>
+                <div class="hero-banner-fade"></div>
+            </div>
             <div class="upload-zone" id="upload-zone">
                 <div class="upload-zone-icon">&#128196;</div>
                 <div class="upload-zone-text">PDF 파일을 드래그하거나 클릭하여 업로드</div>
                 <div class="upload-zone-hint">최대 100MB</div>
-                <input type="file" id="file-input" accept=".pdf">
+                <input type="file" id="file-input" accept=".pdf" multiple>
             </div>
             <div class="doc-grid" id="doc-grid"></div>
             <div id="translator-footer"></div>

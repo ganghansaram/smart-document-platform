@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>배너 시안 C — 서피스 카드</title>
+<style>
+/* ── tokens.css 발췌 ── */
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+    --primary-navy:#001f3f; --secondary-navy:#003d7a;
+    --dark-gray:#2c3e50; --medium-gray:#7f8c8d;
+    --light-gray:#ecf0f1; --bg-gray:#f5f7fa; --white:#ffffff;
+    --text-dark:#2c3e50; --text-light:#7f8c8d;
+    --border-color:#dde4e8; --hover-bg:#e8f4f8; --active-color:#0066cc;
+    --shadow-sm:0 1px 4px rgba(0,0,0,0.08);
+    --shadow-md:0 4px 16px rgba(0,0,0,0.12);
+}
+body[data-theme="dark"] {
+    --primary-navy:#121218; --secondary-navy:#1a1a2e;
+    --dark-gray:#e0e0e0; --medium-gray:#a0a4b8;
+    --light-gray:#252738; --bg-gray:#121218; --white:#1e1e2e;
+    --text-dark:#e0e0e0; --text-light:#a0a4b8;
+    --border-color:#3d3f50; --hover-bg:#2d2f3e; --active-color:#5ba3f5;
+    --shadow-sm:0 1px 4px rgba(0,0,0,0.15);
+    --shadow-md:0 4px 16px rgba(0,0,0,0.25);
+}
+
+body {
+    height:100vh; display:flex; flex-direction:column;
+    background:var(--bg-gray);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',Arial,sans-serif;
+    color:var(--text-dark); overflow-x:hidden;
+}
+
+/* ── 헤더 ── */
+.platform-header {
+    background:linear-gradient(135deg,var(--primary-navy) 0%,var(--secondary-navy) 100%);
+    height:60px; padding:0 30px; display:flex; align-items:center;
+    justify-content:space-between; flex-shrink:0;
+    box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+.platform-header h1 { font-size:25px; font-weight:600; font-style:italic; color:#fff; }
+.header-right { display:flex; align-items:center; gap:20px; }
+.header-right span { color:rgba(255,255,255,0.7); font-size:14px; }
+
+/* ── 테마 토글 ── */
+.theme-toggle {
+    position:fixed; top:14px; right:160px; z-index:100;
+    padding:6px 14px; border-radius:6px; border:1px solid rgba(255,255,255,0.3);
+    background:rgba(255,255,255,0.1); color:#fff; font-size:13px; cursor:pointer;
+}
+.theme-toggle:hover { background:rgba(255,255,255,0.2); }
+
+/* ── 메인 영역 ── */
+.view-list { flex:1; overflow-y:auto; padding:32px 32px 0; }
+
+/* ═══════════════════════════════════════
+   시안 C: 서피스 카드 (배경색 채움, 테두리 없음)
+   ═══════════════════════════════════════ */
+.feature-banner-wrap {
+    position:relative; max-width:720px; margin:0 auto 24px;
+}
+
+.feature-banner {
+    display:flex; gap:14px;
+}
+
+.feature-card {
+    flex:1; min-width:0;
+    border-radius:12px;
+    padding:20px 16px;
+    text-align:center;
+    border:none;
+    transition:transform 0.2s, box-shadow 0.2s;
+}
+
+.feature-card:hover {
+    transform:translateY(-2px);
+}
+
+/* 각 카드 고유 배경색 */
+.feature-card:nth-child(1) {
+    background:#eff6ff;
+    box-shadow:0 2px 8px rgba(2,132,199,0.08);
+}
+.feature-card:nth-child(2) {
+    background:#fffbeb;
+    box-shadow:0 2px 8px rgba(217,119,6,0.08);
+}
+.feature-card:nth-child(3) {
+    background:#fdf2f8;
+    box-shadow:0 2px 8px rgba(219,39,119,0.08);
+}
+.feature-card:nth-child(4) {
+    background:#eef2ff;
+    box-shadow:0 2px 8px rgba(79,70,229,0.08);
+}
+
+.feature-card:nth-child(1):hover { box-shadow:0 4px 14px rgba(2,132,199,0.15); }
+.feature-card:nth-child(2):hover { box-shadow:0 4px 14px rgba(217,119,6,0.15); }
+.feature-card:nth-child(3):hover { box-shadow:0 4px 14px rgba(219,39,119,0.15); }
+.feature-card:nth-child(4):hover { box-shadow:0 4px 14px rgba(79,70,229,0.15); }
+
+/* 다크모드 — 채도 낮은 배경 */
+body[data-theme="dark"] .feature-card:nth-child(1) {
+    background:rgba(2,132,199,0.10);
+    box-shadow:0 2px 8px rgba(2,132,199,0.12);
+}
+body[data-theme="dark"] .feature-card:nth-child(2) {
+    background:rgba(217,119,6,0.10);
+    box-shadow:0 2px 8px rgba(217,119,6,0.12);
+}
+body[data-theme="dark"] .feature-card:nth-child(3) {
+    background:rgba(219,39,119,0.10);
+    box-shadow:0 2px 8px rgba(219,39,119,0.12);
+}
+body[data-theme="dark"] .feature-card:nth-child(4) {
+    background:rgba(79,70,229,0.10);
+    box-shadow:0 2px 8px rgba(79,70,229,0.12);
+}
+
+body[data-theme="dark"] .feature-card:nth-child(1):hover { box-shadow:0 4px 14px rgba(2,132,199,0.22); }
+body[data-theme="dark"] .feature-card:nth-child(2):hover { box-shadow:0 4px 14px rgba(217,119,6,0.22); }
+body[data-theme="dark"] .feature-card:nth-child(3):hover { box-shadow:0 4px 14px rgba(219,39,119,0.22); }
+body[data-theme="dark"] .feature-card:nth-child(4):hover { box-shadow:0 4px 14px rgba(79,70,229,0.22); }
+
+.feature-card-icon {
+    width:44px; height:44px; margin:0 auto 12px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:12px;
+    background:rgba(255,255,255,0.7);
+}
+
+body[data-theme="dark"] .feature-card-icon {
+    background:rgba(255,255,255,0.08);
+}
+
+.feature-card-icon svg { width:22px; height:22px; }
+
+.feature-card:nth-child(1) .feature-card-icon { color:#0369a1; }
+.feature-card:nth-child(2) .feature-card-icon { color:#b45309; }
+.feature-card:nth-child(3) .feature-card-icon { color:#be185d; }
+.feature-card:nth-child(4) .feature-card-icon { color:#4338ca; }
+
+body[data-theme="dark"] .feature-card:nth-child(1) .feature-card-icon { color:#38bdf8; }
+body[data-theme="dark"] .feature-card:nth-child(2) .feature-card-icon { color:#fbbf24; }
+body[data-theme="dark"] .feature-card:nth-child(3) .feature-card-icon { color:#f472b6; }
+body[data-theme="dark"] .feature-card:nth-child(4) .feature-card-icon { color:#818cf8; }
+
+.feature-card-title {
+    font-size:14px; font-weight:600; color:var(--text-dark);
+    margin-bottom:6px;
+}
+
+.feature-card-desc {
+    font-size:12px; color:var(--text-light); line-height:1.4;
+}
+
+/* ── 배너 닫기 ── */
+.feature-banner-close {
+    position:absolute; top:-6px; right:-6px;
+    width:22px; height:22px; border-radius:50%;
+    border:1px solid var(--border-color); background:var(--white);
+    color:var(--text-light); font-size:14px; line-height:1;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:background 0.15s, color 0.15s;
+    z-index:1; box-shadow:var(--shadow-sm);
+}
+.feature-banner-close:hover { background:rgba(239,68,68,0.85); color:#fff; border-color:transparent; }
+
+/* ── 업로드 존 ── */
+.upload-zone {
+    border:2px dashed var(--border-color); border-radius:10px;
+    padding:36px; text-align:center; cursor:pointer;
+    transition:border-color 0.2s,background 0.2s;
+    margin-bottom:28px; max-width:720px; margin-left:auto; margin-right:auto;
+}
+.upload-zone:hover { border-color:var(--active-color); background:rgba(0,102,204,0.05); }
+.upload-zone-icon { font-size:36px; margin-bottom:10px; opacity:0.4; }
+.upload-zone-text { font-size:15px; color:var(--text-light); }
+.upload-zone-hint { font-size:13px; color:var(--text-light); margin-top:6px; }
+
+/* ── 문서 카드 그리드 ── */
+.doc-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:16px; max-width:900px; margin:0 auto; width:100%;
+}
+.doc-card {
+    background:var(--white); border:1px solid var(--border-color);
+    border-radius:10px; padding:20px; cursor:pointer;
+    transition:border-color 0.2s;
+}
+.doc-card:hover { border-color:rgba(0,102,204,0.4); }
+.doc-card-title { font-size:15px; font-weight:600; color:var(--text-dark); margin-bottom:8px; }
+.doc-card-meta { font-size:13px; color:var(--text-light); margin-bottom:10px; }
+.doc-card-status { font-size:13px; color:#22c55e; }
+</style>
+</head>
+<body data-theme="light">
+
+<button class="theme-toggle" onclick="toggleTheme()">🌙 다크모드</button>
+
+<div class="platform-header">
+    <h1>KAI Translator</h1>
+    <div class="header-right">
+        <span>Search</span>
+        <span>testbot</span>
+    </div>
+</div>
+
+<div class="view-list">
+
+    <!-- ★ 배너 시안 C: 서피스 카드 ★ -->
+    <div class="feature-banner-wrap">
+        <button class="feature-banner-close" title="닫기">&times;</button>
+        <div class="feature-banner">
+            <div class="feature-card">
+                <div class="feature-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                </div>
+                <div class="feature-card-title">PDF 업로드</div>
+                <div class="feature-card-desc">드래그 앤 드롭으로 간편 업로드</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6"/><polyline points="14 2 14 8 20 8"/><path d="M2 15l4-4 4 4"/><line x1="6" y1="11" x2="6" y2="21"/></svg>
+                </div>
+                <div class="feature-card-title">페이지별 번역</div>
+                <div class="feature-card-desc">원하는 페이지만 선택하여 번역</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+                </div>
+                <div class="feature-card-title">마킹 & 메모</div>
+                <div class="feature-card-desc">형광펜 표시 + 메모로 핵심 정리</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/><path d="M8 12h.01"/><path d="M16 12h.01"/><path d="M9.5 9.5l.5.5"/><path d="M14 14l.5.5"/><path d="M9.5 14.5l.5-.5"/><path d="M14 10l.5-.5"/></svg>
+                </div>
+                <div class="feature-card-title">AI 텍스트 분석</div>
+                <div class="feature-card-desc">드래그 선택으로 즉시 번역·요약</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 업로드 존 -->
+    <div class="upload-zone">
+        <div class="upload-zone-icon">📄</div>
+        <div class="upload-zone-text">PDF 파일을 드래그하거나 클릭하여 업로드</div>
+        <div class="upload-zone-hint">최대 100MB</div>
+    </div>
+
+    <!-- 샘플 카드 -->
+    <div class="doc-grid">
+        <div class="doc-card">
+            <div class="doc-card-title">Attention Is All You Need.pdf</div>
+            <div class="doc-card-meta">12페이지 · 2026-03-08</div>
+            <div class="doc-card-status">5/12 페이지 번역 완료</div>
+        </div>
+        <div class="doc-card">
+            <div class="doc-card-title">BERT: Pre-training of Deep Bidirectional.pdf</div>
+            <div class="doc-card-meta">16페이지 · 2026-03-07</div>
+            <div class="doc-card-status">전체 번역 완료</div>
+        </div>
+        <div class="doc-card">
+            <div class="doc-card-title">ResNet Deep Residual Learning.pdf</div>
+            <div class="doc-card-meta">9페이지 · 2026-03-05</div>
+            <div class="doc-card-status">번역 전</div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTheme() {
+    var btn = document.querySelector('.theme-toggle');
+    if (document.body.dataset.theme === 'dark') {
+        document.body.dataset.theme = 'light';
+        btn.textContent = '🌙 다크모드';
+    } else {
+        document.body.dataset.theme = 'dark';
+        btn.textContent = '☀️ 라이트모드';
+    }
+}
+</script>
+</body>
+</html>

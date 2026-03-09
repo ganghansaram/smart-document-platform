@@ -56,6 +56,10 @@ def _user_folders_path(username: str) -> Path:
     return _user_dir(username) / "_folders.json"
 
 
+def _search_index_path(username: str) -> Path:
+    return _user_dir(username) / "_search_index.json"
+
+
 def _generate_id() -> str:
     now = datetime.now()
     rand = hashlib.md5(os.urandom(8)).hexdigest()[:6]
@@ -136,6 +140,207 @@ def _save_meta(username: str, doc_id: str, meta: dict):
     doc_path.mkdir(parents=True, exist_ok=True)
     with open(doc_path / "meta.json", "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
+
+
+# ══════════════════════════════════════
+# 검색 인덱스
+# ══════════════════════════════════════
+
+def _load_search_index(username: str) -> dict:
+    path = _search_index_path(username)
+    if path.exists():
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"version": 1, "updated_at": None, "documents": {}}
+
+
+def _save_search_index(username: str, index: dict):
+    udir = _user_dir(username)
+    udir.mkdir(parents=True, exist_ok=True)
+    index["updated_at"] = datetime.now().isoformat()
+    with open(_search_index_path(username), "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False)
+
+
+def _extract_pdf_text(pdf_bytes: bytes, total_pages: int) -> dict[str, str]:
+    """PyMuPDF로 PDF 전체 페이지의 텍스트 추출 → {"1": "text...", "2": "text..."}"""
+    import fitz
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    try:
+        pages = {}
+        for i in range(len(doc)):
+            text = doc[i].get_text().strip()
+            if text:
+                pages[str(i + 1)] = text
+        return pages
+    finally:
+        doc.close()
+
+
+def _add_to_search_index(username: str, doc_id: str, title: str, pages_text: dict[str, str]):
+    """검색 인덱스에 문서 추가/갱신"""
+    si = _load_search_index(username)
+    si["documents"][doc_id] = {"title": title, "pages": pages_text}
+    _save_search_index(username, si)
+
+
+def _remove_from_search_index(username: str, doc_id: str):
+    """검색 인덱스에서 문서 제거"""
+    si = _load_search_index(username)
+    if doc_id in si["documents"]:
+        del si["documents"][doc_id]
+        _save_search_index(username, si)
+
+
+def _update_search_index_title(username: str, doc_id: str, new_title: str):
+    """검색 인덱스에서 문서 제목 갱신"""
+    si = _load_search_index(username)
+    if doc_id in si["documents"]:
+        si["documents"][doc_id]["title"] = new_title
+        _save_search_index(username, si)
+
+
+def _build_search_index_for_user(username: str) -> dict:
+    """유저의 모든 문서에 대해 검색 인덱스 일괄 빌드 (온디맨드 마이그레이션)"""
+    import fitz
+    si = {"version": 1, "updated_at": None, "documents": {}}
+    index = _load_user_index(username)
+    for entry in index:
+        doc_id = entry["id"]
+        pdf_path = _doc_dir(username, doc_id) / "original.pdf"
+        if not pdf_path.exists():
+            continue
+        try:
+            doc = fitz.open(str(pdf_path))
+            try:
+                pages = {}
+                for i in range(len(doc)):
+                    text = doc[i].get_text().strip()
+                    if text:
+                        pages[str(i + 1)] = text
+            finally:
+                doc.close()
+            meta = _load_meta(username, doc_id)
+            title = meta.get("title", entry.get("filename", "")) if meta else entry.get("filename", "")
+            si["documents"][doc_id] = {"title": title, "pages": pages}
+        except Exception:
+            continue
+    _save_search_index(username, si)
+    return si
+
+
+def search_documents(username: str, query: str, max_results: int = 30) -> dict:
+    """유저 문서 검색 — 본문(페이지) + 메모, 키워드 매칭
+
+    Returns: {"memos": [...], "pages": [...], "query": str, "total": int}
+    """
+    query = query.strip()
+    if not query:
+        return {"memos": [], "pages": [], "query": "", "total": 0}
+
+    # 검색 인덱스 로드 (없으면 온디맨드 빌드)
+    si = _load_search_index(username)
+    if not si.get("documents"):
+        user_index = _load_user_index(username)
+        if user_index:
+            si = _build_search_index_for_user(username)
+
+    # 검색어 토큰 (2자 이상)
+    terms = [t.lower() for t in query.split() if len(t) >= 1]
+    if not terms:
+        return {"memos": [], "pages": [], "query": query, "total": 0}
+
+    # ── 메모 검색 ──
+    memo_results = []
+    user_index = _load_user_index(username)
+    doc_titles = {}
+    for entry in user_index:
+        meta = _load_meta(username, entry["id"])
+        doc_titles[entry["id"]] = (meta or {}).get("title", entry.get("filename", ""))
+
+    for entry in user_index:
+        doc_id = entry["id"]
+        annotations = _load_annotations(username, doc_id)
+        for h in annotations.get("highlights", []):
+            memo = h.get("memo", "")
+            text = h.get("text", "")
+            searchable = (memo + " " + text).lower()
+            if any(t in searchable for t in terms):
+                # 스니펫 생성
+                snippet = memo if memo else text
+                if len(snippet) > 120:
+                    snippet = snippet[:120] + "..."
+                memo_results.append({
+                    "doc_id": doc_id,
+                    "doc_title": doc_titles.get(doc_id, ""),
+                    "page": h.get("page", 1),
+                    "memo": memo,
+                    "highlight_id": h.get("id", ""),
+                    "color": h.get("color", "yellow"),
+                    "text": text[:200] if text else "",
+                    "snippet": snippet,
+                })
+
+    # ── 본문 검색 ──
+    page_results = []
+    for doc_id, doc_data in si.get("documents", {}).items():
+        title = doc_data.get("title", "")
+        for page_num, page_text in doc_data.get("pages", {}).items():
+            text_lower = page_text.lower()
+            title_lower = title.lower()
+
+            # 스코어: 제목 매치 +10, 본문 매치 +1 (각 term 당)
+            score = 0
+            for t in terms:
+                if t in title_lower:
+                    score += 10
+                if t in text_lower:
+                    score += text_lower.count(t)
+
+            if score > 0:
+                # 스니펫: 첫 매치 주변 텍스트
+                snippet = _make_snippet(page_text, terms[0], context=60)
+                page_results.append({
+                    "doc_id": doc_id,
+                    "doc_title": doc_titles.get(doc_id, title),
+                    "page": int(page_num),
+                    "snippet": snippet,
+                    "score": score,
+                })
+
+    # 정렬: 스코어 내림차순
+    page_results.sort(key=lambda x: x["score"], reverse=True)
+
+    # 제한
+    memo_results = memo_results[:max_results]
+    page_results = page_results[:max_results]
+
+    return {
+        "memos": memo_results,
+        "pages": page_results,
+        "query": query,
+        "total": len(memo_results) + len(page_results),
+    }
+
+
+def _make_snippet(text: str, term: str, context: int = 60) -> str:
+    """검색어 주변 컨텍스트 스니펫 생성"""
+    idx = text.lower().find(term.lower())
+    if idx < 0:
+        return text[:context * 2] + ("..." if len(text) > context * 2 else "")
+
+    start = max(0, idx - context)
+    end = min(len(text), idx + len(term) + context)
+    snippet = text[start:end]
+
+    if start > 0:
+        snippet = "..." + snippet
+    if end < len(text):
+        snippet = snippet + "..."
+    return snippet
 
 
 # ══════════════════════════════════════
@@ -379,10 +584,16 @@ def upload_pdf(pdf_bytes: bytes, filename: str, username: str) -> dict:
     # original.pdf 저장
     (doc_path / "original.pdf").write_bytes(pdf_bytes)
 
-    # 페이지 수 추출
+    # 페이지 수 추출 + 텍스트 인덱싱
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     try:
         pages = len(doc)
+        # 검색 인덱스용 텍스트 추출 (같은 fitz.open 재사용)
+        pages_text = {}
+        for i in range(pages):
+            text = doc[i].get_text().strip()
+            if text:
+                pages_text[str(i + 1)] = text
     finally:
         doc.close()
 
@@ -409,6 +620,10 @@ def upload_pdf(pdf_bytes: bytes, filename: str, username: str) -> dict:
         "uploaded_at": meta["uploaded_at"],
     })
     _save_user_index(username, index)
+
+    # 검색 인덱스 갱신
+    if pages_text:
+        _add_to_search_index(username, doc_id, filename, pages_text)
 
     return meta
 
@@ -486,6 +701,10 @@ def delete_document(username: str, doc_id: str) -> bool:
     if len(new_index) == len(index):
         return False
     _save_user_index(username, new_index)
+
+    # 검색 인덱스에서 제거
+    _remove_from_search_index(username, doc_id)
+
     return True
 
 
@@ -503,6 +722,10 @@ def rename_document(username: str, doc_id: str, new_title: str) -> bool:
             entry["title"] = new_title
             break
     _save_user_index(username, index)
+
+    # 검색 인덱스 제목 갱신
+    _update_search_index_title(username, doc_id, new_title)
+
     return True
 
 

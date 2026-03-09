@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>배너 시안 E — Hero 이미지 배너</title>
+<style>
+/* ── tokens.css 발췌 ── */
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+    --primary-navy:#001f3f; --secondary-navy:#003d7a;
+    --dark-gray:#2c3e50; --medium-gray:#7f8c8d;
+    --light-gray:#ecf0f1; --bg-gray:#f5f7fa; --white:#ffffff;
+    --text-dark:#2c3e50; --text-light:#7f8c8d;
+    --border-color:#dde4e8; --hover-bg:#e8f4f8; --active-color:#0066cc;
+    --shadow-sm:0 1px 4px rgba(0,0,0,0.08);
+    --shadow-md:0 4px 16px rgba(0,0,0,0.12);
+}
+body[data-theme="dark"] {
+    --primary-navy:#121218; --secondary-navy:#1a1a2e;
+    --dark-gray:#e0e0e0; --medium-gray:#a0a4b8;
+    --light-gray:#252738; --bg-gray:#121218; --white:#1e1e2e;
+    --text-dark:#e0e0e0; --text-light:#a0a4b8;
+    --border-color:#3d3f50; --hover-bg:#2d2f3e; --active-color:#5ba3f5;
+    --shadow-sm:0 1px 4px rgba(0,0,0,0.15);
+    --shadow-md:0 4px 16px rgba(0,0,0,0.25);
+}
+
+body {
+    height:100vh; display:flex; flex-direction:column;
+    background:var(--bg-gray);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',Arial,sans-serif;
+    color:var(--text-dark); overflow-x:hidden;
+}
+
+/* ── 헤더 ── */
+.platform-header {
+    background:linear-gradient(135deg,var(--primary-navy) 0%,var(--secondary-navy) 100%);
+    height:60px; padding:0 30px; display:flex; align-items:center;
+    justify-content:space-between; flex-shrink:0;
+    box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+.platform-header h1 { font-size:25px; font-weight:600; font-style:italic; color:#fff; }
+.header-right { display:flex; align-items:center; gap:20px; }
+.header-right span { color:rgba(255,255,255,0.7); font-size:14px; }
+
+/* ── 테마 토글 ── */
+.theme-toggle {
+    position:fixed; top:14px; right:160px; z-index:100;
+    padding:6px 14px; border-radius:6px; border:1px solid rgba(255,255,255,0.3);
+    background:rgba(255,255,255,0.1); color:#fff; font-size:13px; cursor:pointer;
+}
+.theme-toggle:hover { background:rgba(255,255,255,0.2); }
+
+/* ── 메인 영역 ── */
+.view-list { flex:1; overflow-y:auto; }
+
+/* ═══════════════════════════════════════
+   시안 E: Hero 이미지 배너
+   Explorer 홈과 동일한 구조
+   — 실제 이미지 대신 CSS 그라디언트 + SVG 패턴 사용
+   — 실 구현 시 스크린샷 이미지로 교체
+   ═══════════════════════════════════════ */
+.hero-banner {
+    position:relative;
+    width:100%;
+    height:280px;
+    overflow:hidden;
+    flex-shrink:0;
+}
+
+/* 배너 이미지 */
+.hero-banner-img {
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    object-position:center;
+}
+
+/* 텍스트 오버레이 */
+.hero-overlay {
+    position:absolute;
+    bottom:40px; left:48px;
+    z-index:2;
+    max-width:520px;
+}
+
+.hero-overlay h2 {
+    font-size:36px; font-weight:300; color:#fff;
+    margin-bottom:10px;
+    text-shadow:0 2px 20px rgba(0,0,0,0.5);
+    letter-spacing:-0.5px;
+}
+
+.hero-overlay p {
+    font-size:16px; font-weight:300; color:rgba(255,255,255,0.8);
+    text-shadow:0 1px 8px rgba(0,0,0,0.4);
+    line-height:1.5;
+}
+
+/* 하단 그라디언트 페이드 */
+.hero-banner::after {
+    content:'';
+    position:absolute; bottom:0; left:0; right:0;
+    height:80px;
+    background:linear-gradient(to top, var(--bg-gray), transparent);
+    z-index:1;
+}
+
+/* ── 컨텐츠 영역 ── */
+.content-area {
+    padding:32px 32px 0;
+}
+
+/* ── 업로드 존 ── */
+.upload-zone {
+    border:2px dashed var(--border-color); border-radius:10px;
+    padding:36px; text-align:center; cursor:pointer;
+    transition:border-color 0.2s,background 0.2s;
+    margin-bottom:28px; max-width:720px; margin-left:auto; margin-right:auto;
+}
+.upload-zone:hover { border-color:var(--active-color); background:rgba(0,102,204,0.05); }
+.upload-zone-icon { font-size:36px; margin-bottom:10px; opacity:0.4; }
+.upload-zone-text { font-size:15px; color:var(--text-light); }
+.upload-zone-hint { font-size:13px; color:var(--text-light); margin-top:6px; }
+
+/* ── 문서 카드 그리드 ── */
+.doc-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:16px; max-width:900px; margin:0 auto; width:100%;
+}
+.doc-card {
+    background:var(--white); border:1px solid var(--border-color);
+    border-radius:10px; padding:20px; cursor:pointer;
+    transition:border-color 0.2s;
+}
+.doc-card:hover { border-color:rgba(0,102,204,0.4); }
+.doc-card-title { font-size:15px; font-weight:600; color:var(--text-dark); margin-bottom:8px; }
+.doc-card-meta { font-size:13px; color:var(--text-light); margin-bottom:10px; }
+.doc-card-status { font-size:13px; color:#22c55e; }
+</style>
+</head>
+<body data-theme="light">
+
+<button class="theme-toggle" onclick="toggleTheme()">🌙 다크모드</button>
+
+<div class="platform-header">
+    <h1>KAI Translator</h1>
+    <div class="header-right">
+        <span>Search</span>
+        <span>testbot</span>
+    </div>
+</div>
+
+<div class="view-list">
+
+    <!-- ★ 시안 E: Hero 이미지 배너 ★ -->
+    <div class="hero-banner">
+        <img class="hero-banner-img" src="../../css/images/translator_home.png" alt="KAI Translator">
+
+        <!-- 텍스트 오버레이 -->
+        <div class="hero-overlay">
+            <h2>Your Paper, Your Language</h2>
+        </div>
+
+    </div>
+
+    <!-- 기존 컨텐츠 영역 -->
+    <div class="content-area">
+        <!-- 업로드 존 -->
+        <div class="upload-zone">
+            <div class="upload-zone-icon">📄</div>
+            <div class="upload-zone-text">PDF 파일을 드래그하거나 클릭하여 업로드</div>
+            <div class="upload-zone-hint">최대 100MB</div>
+        </div>
+
+        <!-- 샘플 카드 -->
+        <div class="doc-grid">
+            <div class="doc-card">
+                <div class="doc-card-title">Attention Is All You Need.pdf</div>
+                <div class="doc-card-meta">12페이지 · 2026-03-08</div>
+                <div class="doc-card-status">5/12 페이지 번역 완료</div>
+            </div>
+            <div class="doc-card">
+                <div class="doc-card-title">BERT: Pre-training of Deep Bidirectional.pdf</div>
+                <div class="doc-card-meta">16페이지 · 2026-03-07</div>
+                <div class="doc-card-status">전체 번역 완료</div>
+            </div>
+            <div class="doc-card">
+                <div class="doc-card-title">ResNet Deep Residual Learning.pdf</div>
+                <div class="doc-card-meta">9페이지 · 2026-03-05</div>
+                <div class="doc-card-status">번역 전</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTheme() {
+    var btn = document.querySelector('.theme-toggle');
+    if (document.body.dataset.theme === 'dark') {
+        document.body.dataset.theme = 'light';
+        btn.textContent = '🌙 다크모드';
+    } else {
+        document.body.dataset.theme = 'dark';
+        btn.textContent = '☀️ 라이트모드';
+    }
+}
+</script>
+</body>
+</html>

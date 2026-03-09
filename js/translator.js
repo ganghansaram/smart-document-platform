@@ -16,6 +16,7 @@
             currentSystem: 'translator',
             navItems: [
                 { id: 'back-list', label: 'Home', hidden: true },
+                { id: 'search-trigger', label: 'Search', onClick: function() { openSearchOverlay(); } },
             ],
             midSlot: $pageNavSource,
             showThemeToggle: true,
@@ -146,7 +147,7 @@
 
         $uploadZone.addEventListener('click', function() { $fileInput.click(); });
         $fileInput.addEventListener('change', function() {
-            if ($fileInput.files.length) uploadFile($fileInput.files[0]);
+            if ($fileInput.files.length) uploadFiles($fileInput.files);
         });
         $uploadZone.addEventListener('dragover', function(e) {
             e.preventDefault();
@@ -158,36 +159,63 @@
         $uploadZone.addEventListener('drop', function(e) {
             e.preventDefault();
             $uploadZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+            if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
         });
 
-        function uploadFile(file) {
-            if (!file.name.toLowerCase().endsWith('.pdf')) {
+        var _uploading = false;
+
+        function uploadFiles(fileList) {
+            if (_uploading) return;
+            var pdfFiles = [];
+            for (var i = 0; i < fileList.length; i++) {
+                if (fileList[i].name.toLowerCase().endsWith('.pdf')) pdfFiles.push(fileList[i]);
+            }
+            if (!pdfFiles.length) {
                 alert('PDF 파일만 업로드할 수 있습니다.');
                 return;
             }
-            var formData = new FormData();
-            formData.append('file', file);
 
+            _uploading = true;
             $uploadZone.style.pointerEvents = 'none';
-            $uploadZone.querySelector('.upload-zone-text').textContent = '업로드 중...';
+            var $text = $uploadZone.querySelector('.upload-zone-text');
+            var total = pdfFiles.length;
+            var errors = [];
+            var idx = 0;
 
-            fetch(API + '/api/translator/upload', {
-                method: 'POST',
-                body: formData,
-                credentials: 'include',
-            }).then(function(resp) {
-                if (!resp.ok) return resp.json().then(function(e) { throw new Error(e.detail || 'Upload failed'); });
-                return resp.json();
-            }).then(function() {
-                $fileInput.value = '';
-                loadDocuments();
-            }).catch(function(err) {
-                alert('업로드 오류: ' + err.message);
-            }).finally(function() {
-                $uploadZone.style.pointerEvents = '';
-                $uploadZone.querySelector('.upload-zone-text').textContent = 'PDF 파일을 드래그하거나 클릭하여 업로드';
-            });
+            function next() {
+                if (idx >= total) {
+                    _uploading = false;
+                    $uploadZone.style.pointerEvents = '';
+                    $text.textContent = 'PDF 파일을 드래그하거나 클릭하여 업로드';
+                    $fileInput.value = '';
+                    loadDocuments();
+                    if (errors.length) alert('업로드 실패 (' + errors.length + '건):\n' + errors.join('\n'));
+                    return;
+                }
+                var file = pdfFiles[idx];
+                $text.textContent = total > 1
+                    ? '업로드 중... (' + (idx + 1) + '/' + total + ') ' + file.name
+                    : '업로드 중...';
+                var formData = new FormData();
+                formData.append('file', file);
+
+                fetch(API + '/api/translator/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include',
+                }).then(function(resp) {
+                    if (!resp.ok) return resp.json().then(function(e) { throw new Error(e.detail || 'Upload failed'); });
+                    return resp.json();
+                }).then(function() {
+                    idx++;
+                    next();
+                }).catch(function(err) {
+                    errors.push(file.name + ': ' + err.message);
+                    idx++;
+                    next();
+                });
+            }
+            next();
         }
 
         // ══════════════════════════════════════
@@ -2472,6 +2500,161 @@
             _origRenderAnnotationsRight();
             updateMarkingBadge();
         };
+
+
+        // ══════════════════════════════════════
+        // 검색 기능
+        // ══════════════════════════════════════
+        var $searchOverlay = document.getElementById('ts-search-overlay');
+        var $searchInput = document.getElementById('ts-search-input');
+        var $searchResults = document.getElementById('ts-search-results');
+        var $searchClose = document.getElementById('ts-search-close');
+        var _searchTimeout = null;
+
+        function openSearchOverlay() {
+            $searchOverlay.classList.add('active');
+            $searchInput.value = '';
+            $searchResults.innerHTML = '';
+            setTimeout(function() { $searchInput.focus(); }, 100);
+        }
+
+        function closeSearchOverlay() {
+            $searchOverlay.classList.remove('active');
+            $searchInput.value = '';
+            $searchResults.innerHTML = '';
+        }
+
+        // 닫기 버튼
+        $searchClose.addEventListener('click', closeSearchOverlay);
+
+        // 배경 클릭
+        $searchOverlay.addEventListener('click', function(e) {
+            if (e.target === $searchOverlay) closeSearchOverlay();
+        });
+
+        // ESC 키
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && $searchOverlay.classList.contains('active')) {
+                closeSearchOverlay();
+            }
+        });
+
+        // 입력 디바운스
+        $searchInput.addEventListener('input', function() {
+            clearTimeout(_searchTimeout);
+            var q = $searchInput.value.trim();
+            if (!q) {
+                $searchResults.innerHTML = '';
+                return;
+            }
+            _searchTimeout = setTimeout(function() { performSearch(q); }, 300);
+        });
+
+        function performSearch(query) {
+            $searchResults.innerHTML = '<div class="ts-search-empty">검색 중...</div>';
+            fetch(API + '/api/translator/search?q=' + encodeURIComponent(query), {
+                credentials: 'include',
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) { renderSearchResults(data, query); })
+            .catch(function(err) {
+                console.error('[Search]', err);
+                $searchResults.innerHTML = '<div class="ts-search-empty">검색 중 오류가 발생했습니다.</div>';
+            });
+        }
+
+        function renderSearchResults(data, query) {
+            var html = '';
+            var memos = data.memos || [];
+            var pages = data.pages || [];
+
+            if (memos.length === 0 && pages.length === 0) {
+                $searchResults.innerHTML = '<div class="ts-search-empty">검색 결과가 없습니다.</div>';
+                return;
+            }
+
+            // 메모 결과
+            if (memos.length > 0) {
+                html += '<div class="ts-search-group-label">메모 (' + memos.length + '건)</div>';
+                memos.forEach(function(m) {
+                    html += '<button class="ts-search-item" data-action="open" data-doc="' + escAttr(m.doc_id) + '" data-page="' + m.page + '">';
+                    html += '<span class="ts-search-item-memo-badge" style="background:' + memoColor(m.color) + '"></span>';
+                    html += '<span class="ts-search-item-title">' + escHtml(m.doc_title) + '</span>';
+                    html += '<span class="ts-search-item-page">p.' + m.page + '</span>';
+                    html += '<span class="ts-search-item-snippet">' + highlightSnippet(m.snippet, query) + '</span>';
+                    html += '</button>';
+                });
+            }
+
+            // 본문 결과
+            if (pages.length > 0) {
+                html += '<div class="ts-search-group-label">본문 (' + pages.length + '건)</div>';
+                pages.forEach(function(p) {
+                    html += '<button class="ts-search-item" data-action="open" data-doc="' + escAttr(p.doc_id) + '" data-page="' + p.page + '">';
+                    html += '<span class="ts-search-item-title">' + escHtml(p.doc_title) + '</span>';
+                    html += '<span class="ts-search-item-page">p.' + p.page + '</span>';
+                    html += '<span class="ts-search-item-snippet">' + highlightSnippet(p.snippet, query) + '</span>';
+                    html += '</button>';
+                });
+            }
+
+            $searchResults.innerHTML = html;
+        }
+
+        // 이벤트 위임: 검색 결과 클릭
+        $searchResults.addEventListener('click', function(e) {
+            var item = e.target.closest('.ts-search-item');
+            if (!item) return;
+            var docId = item.dataset.doc;
+            var page = parseInt(item.dataset.page, 10) || 1;
+            closeSearchOverlay();
+
+            if (docId === currentDocId) {
+                // 같은 문서: 페이지 이동만
+                goToPage(page);
+            } else {
+                // 다른 문서: 메타 fetch → 뷰어 열기 → 페이지 이동
+                fetch(API + '/api/translator/document/' + encodeURIComponent(docId), { credentials: 'include' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(meta) {
+                        openViewer(docId, meta.pages || 1);
+                        // openViewer가 fetchPageSummary 콜백 후 page 1을 렌더하므로,
+                        // 약간의 딜레이 후 원하는 페이지로 이동
+                        if (page > 1) {
+                            setTimeout(function() { goToPage(page); }, 500);
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('[Search] doc open error:', err);
+                    });
+            }
+        });
+
+        function escHtml(str) {
+            var div = document.createElement('div');
+            div.textContent = str || '';
+            return div.innerHTML;
+        }
+
+        function escAttr(str) {
+            return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        }
+
+        function highlightSnippet(snippet, query) {
+            if (!snippet) return '';
+            var safe = escHtml(snippet);
+            var terms = query.split(/\s+/).filter(function(t) { return t.length >= 1; });
+            terms.forEach(function(term) {
+                var re = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+                safe = safe.replace(re, '<mark>$1</mark>');
+            });
+            return safe;
+        }
+
+        function memoColor(color) {
+            var map = { yellow: '#fde68a', green: '#86efac', blue: '#93c5fd', pink: '#f9a8d4' };
+            return map[color] || '#fde68a';
+        }
 
 
     })();
