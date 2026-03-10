@@ -7,6 +7,12 @@ from pathlib import Path
 OLLAMA_URL = "http://localhost:11434"  # 회사: http://<linux-server-ip>:11434
 OLLAMA_MODEL = "gemma3:4b"
 
+# LLM 프로바이더 설정
+LLM_PROVIDER = "ollama"           # "ollama" | "openai_compat"
+LLM_ENDPOINT = ""                 # OpenAI-compat 엔드포인트 URL (예: https://model-server/v1)
+LLM_API_KEY = ""                  # API 키 (필요 시)
+LLM_MODEL_ID = ""                 # 엔드포인트의 모델 ID
+
 # 임베딩 설정
 EMBEDDING_MODEL = "bge-m3"  # Ollama 임베딩 모델
 EMBEDDING_DIMENSION = 1024  # bge-m3 출력 차원

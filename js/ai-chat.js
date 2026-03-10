@@ -334,22 +334,17 @@ async function sendMessage() {
     showTypingIndicator();
 
     try {
-        var response;
-
         if (AI_CONFIG.useBackend) {
-            // 멀티턴 모드: 백엔드가 검색 + 쿼리 재작성 + 응답 생성 통합 처리
-            response = await requestViaBackend(message);
+            // 멀티턴 모드: 스트리밍 응답
+            hideTypingIndicator();
+            await requestViaBackendStream(message);
         } else {
             // 직접 Ollama 호출 (싱글턴 — 기존 동작 유지)
             var relevantDocs = await searchRelevantDocuments(message);
-            response = await requestViaOllama(message, relevantDocs);
+            var response = await requestViaOllama(message, relevantDocs);
+            hideTypingIndicator();
+            addMessage('assistant', response.answer, response.sources);
         }
-
-        // 타이핑 인디케이터 숨김
-        hideTypingIndicator();
-
-        // 응답 메시지 추가
-        addMessage('assistant', response.answer, response.sources);
 
     } catch (error) {
         hideTypingIndicator();
@@ -504,6 +499,94 @@ async function requestViaBackend(question) {
             return { title: s.title, path: s.path, sectionId: s.section_id || s.sectionId || null };
         }) : []
     };
+}
+
+/**
+ * 백엔드 스트리밍 API를 통한 AI 응답 요청
+ * NDJSON 스트림을 파싱하여 실시간 렌더링
+ */
+async function requestViaBackendStream(question) {
+    var payload = { question: question };
+    if (AIChatState.conversationId) {
+        payload.conversation_id = AIChatState.conversationId;
+    }
+
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 180000); // 3분
+
+    var response = await fetch(AI_CONFIG.backendUrl + '/api/chat/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+        signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+        var errorBody = '';
+        try { errorBody = await response.text(); } catch (e) {}
+        throw new Error('API 요청 실패: ' + response.status + (errorBody ? ' - ' + errorBody : ''));
+    }
+
+    // 스트리밍 메시지 요소 생성
+    var messageEl = createStreamingMessage();
+    var fullText = '';
+    var sources = [];
+
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder();
+    var buffer = '';
+
+    try {
+        while (true) {
+            var result = await reader.read();
+            if (result.done) break;
+
+            buffer += decoder.decode(result.value, { stream: true });
+            var lines = buffer.split('\n');
+            // 마지막 줄은 불완전할 수 있으므로 보관
+            buffer = lines.pop() || '';
+
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                if (!line) continue;
+
+                try {
+                    var data = JSON.parse(line);
+
+                    if (data.type === 'token') {
+                        fullText += data.content;
+                        updateStreamingMessage(messageEl, fullText);
+                    } else if (data.type === 'done') {
+                        // 세션 ID 저장
+                        if (data.conversation_id) {
+                            AIChatState.conversationId = data.conversation_id;
+                        }
+                        // 소스 매핑
+                        if (data.sources) {
+                            sources = data.sources.map(function(s) {
+                                return { title: s.title, path: s.path, sectionId: s.section_id || null };
+                            });
+                        }
+                    } else if (data.type === 'error') {
+                        throw new Error(data.message || 'LLM 서버 오류');
+                    }
+                } catch (parseErr) {
+                    if (parseErr instanceof SyntaxError) {
+                        // JSON 파싱 오류 → 무시 (불완전한 청크)
+                        continue;
+                    }
+                    throw parseErr;
+                }
+            }
+        }
+    } finally {
+        reader.releaseLock();
+    }
+
+    // 스트리밍 완료 → 마크다운 렌더링 + 소스 표시
+    finalizeStreamingMessage(messageEl, sources);
 }
 
 /**
@@ -938,21 +1021,16 @@ async function executeQuickAction(action) {
     showTypingIndicator();
 
     try {
-        var response;
-        var docs = [sectionData];
-
         if (AI_CONFIG.useBackend) {
-            // 백엔드 모드: 멀티턴 대화로 전달
-            response = await requestViaBackend(question);
+            // 백엔드 모드: 스트리밍 응답
+            hideTypingIndicator();
+            await requestViaBackendStream(question);
         } else {
-            response = await requestViaOllama(question, docs);
+            var docs = [sectionData];
+            var response = await requestViaOllama(question, docs);
+            hideTypingIndicator();
+            addMessage('assistant', response.answer, response.sources);
         }
-
-        // 타이핑 인디케이터 숨김
-        hideTypingIndicator();
-
-        // 응답 메시지 추가
-        addMessage('assistant', response.answer, response.sources);
 
     } catch (error) {
         hideTypingIndicator();

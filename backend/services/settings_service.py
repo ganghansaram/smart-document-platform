@@ -197,6 +197,19 @@ def apply_to_config(settings: dict) -> list[str]:
     _set(ai, "ollama_url",            "OLLAMA_URL",                restart_needed)
     _set(ai, "ollama_model",          "OLLAMA_MODEL",              restart_needed)
     _set(ai, "embedding_model",       "EMBEDDING_MODEL",           restart_needed)
+    _set(ai, "llm_provider",          "LLM_PROVIDER",              restart_needed, immediate=True)
+    _set(ai, "llm_endpoint",          "LLM_ENDPOINT",              restart_needed, immediate=True)
+    _set(ai, "llm_api_key",           "LLM_API_KEY",               restart_needed, immediate=True)
+    _set(ai, "llm_model_id",          "LLM_MODEL_ID",              restart_needed, immediate=True)
+
+    # LLM 관련 설정 변경 시 프로바이더 캐시 리셋
+    llm_keys = ["ollama_url", "ollama_model", "llm_provider", "llm_endpoint", "llm_api_key", "llm_model_id"]
+    if any(ai.get(k) is not None for k in llm_keys):
+        try:
+            from services.llm_provider import reset_provider
+            reset_provider()
+        except ImportError:
+            pass
     _set(ai, "max_search_results",    "MAX_SEARCH_RESULTS",        restart_needed, immediate=True)
     _set(ai, "max_context_length",    "MAX_CONTEXT_LENGTH",        restart_needed, immediate=True)
     _set(ai, "default_search_type",   "DEFAULT_SEARCH_TYPE",       restart_needed, immediate=True)
