@@ -21,7 +21,7 @@ async function initializeApp() {
     // 공통 헤더 초기화 (Explorer용)
     if (typeof initPlatformHeader === 'function') {
         initPlatformHeader({
-            title: 'WebBook',
+            title: 'Knowledge Explorer',
             currentSystem: 'explorer',
             logoClick: function() { loadContent('contents/home.html'); },
             authRequired: false,
