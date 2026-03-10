@@ -1,5 +1,5 @@
 """
-채팅 API (멀티턴 대화 지원 + 스트리밍)
+채팅 API (멀티턴 대화 지원 + 스트리밍 + 질문 라우팅 + Agentic RAG)
 """
 import asyncio
 import json
@@ -182,6 +182,87 @@ async def _search_with_decomposition(question: str, search_query: str, top_k: in
     return all_results
 
 
+# ── 라우팅 기반 검색 파이프라인 ──
+
+async def _routed_search(question: str, history: list, top_k: int = 5) -> dict:
+    """
+    질문 유형에 따라 적절한 검색 파이프라인을 선택.
+
+    Returns:
+        {
+            "context": List[dict],
+            "confidence": str,       # "high" | "medium" | "low"
+            "reasoning_steps": int,
+            "search_queries": List[str],
+            "route": str,            # "SIMPLE" | "COMPARE" | "REASON" | "CHAT"
+        }
+    """
+    from services.question_router import route_question
+
+    # 쿼리 재작성 (멀티턴)
+    search_query = rewrite_query(question, history)
+
+    # 질문 유형 분류
+    route = await route_question(question)
+    logger.info("질문 라우팅 결과: '%s' → %s", question[:50], route)
+
+    # CHAT: 검색 불필요 (문서와 무관한 질문)
+    if route == "CHAT":
+        return {
+            "context": [],
+            "confidence": "high",
+            "reasoning_steps": 0,
+            "search_queries": [],
+            "route": "CHAT",
+        }
+
+    # SIMPLE: 기존 단일 패스 RAG
+    if route == "SIMPLE":
+        context = _search_internal(search_query, top_k)
+        confidence = "high" if len(context) >= 2 else ("medium" if context else "low")
+        return {
+            "context": context,
+            "confidence": confidence,
+            "reasoning_steps": 1,
+            "search_queries": [search_query],
+            "route": "SIMPLE",
+        }
+
+    # COMPARE: 쿼리 분해 + 멀티 검색 (Phase 2)
+    if route == "COMPARE":
+        context = await _search_with_decomposition(question, search_query, top_k)
+        confidence = "high" if len(context) >= 3 else ("medium" if context else "low")
+        return {
+            "context": context,
+            "confidence": confidence,
+            "reasoning_steps": 1,
+            "search_queries": [search_query],
+            "route": "COMPARE",
+        }
+
+    # REASON: Agentic RAG 루프
+    if route == "REASON":
+        from services.rag_agent import agentic_rag
+        agent_result = await agentic_rag(question, _search_internal, top_k)
+        return {
+            "context": agent_result["context"],
+            "confidence": agent_result["confidence"],
+            "reasoning_steps": agent_result["iterations"],
+            "search_queries": agent_result["search_queries"],
+            "route": "REASON",
+        }
+
+    # 폴백 → SIMPLE
+    context = _search_internal(search_query, top_k)
+    return {
+        "context": context,
+        "confidence": "medium",
+        "reasoning_steps": 1,
+        "search_queries": [search_query],
+        "route": "SIMPLE",
+    }
+
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest, raw_request: Request):
     # Analytics: record chat event
@@ -202,7 +283,7 @@ async def chat(request: ChatRequest, raw_request: Request):
         # 2) 대화 기록 조회
         history = session.get_history(config.MAX_CONVERSATION_TURNS)
 
-        # 3) 컨텍스트 결정: 프론트엔드가 context를 보냈으면 그대로 사용, 아니면 백엔드 검색
+        # 3) 컨텍스트 결정: 프론트엔드가 context를 보냈으면 그대로 사용, 아니면 라우팅 검색
         if request.context and len(request.context) > 0:
             # 기존 호환 모드 (프론트엔드가 검색 결과를 직접 전달)
             context_dicts = [
@@ -210,11 +291,11 @@ async def chat(request: ChatRequest, raw_request: Request):
                 for d in request.context
             ]
         else:
-            # 멀티턴 모드: 쿼리 재작성 → 쿼리 분해 → 검색
-            search_query = rewrite_query(request.question, history)
-            context_dicts = await _search_with_decomposition(
-                request.question, search_query, config.MAX_SEARCH_RESULTS
+            # 라우팅 기반 검색 파이프라인
+            search_result = await _routed_search(
+                request.question, history, config.MAX_SEARCH_RESULTS
             )
+            context_dicts = search_result["context"]
 
         # 4) LLM 응답 생성 (대화 기록 포함, sync → thread로 실행)
         result = await asyncio.to_thread(
@@ -251,7 +332,7 @@ async def chat_stream(request: ChatRequest, raw_request: Request):
     응답 형식 (한 줄씩):
       {"type":"token","content":"안녕"}
       {"type":"token","content":"하세요"}
-      {"type":"done","sources":[...],"model":"...","conversation_id":"..."}
+      {"type":"done","sources":[...],"model":"...","conversation_id":"...","confidence":"...","reasoning_steps":N,"search_queries":[...]}
     오류 시:
       {"type":"error","message":"..."}
     """
@@ -273,17 +354,24 @@ async def chat_stream(request: ChatRequest, raw_request: Request):
         # 2) 대화 기록 조회
         history = session.get_history(config.MAX_CONVERSATION_TURNS)
 
-        # 3) 컨텍스트 결정
+        # 3) 컨텍스트 결정 (라우팅 메타데이터 포함)
+        rag_meta = {"confidence": "high", "reasoning_steps": 0, "search_queries": [], "route": ""}
         if request.context and len(request.context) > 0:
             context_dicts = [
                 {"title": d.title, "content": d.content, "path": d.path, "section_id": d.section_id}
                 for d in request.context
             ]
         else:
-            search_query = rewrite_query(request.question, history)
-            context_dicts = await _search_with_decomposition(
-                request.question, search_query, config.MAX_SEARCH_RESULTS
+            search_result = await _routed_search(
+                request.question, history, config.MAX_SEARCH_RESULTS
             )
+            context_dicts = search_result["context"]
+            rag_meta = {
+                "confidence": search_result["confidence"],
+                "reasoning_steps": search_result["reasoning_steps"],
+                "search_queries": search_result["search_queries"],
+                "route": search_result["route"],
+            }
 
         # 4) 스트리밍 응답 생성
         token_iter, sources, model_name = await generate_response_stream(
@@ -302,7 +390,7 @@ async def chat_stream(request: ChatRequest, raw_request: Request):
                 session.add_message("user", request.question)
                 session.add_message("assistant", answer_text)
 
-                # 완료 메시지 (소스, 모델, 세션 ID 포함)
+                # 완료 메시지 (소스, 모델, 세션 ID, 신뢰도 메타데이터 포함)
                 done_payload = {
                     "type": "done",
                     "sources": [
@@ -311,6 +399,9 @@ async def chat_stream(request: ChatRequest, raw_request: Request):
                     ],
                     "model": model_name,
                     "conversation_id": session.id,
+                    "confidence": rag_meta["confidence"],
+                    "reasoning_steps": rag_meta["reasoning_steps"],
+                    "search_queries": rag_meta["search_queries"],
                 }
                 yield json.dumps(done_payload, ensure_ascii=False) + "\n"
 

@@ -533,6 +533,7 @@ async function requestViaBackendStream(question) {
     var messageEl = createStreamingMessage();
     var fullText = '';
     var sources = [];
+    var confidence = 'high';
 
     var reader = response.body.getReader();
     var decoder = new TextDecoder();
@@ -569,6 +570,10 @@ async function requestViaBackendStream(question) {
                                 return { title: s.title, path: s.path, sectionId: s.section_id || null };
                             });
                         }
+                        // 신뢰도 메타데이터
+                        if (data.confidence) {
+                            confidence = data.confidence;
+                        }
                     } else if (data.type === 'error') {
                         throw new Error(data.message || 'LLM 서버 오류');
                     }
@@ -585,8 +590,8 @@ async function requestViaBackendStream(question) {
         reader.releaseLock();
     }
 
-    // 스트리밍 완료 → 마크다운 렌더링 + 소스 표시
-    finalizeStreamingMessage(messageEl, sources);
+    // 스트리밍 완료 → 마크다운 렌더링 + 소스 + 신뢰도 표시
+    finalizeStreamingMessage(messageEl, sources, confidence);
 }
 
 /**
@@ -737,7 +742,7 @@ function updateStreamingMessage(messageEl, text) {
 /**
  * 스트리밍 완료 후 마무리
  */
-function finalizeStreamingMessage(messageEl, sources) {
+function finalizeStreamingMessage(messageEl, sources, confidence) {
     if (!messageEl) return;
 
     // 커서 제거
@@ -751,6 +756,18 @@ function finalizeStreamingMessage(messageEl, sources) {
     var rawText = contentEl ? contentEl.textContent : '';
     if (contentEl && rawText) {
         contentEl.innerHTML = parseMarkdown(rawText);
+    }
+
+    // 신뢰도 표시 (medium/low만 표시, high는 기본이므로 생략)
+    if (confidence && confidence !== 'high') {
+        var confidenceEl = document.createElement('div');
+        confidenceEl.className = 'ai-chat-confidence ai-chat-confidence-' + confidence;
+        if (confidence === 'medium') {
+            confidenceEl.textContent = '\u26A0 일부 정보가 부족할 수 있습니다';
+        } else if (confidence === 'low') {
+            confidenceEl.textContent = '\u26A0 관련 문서를 충분히 찾지 못했습니다';
+        }
+        messageEl.appendChild(confidenceEl);
     }
 
     // 소스 추가

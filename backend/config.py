@@ -39,6 +39,8 @@ MAX_SESSIONS = 100               # 동시 세션 수 상한
 MAX_IDLE_MINUTES = 60            # 유휴 세션 자동 삭제 시간(분)
 QUERY_REWRITE_ENABLED = True     # 쿼리 재작성 활성화 여부
 QUERY_DECOMPOSE_ENABLED = True   # 쿼리 분해 활성화 여부 (복합 질문 → 서브쿼리)
+QUESTION_ROUTING_ENABLED = True  # 질문 유형 분류 (SIMPLE/COMPARE/REASON/CHAT)
+MAX_AGENT_ITERATIONS = 3         # Agentic RAG 최대 반복 횟수
 
 # 인증 설정
 AUTH_DB_PATH = str(Path(__file__).parent.parent / "data" / "auth.db")
