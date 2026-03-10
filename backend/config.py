@@ -20,8 +20,8 @@ EMBEDDING_DIMENSION = 1024  # bge-m3 출력 차원
 # 검색 설정
 SEARCH_INDEX_PATH = "../data/search-index.json"
 VECTOR_INDEX_PATH = "../data/vector-index"  # .faiss + _meta.json
-MAX_SEARCH_RESULTS = 5
-MAX_CONTEXT_LENGTH = 8000
+MAX_SEARCH_RESULTS = 5       # 27b 권장: 7 (더 많은 문서 참조)
+MAX_CONTEXT_LENGTH = 8000    # 27b 권장: 16000 (128K 컨텍스트 활용)
 DEFAULT_SEARCH_TYPE = "hybrid"  # "keyword" | "vector" | "hybrid"
 HYBRID_KEYWORD_WEIGHT = 0.3  # 키워드 점수 비중 (1 - 이 값 = 벡터 비중)
 HYBRID_RRF_K = 60  # RRF 상수 (높을수록 순위 차이 완화)
@@ -34,10 +34,11 @@ RERANKER_TOP_K_MULTIPLIER = 3  # 리랭킹 전 후1보 수 = top_k * 이 값
 
 # 멀티턴 대화 설정
 MAX_CONVERSATION_TURNS = 5       # 프롬프트에 포함할 최대 대화 턴 수
-MAX_HISTORY_LENGTH = 2000        # 대화 기록 최대 문자 수 (8000자 중)
+MAX_HISTORY_LENGTH = 2000        # 대화 기록 최대 문자 수, 27b 권장: 4000
 MAX_SESSIONS = 100               # 동시 세션 수 상한
 MAX_IDLE_MINUTES = 60            # 유휴 세션 자동 삭제 시간(분)
 QUERY_REWRITE_ENABLED = True     # 쿼리 재작성 활성화 여부
+QUERY_DECOMPOSE_ENABLED = True   # 쿼리 분해 활성화 여부 (복합 질문 → 서브쿼리)
 
 # 인증 설정
 AUTH_DB_PATH = str(Path(__file__).parent.parent / "data" / "auth.db")

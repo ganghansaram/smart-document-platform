@@ -110,6 +110,23 @@ def load_menu_structure():
     return url_to_path
 
 
+def _extract_metadata(full_path, heading_level):
+    """
+    브레드크럼 경로에서 메타데이터 추출.
+    예: "KF-21 개발백서 > 참고 문서 (샘플) > Test1 > Ⅰ. 서론"
+    → {"doc_category": "KF-21 개발백서", "parent_doc": "Test1", "depth": 4}
+    """
+    parts = [p.strip() for p in full_path.split('>') if p.strip()]
+    meta = {
+        'doc_category': parts[0] if parts else '',
+        'depth': len(parts),
+    }
+    # parent_doc: 카테고리 바로 아래 레벨 (있으면)
+    if len(parts) >= 3:
+        meta['parent_doc'] = parts[-2]  # 섹션 제목 바로 위
+    return meta
+
+
 # ===================================
 # 섹션 파싱
 # ===================================
@@ -278,13 +295,15 @@ def index_by_section(html_file, url, base_path, url_to_path, inject_ids=False):
         if len(content) > MAX_SECTION_LENGTH:
             content = content[:MAX_SECTION_LENGTH]
 
+        fallback_path = url_to_path.get(url, base_path)
         return [{
             'title': doc_title,
             'url': url,
-            'path': url_to_path.get(url, base_path),
+            'path': fallback_path,
             'content': content,
             'section_id': None,
-            'heading_level': 1
+            'heading_level': 1,
+            'metadata': _extract_metadata(fallback_path, 1),
         }]
 
     # 짧은 섹션 병합, 긴 섹션 분할
@@ -297,14 +316,16 @@ def index_by_section(html_file, url, base_path, url_to_path, inject_ids=False):
         path = url_to_path.get(url, base_path)
         full_path = f"{path} > {section['title']}" if path else section['title']
 
-        index_items.append({
+        item = {
             'title': section['title'],
             'url': url,
             'path': full_path,
             'content': section['content'],
             'section_id': section['id'],
-            'heading_level': section['level']
-        })
+            'heading_level': section['level'],
+            'metadata': _extract_metadata(full_path, section['level']),
+        }
+        index_items.append(item)
 
     return index_items
 
@@ -324,13 +345,15 @@ def index_by_page(html_file, url, base_path, url_to_path):
     if len(content) > 5000:
         content = content[:5000]
 
+    page_path = url_to_path.get(url, base_path)
     return [{
         'title': title,
         'url': url,
-        'path': url_to_path.get(url, base_path),
+        'path': page_path,
         'content': content,
         'section_id': None,
-        'heading_level': None
+        'heading_level': None,
+        'metadata': _extract_metadata(page_path, 1),
     }]
 
 

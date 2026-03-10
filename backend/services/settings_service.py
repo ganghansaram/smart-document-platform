@@ -219,6 +219,7 @@ def apply_to_config(settings: dict) -> list[str]:
     _set(ai, "reranker_enabled",      "RERANKER_ENABLED",          restart_needed, immediate=True)
     _set(ai, "reranker_top_k_multiplier", "RERANKER_TOP_K_MULTIPLIER", restart_needed, immediate=True)
     _set(ai, "query_rewrite_enabled", "QUERY_REWRITE_ENABLED",     restart_needed, immediate=True)
+    _set(ai, "query_decompose_enabled", "QUERY_DECOMPOSE_ENABLED", restart_needed, immediate=True)
 
     sess = settings.get("session", {})
     _set(sess, "max_conversation_turns", "MAX_CONVERSATION_TURNS", restart_needed, immediate=True)
