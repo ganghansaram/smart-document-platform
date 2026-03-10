@@ -254,24 +254,31 @@ function generateSectionLinks() {
             // 통계 스트립 생성
             generateHomeStats(menuData);
 
-            // 1레벨 항목 중 children이 있는 것만 (테스트 항목 제외)
+            // 1레벨 항목 중 children이 있는 것만
             var sections = menuData.filter(function(item) {
-                return item.children && item.children.length > 0 && !item.label.includes('[alpha test]');
+                return item.children && item.children.length > 0;
             });
 
             var descriptions = {
-                '개발 개요': '프로그램 소개, 개발 히스토리, 주요 제원',
-                '시스템 설계': '항공기 구조, 항전, 추진 시스템',
-                '시험 평가': '지상 시험 및 비행 시험',
-                '기술 문서': '설계, 운용 문서 및 보고서',
-                '참고 자료': '규격, 문헌, 용어 정의'
+                '설계 기준': '구조·시스템·전장 설계 가이드라인',
+                '규격 · 표준': 'MIL-STD, AS/EN, 사내 규격 모음',
+                '시험 · 평가': '구조·환경·비행 시험 절차와 결과',
+                '제조 · 공정': '복합재, 가공, 조립, 표면처리 기준',
+                '품질 · 인증': '품질관리, 형상관리, 감항인증 문서',
+                '운용 · 정비': '운용매뉴얼, 정비절차, ILS 자료',
+                'KF-21 개발백서': 'KF-21 보라매 프로그램 개발 기록'
             };
 
             container.innerHTML = '';
 
-            sections.forEach(function(section) {
+            sections.forEach(function(section, idx) {
                 var link = document.createElement('a');
                 link.href = '#';
+
+                // 마지막 카드이면서 3열에 1개만 남는 경우 전체 폭
+                if (idx === sections.length - 1 && sections.length % 3 === 1) {
+                    link.classList.add('section-link-full');
+                }
 
                 // 클릭 → 트리메뉴 해당 카테고리 펼치기
                 var sectionLabel = section.label;

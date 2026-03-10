@@ -112,8 +112,10 @@ function createMenuList(items) {
         const itemIcon = document.createElement('span');
         itemIcon.className = 'item-icon';
 
-        // 특수 아이콘 (홈, 정보, 용어집, 대시보드)
-        if (item.label === '홈') {
+        // 특수 아이콘 (홈, 정보, 용어집, 대시보드, 커스텀)
+        if (item.icon) {
+            itemIcon.classList.add('icon-' + item.icon);
+        } else if (item.label === '홈') {
             itemIcon.classList.add('icon-home');
         } else if (item.label === '정보') {
             itemIcon.classList.add('icon-info');
@@ -420,7 +422,9 @@ function createFilteredMenuList(items, query) {
         // 폴더/문서 아이콘
         const itemIcon = document.createElement('span');
         itemIcon.className = 'item-icon';
-        if (item.label === '홈') {
+        if (item.icon) {
+            itemIcon.classList.add('icon-' + item.icon);
+        } else if (item.label === '홈') {
             itemIcon.classList.add('icon-home');
         } else if (item.label === '정보') {
             itemIcon.classList.add('icon-info');
