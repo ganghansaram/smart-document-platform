@@ -92,6 +92,10 @@ async function initializeApp() {
         initPlatformFooter('explorer-footer');
     }
 
+    // 초기 로드 시 우측 패널 접기 (홈 화면이면 불필요한 빈 패널 숨김)
+    // URL에 문서 페이지가 지정된 경우 loadContent 내부에서 자동 펼침
+    autoToggleRightPanel(true);
+
     // URL 파라미터 페이지 또는 기본 홈 로드
     loadPageFromUrl() || loadContent('contents/home.html');
 }
@@ -189,6 +193,7 @@ function initPanelToggles() {
     if (toggleRight) {
         toggleRight.addEventListener('click', function() {
             rightPanel.classList.add('hidden');
+            rightPanel._userCollapsed = true;
             showRight.style.display = 'block';
             updateGridLayout();
         });
@@ -197,6 +202,7 @@ function initPanelToggles() {
     if (showRight) {
         showRight.addEventListener('click', function() {
             rightPanel.classList.remove('hidden');
+            rightPanel._userCollapsed = false;
             showRight.style.display = 'none';
             updateGridLayout();
         });
@@ -217,7 +223,38 @@ function initPanelToggles() {
         } else {
             container.style.gridTemplateColumns = `${leftWidth} 4px 1fr 4px ${rightWidth}`;
         }
+    }
 
+    // 외부에서 접근 가능하도록 노출
+    window._updateGridLayout = updateGridLayout;
+}
+
+/**
+ * 우측 패널 자동 토글 — 홈이면 접고, 문서면 펼침
+ * @param {boolean} isHome - 홈 화면 여부
+ */
+function autoToggleRightPanel(isHome) {
+    var rightPanel = document.getElementById('right-panel');
+    var showRight = document.getElementById('show-right');
+    if (!rightPanel || !showRight) return;
+
+    if (isHome) {
+        // 홈: 우측 패널 접기 + 사용자 접힘 플래그 초기화
+        rightPanel._userCollapsed = false;
+        if (!rightPanel.classList.contains('hidden')) {
+            rightPanel.classList.add('hidden');
+            showRight.style.display = 'block';
+        }
+    } else {
+        // 문서: 사용자가 직접 접은 경우 존중, 아니면 펼침
+        if (rightPanel._userCollapsed) return;
+        if (rightPanel.classList.contains('hidden')) {
+            rightPanel.classList.remove('hidden');
+            showRight.style.display = 'none';
+        }
+    }
+    if (typeof window._updateGridLayout === 'function') {
+        window._updateGridLayout();
     }
 }
 
@@ -351,6 +388,7 @@ function loadContent(url) {
         if (typeof pauseSlideshow === 'function') pauseSlideshow();
         AppState.currentPage = url;
         updatePageUrl(url);
+        autoToggleRightPanel(false);
         if (typeof highlightCurrentPage === 'function') highlightCurrentPage(url);
         if (typeof renderGlossaryPage === 'function') renderGlossaryPage();
         updateBreadcrumb(url);
@@ -415,8 +453,12 @@ function loadContent(url) {
                 // 브레드크럼 업데이트
                 updateBreadcrumb(url);
 
+                // 홈/문서 전환에 따라 우측 패널 자동 토글
+                var _isHome = url.includes('home.html');
+                autoToggleRightPanel(_isHome);
+
                 // 홈 페이지인 경우 배너 슬라이드쇼 및 섹션 링크 초기화
-                if (url.includes('home.html')) {
+                if (_isHome) {
                     if (typeof initBannerSlideshow === 'function') {
                         initBannerSlideshow();
                     }
