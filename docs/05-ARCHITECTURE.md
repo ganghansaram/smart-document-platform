@@ -56,7 +56,7 @@ AI 챗봇 + 문서 편집기 백엔드 시스템 설계 및 배포 문서
 │                         │  - Reranker (Cross-encoder)  │    │
 │                         │  - ConversationStore         │    │
 │                         │  - QueryRewriter             │    │
-│                         │  - LLMClient (gemma3:4b)     │    │
+│                         │  - LLMClient (gemma3:27b)     │    │
 │                         │  - DocumentSave              │    │
 │                         │  - SettingsService (settings.json)  │    │
 │                         │  - Analytics (heartbeat/dashboard)  │    │
@@ -79,14 +79,14 @@ AI 챗봇 + 문서 편집기 백엔드 시스템 설계 및 배포 문서
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │  Ollama                                             │    │
-│  │  - LLM 모델: gemma3:4b                              │    │
+│  │  - LLM 모델: gemma3:27b                             │    │
 │  │  - 임베딩 모델: bge-m3 (1024차원)                    │    │
 │  │  - API: http://<server-ip>:11434                    │    │
 │  └─────────────────────────────────────────────────────┘    │
 │                                                             │
 │  설치 항목:                                                  │
 │  - Ollama                                                   │
-│  - LLM 모델 파일 (gemma3:4b)                                │
+│  - LLM 모델 파일 (gemma3:27b)                               │
 │  - 임베딩 모델 파일 (bge-m3)                                 │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -101,13 +101,13 @@ AI 챗봇 + 문서 편집기 백엔드 시스템 설계 및 배포 문서
 | 항목 | 버전 | 용도 |
 |------|------|------|
 | Ollama | 최신 | LLM 서비스 |
-| LLM 모델 | gemma3:4b 등 | 텍스트 생성 |
+| LLM 모델 | gemma3:27b 등 | 텍스트 생성 |
 
 #### Phase 3 설치됨
 | 항목 | 버전 | 용도 |
 |------|------|------|
 | bge-m3 | - | 임베딩 모델 (Ollama 호스팅, 1024차원) |
-| gemma3:4b | - | LLM 모델 (Ollama 호스팅) |
+| gemma3:27b | - | LLM 모델 (Ollama 호스팅) |
 
 ### 2.2 Windows 서버 (웹북)
 
@@ -286,7 +286,7 @@ Response:
             "section_id": "section-1"
         }
     ],
-    "model": "gemma3:4b",
+    "model": "gemma3:27b",
     "conversation_id": "a1b2c3d4e5f6g7h8"   // 세션 추적용
 }
 ```
@@ -547,7 +547,7 @@ const AI_CONFIG = {
 **backend/config.py:**
 ```python
 OLLAMA_URL = "http://localhost:11434"  # 또는 Linux 서버 IP
-OLLAMA_MODEL = "gemma3:4b"
+OLLAMA_MODEL = "gemma3:27b"
 MAX_CONTEXT_LENGTH = 8000
 MAX_SEARCH_RESULTS = 5
 ```
@@ -559,7 +559,7 @@ MAX_SEARCH_RESULTS = 5
 const AI_CONFIG = {
     useBackend: false,
     ollamaUrl: 'http://localhost:11434',
-    model: 'gemma3:4b',
+    model: 'gemma3:27b',
     maxContextLength: 4000,  // 직접 호출 모드는 싱글턴 (검색 결과만 전달)
     maxSearchResults: 5,
     systemPrompt: `...`  // 시스템 프롬프트 (백엔드와 동일)
