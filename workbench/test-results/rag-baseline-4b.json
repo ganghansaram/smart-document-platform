@@ -1,0 +1,236 @@
+[
+  {
+    "id": "T1-1",
+    "tier": 1,
+    "question": "감항인증이란?",
+    "answer": "제공된 문서에서 해당 정보를 찾지 못했습니다.",
+    "model": "gemma3:4b",
+    "sources": [],
+    "elapsed": 13.4,
+    "error": null
+  },
+  {
+    "id": "T1-2",
+    "tier": 1,
+    "question": "복합재 수리 절차를 알려줘",
+    "answer": "제공된 문서만으로는 복합재 수리 절차를 정확하게 설명할 수 없습니다. 하지만, 문서에서 언급된 내용을 바탕으로 일반적인 복합재 수리 절차를 요약하면 다음과 같습니다.\n\n**복합재 수리 절차 요약**\n\n1.  **현장 조사 및 손상 평가:**\n    *   수리 대상 복합재의 손상 정도, 종류, 원인 등을 파악합니다.\n    *   손상된 부위의 크기, 형태, 재질 등을 정확하게 측정합니다.\n    *   손상 부위 주변의 환경 조건 (온도, 습도, UV 노출 등)을 확인합니다.\n\n2.  **손상 부위 제거:**\n    *   손상된 복합재를 제거합니다.\n    *   제거 시에는 손상되지 않은 부분까지 과도하게 제거하지 않도록 주의합니다.\n    *   제거된 재료는 안전하게 보관합니다.\n\n3.  **프레임워크 보강 (필요시):**\n    *   손상된 부위 주변의 프레임워크가 약해졌을 경우, 보강 작업을 수행합니다.\n    *   보강 작업은 손상된 부위의 구조적 안정성을 확보하는 데 중점을 둡니다.\n\n4.  **수리재 적용:**\n    *   손상된 부위에 적합한 수리재를 적용합니다.\n    *   수리재는 손상된 부위의 재질과 유사한 것을 선택해야 합니다.\n    *   수리재는 제조사의 지침에 따라 적용합니다. (예: 에폭시 수지, 폴리우레탄 수지 등)\n\n5.  **경화 및 마무리:**\n    *   수리재를 경화시킵니다.\n    *   경화 시간은 수리재의 종류에 따라 다릅니다.\n    *   경화 후에는 수리 부위를 다듬고 표면을 매끄럽게 마무리합니다.\n\n6.  **검사 및 확인:**\n    *   수리된 복합재의 강도, 내구성, 밀봉성 등을 검사합니다.\n    *   수리 결과가 원래 상태와 동일한지 확인합니다.\n\n**참고:**\n\n*   **QA-05 사용자 인터페이스 개선:**  복합재 생성 요청 시 3단계 이내로 수행할 수 있도록 설계되어 있습니다.\n*   **Ⅲ. 연구 방법:**  BM25, FAISS, Hybrid 검색 구조를 활용하여 복합재 관련 기술 문서 검색 성능을 향상시키는 연구를 진행하고 있습니다.\n*   **QA-02 서버 장애 시 서비스 자동 복구:**  서버 장애 발생 시 10초 이내에 자동 복구되어 서비스 중단을 방지합니다.\n\n제공된 문서에서 복합재 수리 절차에 대한 자세한 내용은 찾을 수 없었습니다.",
+    "model": "gemma3:4b",
+    "sources": [
+      "UC-07 System Maintenance & Access",
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 102)",
+      "QA-05 사용자 인터페이스 개선",
+      "Ⅲ. 연구 방법 (Methodology)",
+      "QA-02 서버 장애 시 서비스 자동 복구"
+    ],
+    "elapsed": 26.5,
+    "error": null
+  },
+  {
+    "id": "T1-3",
+    "tier": 1,
+    "question": "MIL-STD-810의 진동 시험 조건은?",
+    "answer": "제공된 문서에서 MIL-STD-810의 진동 시험 조건에 대한 정보는 찾지 못했습니다.",
+    "model": "gemma3:4b",
+    "sources": [
+      "QA-03 강건성(Robustness) Scenario",
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 51)",
+      "개발 경과",
+      "QA-01 연산 속도(Computational speed) Scenario",
+      "QA-02 연산 정확도(Computational accuracy) Scenario"
+    ],
+    "elapsed": 7.1,
+    "error": null
+  },
+  {
+    "id": "T1-4",
+    "tier": 1,
+    "question": "형상관리 절차를 설명해줘",
+    "answer": "**형상관리 절차 요약**\n\n본 연구는 항공·방산 기술문서를 대상으로 BM25와 FAISS를 결합한 하이브리드 검색 구조를 구현하고, 폐쇄망 환경에서 RAG 검색 품질 향상을 실증적으로 검증하는 것을 목표로 합니다. 다음은 형상관리 절차에 대한 요약입니다.\n\n*   **데이터셋 구축:** KIPRIS 및 NASA NTRS에서 항공·방산 기술문서를 수집하여 총 1,200건의 데이터셋을 구축했습니다. 이 데이터셋은 한·영 혼합 환경에서의 하이브리드 검색 성능 검증을 위한 기반 코퍼스로 활용됩니다.\n*   **전처리:** 데이터셋의 불필요한 반복 구문을 감소시키고, 청크 단위 평균 길이를 약 773토큰으로 유지했습니다. 또한, 문서ID, 페이지, 섹션명과 같은 메타데이터를 유지하고, 표, 섹션 구분, 단위와 같은 구조를 보존했습니다.\n*   **검색 방식 구성:** Retrieval 단계는 BM25, FAISS, 그리고 이 둘의 조합(Hybrid)을 활용합니다. BM25는 희소(Sparse) 기반의 키워드 검색, FAISS는 밀집(Dense) 기반의 임베딩 유사도 검색, Hybrid는 z-score 기반의 스코어 정규화 및 α 가중치 결합을 통해 검색 성능을 향상시킵니다.\n*   **시스템 구성:** 실험은 Windows 11 기반의 로컬 워크스테이션에서 수행되었으며, NVIDIA GeForce RTX 4080, Intel i9-13950HX, 64GB RAM 등의 하드웨어를 사용했습니다. 또한, Python 3.11, PyCharm IDE, CUDA 12.1 기반의 소프트웨어 환경을 구축하여 외부 API 호출, 클라우드 연결 및 상용 LLM 사용이 불가능한 폐쇄망 환경에서 재현 가능한 실험을 수행했습니다.\n*   **품질 속성 관리:** 사용자의 부품 생성 요청 시, 단계를 3단계 이내로 수행할 수 있도록 설계되었으며, 각 단계에서 적절한 피드백을 제공받을 수 있도록 구현되었습니다. 또한, 시스템의 성능, 확장성, 강건성을 보장하기 위해 계층적 구조, 모듈화된 컴포넌트 배치, 암호화된 데이터 통신 등의 보안 조치를 적용했습니다.",
+    "model": "gemma3:4b",
+    "sources": [
+      "Ⅲ. 연구 방법 (Methodology)",
+      "Ⅲ. 연구 방법 (Methodology) (계속 2)",
+      "UC-07 System Maintenance & Access",
+      "QA-05 사용자 인터페이스 개선",
+      "Design Rationale"
+    ],
+    "elapsed": 12.2,
+    "error": null
+  },
+  {
+    "id": "T1-5",
+    "tier": 1,
+    "question": "엔진 시험의 주요 항목은?",
+    "answer": "제공된 문서에서 엔진 시험의 주요 항목에 대한 정보는 찾을 수 없습니다.\n\n하지만 다음과 같은 내용을 확인할 수 있습니다.\n\n*   **Building 212A Propulsion Laboratory Test Cells**에서 엔진 시험이 진행되었습니다.\n*   **AC dynamometer installations**가 사용되었습니다.\n*   **데이터 획득 및 제어(DAC) 시스템**이 사용되었습니다.\n*   **다중 채널 테스트** 및 새로운 차량 플랫폼 테스트를 지원하기 위한 시스템 업그레이드가 진행되었습니다.\n*   **BM25(희소 검색)와 FAISS(밀집 검색)를 결합한 하이브리드 검색 구조**가 실험 환경에서 사용되었습니다.",
+    "model": "gemma3:4b",
+    "sources": [
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 70)",
+      "Ⅳ. 실험 및 결과 (Experiments and Results) (계속 3)",
+      "Ⅲ. 연구 방법 (Methodology)",
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 50)",
+      "개발 경과"
+    ],
+    "elapsed": 8.7,
+    "error": null
+  },
+  {
+    "id": "T2-1",
+    "tier": 2,
+    "question": "구조 시험과 환경 시험의 차이점은?",
+    "answer": "다음은 구조 시험과 환경 시험의 차이점을 요약한 것입니다.\n\n**구조 시험 (Structural Testing)**\n\n*   **목표:** 제품 또는 시스템의 물리적 구조, 즉 구성 요소와 그 연결 방식이 설계대로 작동하는지 확인합니다.\n*   **주요 내용:**\n    *   **하중 시험:** 제품이 예상되는 하중을 견딜 수 있는지 테스트합니다. (압력, 무게, 진동 등)\n    *   **내구성 시험:** 제품이 장기간 사용 시 손상되지 않고 견딜 수 있는지 테스트합니다.\n    *   **균열 시험:** 제품에 균열이 발생할 가능성을 확인합니다.\n    *   **접합 시험:** 부품 간의 연결이 견고한지 확인합니다.\n*   **측정 지표:** 제품의 강도, 탄성, 파괴 강도, 변형률 등 물리적 특성 측정.\n*   **예시:** 다리, 건물, 자동차, 항공기 등의 구조적 안전성 검사.\n\n**환경 시험 (Environmental Testing)**\n\n*   **목표:** 제품 또는 시스템이 다양한 환경 조건 (온도, 습도, 진동, 충격, 방사선 등)에서 정상적으로 작동하는지 확인합니다.\n*   **주요 내용:**\n    *   **온도 시험:** 고온, 저온 환경에서 제품의 성능 변화를 측정합니다.\n    *   **습도 시험:** 습도 변화에 따른 제품의 부식, 변형 등을 확인합니다.\n    *   **진동 시험:** 제품이 진동에 견딜 수 있는지 테스트합니다.\n    *   **충격 시험:** 제품이 충격에 견딜 수 있는지 테스트합니다.\n    *   **방사선 시험:** 방사선 환경에서 제품의 성능 변화를 측정합니다.\n*   **측정 지표:** 제품의 기능, 성능, 신뢰성 변화 측정.\n*   **예시:** 전자 제품의 온도 및 습도 시험, 우주선 부품의 방사선 시험, 자동차의 진동 시험.\n\n**핵심 차이점 요약**\n\n| 특징           | 구조 시험                               | 환경 시험                               |\n| -------------- | -------------------------------------- | -------------------------------------- |\n| **주요 검사 대상** | 물리적 구조 및 강도                       | 환경 조건에서의 성능 및 신뢰성             |\n| **주요 시험**     | 하중, 내구성, 균열, 접합                   | 온도, 습도, 진동, 충격, 방사선             |\n| **목표**         | 물리적 안전성 및 내구성 확보               | 환경 조건에서의 기능 유지 및 신뢰성 확보 |\n\n궁금한 점이 있다면 언제든지 다시 질문해주세요.",
+    "model": "gemma3:4b",
+    "sources": [
+      "Ⅳ. 실험 및 결과 (Experiments and Results) (계속 4)",
+      "Ⅲ. 연구 방법 (Methodology)",
+      "Ⅲ. 연구 방법 (Methodology) (계속 3)",
+      "Ⅴ. 결론 (Conclusion)",
+      "Ⅴ. 결론 (Conclusion) (계속 2)"
+    ],
+    "elapsed": 13.1,
+    "error": null
+  },
+  {
+    "id": "T2-2",
+    "tier": 2,
+    "question": "비행 시험 전체 절차를 요약해줘",
+    "answer": "**KF-21 전투기 기술 문서 기반 비행 시험 전체 절차 요약**\n\n*   **USNTPS Rotary Wing Full-Length Course:** KF-21 관련 비행 시험은 USNTPS의 12개월 로터리 윙 전체 과정과 연관되어 있습니다.\n*   **Flight Test Engineer (FTE) 훈련:** DEVCOM AvMC의 FTE가 비행 시험 계획, 실행, 데이터 분석 및 보고, 그리고 항공기 비행 역학, 성능 및 시스템에 대한 기술 학업을 위해 USNTPS에서 훈련을 받았습니다.\n*   **DRACO 충돌 회피 시스템 개발:** UAV 충돌 방지를 위한 DRACO(Deep-Reinforcement Avoidance and Communication Operator) 시스템이 개발되고 있습니다.\n*   **주요 사용자 및 기능:** 본 제품의 주요 사용자는 UAV 사용자 전반이며, 접목이 용이하고 군집 제어 및 상호 소통 기능을 포함합니다.\n*   **심층 강화 학습 기반:** 기존 로직 기반 회피보다 강건한 회피 성능을 제공하기 위해 심층 강화 학습(DRL)을 기반으로 합니다.",
+    "model": "gemma3:4b",
+    "sources": [
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 80)",
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 132)",
+      "Project Background",
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 70)",
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 145)"
+    ],
+    "elapsed": 9.5,
+    "error": null
+  },
+  {
+    "id": "T2-3",
+    "tier": 2,
+    "question": "동체 설계와 주익 설계의 공통 기준은?",
+    "answer": "제공된 문서에서 동체 설계와 주익 설계의 공통 기준에 대한 정보는 찾지 못했습니다.",
+    "model": "gemma3:4b",
+    "sources": [
+      "Design Decision List",
+      "Ⅴ. 결론 (Conclusion) (계속 2)",
+      "Design Decision List",
+      "DD-02 확장성과 적응성을 고려한 모듈 기반 시스템 설계",
+      "Design Rationale"
+    ],
+    "elapsed": 7.4,
+    "error": null
+  },
+  {
+    "id": "T2-4",
+    "tier": 2,
+    "question": "시스템 요구사항에서 참조하는 규격은?",
+    "answer": "**시스템 요구사항에서 참조하는 규격:**\n\n*   국가에서 요구하는 항공 및 방위 산업 표준\n*   국가 인증 기관에서 요구하는 데이터 형식",
+    "model": "gemma3:4b",
+    "sources": [
+      "DD-02 확장성과 적응성을 고려한 모듈 기반 시스템 설계",
+      "Business Constraint List",
+      "Technical Constraint List",
+      "Use Case List",
+      "Technical Constraint List"
+    ],
+    "elapsed": 7.5,
+    "error": null
+  },
+  {
+    "id": "T2-5",
+    "tier": 2,
+    "question": "품질관리와 형상관리의 관계를 설명해줘",
+    "answer": "**핵심 내용:**\n\n*   **품질 관리:** 제품 또는 서비스가 특정 요구 사항을 충족하는 정도를 보장하는 활동입니다.\n*   **형상 관리:** 제품의 3차원 형상(geometry)을 정의, 관리, 제어하는 활동입니다.\n\n**설명:**\n\n품질 관리와 형상 관리는 제품 개발 및 생산 과정에서 밀접하게 관련된 활동입니다.\n\n*   **품질 관리**는 제품이 고객의 요구 사항을 충족하는지 확인하는 데 중점을 둡니다. 이는 검사, 테스트, 분석 등을 통해 이루어집니다.\n*   **형상 관리**는 제품의 형상이 정확하고 일관되게 유지되도록 하는 데 중점을 둡니다. 이는 CAD/CAM 시스템, 3D 스캐닝, 형상 검사 등을 통해 이루어집니다.\n\n두 활동이 함께 사용될 때, 제품의 품질과 형상을 동시에 보장할 수 있습니다. 예를 들어, 형상 관리를 통해 제품의 형상이 정확하게 정의되고 유지되면, 품질 관리를 통해 제품이 고객의 요구 사항을 충족하는지 확인할 수 있습니다.",
+    "model": "gemma3:4b",
+    "sources": [
+      "Design Decision List",
+      "DD-01 부품 데이터 관리 최적화를 위한 계층적 구조 설계 (계속 2)",
+      "Design Decision List",
+      "Ⅳ. 실험 및 결과 (Experiments and Results) (계속 2)",
+      "Project Background"
+    ],
+    "elapsed": 9.4,
+    "error": null
+  },
+  {
+    "id": "T3-1",
+    "tier": 3,
+    "question": "이 시험 절차에서 빠진 항목이 있을까?",
+    "answer": "제공된 문서에서 이 시험 절차에 빠진 항목을 찾을 수 없습니다.\n\n*   **실험 환경:** Windows 11 기반 로컬 워크스테이션, NVIDIA GeForce RTX 4080 (12GB VRAM), Intel i9-13950HX, 64GB RAM으로 구성\n*   **소프트웨어 환경:** Python 3.11, PyCharm IDE, CUDA 12.1 기반\n*   **평가 지표:** Recall@5, nDCG@5, MRR\n*   **실험 변수:** Top-k, Threshold\n*   **데이터셋:** KIPRIS(500) + NTRS(700) 수집, ~43,000 청크 수",
+    "model": "gemma3:4b",
+    "sources": [
+      "Ⅳ. 실험 및 결과 (Experiments and Results) (계속 3)",
+      "Ⅳ. 실험 및 결과 (Experiments and Results) (계속 2)",
+      "Ⅲ. 연구 방법 (Methodology) (계속 2)",
+      "Ⅲ. 연구 방법 (Methodology)",
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 145)"
+    ],
+    "elapsed": 8.6,
+    "error": null
+  },
+  {
+    "id": "T3-2",
+    "tier": 3,
+    "question": "구조 시험 결과가 설계 기준을 만족하는지 판단해줘",
+    "answer": "- **요약:**\n    - 본 연구는 BM25, FAISS, 그리고 이들의 하이브리드 검색 구조를 폐쇄망 환경에서 RAG 검색 품질 향상을 위해 실험했습니다.\n    - 다양한 알파 값, Top-k 값, 그리고 임계값(Threshold)을 사용하여 실험을 수행했습니다.\n    - 실험 결과, Alpha=0.2, Top-k=8, Threshold=0.30일 때, Avg_Recall, Std_Recall, Avg_nDCG, Std_nDCG, MRR 등의 지표가 1.0000에 매우 가깝게 나타나 설계 기준을 만족하는 것으로 판단됩니다.\n\n- **핵심 내용:**\n    - 설계 기준 만족 여부 판단: Alpha=0.2, Top-k=8, Threshold=0.30일 때, 주요 지표가 1.0000에 가까워 설계 기준 만족\n    - 실험 환경: Windows 11 기반 로컬 워크스테이션, NVIDIA GeForce RTX 4080, Intel i9-13950HX, 64GB RAM\n    - 사용 라이브러리: faiss, whoosh, sentence-transformers (bge-m3), numpy, pandas, matplotlib, scipy, pytest, pdfplumber, BeautifulSoup, PyMuPDF\n\n- **쉽게 설명해줘:**\n    - KF-21 전투기 기술 문서 검색 시스템을 개발하기 위해 다양한 설정으로 실험을 해봤습니다. 실험 결과, 특정 설정(알파 값, 검색 결과 상위 개수, 임계값)을 사용하면 검색 정확도가 매우 높게 나왔습니다. 즉, 설계 목표를 잘 달성했다고 볼 수 있습니다.\n",
+    "model": "gemma3:4b",
+    "sources": [
+      "Design Decision List",
+      "Design Decision List",
+      "Ⅲ. 연구 방법 (Methodology)",
+      "DD-02 확장성과 적응성을 고려한 모듈 기반 시스템 설계",
+      "Ⅳ. 실험 및 결과 (Experiments and Results) (계속 3)"
+    ],
+    "elapsed": 10.8,
+    "error": null
+  },
+  {
+    "id": "T3-3",
+    "tier": 3,
+    "question": "레이더 시스템과 통신 시스템의 간섭 가능성은?",
+    "answer": "제공된 문서에서 레이더 시스템과 통신 시스템 간의 간섭 가능성에 대한 정보는 찾을 수 없습니다.",
+    "model": "gemma3:4b",
+    "sources": [
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 7)",
+      "개발 경과",
+      "Project Background",
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 112)",
+      "Structural Model"
+    ],
+    "elapsed": 7.4,
+    "error": null
+  },
+  {
+    "id": "T3-4",
+    "tier": 3,
+    "question": "운용 매뉴얼에 정비 절차가 충분히 반영되어 있어?",
+    "answer": "제공된 문서에서 운용 매뉴얼에 정비 절차가 충분히 반영되었는지 여부를 확인할 수 없습니다.\n",
+    "model": "gemma3:4b",
+    "sources": [
+      "Technical Constraint List",
+      "UC-07 System Maintenance & Access",
+      "QA-03 서버 장애 시 서비스 자동 복구",
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 103)",
+      "Revision History"
+    ],
+    "elapsed": 7.2,
+    "error": null
+  },
+  {
+    "id": "T3-5",
+    "tier": 3,
+    "question": "초도 비행 전 필수 점검 항목을 정리해줘",
+    "answer": "**UC-02 사전 경로 계획** 문서를 기반으로 초도 비행 전 필수 점검 항목은 다음과 같습니다.\n\n*   DRACO가 활성화되어 UAV의 비행이 가능한 상태인지 확인합니다.\n*   제한 영역을 지도에 표시하는지 확인합니다.\n*   출발지, 목적지 및 웨이 포인트를 입력하는지 확인합니다.\n*   “계획 비행 시작” 버튼을 클릭하여 비행 계획이 정상적으로 생성되는지 확인합니다.",
+    "model": "gemma3:4b",
+    "sources": [
+      "UC-02 사전 경로 계획",
+      "Use Case List",
+      "Project Background",
+      "UC-05 센서 기반 충돌 회피",
+      "4.3 FY 2020 Air Force Activities (Full Report in Appendix C) (계속 147)"
+    ],
+    "elapsed": 8.1,
+    "error": null
+  }
+]
