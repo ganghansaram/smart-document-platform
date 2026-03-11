@@ -2142,6 +2142,8 @@
 
         // 카드 그리드를 드롭 타겟으로 (트리 → 워크스페이스 이동)
         $docGrid.addEventListener('dragover', function(e) {
+            // 외부 파일 드래그 시 그리드 하이라이트 방지 (업로드 존만 반응)
+            if (e.dataTransfer.types.indexOf('Files') !== -1) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             $docGrid.classList.add('drag-over');
@@ -2150,6 +2152,7 @@
             if (!$docGrid.contains(e.relatedTarget)) $docGrid.classList.remove('drag-over');
         });
         $docGrid.addEventListener('drop', function(e) {
+            if (e.dataTransfer.types.indexOf('Files') !== -1) return;
             e.preventDefault();
             $docGrid.classList.remove('drag-over');
             var docId = e.dataTransfer.getData('text/plain');
