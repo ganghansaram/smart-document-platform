@@ -164,6 +164,9 @@
         }
         html += '</div>';
 
+        // Feedback stats
+        html += _renderFeedbackSection(data.feedback);
+
         // Action buttons
         html += '<div class="ad-actions">';
         html += '<button class="ad-btn" id="ad-seed-btn">데모 데이터 생성</button>';
@@ -297,6 +300,99 @@
 
     function _escHtml(str) {
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // -- Feedback Section ---------------------------------------------------
+
+    function _renderFeedbackSection(feedback) {
+        if (!feedback) return '';
+        var summary = feedback.summary || { total: { positive: 0, negative: 0, rate: 0 }, by_route: {}, by_confidence: {} };
+        var totalCount = (summary.total.positive || 0) + (summary.total.negative || 0);
+
+        var html = '<div class="ad-feedback-section">';
+        html += '<div class="ad-section-title">챗봇 피드백 분석</div>';
+
+        if (totalCount === 0) {
+            html += '<div class="ad-no-data">아직 피드백이 없습니다</div>';
+            html += '</div>';
+            return html;
+        }
+
+        // Summary card row
+        html += '<div class="ad-summary" style="margin-bottom:16px">';
+        html += '<div class="ad-card"><div class="ad-card-label">전체 만족도</div>';
+        html += '<div class="ad-card-value" style="color:var(--color-success)">' + summary.total.rate + '%</div></div>';
+        html += _summaryCard('긍정', summary.total.positive, '');
+        html += _summaryCard('부정', summary.total.negative, '');
+        html += _summaryCard('전체 응답', totalCount, '');
+        html += '</div>';
+
+        // Route satisfaction table
+        var routes = summary.by_route || {};
+        var routeKeys = Object.keys(routes);
+        if (routeKeys.length > 0) {
+            html += '<div class="ad-feedback-table-wrap">';
+            html += '<table class="ad-feedback-table">';
+            html += '<thead><tr><th>경로</th><th>긍정</th><th>부정</th><th>만족도</th></tr></thead><tbody>';
+            routeKeys.forEach(function(r) {
+                var d = routes[r];
+                var rateClass = d.rate >= 70 ? 'ad-rate-good' : (d.rate >= 40 ? 'ad-rate-mid' : 'ad-rate-low');
+                html += '<tr><td>' + _escHtml(r) + '</td><td>' + (d.positive || 0) + '</td><td>' + (d.negative || 0) + '</td>';
+                html += '<td><span class="' + rateClass + '">' + d.rate + '%</span></td></tr>';
+            });
+            html += '</tbody></table></div>';
+        }
+
+        // Daily feedback chart (stacked bar)
+        var daily = feedback.daily || [];
+        if (daily.length > 0) {
+            html += '<div style="margin-top:16px">';
+            html += '<div class="ad-section-title" style="font-size:13px">일별 피드백 추세</div>';
+            var maxDay = Math.max.apply(null, daily.map(function(d) { return (d.positive || 0) + (d.negative || 0); })) || 1;
+            html += '<div class="ad-vbar-container">';
+            daily.forEach(function(item, i) {
+                var pos = item.positive || 0;
+                var neg = item.negative || 0;
+                var total = pos + neg;
+                var posPct = Math.round((pos / maxDay) * 100);
+                var negPct = Math.round((neg / maxDay) * 100);
+                var dayLabel = item.day ? item.day.substring(5) : '';
+                html += '<div class="ad-vbar-item">';
+                html += '<div class="ad-vbar-stacked" style="height:' + Math.max(Math.round((total / maxDay) * 100), 3) + '%;animation-delay:' + (i * 0.04) + 's">';
+                if (neg > 0) html += '<div class="ad-vbar-neg" style="height:' + Math.round((neg / total) * 100) + '%"></div>';
+                if (pos > 0) html += '<div class="ad-vbar-pos" style="height:' + Math.round((pos / total) * 100) + '%"></div>';
+                html += '<span class="ad-vbar-tooltip">긍정 ' + pos + ' · 부정 ' + neg + '</span>';
+                html += '</div>';
+                html += '<span class="ad-vbar-label">' + dayLabel + '</span>';
+                html += '</div>';
+            });
+            html += '</div></div>';
+        }
+
+        // Recent negative feedback
+        var negList = feedback.recent_negative || [];
+        if (negList.length > 0) {
+            html += '<div style="margin-top:16px">';
+            html += '<div class="ad-section-title" style="font-size:13px">최근 부정 피드백</div>';
+            html += '<div class="ad-neg-list">';
+            negList.forEach(function(item) {
+                html += '<div class="ad-neg-item">';
+                html += '<div class="ad-neg-header">';
+                html += '<span class="ad-neg-time">' + _escHtml(item.timestamp || '') + '</span>';
+                html += '<span class="ad-neg-route">' + _escHtml(item.route || '') + '</span>';
+                if (item.confidence) html += '<span class="ad-neg-conf">' + _escHtml(item.confidence) + '</span>';
+                html += '</div>';
+                html += '<div class="ad-neg-question">Q: ' + _escHtml(item.question || '') + '</div>';
+                if (item.answer_preview) {
+                    html += '<div class="ad-neg-answer">A: ' + _escHtml(item.answer_preview) + '</div>';
+                }
+                html += '</div>';
+            });
+            html += '</div></div>';
+        }
+
+        html += '</div>';
+        return html;
     }
 
     // -- Active Users Modal --------------------------------------------------

@@ -335,8 +335,7 @@ async function sendMessage() {
 
     try {
         if (AI_CONFIG.useBackend) {
-            // 멀티턴 모드: 스트리밍 응답
-            hideTypingIndicator();
+            // 멀티턴 모드: 스트리밍 응답 (타이핑 인디케이터는 첫 토큰 수신 시 제거)
             await requestViaBackendStream(message);
         } else {
             // 직접 Ollama 호출 (싱글턴 — 기존 동작 유지)
@@ -529,11 +528,13 @@ async function requestViaBackendStream(question) {
         throw new Error('API 요청 실패: ' + response.status + (errorBody ? ' - ' + errorBody : ''));
     }
 
-    // 스트리밍 메시지 요소 생성
-    var messageEl = createStreamingMessage();
+    // 스트리밍 메시지 요소 생성 (첫 토큰까지 타이핑 인디케이터 유지)
+    var messageEl = null;
     var fullText = '';
     var sources = [];
     var confidence = 'high';
+    var doneMeta = {};
+    var firstToken = true;
 
     var reader = response.body.getReader();
     var decoder = new TextDecoder();
@@ -557,9 +558,15 @@ async function requestViaBackendStream(question) {
                     var data = JSON.parse(line);
 
                     if (data.type === 'token') {
+                        if (firstToken) {
+                            hideTypingIndicator();
+                            messageEl = createStreamingMessage();
+                            firstToken = false;
+                        }
                         fullText += data.content;
                         updateStreamingMessage(messageEl, fullText);
                     } else if (data.type === 'done') {
+                        if (firstToken) { hideTypingIndicator(); messageEl = createStreamingMessage(); firstToken = false; }
                         // 세션 ID 저장
                         if (data.conversation_id) {
                             AIChatState.conversationId = data.conversation_id;
@@ -570,11 +577,13 @@ async function requestViaBackendStream(question) {
                                 return { title: s.title, path: s.path, sectionId: s.section_id || null };
                             });
                         }
-                        // 신뢰도 메타데이터
+                        // 메타데이터 캡처 (피드백용)
+                        doneMeta = data;
                         if (data.confidence) {
                             confidence = data.confidence;
                         }
                     } else if (data.type === 'error') {
+                        if (firstToken) { hideTypingIndicator(); firstToken = false; }
                         throw new Error(data.message || 'LLM 서버 오류');
                     }
                 } catch (parseErr) {
@@ -590,8 +599,15 @@ async function requestViaBackendStream(question) {
         reader.releaseLock();
     }
 
-    // 스트리밍 완료 → 마크다운 렌더링 + 소스 + 신뢰도 표시
-    finalizeStreamingMessage(messageEl, sources, confidence);
+    // 스트리밍 완료 → 마크다운 렌더링 + 소스 + 신뢰도 + 피드백 표시
+    finalizeStreamingMessage(messageEl, sources, {
+        confidence: confidence,
+        route: doneMeta.route || '',
+        model: doneMeta.model || '',
+        conversationId: doneMeta.conversation_id || AIChatState.conversationId || '',
+        sourcesCount: sources.length,
+        question: question
+    });
 }
 
 /**
@@ -742,8 +758,12 @@ function updateStreamingMessage(messageEl, text) {
 /**
  * 스트리밍 완료 후 마무리
  */
-function finalizeStreamingMessage(messageEl, sources, confidence) {
+function finalizeStreamingMessage(messageEl, sources, meta) {
     if (!messageEl) return;
+
+    // meta 호환: 문자열이면 기존 방식 (confidence만), 객체면 새 방식
+    var confidence = typeof meta === 'string' ? meta : (meta && meta.confidence || 'high');
+    var feedbackMeta = typeof meta === 'object' ? meta : null;
 
     // 커서 제거
     var cursor = messageEl.querySelector('.streaming-cursor');
@@ -781,6 +801,74 @@ function finalizeStreamingMessage(messageEl, sources, confidence) {
             return s.title;
         }).join(', ');
         messageEl.appendChild(sourcesEl);
+    }
+
+    // 피드백 버튼 (백엔드 RAG + CHAT 아닌 경우만)
+    if (feedbackMeta && feedbackMeta.route !== 'CHAT') {
+        var feedbackEl = document.createElement('div');
+        feedbackEl.className = 'ai-chat-feedback';
+
+        var btnPositive = document.createElement('button');
+        btnPositive.className = 'feedback-btn positive';
+        btnPositive.title = '도움이 됐어요';
+        btnPositive.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>';
+
+        var btnNegative = document.createElement('button');
+        btnNegative.className = 'feedback-btn negative';
+        btnNegative.title = '아쉬워요';
+        btnNegative.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></svg>';
+
+        var answerPreview = rawText ? rawText.substring(0, 200) : '';
+        var currentFeedback = null; // 현재 선택된 피드백 ('positive' | 'negative' | null)
+
+        function sendFeedback(feedbackType) {
+            fetch(AI_CONFIG.backendUrl + '/api/chat/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    conversation_id: feedbackMeta.conversationId || '',
+                    question: feedbackMeta.question || '',
+                    answer_preview: answerPreview,
+                    feedback: feedbackType,
+                    route: feedbackMeta.route || '',
+                    confidence: feedbackMeta.confidence || '',
+                    model: feedbackMeta.model || '',
+                    sources_count: feedbackMeta.sourcesCount || 0
+                })
+            }).catch(function(err) {
+                console.error('[Feedback] 전송 실패:', err);
+            });
+        }
+
+        function updateFeedbackUI() {
+            btnPositive.classList.toggle('selected', currentFeedback === 'positive');
+            btnNegative.classList.toggle('selected', currentFeedback === 'negative');
+        }
+
+        btnPositive.addEventListener('click', function() {
+            if (currentFeedback === 'positive') {
+                currentFeedback = null; // 취소 (토글)
+            } else {
+                currentFeedback = 'positive';
+                sendFeedback('positive');
+            }
+            updateFeedbackUI();
+        });
+
+        btnNegative.addEventListener('click', function() {
+            if (currentFeedback === 'negative') {
+                currentFeedback = null;
+            } else {
+                currentFeedback = 'negative';
+                sendFeedback('negative');
+            }
+            updateFeedbackUI();
+        });
+
+        feedbackEl.appendChild(btnPositive);
+        feedbackEl.appendChild(btnNegative);
+        messageEl.appendChild(feedbackEl);
     }
 
     // 상태에 저장

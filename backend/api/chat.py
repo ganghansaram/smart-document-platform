@@ -5,15 +5,17 @@ import asyncio
 import json
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
 
 import config
+from dependencies import get_current_user
 from services.llm_client import generate_response, generate_response_stream
 from services.conversation import store as conversation_store
 from services.query_rewriter import rewrite_query
+from services import analytics
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -402,6 +404,7 @@ async def chat_stream(request: ChatRequest, raw_request: Request):
                     "confidence": rag_meta["confidence"],
                     "reasoning_steps": rag_meta["reasoning_steps"],
                     "search_queries": rag_meta["search_queries"],
+                    "route": rag_meta.get("route", ""),
                 }
                 yield json.dumps(done_payload, ensure_ascii=False) + "\n"
 
@@ -419,3 +422,34 @@ async def chat_stream(request: ChatRequest, raw_request: Request):
             yield error_payload
 
         return StreamingResponse(error_stream(), media_type="application/x-ndjson")
+
+
+# -- 피드백 API ----------------------------------------------------------------
+
+class FeedbackRequest(BaseModel):
+    conversation_id: str = ""
+    question: str = ""
+    answer_preview: str = ""
+    feedback: str  # "positive" | "negative"
+    route: str = ""
+    confidence: str = ""
+    model: str = ""
+    sources_count: int = 0
+
+
+@router.post("/chat/feedback")
+async def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current_user)):
+    if req.feedback not in ("positive", "negative"):
+        return {"success": False, "error": "Invalid feedback value"}
+    analytics.record_feedback(
+        username=user["username"],
+        conversation_id=req.conversation_id,
+        question=req.question,
+        answer_preview=req.answer_preview,
+        feedback=req.feedback,
+        route=req.route,
+        confidence=req.confidence,
+        model=req.model,
+        sources_count=req.sources_count,
+    )
+    return {"success": True}

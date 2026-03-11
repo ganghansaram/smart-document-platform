@@ -41,6 +41,21 @@ def init_db():
         );
         CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
         CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp);
+
+        CREATE TABLE IF NOT EXISTS chat_feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT DEFAULT (datetime('now', 'localtime')),
+            username TEXT,
+            conversation_id TEXT,
+            question TEXT,
+            answer_preview TEXT,
+            feedback TEXT NOT NULL,
+            route TEXT,
+            confidence TEXT,
+            model TEXT,
+            sources_count INTEGER DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_feedback_timestamp ON chat_feedback(timestamp);
     """)
     # Migration: add username column to existing DB if not present
     try:
@@ -222,6 +237,99 @@ def get_daily_chat(days: int = 14) -> List[dict]:
             GROUP BY day ORDER BY day
         """, (f"-{days} days",)).fetchall()
         return [{"day": r["day"], "count": r["cnt"]} for r in rows]
+    finally:
+        conn.close()
+
+
+# -- Feedback ------------------------------------------------------------------
+
+def record_feedback(username: str, conversation_id: str, question: str,
+                    answer_preview: str, feedback: str, route: str,
+                    confidence: str, model: str, sources_count: int):
+    conn = _get_conn()
+    try:
+        conn.execute(
+            """INSERT INTO chat_feedback
+               (username, conversation_id, question, answer_preview, feedback,
+                route, confidence, model, sources_count)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (username, conversation_id, question, answer_preview[:200] if answer_preview else "",
+             feedback, route, confidence, model, sources_count),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_feedback_summary(days: int = 30) -> dict:
+    conn = _get_conn()
+    try:
+        since = f"-{days} days"
+        rows = conn.execute("""
+            SELECT route, confidence, feedback, COUNT(*) AS cnt
+            FROM chat_feedback
+            WHERE timestamp >= datetime('now','localtime',?)
+            GROUP BY route, confidence, feedback
+        """, (since,)).fetchall()
+
+        total = {"positive": 0, "negative": 0}
+        by_route: dict = {}
+        by_confidence: dict = {}
+
+        for r in rows:
+            fb = r["feedback"]
+            cnt = r["cnt"]
+            rt = r["route"] or "UNKNOWN"
+            cf = r["confidence"] or "unknown"
+
+            total[fb] = total.get(fb, 0) + cnt
+
+            by_route.setdefault(rt, {"positive": 0, "negative": 0})
+            by_route[rt][fb] = by_route[rt].get(fb, 0) + cnt
+
+            by_confidence.setdefault(cf, {"positive": 0, "negative": 0})
+            by_confidence[cf][fb] = by_confidence[cf].get(fb, 0) + cnt
+
+        def _rate(d):
+            s = d.get("positive", 0) + d.get("negative", 0)
+            d["rate"] = round(d["positive"] / s * 100) if s else 0
+            return d
+
+        return {
+            "total": _rate(total),
+            "by_route": {k: _rate(v) for k, v in by_route.items()},
+            "by_confidence": {k: _rate(v) for k, v in by_confidence.items()},
+        }
+    finally:
+        conn.close()
+
+
+def get_recent_negative(limit: int = 20) -> List[dict]:
+    conn = _get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT timestamp, question, route, confidence, model, answer_preview
+            FROM chat_feedback
+            WHERE feedback='negative'
+            ORDER BY timestamp DESC LIMIT ?
+        """, (limit,)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def get_daily_feedback(days: int = 14) -> List[dict]:
+    conn = _get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT date(timestamp) AS day,
+                   SUM(CASE WHEN feedback='positive' THEN 1 ELSE 0 END) AS positive,
+                   SUM(CASE WHEN feedback='negative' THEN 1 ELSE 0 END) AS negative
+            FROM chat_feedback
+            WHERE timestamp >= datetime('now','localtime',?)
+            GROUP BY day ORDER BY day
+        """, (f"-{days} days",)).fetchall()
+        return [{"day": r["day"], "positive": r["positive"], "negative": r["negative"]} for r in rows]
     finally:
         conn.close()
 

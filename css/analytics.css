@@ -482,6 +482,113 @@ body[data-theme="dark"] .ad-modal-overlay {
     font-size: 14px;
 }
 
+/* --- Feedback section --- */
+.ad-feedback-section {
+    margin-top: 24px;
+    padding: 16px;
+    border: 1px solid var(--ad-border);
+    border-radius: 8px;
+    background: var(--ad-card-bg);
+}
+
+.ad-feedback-table-wrap {
+    overflow-x: auto;
+}
+
+.ad-feedback-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.ad-feedback-table th,
+.ad-feedback-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--ad-border);
+}
+
+.ad-feedback-table th {
+    font-weight: 600;
+    color: var(--ad-text-secondary);
+    font-size: 12px;
+}
+
+.ad-rate-good { color: var(--color-success, #22c55e); font-weight: 600; }
+.ad-rate-mid  { color: var(--color-warning, #f59e0b); font-weight: 600; }
+.ad-rate-low  { color: var(--color-error, #ef4444); font-weight: 600; }
+
+.ad-vbar-stacked {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: 3px 3px 0 0;
+    overflow: hidden;
+    animation: barGrow 0.6s ease forwards;
+}
+
+.ad-vbar-pos {
+    background: var(--color-success, #22c55e);
+}
+
+.ad-vbar-neg {
+    background: var(--color-error, #ef4444);
+}
+
+.ad-neg-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ad-neg-item {
+    padding: 10px 12px;
+    border: 1px solid var(--ad-border);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--ad-card-bg);
+}
+
+.ad-neg-header {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.ad-neg-time {
+    font-size: 11px;
+    color: var(--ad-text-secondary);
+}
+
+.ad-neg-route,
+.ad-neg-conf {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--ad-border);
+    color: var(--ad-text-secondary);
+    font-weight: 500;
+}
+
+.ad-neg-question {
+    font-weight: 500;
+    color: var(--ad-text-primary);
+    line-height: 1.5;
+}
+
+.ad-neg-answer {
+    margin-top: 4px;
+    color: var(--ad-text-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
 /* --- Responsive --- */
 @media (max-width: 700px) {
     .ad-summary {

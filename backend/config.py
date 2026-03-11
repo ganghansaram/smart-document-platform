@@ -42,6 +42,9 @@ QUERY_DECOMPOSE_ENABLED = True   # 쿼리 분해 활성화 여부 (복합 질문
 QUESTION_ROUTING_ENABLED = True  # 질문 유형 분류 (SIMPLE/COMPARE/REASON/CHAT)
 MAX_AGENT_ITERATIONS = 3         # Agentic RAG 최대 반복 횟수
 
+# 챗봇 시스템 프롬프트 (빈값이면 llm_client.py의 기본 프롬프트 사용)
+CHAT_SYSTEM_PROMPT = ""
+
 # 인증 설정
 AUTH_DB_PATH = str(Path(__file__).parent.parent / "data" / "auth.db")
 ANALYTICS_DB_PATH = str(Path(__file__).parent.parent / "data" / "analytics.db")

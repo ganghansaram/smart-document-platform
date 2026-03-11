@@ -118,6 +118,14 @@ var SETTINGS_SCHEMA = {
                                   restart: false, desc: '멀티턴 대화에서 이전 문맥을 반영한 독립적 검색 쿼리 자동 재작성' },
                             ]
                         },
+                        {
+                            title: '챗봇 프롬프트',
+                            fields: [
+                                { group: 'ai', key: 'chat_system_prompt', label: '시스템 프롬프트 (백엔드 RAG)',
+                                  type: 'textarea', restart: false, rows: 12,
+                                  desc: '챗봇이 답변 생성 시 따르는 지침. 도메인, 답변 형식, 언어 등을 지정합니다. 비워두면 기본 프롬프트를 사용합니다.' },
+                            ]
+                        },
                     ]
                 },
                 {
@@ -210,8 +218,8 @@ var SETTINGS_SCHEMA = {
                                   restart: false, min: 1, max: 20, step: 1 },
                                 { group: 'frontend', key: 'ai_max_context_length',   label: '최대 컨텍스트 길이',   type: 'number',
                                   restart: false, min: 1000, max: 32000, step: 500 },
-                                { group: 'frontend', key: 'ai_system_prompt',        label: '시스템 프롬프트',      type: 'textarea',
-                                  restart: false, rows: 8, desc: '챗봇 기본 지침 프롬프트. 백엔드 RAG 사용 시 서버 설정이 우선 적용됨' },
+                                { group: 'frontend', key: 'ai_system_prompt',        label: '시스템 프롬프트 (직접 모드)',      type: 'textarea',
+                                  restart: false, rows: 8, desc: '백엔드 RAG 미사용(직접 모드) 시에만 적용됩니다. 백엔드 RAG 사용 시에는 AI/RAG 탭의 프롬프트가 적용됩니다.' },
                             ]
                         },
                         {

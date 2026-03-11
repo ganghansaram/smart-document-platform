@@ -12,6 +12,7 @@ from services.analytics import (
     get_today_visitors, get_week_visitors,
     get_total_visitors, get_daily_visitors, get_top_pages,
     get_top_searches, get_chat_stats, get_daily_chat,
+    get_feedback_summary, get_recent_negative, get_daily_feedback,
     reset_all, seed_demo_data,
 )
 
@@ -65,6 +66,11 @@ def dashboard(user: dict = Depends(require_admin)):
         "top_searches": get_top_searches(10),
         "chat_stats": get_chat_stats(),
         "daily_chat": get_daily_chat(14),
+        "feedback": {
+            "summary": get_feedback_summary(),
+            "recent_negative": get_recent_negative(10),
+            "daily": get_daily_feedback(14),
+        },
     }
 
 
