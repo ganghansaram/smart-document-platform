@@ -1024,6 +1024,10 @@ body[data-theme="dark"] .search-glossary-abbr {
     color: var(--text-dark);
 }
 
+.section-links a.section-link-full {
+    grid-column: 1 / -1;
+}
+
 
 /* 푸터: platform-footer.css로 이전됨 */
 

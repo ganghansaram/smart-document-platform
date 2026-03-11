@@ -12,7 +12,7 @@
         $pageNavSource.style.display = '';
 
         var header = initPlatformHeader({
-            title: 'Translator',
+            title: 'Smart Translator',
             currentSystem: 'translator',
             navItems: [
                 { id: 'back-list', label: 'Home', hidden: true },

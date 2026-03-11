@@ -49,7 +49,7 @@ async def api_list_folders(user: dict = Depends(get_current_user)):
 @router.post("/folders")
 async def api_create_folder(
     body: dict = Body(...),
-    user: dict = Depends(require_editor),
+    user: dict = Depends(get_current_user),
 ):
     """폴더 생성"""
     name = body.get("name", "").strip()
@@ -66,7 +66,7 @@ async def api_create_folder(
 async def api_rename_folder(
     folder_id: str,
     body: dict = Body(...),
-    user: dict = Depends(require_editor),
+    user: dict = Depends(get_current_user),
 ):
     """폴더 이름 변경"""
     name = body.get("name", "").strip()
@@ -81,7 +81,7 @@ async def api_rename_folder(
 @router.delete("/folders/{folder_id}")
 async def api_delete_folder(
     folder_id: str,
-    user: dict = Depends(require_editor),
+    user: dict = Depends(get_current_user),
 ):
     """폴더 삭제 (하위 항목은 상위로 이동)"""
     if not delete_folder(user["username"], folder_id):
@@ -93,7 +93,7 @@ async def api_delete_folder(
 async def api_move_document(
     doc_id: str,
     body: dict = Body(...),
-    user: dict = Depends(require_editor),
+    user: dict = Depends(get_current_user),
 ):
     """문서를 폴더로 이동 (folder_id=null → 루트)"""
     folder_id = body.get("folder_id")
@@ -191,7 +191,7 @@ async def api_ai_selection(
 @router.post("/upload")
 async def api_upload_pdf(
     file: UploadFile = File(...),
-    user: dict = Depends(require_editor),
+    user: dict = Depends(get_current_user),
 ):
     """PDF 업로드 → 즉시 응답"""
     if not file.filename.lower().endswith(".pdf"):
@@ -226,7 +226,7 @@ async def api_get_document(doc_id: str, user: dict = Depends(get_current_user)):
 
 
 @router.delete("/document/{doc_id}")
-async def api_delete_document(doc_id: str, user: dict = Depends(require_editor)):
+async def api_delete_document(doc_id: str, user: dict = Depends(get_current_user)):
     """문서 삭제"""
     if not delete_document(user["username"], doc_id):
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
@@ -237,7 +237,7 @@ async def api_delete_document(doc_id: str, user: dict = Depends(require_editor))
 async def api_rename_document(
     doc_id: str,
     body: dict = Body(...),
-    user: dict = Depends(require_editor),
+    user: dict = Depends(get_current_user),
 ):
     """문서 제목 변경"""
     title = body.get("title", "").strip()
