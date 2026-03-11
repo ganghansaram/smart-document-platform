@@ -304,15 +304,6 @@ async def chat(request: ChatRequest, raw_request: Request):
             generate_response, request.question, context_dicts, history
         )
 
-        # 4-b) 답변 검증 (활성화 시)
-        try:
-            from services.answer_verifier import verify_answer
-            disclaimer = await verify_answer(result["answer"], context_dicts)
-            if disclaimer:
-                result["answer"] += disclaimer
-        except Exception as e:
-            logger.debug("답변 검증 스킵: %s", e)
-
         # 5) 대화 기록에 현재 턴 저장
         session.add_message("user", request.question)
         session.add_message("assistant", result["answer"])
@@ -399,18 +390,6 @@ async def chat_stream(request: ChatRequest, raw_request: Request):
                 # 스트리밍 완료 → 답변 검증 + 대화 기록 저장
                 answer_text = "".join(full_answer)
 
-                # 답변 검증 (활성화 시 면책 문구를 추가 토큰으로 전송)
-                verification = None
-                try:
-                    from services.answer_verifier import verify_answer
-                    disclaimer = await verify_answer(answer_text, context_dicts)
-                    if disclaimer:
-                        yield json.dumps({"type": "token", "content": disclaimer}, ensure_ascii=False) + "\n"
-                        answer_text += disclaimer
-                        verification = "PARTIAL" if "일부" in disclaimer else "UNSUPPORTED"
-                except Exception:
-                    pass
-
                 session.add_message("user", request.question)
                 session.add_message("assistant", answer_text)
 
@@ -428,8 +407,6 @@ async def chat_stream(request: ChatRequest, raw_request: Request):
                     "search_queries": rag_meta["search_queries"],
                     "route": rag_meta.get("route", ""),
                 }
-                if verification:
-                    done_payload["verification"] = verification
                 yield json.dumps(done_payload, ensure_ascii=False) + "\n"
 
             except Exception as e:

@@ -540,6 +540,7 @@ async function requestViaBackendStream(question) {
     var decoder = new TextDecoder();
     var buffer = '';
 
+    var streamComplete = false;
     try {
         while (true) {
             var result = await reader.read();
@@ -567,6 +568,7 @@ async function requestViaBackendStream(question) {
                         updateStreamingMessage(messageEl, fullText);
                     } else if (data.type === 'done') {
                         if (firstToken) { hideTypingIndicator(); messageEl = createStreamingMessage(); firstToken = false; }
+                        streamComplete = true;
                         // 세션 ID 저장
                         if (data.conversation_id) {
                             AIChatState.conversationId = data.conversation_id;
@@ -595,8 +597,26 @@ async function requestViaBackendStream(question) {
                 }
             }
         }
-    } finally {
+    } catch (streamErr) {
+        // 스트리밍 중 네트워크 끊김 등 — 이미 수신한 토큰이 있으면 중단 표시
+        if (!firstToken && fullText && !streamComplete) {
+            fullText += '\n\n---\n*[응답이 중단되었습니다. 다시 질문해주세요.]*';
+            updateStreamingMessage(messageEl, fullText);
+        }
         reader.releaseLock();
+        if (firstToken) throw streamErr; // 토큰 수신 전 에러는 상위에서 처리
+        // 부분 응답이 있으면 그대로 마무리
+        finalizeStreamingMessage(messageEl, sources, {
+            confidence: 'low',
+            route: doneMeta.route || '',
+            model: doneMeta.model || '',
+            conversationId: doneMeta.conversation_id || AIChatState.conversationId || '',
+            sourcesCount: sources.length,
+            question: question
+        });
+        return;
+    } finally {
+        try { reader.releaseLock(); } catch (e) { /* already released */ }
     }
 
     // 스트리밍 완료 → 마크다운 렌더링 + 소스 + 신뢰도 + 피드백 표시

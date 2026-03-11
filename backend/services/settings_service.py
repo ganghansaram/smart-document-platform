@@ -30,7 +30,6 @@ DEFAULT_SETTINGS: dict = {
         "question_routing_enabled": True,
         "max_agent_iterations": 3,
         "chat_system_prompt": "",
-        "answer_verification_enabled": False,
     },
     "session": {
         "max_conversation_turns": 5,
@@ -128,7 +127,7 @@ _NO_RESTART = {
     "ai.hybrid_keyword_weight", "ai.hybrid_rrf_k", "ai.min_vector_score",
     "ai.reranker_enabled", "ai.reranker_top_k_multiplier", "ai.query_rewrite_enabled",
     "ai.query_decompose_enabled", "ai.question_routing_enabled", "ai.max_agent_iterations",
-    "ai.chat_system_prompt", "ai.answer_verification_enabled",
+    "ai.chat_system_prompt",
     "session.max_conversation_turns", "session.max_history_length",
     "session.max_sessions", "session.max_idle_minutes",
     "upload.word_com_preprocess", "upload.upload_temp_dir",
@@ -230,7 +229,6 @@ def apply_to_config(settings: dict) -> list[str]:
     _set(ai, "question_routing_enabled", "QUESTION_ROUTING_ENABLED", restart_needed, immediate=True)
     _set(ai, "max_agent_iterations", "MAX_AGENT_ITERATIONS", restart_needed, immediate=True)
     _set(ai, "chat_system_prompt", "CHAT_SYSTEM_PROMPT", restart_needed, immediate=True)
-    _set(ai, "answer_verification_enabled", "ANSWER_VERIFICATION_ENABLED", restart_needed, immediate=True)
 
     sess = settings.get("session", {})
     _set(sess, "max_conversation_turns", "MAX_CONVERSATION_TURNS", restart_needed, immediate=True)

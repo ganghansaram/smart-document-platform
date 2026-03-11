@@ -83,11 +83,21 @@ def _parse_plan(text: str) -> dict:
                 pass
 
     # "sufficient": true/false 패턴 탐색
-    if "sufficient" in text.lower():
-        sufficient = "true" in text.lower().split("sufficient")[1][:20]
-        return {"sufficient": sufficient, "query": "", "reason": "파싱 폴백"}
+    lower = text.lower()
+    # "insufficient" → 불충분, "sufficient" 단독 → 충분
+    if "insufficient" in lower or "not sufficient" in lower:
+        # 쿼리 추출 시도
+        query = ""
+        import re as _re
+        qm = _re.search(r'"query"\s*:\s*"([^"]*)"', text)
+        if qm:
+            query = qm.group(1)
+        return {"sufficient": False, "query": query, "reason": "파싱 폴백 (불충분)"}
+    if "sufficient" in lower:
+        return {"sufficient": True, "query": "", "reason": "파싱 폴백 (충분)"}
 
-    return {"sufficient": True, "query": "", "reason": "파싱 실패 → 충분으로 간주"}
+    # 파싱 완전 실패 → 불충분으로 간주 (추가 검색 시도)
+    return {"sufficient": False, "query": "", "reason": "파싱 실패 → 불충분으로 간주"}
 
 
 async def _judge_confidence(question: str, context: List[dict], iterations: int) -> str:
