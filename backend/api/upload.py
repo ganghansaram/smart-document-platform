@@ -363,6 +363,12 @@ async def upload_document(
                     count = search_result.get("indexed_count")
                     msg = f"검색 인덱스 갱신 완료{f' ({count}건)' if count else ''}"
                     yield _progress_event("search_index", "completed", msg)
+                    # BM25 캐시 무효화
+                    try:
+                        from services.keyword_search import reload_bm25_index
+                        reload_bm25_index()
+                    except Exception:
+                        pass
                 else:
                     err = search_result.get("error", "")
                     yield _progress_event("search_index", "error", f"검색 인덱스 실패: {err}")
@@ -414,6 +420,12 @@ async def reindex(user: dict = Depends(require_editor)):
             indexed_count = search_result.get("indexed_count")
             msg = f"검색 인덱스 완료{f' ({indexed_count}건)' if indexed_count else ''}"
             yield _progress_event("search_index", "completed", msg)
+            # BM25 캐시 무효화
+            try:
+                from services.keyword_search import reload_bm25_index
+                reload_bm25_index()
+            except Exception:
+                pass
         else:
             err = search_result.get("error", "")
             yield _progress_event("search_index", "error", f"검색 인덱스 실패: {err}")
