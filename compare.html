@@ -119,11 +119,11 @@
             color: var(--active-color);
         }
 
-        /* ── 메인 레이아웃: Grid (패널영역 | 사이드바) ── */
+        /* ── 메인 레이아웃: Grid (패널영역 | 핸들 | 사이드바) ── */
         .compare-main {
             flex: 1;
             display: grid;
-            grid-template-columns: 1fr 280px;
+            grid-template-columns: 1fr 4px 280px;
             overflow: hidden;
             position: relative;
         }
@@ -527,9 +527,87 @@
             font-weight: 300;
         }
 
+        /* ── 스크롤바 (Explorer 기준서 §12 동일) ── */
+        ::-webkit-scrollbar { width: 14px; height: 14px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(127,140,141,0.3);
+            border: 4px solid transparent;
+            background-clip: padding-box;
+            border-radius: 7px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--medium-gray);
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+        ::-webkit-scrollbar-button:single-button {
+            height: 14px; width: 14px; display: block;
+            background-color: transparent; background-size: 12px;
+            background-repeat: no-repeat; background-position: center;
+        }
+        ::-webkit-scrollbar-button:single-button:vertical:decrement {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 4L2 10h12z' fill='rgba(127,140,141,0.3)'/%3E%3C/svg%3E");
+        }
+        ::-webkit-scrollbar-button:single-button:vertical:increment {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 12L2 6h12z' fill='rgba(127,140,141,0.3)'/%3E%3C/svg%3E");
+        }
+        ::-webkit-scrollbar-button:single-button:horizontal:decrement {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8l6-6v12z' fill='rgba(127,140,141,0.3)'/%3E%3C/svg%3E");
+        }
+        ::-webkit-scrollbar-button:single-button:horizontal:increment {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M12 8L6 2v12z' fill='rgba(127,140,141,0.3)'/%3E%3C/svg%3E");
+        }
+        ::-webkit-scrollbar-button:single-button:hover {
+            background-color: rgba(127,140,141,0.1);
+        }
+        ::-webkit-scrollbar-button:single-button:vertical:decrement:hover {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 4L2 10h12z' fill='%237f8c8d'/%3E%3C/svg%3E");
+        }
+        ::-webkit-scrollbar-button:single-button:vertical:increment:hover {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 12L2 6h12z' fill='%237f8c8d'/%3E%3C/svg%3E");
+        }
+        ::-webkit-scrollbar-button:single-button:horizontal:decrement:hover {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8l6-6v12z' fill='%237f8c8d'/%3E%3C/svg%3E");
+        }
+        ::-webkit-scrollbar-button:single-button:horizontal:increment:hover {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M12 8L6 2v12z' fill='%237f8c8d'/%3E%3C/svg%3E");
+        }
+
+        /* ── 리사이즈 핸들 (Explorer 패턴) ── */
+        .cp-resize-handle {
+            width: 4px;
+            background-color: transparent;
+            cursor: col-resize;
+            position: relative;
+            z-index: 100;
+            transition: background-color 0.15s ease;
+            flex-shrink: 0;
+        }
+        .cp-resize-handle:hover,
+        .cp-resize-handle.dragging {
+            background-color: var(--active-color);
+        }
+        .cp-resize-handle::after {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 12px;
+            left: -4px;
+        }
+        body.cp-resizing {
+            user-select: none;
+            cursor: col-resize;
+        }
+
         /* ── 검증 모드 ── */
         .mode-verify .panel-b {
             display: none;
+        }
+
+        .mode-verify .panel-a .cp-text-content {
+            max-width: 900px;
+            margin: 0 auto;
         }
 
         /* ── 다크 모드 ── */
@@ -624,6 +702,18 @@
             background: var(--white);
             color: var(--text-dark);
         }
+
+        /* 다크 스크롤바 */
+        body[data-theme="dark"] ::-webkit-scrollbar-thumb {
+            background: rgba(160,170,180,0.3);
+            border: 4px solid transparent;
+            background-clip: padding-box;
+        }
+        body[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+            background: rgba(160,170,180,0.5);
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
     </style>
 </head>
 <body>
@@ -707,6 +797,7 @@
                 </div>
             </div>
 
+            <div class="cp-resize-handle" id="cp-resize-handle"></div>
             <div class="cp-sidebar" id="cp-sidebar">
                 <div class="cp-sidebar-header">
                     <span class="cp-sidebar-title" id="cp-sidebar-title">변경 목록</span>
@@ -735,7 +826,9 @@
 
             var currentMode = 'compare'; // 'compare' | 'verify'
             var sidebarOpen = true;
-            var SIDEBAR_WIDTH = '280px';
+            var sidebarWidth = 280; // px, 리사이즈 가능
+            var SIDEBAR_MIN = 180;
+            var SIDEBAR_MAX = 450;
             var API_BASE = (window.DISPLAY_CONFIG && DISPLAY_CONFIG.API_BASE) || 'http://localhost:8000/api';
 
             // ── 문서 상태 ──
@@ -756,6 +849,7 @@
             var sidebarEmpty = document.getElementById('cp-sidebar-empty');
             var sidebarCollapse = document.getElementById('cp-sidebar-collapse');
             var sidebarRestore = document.getElementById('cp-sidebar-restore');
+            var resizeHandle = document.getElementById('cp-resize-handle');
             var labelA = document.getElementById('label-text-a');
             var labelB = document.getElementById('label-text-b');
             var fileInputA = document.getElementById('file-input-a');
@@ -1089,8 +1183,13 @@
 
             // ── 그리드 레이아웃 갱신 ──
             function updateGrid() {
-                var sw = sidebarOpen ? SIDEBAR_WIDTH : '0';
-                compareMain.style.gridTemplateColumns = '1fr ' + sw;
+                if (sidebarOpen) {
+                    compareMain.style.gridTemplateColumns = '1fr 4px ' + sidebarWidth + 'px';
+                    resizeHandle.style.display = '';
+                } else {
+                    compareMain.style.gridTemplateColumns = '1fr 0 0';
+                    resizeHandle.style.display = 'none';
+                }
             }
 
             // ── 모드 전환 ──
@@ -1161,6 +1260,36 @@
 
             sidebarCollapse.addEventListener('click', collapseSidebar);
             sidebarRestore.addEventListener('click', expandSidebar);
+
+            // ── 사이드바 리사이즈 핸들 (Explorer 패턴) ──
+            (function() {
+                var isResizing = false;
+
+                resizeHandle.addEventListener('mousedown', function(e) {
+                    if (!sidebarOpen) return;
+                    isResizing = true;
+                    resizeHandle.classList.add('dragging');
+                    document.body.classList.add('cp-resizing');
+                    e.preventDefault();
+                });
+
+                document.addEventListener('mousemove', function(e) {
+                    if (!isResizing) return;
+                    var rect = compareMain.getBoundingClientRect();
+                    var newWidth = rect.right - e.clientX;
+                    newWidth = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, newWidth));
+                    sidebarWidth = newWidth;
+                    updateGrid();
+                });
+
+                document.addEventListener('mouseup', function() {
+                    if (isResizing) {
+                        isResizing = false;
+                        resizeHandle.classList.remove('dragging');
+                        document.body.classList.remove('cp-resizing');
+                    }
+                });
+            })();
 
             // ── 테마 토글 ──
             function applyTheme(theme) {
