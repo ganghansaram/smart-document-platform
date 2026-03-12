@@ -80,7 +80,7 @@ function initPlatformHeader(config) {
               icon: '<svg ' + _svgAttr + '><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' },
             { id: 'translator', label: 'Translator', href: 'translator.html',
               icon: '<svg ' + _svgAttr + '><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>' },
-            { id: 'compare',    label: 'Compare',    href: '#', disabled: true, badge: '개발 예정',
+            { id: 'compare',    label: 'Compare',    href: 'compare.html', badge: '개발중', badgeClass: 'dev',
               icon: '<svg ' + _svgAttr + '><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>' },
             { id: 'settings',   label: 'Settings',   href: 'admin.html', adminOnly: true, separator: true,
               icon: '<svg ' + _svgAttr + '><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' },
@@ -137,7 +137,7 @@ function initPlatformHeader(config) {
                 // badge
                 if (sys.badge) {
                     var badge = document.createElement('span');
-                    badge.className = 'ph-system-badge';
+                    badge.className = 'ph-system-badge' + (sys.badgeClass ? ' ' + sys.badgeClass : '');
                     badge.textContent = sys.badge;
                     item.appendChild(badge);
                 }

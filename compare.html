@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare — Smart Document Platform</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/platform-header.css">
+    <link rel="stylesheet" href="css/platform-footer.css">
+    <style>
+        /* ── Diff 색상 변수 ── */
+        :root {
+            --diff-added: #e6ffec;
+            --diff-deleted: #ffeef0;
+            --diff-modified: #fff8e1;
+        }
+
+        body[data-theme="dark"] {
+            --diff-added: rgba(46,160,67,0.15);
+            --diff-deleted: rgba(248,81,73,0.15);
+            --diff-modified: rgba(245,158,11,0.15);
+        }
+
+        /* ── 레이아웃 ── */
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            visibility: hidden;
+        }
+
+        .compare-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ── 모드 토글 ── */
+        .mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            background: var(--light-gray);
+            border-radius: 6px;
+            padding: 3px;
+        }
+
+        .mode-toggle-btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 4px;
+            background: transparent;
+            color: var(--text-light);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .mode-toggle-btn.active {
+            background: var(--white);
+            color: var(--text-dark);
+            box-shadow: var(--shadow-sm);
+            font-weight: 600;
+        }
+
+        .mode-toggle-btn:not(.active):hover {
+            color: var(--text-dark);
+        }
+
+        /* ── 서브 헤더 (툴바) ── */
+        .compare-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 24px;
+            background: var(--white);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            min-height: 48px;
+        }
+
+        .toolbar-spacer {
+            flex: 1;
+        }
+
+        .toolbar-label {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        /* ── 패널 공통 ── */
+        .compare-main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .compare-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: auto;
+            background: var(--white);
+        }
+
+        .compare-panel + .compare-panel {
+            border-left: 1px solid var(--border-color);
+        }
+
+        .panel-placeholder {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: var(--text-light);
+            padding: 40px;
+        }
+
+        .panel-placeholder-icon {
+            width: 48px;
+            height: 48px;
+            color: var(--border-color);
+        }
+
+        .panel-placeholder-text {
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* ── 비교 모드: 좌우 분할 ── */
+        .mode-compare .compare-main {
+            display: flex;
+        }
+
+        /* ── 검증 모드: 단일 패널 ── */
+        .mode-verify .compare-main {
+            display: flex;
+        }
+
+        .mode-verify .panel-b {
+            display: none;
+        }
+
+        /* ── 뷰 전환 애니메이션 ── */
+        .compare-main {
+            transition: opacity 0.2s ease;
+        }
+
+        /* ── 다크 모드 보정 ── */
+        body[data-theme="dark"] .compare-toolbar {
+            background: var(--white);
+            border-bottom-color: var(--border-color);
+        }
+
+        body[data-theme="dark"] .compare-panel {
+            background: var(--white);
+        }
+
+        body[data-theme="dark"] .compare-panel + .compare-panel {
+            border-left-color: var(--border-color);
+        }
+
+        body[data-theme="dark"] .mode-toggle {
+            background: var(--light-gray);
+        }
+
+        body[data-theme="dark"] .mode-toggle-btn.active {
+            background: var(--white);
+            color: var(--text-dark);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="compare-body" id="compare-body">
+        <!-- 서브 헤더 (툴바) -->
+        <div class="compare-toolbar" id="compare-toolbar">
+            <span class="toolbar-label" id="toolbar-hint">문서 두 개를 업로드하여 비교하세요</span>
+            <span class="toolbar-spacer"></span>
+        </div>
+
+        <!-- 비교 모드: 좌우 패널 -->
+        <div class="compare-main" id="compare-main">
+            <div class="compare-panel panel-a" id="panel-a">
+                <div class="panel-placeholder">
+                    <svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="12" y1="18" x2="12" y2="12"/>
+                        <line x1="9" y1="15" x2="15" y2="15"/>
+                    </svg>
+                    <span class="panel-placeholder-text">문서 A<br>파일을 업로드하세요</span>
+                </div>
+            </div>
+            <div class="compare-panel panel-b" id="panel-b">
+                <div class="panel-placeholder">
+                    <svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="12" y1="18" x2="12" y2="12"/>
+                        <line x1="9" y1="15" x2="15" y2="15"/>
+                    </svg>
+                    <span class="panel-placeholder-text">문서 B<br>파일을 업로드하세요</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="compare-footer"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/platform-header.js"></script>
+    <script src="js/platform-footer.js"></script>
+    <script>
+        (function() {
+            'use strict';
+
+            var currentMode = 'compare'; // 'compare' | 'verify'
+
+            // ── 모드 토글 빌드 ──
+            var modeToggle = document.createElement('div');
+            modeToggle.className = 'mode-toggle';
+
+            var btnCompare = document.createElement('button');
+            btnCompare.className = 'mode-toggle-btn active';
+            btnCompare.type = 'button';
+            btnCompare.textContent = '비교';
+
+            var btnVerify = document.createElement('button');
+            btnVerify.className = 'mode-toggle-btn';
+            btnVerify.type = 'button';
+            btnVerify.textContent = '검증';
+
+            modeToggle.appendChild(btnCompare);
+            modeToggle.appendChild(btnVerify);
+
+            // ── 모드 전환 ──
+            function setMode(mode) {
+                if (mode === currentMode) return;
+                currentMode = mode;
+
+                var body = document.getElementById('compare-body');
+                body.className = 'compare-body mode-' + mode;
+
+                btnCompare.classList.toggle('active', mode === 'compare');
+                btnVerify.classList.toggle('active', mode === 'verify');
+
+                // 툴바 힌트 변경
+                var hint = document.getElementById('toolbar-hint');
+                if (mode === 'compare') {
+                    hint.textContent = '문서 두 개를 업로드하여 비교하세요';
+                } else {
+                    hint.textContent = '문서를 업로드하여 규칙을 검증하세요';
+                }
+
+                // 검증 모드: 패널 A placeholder 변경
+                var placeholderA = document.querySelector('#panel-a .panel-placeholder-text');
+                if (placeholderA) {
+                    if (mode === 'compare') {
+                        placeholderA.innerHTML = '문서 A<br>파일을 업로드하세요';
+                    } else {
+                        placeholderA.innerHTML = '검증할 문서<br>파일을 업로드하세요';
+                    }
+                }
+            }
+
+            btnCompare.addEventListener('click', function() { setMode('compare'); });
+            btnVerify.addEventListener('click', function() { setMode('verify'); });
+
+            // 초기 모드 적용
+            document.getElementById('compare-body').classList.add('mode-compare');
+
+            // ── 테마 토글 ──
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.body.setAttribute('data-theme', 'dark');
+                } else {
+                    document.body.removeAttribute('data-theme');
+                }
+            }
+
+            function toggleTheme() {
+                var isDark = document.body.getAttribute('data-theme') === 'dark';
+                var next = isDark ? 'light' : 'dark';
+                applyTheme(next);
+                try { localStorage.setItem('theme', next); } catch(e) {}
+            }
+
+            // 저장된 테마 복원
+            try {
+                var saved = localStorage.getItem('theme');
+                if (saved) applyTheme(saved);
+            } catch(e) {}
+
+            // ── 헤더 초기화 ──
+            var headerResult = initPlatformHeader({
+                title: 'Document Compare',
+                currentSystem: 'compare',
+                navItems: [],
+                showThemeToggle: true,
+                onAuth: function(user) {
+                    document.body.style.visibility = 'visible';
+                }
+            });
+
+            // 모드 토글을 헤더 midSlot에 삽입
+            headerResult.midSlot.appendChild(modeToggle);
+            headerResult.midSlot.classList.add('visible');
+
+            // 테마 토글 이벤트
+            if (headerResult.themeToggle) {
+                headerResult.themeToggle.addEventListener('click', toggleTheme);
+            }
+
+            // ── 푸터 초기화 ──
+            initPlatformFooter('compare-footer');
+        })();
+    </script>
+</body>
+</html>
