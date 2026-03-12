@@ -7,7 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/platform-header.css">
-    <link rel="stylesheet" href="css/platform-footer.css">
+    <!-- platform-footer 불필요 (도구형 화면) -->
     <style>
         /* ── Diff 색상 변수 ── */
         :root {
@@ -24,13 +24,14 @@
 
         /* ── 레이아웃 ── */
         body {
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
             background: var(--bg-gray);
             color: var(--text-dark);
             visibility: hidden;
+            overflow: hidden;
         }
 
         .compare-body {
@@ -47,11 +48,11 @@
             gap: 2px;
             background: var(--light-gray);
             border-radius: 6px;
-            padding: 3px;
+            padding: 2px;
         }
 
         .mode-toggle-btn {
-            padding: 6px 16px;
+            padding: 3px 14px;
             border: none;
             border-radius: 4px;
             background: transparent;
@@ -94,100 +95,525 @@
             color: var(--text-light);
         }
 
-        /* ── 패널 공통 ── */
+        /* ── 스크롤 동기화 버튼 (Translator 패턴) ── */
+        .scroll-sync-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 13px;
+            font-family: inherit;
+            background: var(--white);
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .scroll-sync-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+        .scroll-sync-btn:hover { border-color: var(--active-color); color: var(--active-color); }
+        .scroll-sync-btn.active {
+            background: var(--hover-bg);
+            border-color: var(--active-color);
+            color: var(--active-color);
+        }
+
+        /* ── 메인 레이아웃: Grid (패널영역 | 사이드바) ── */
         .compare-main {
             flex: 1;
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr 280px;
             overflow: hidden;
             position: relative;
         }
 
+        /* ── 패널 컨테이너 (Translator viewer-panels 패턴) ── */
+        .cp-panels {
+            display: flex;
+            overflow: hidden;
+            min-height: 0; /* grid 자식이 셀 높이를 초과하지 않도록 */
+        }
+
+        /* ── 패널 공통 ── */
         .compare-panel {
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: auto;
+            overflow: hidden;
             background: var(--light-gray);
-            position: relative;
+            min-width: 0;
         }
 
         .compare-panel + .compare-panel {
             border-left: 2px solid var(--border-color);
         }
 
-        /* ── 패널 라벨 ── */
-        .panel-label {
-            position: absolute;
-            top: 8px;
-            left: 12px;
+        /* ── 패널 헤더 (고정, 스크롤 안 됨) ── */
+        .cp-panel-header {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            min-height: 28px;
+        }
+
+        /* ── 패널 바디 (스크롤 영역) ── */
+        .cp-panel-body {
+            flex: 1;
+            overflow: auto;
+            padding: 0 16px 16px;
+        }
+
+        /* ── 패널 라벨 (탭 패턴: 이름 + 닫기) ── */
+        .cp-panel-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             font-size: 11px;
             color: var(--text-light);
             background: rgba(255,255,255,0.8);
             padding: 2px 8px;
             border-radius: 4px;
-            z-index: 1;
-            pointer-events: none;
+            max-width: calc(100% - 24px);
+            white-space: nowrap;
         }
 
+        .cp-label-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cp-file-remove {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-light);
+            border-radius: 3px;
+            font-size: 13px;
+            line-height: 1;
+            padding: 0;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+
+        .cp-file-remove:hover {
+            background: rgba(0,0,0,0.08);
+            color: #e53e3e;
+        }
+
+        .cp-file-remove.visible {
+            display: flex;
+        }
+
+        /* ── Placeholder (업로드 영역) ── */
         .panel-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            color: var(--text-light);
+            height: 100%;
+            border: 2px dashed transparent;
+            border-radius: 8px;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .panel-placeholder:hover {
+            border-color: var(--border-color);
+        }
+
+        .panel-placeholder.dragover {
+            border-color: var(--active-color);
+            background: rgba(0, 102, 204, 0.04);
+        }
+
+        .panel-placeholder-icon {
+            width: 40px;
+            height: 40px;
+            color: var(--medium-gray);
+            opacity: 0.45;
+            margin-bottom: 14px;
+        }
+
+        .panel-placeholder-desc {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 16px;
+        }
+
+        /* 주요 액션: 파일 선택 버튼 */
+        .placeholder-upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 20px;
+            border: 1px solid var(--active-color);
+            border-radius: 6px;
+            background: var(--active-color);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .placeholder-upload-btn:hover {
+            opacity: 0.88;
+            box-shadow: 0 2px 8px rgba(0, 102, 204, 0.2);
+        }
+
+        .placeholder-upload-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* 구분자 + 부차 액션 */
+        .placeholder-or {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 14px 0 2px;
+            font-size: 11px;
+            color: var(--medium-gray);
+        }
+
+        .placeholder-paste-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 0;
+            border: none;
+            background: none;
+            color: var(--active-color);
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.15s ease;
+        }
+
+        .placeholder-paste-link:hover {
+            opacity: 0.7;
+            text-decoration: underline;
+        }
+
+        .placeholder-paste-link svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        /* 지원 포맷 힌트 */
+        .placeholder-hint {
+            font-size: 11px;
+            color: var(--medium-gray);
+            margin-top: 14px;
+        }
+
+        /* ── 텍스트 붙여넣기 모드 ── */
+        .cp-paste-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .cp-paste-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            flex-shrink: 0;
+        }
+
+        .cp-paste-hint {
+            font-size: 13px;
+            color: var(--text-light);
             flex: 1;
+        }
+
+        .cp-paste-btn {
+            padding: 5px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--white);
+            color: var(--text-dark);
+            font-size: 13px;
+            cursor: pointer;
+            transition: border-color 0.15s ease;
+        }
+
+        .cp-paste-btn:hover {
+            border-color: var(--active-color);
+        }
+
+        .cp-paste-btn.primary {
+            background: var(--active-color);
+            border-color: var(--active-color);
+            color: #fff;
+        }
+
+        .cp-paste-btn.primary:hover {
+            opacity: 0.9;
+        }
+
+        .cp-paste-textarea {
+            flex: 1;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            font-family: inherit;
+            color: var(--text-dark);
+            background: var(--white);
+            resize: none;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        .cp-paste-textarea:focus {
+            border-color: var(--active-color);
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
+        }
+
+        .cp-paste-textarea::placeholder {
+            color: var(--text-light);
+        }
+
+        /* ── 텍스트 콘텐츠 ── */
+        .cp-text-content {
+            padding: 8px;
+        }
+
+        .cp-paragraph {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        /* ── 업로드 로딩 ── */
+        .cp-upload-loading {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 12px;
+            height: 100%;
             color: var(--text-light);
-            padding: 40px;
-        }
-
-        .panel-placeholder-icon {
-            width: 48px;
-            height: 48px;
-            color: var(--border-color);
-        }
-
-        .panel-placeholder-text {
             font-size: 14px;
+        }
+
+        .cp-upload-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--active-color);
+            border-radius: 50%;
+            animation: cp-spin 0.8s linear infinite;
+        }
+
+        @keyframes cp-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── 사이드바 ── */
+        .cp-sidebar {
+            background: var(--white);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        .cp-sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--light-gray);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+            flex-shrink: 0;
+        }
+
+        .cp-sidebar-collapse {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-light);
+            border-radius: 4px;
+            transition: background 0.15s ease;
+        }
+
+        .cp-sidebar-collapse:hover {
+            background: var(--border-color);
+            color: var(--text-dark);
+        }
+
+        .cp-sidebar-body {
+            flex: 1;
+            overflow: auto;
+            padding: 12px;
+        }
+
+        .cp-sidebar-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 13px;
+            color: var(--text-light);
             text-align: center;
             line-height: 1.5;
         }
 
-        /* ── 비교 모드: 좌우 분할 ── */
-        .mode-compare .compare-main {
+        /* ── 사이드바 복원 버튼 ── */
+        .cp-sidebar-restore {
+            position: fixed;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 56px;
+            background-color: var(--bg-gray);
+            border: 1px solid var(--border-color);
+            border-right: none;
+            border-radius: 6px 0 0 6px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            opacity: 0.5;
+            font-size: 14px;
+            color: var(--medium-gray);
+            line-height: 1;
+            z-index: 999;
+            transition: all 0.15s ease;
+        }
+
+        .cp-sidebar-restore:hover {
+            background-color: var(--white);
+            border-color: var(--active-color);
+            box-shadow: 0 2px 12px rgba(0, 102, 204, 0.15);
+            opacity: 1;
+            color: var(--active-color);
+        }
+
+        .cp-sidebar-restore.visible {
             display: flex;
         }
 
-        /* ── 검증 모드: 단일 패널 ── */
-        .mode-verify .compare-main {
-            display: flex;
+        .cp-sidebar-restore::after {
+            content: '\2039';
+            font-size: 20px;
+            font-weight: 300;
         }
 
+        /* ── 검증 모드 ── */
         .mode-verify .panel-b {
             display: none;
         }
 
-        /* ── 뷰 전환 애니메이션 ── */
-        .compare-main {
-            transition: opacity 0.2s ease;
-        }
-
-        /* ── 다크 모드 보정 ── */
+        /* ── 다크 모드 ── */
         body[data-theme="dark"] .compare-toolbar {
             background: #1e1e2e;
             border-bottom-color: rgba(255,255,255,0.08);
         }
+
+        body[data-theme="dark"] .scroll-sync-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.65); }
+        body[data-theme="dark"] .scroll-sync-btn:hover { border-color: rgba(88,166,255,0.4); color: #58a6ff; }
+        body[data-theme="dark"] .scroll-sync-btn.active { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
 
         body[data-theme="dark"] .compare-panel {
             background: #0d0d12;
         }
 
         body[data-theme="dark"] .compare-panel + .compare-panel {
-            border-left-color: var(--border-color);
+            border-left-color: rgba(255,255,255,0.08);
         }
 
-        body[data-theme="dark"] .panel-label {
+        body[data-theme="dark"] .cp-panel-label {
             background: rgba(30,30,46,0.8);
             color: rgba(255,255,255,0.55);
+        }
+
+        body[data-theme="dark"] .cp-file-remove:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        body[data-theme="dark"] .cp-sidebar {
+            background: #1e1e2e;
+            border-left-color: rgba(255,255,255,0.08);
+        }
+
+        body[data-theme="dark"] .cp-sidebar-header {
+            background: #1a1a2e;
+            border-bottom-color: rgba(255,255,255,0.08);
+        }
+
+        body[data-theme="dark"] .cp-sidebar-collapse:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        body[data-theme="dark"] .cp-sidebar-restore {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        body[data-theme="dark"] .cp-sidebar-restore:hover {
+            box-shadow: 0 2px 12px rgba(91, 163, 245, 0.25);
+        }
+
+        body[data-theme="dark"] .panel-placeholder:hover {
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        body[data-theme="dark"] .panel-placeholder.dragover {
+            border-color: #58a6ff;
+            background: rgba(88,166,255,0.05);
+        }
+
+        body[data-theme="dark"] .placeholder-upload-btn {
+            background: var(--active-color);
+            border-color: var(--active-color);
+        }
+
+        body[data-theme="dark"] .placeholder-paste-link {
+            color: var(--active-color);
+        }
+
+        body[data-theme="dark"] .cp-paste-textarea {
+            background: #1e1e2e;
+            border-color: rgba(255,255,255,0.12);
+            color: var(--text-dark);
+        }
+
+        body[data-theme="dark"] .cp-paste-textarea:focus {
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 2px rgba(91,163,245,0.2);
+        }
+
+        body[data-theme="dark"] .cp-paste-btn {
+            background: #1e1e2e;
+            border-color: rgba(255,255,255,0.12);
+            color: var(--text-dark);
         }
 
         body[data-theme="dark"] .mode-toggle {
@@ -205,49 +631,142 @@
     <div class="compare-body" id="compare-body">
         <!-- 서브 헤더 (툴바) -->
         <div class="compare-toolbar" id="compare-toolbar">
+            <button class="scroll-sync-btn" id="scroll-sync-btn" title="스크롤 동기화">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h-4v10h4"/><path d="M16 7h4v10h-4"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                동기화
+            </button>
             <span class="toolbar-spacer"></span>
             <span class="toolbar-label" id="toolbar-hint">문서 두 개를 업로드하여 비교하세요</span>
         </div>
 
-        <!-- 비교 모드: 좌우 패널 -->
+        <!-- 메인: Grid (패널영역 | 사이드바) -->
         <div class="compare-main" id="compare-main">
-            <div class="compare-panel panel-a" id="panel-a">
-                <span class="panel-label" id="label-a">문서 A</span>
-                <div class="panel-placeholder">
-                    <svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="12" y1="18" x2="12" y2="12"/>
-                        <line x1="9" y1="15" x2="15" y2="15"/>
-                    </svg>
-                    <span class="panel-placeholder-text">문서 A<br>파일을 업로드하세요</span>
+            <!-- 패널 컨테이너 (Translator viewer-panels 패턴) -->
+            <div class="cp-panels" id="cp-panels">
+                <input type="file" id="file-input-a" accept=".docx,.pdf" style="display:none">
+                <input type="file" id="file-input-b" accept=".docx,.pdf" style="display:none">
+
+                <div class="compare-panel panel-a" id="panel-a">
+                    <div class="cp-panel-header">
+                        <span class="cp-panel-label" id="panel-label-a">
+                            <span class="cp-label-text" id="label-text-a">문서 A</span>
+                            <button class="cp-file-remove" id="file-remove-a" title="파일 제거">&times;</button>
+                        </span>
+                    </div>
+                    <div class="cp-panel-body" id="panel-body-a">
+                        <div class="panel-placeholder" id="placeholder-a">
+                            <svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="12" y1="18" x2="12" y2="12"/>
+                                <line x1="9" y1="15" x2="15" y2="15"/>
+                            </svg>
+                            <span class="panel-placeholder-desc">파일을 드래그하거나</span>
+                            <button class="placeholder-upload-btn" data-action="upload" data-side="a">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                파일 선택
+                            </button>
+                            <span class="placeholder-or">또는</span>
+                            <button class="placeholder-paste-link" data-action="paste" data-side="a">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                                텍스트 붙여넣기
+                            </button>
+                            <span class="placeholder-hint">.docx, .pdf 지원</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="compare-panel panel-b" id="panel-b">
+                    <div class="cp-panel-header">
+                        <span class="cp-panel-label" id="panel-label-b">
+                            <span class="cp-label-text" id="label-text-b">문서 B</span>
+                            <button class="cp-file-remove" id="file-remove-b" title="파일 제거">&times;</button>
+                        </span>
+                    </div>
+                    <div class="cp-panel-body" id="panel-body-b">
+                        <div class="panel-placeholder" id="placeholder-b">
+                            <svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="12" y1="18" x2="12" y2="12"/>
+                                <line x1="9" y1="15" x2="15" y2="15"/>
+                            </svg>
+                            <span class="panel-placeholder-desc">파일을 드래그하거나</span>
+                            <button class="placeholder-upload-btn" data-action="upload" data-side="b">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                파일 선택
+                            </button>
+                            <span class="placeholder-or">또는</span>
+                            <button class="placeholder-paste-link" data-action="paste" data-side="b">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                                텍스트 붙여넣기
+                            </button>
+                            <span class="placeholder-hint">.docx, .pdf 지원</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="compare-panel panel-b" id="panel-b">
-                <span class="panel-label" id="label-b">문서 B</span>
-                <div class="panel-placeholder">
-                    <svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="12" y1="18" x2="12" y2="12"/>
-                        <line x1="9" y1="15" x2="15" y2="15"/>
-                    </svg>
-                    <span class="panel-placeholder-text">문서 B<br>파일을 업로드하세요</span>
+
+            <div class="cp-sidebar" id="cp-sidebar">
+                <div class="cp-sidebar-header">
+                    <span class="cp-sidebar-title" id="cp-sidebar-title">변경 목록</span>
+                    <button class="cp-sidebar-collapse" id="cp-sidebar-collapse" title="접기">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="cp-sidebar-body" id="cp-sidebar-body">
+                    <div class="cp-sidebar-empty" id="cp-sidebar-empty">
+                        비교 결과가 여기에 표시됩니다
+                    </div>
                 </div>
             </div>
+
+            <button class="cp-sidebar-restore" id="cp-sidebar-restore" title="사이드바 열기"></button>
         </div>
     </div>
 
-    <div id="compare-footer"></div>
-
     <script src="js/config.js"></script>
     <script src="js/platform-header.js"></script>
-    <script src="js/platform-footer.js"></script>
     <script>
         (function() {
             'use strict';
 
             var currentMode = 'compare'; // 'compare' | 'verify'
+            var sidebarOpen = true;
+            var SIDEBAR_WIDTH = '280px';
+            var API_BASE = (window.DISPLAY_CONFIG && DISPLAY_CONFIG.API_BASE) || 'http://localhost:8000/api';
+
+            // ── 문서 상태 ──
+            var docState = {
+                a: { file: null, text: null, paragraphs: [], filename: '' },
+                b: { file: null, text: null, paragraphs: [], filename: '' }
+            };
+
+            // ── DOM 참조 ──
+            var compareMain = document.getElementById('compare-main');
+            var cpPanels = document.getElementById('cp-panels');
+            var panelA = document.getElementById('panel-a');
+            var panelB = document.getElementById('panel-b');
+            var panelBodyA = document.getElementById('panel-body-a');
+            var panelBodyB = document.getElementById('panel-body-b');
+            var sidebar = document.getElementById('cp-sidebar');
+            var sidebarTitle = document.getElementById('cp-sidebar-title');
+            var sidebarEmpty = document.getElementById('cp-sidebar-empty');
+            var sidebarCollapse = document.getElementById('cp-sidebar-collapse');
+            var sidebarRestore = document.getElementById('cp-sidebar-restore');
+            var labelA = document.getElementById('label-text-a');
+            var labelB = document.getElementById('label-text-b');
+            var fileInputA = document.getElementById('file-input-a');
+            var fileInputB = document.getElementById('file-input-b');
+            var fileRemoveA = document.getElementById('file-remove-a');
+            var fileRemoveB = document.getElementById('file-remove-b');
+            var scrollSyncBtn = document.getElementById('scroll-sync-btn');
+
+            // Scroll sync (기본 OFF — 비교 시 독립 스크롤이 기본)
+            var scrollSyncEnabled = false;
+            var scrollSyncing = false;
 
             // ── 모드 토글 빌드 ──
             var modeToggle = document.createElement('div');
@@ -265,6 +784,314 @@
 
             modeToggle.appendChild(btnCompare);
             modeToggle.appendChild(btnVerify);
+
+            // ── 유틸리티 ──
+            function escapeHTML(str) {
+                var div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function getPanel(side) { return side === 'a' ? panelBodyA : panelBodyB; }
+            function getPanelRoot(side) { return side === 'a' ? panelA : panelB; }
+            function getLabel(side) { return side === 'a' ? labelA : labelB; }
+            function getRemoveBtn(side) { return side === 'a' ? fileRemoveA : fileRemoveB; }
+            function getFileInput(side) { return side === 'a' ? fileInputA : fileInputB; }
+
+            // ── Placeholder HTML ──
+            var PLACEHOLDER_SVG = '<svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>';
+
+            function getDefaultLabel(side) {
+                if (side === 'a') return currentMode === 'verify' ? '검증 문서' : '문서 A';
+                return '문서 B';
+            }
+
+            var UPLOAD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+            var PASTE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>';
+
+            function makePlaceholderHTML(side) {
+                return '<div class="panel-placeholder" id="placeholder-' + side + '">'
+                    + PLACEHOLDER_SVG
+                    + '<span class="panel-placeholder-desc">파일을 드래그하거나</span>'
+                    + '<button class="placeholder-upload-btn" data-action="upload" data-side="' + side + '">'
+                    + UPLOAD_ICON + ' 파일 선택</button>'
+                    + '<span class="placeholder-or">또는</span>'
+                    + '<button class="placeholder-paste-link" data-action="paste" data-side="' + side + '">'
+                    + PASTE_ICON + ' 텍스트 붙여넣기</button>'
+                    + '<span class="placeholder-hint">.docx, .pdf 지원</span>'
+                    + '</div>';
+            }
+
+            // ── 패널 콘텐츠 렌더링 ──
+            function renderParagraphs(panel, paragraphs) {
+                // placeholder 제거, 텍스트 콘텐츠 삽입
+                var ph = panel.querySelector('.panel-placeholder');
+                if (ph) ph.remove();
+                var paste = panel.querySelector('.cp-paste-container');
+                if (paste) paste.remove();
+                var loading = panel.querySelector('.cp-upload-loading');
+                if (loading) loading.remove();
+                var old = panel.querySelector('.cp-text-content');
+                if (old) old.remove();
+
+                var html = '<div class="cp-text-content">';
+                for (var i = 0; i < paragraphs.length; i++) {
+                    html += '<div class="cp-paragraph" data-index="' + i + '">'
+                        + escapeHTML(paragraphs[i]) + '</div>';
+                }
+                html += '</div>';
+                panel.insertAdjacentHTML('beforeend', html);
+            }
+
+            function showLoading(panel) {
+                var ph = panel.querySelector('.panel-placeholder');
+                if (ph) ph.remove();
+                var paste = panel.querySelector('.cp-paste-container');
+                if (paste) paste.remove();
+                panel.insertAdjacentHTML('beforeend',
+                    '<div class="cp-upload-loading">'
+                    + '<div class="cp-upload-spinner"></div>'
+                    + '<span>텍스트 추출 중...</span></div>');
+            }
+
+            function restorePlaceholder(side) {
+                var panel = getPanel(side);
+                var label = getLabel(side);
+                var removeBtn = getRemoveBtn(side);
+
+                // 기존 콘텐츠 제거 (label, remove 버튼 제외)
+                var content = panel.querySelector('.cp-text-content');
+                if (content) content.remove();
+                var loading = panel.querySelector('.cp-upload-loading');
+                if (loading) loading.remove();
+                var paste = panel.querySelector('.cp-paste-container');
+                if (paste) paste.remove();
+                var oldPh = panel.querySelector('.panel-placeholder');
+                if (oldPh) oldPh.remove();
+
+                // placeholder 삽입
+                panel.insertAdjacentHTML('beforeend', makePlaceholderHTML(side));
+                bindPlaceholderEvents(side);
+
+                // 상태 초기화
+                docState[side] = { file: null, text: null, paragraphs: [], filename: '' };
+                label.textContent = getDefaultLabel(side);
+                label.title = '';
+                removeBtn.classList.remove('visible');
+            }
+
+            // ── 문서 로드 완료 처리 ──
+            function onDocumentLoaded(side, filename, paragraphs) {
+                var panel = getPanel(side);
+                var label = getLabel(side);
+                var removeBtn = getRemoveBtn(side);
+
+                docState[side] = {
+                    file: null,
+                    text: paragraphs.join('\n'),
+                    paragraphs: paragraphs,
+                    filename: filename
+                };
+
+                label.textContent = filename;
+                label.title = filename;
+                removeBtn.classList.add('visible');
+                renderParagraphs(panel, paragraphs);
+            }
+
+            // ── 파일 업로드 처리 ──
+            function uploadFile(side, file) {
+                if (!file) return;
+
+                var ext = file.name.split('.').pop().toLowerCase();
+                if (ext !== 'docx' && ext !== 'pdf') {
+                    alert('지원하지 않는 형식입니다.\n허용: .docx, .pdf');
+                    return;
+                }
+
+                var panel = getPanel(side);
+                showLoading(panel);
+
+                var formData = new FormData();
+                formData.append('file', file);
+
+                fetch(API_BASE + '/compare/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                })
+                .then(function(res) {
+                    if (!res.ok) {
+                        return res.json().then(function(err) {
+                            throw new Error(err.detail || '업로드 실패');
+                        });
+                    }
+                    return res.json();
+                })
+                .then(function(data) {
+                    onDocumentLoaded(side, data.filename, data.paragraphs);
+                })
+                .catch(function(err) {
+                    restorePlaceholder(side);
+                    alert('업로드 오류: ' + err.message);
+                });
+            }
+
+            // ── 텍스트 붙여넣기 모드 ──
+            function showPasteMode(side) {
+                var panel = getPanel(side);
+
+                // placeholder 제거
+                var ph = panel.querySelector('.panel-placeholder');
+                if (ph) ph.remove();
+
+                var html = '<div class="cp-paste-container">'
+                    + '<div class="cp-paste-header">'
+                    + '<span class="cp-paste-hint">텍스트를 붙여넣으세요 (Ctrl+V)</span>'
+                    + '<button class="cp-paste-btn" data-paste-cancel="' + side + '">취소</button>'
+                    + '<button class="cp-paste-btn primary" data-paste-confirm="' + side + '">확인</button>'
+                    + '</div>'
+                    + '<textarea class="cp-paste-textarea" id="paste-textarea-' + side + '" placeholder="여기에 텍스트를 붙여넣으세요..."></textarea>'
+                    + '</div>';
+                panel.insertAdjacentHTML('beforeend', html);
+
+                // textarea 포커스
+                var textarea = document.getElementById('paste-textarea-' + side);
+                if (textarea) textarea.focus();
+            }
+
+            function confirmPaste(side) {
+                var textarea = document.getElementById('paste-textarea-' + side);
+                if (!textarea) return;
+
+                var text = textarea.value.trim();
+                if (!text) {
+                    alert('텍스트를 입력해주세요.');
+                    return;
+                }
+
+                // 단락 분리: 빈 줄 기준, 없으면 줄바꿈 기준
+                var paragraphs;
+                if (text.indexOf('\n\n') !== -1) {
+                    paragraphs = text.split(/\n\n+/);
+                } else {
+                    paragraphs = text.split(/\n/);
+                }
+                paragraphs = paragraphs.filter(function(p) { return p.trim(); });
+
+                if (paragraphs.length === 0) {
+                    alert('텍스트를 입력해주세요.');
+                    return;
+                }
+
+                onDocumentLoaded(side, '붙여넣기 텍스트', paragraphs);
+            }
+
+            function cancelPaste(side) {
+                restorePlaceholder(side);
+            }
+
+            // ── 이벤트 위임: placeholder 버튼 + paste 버튼 ──
+            cpPanels.addEventListener('click', function(e) {
+                var btn = e.target.closest('[data-action]');
+                if (btn) {
+                    var action = btn.getAttribute('data-action');
+                    var side = btn.getAttribute('data-side');
+                    if (action === 'upload') {
+                        getFileInput(side).click();
+                    } else if (action === 'paste') {
+                        showPasteMode(side);
+                    }
+                    return;
+                }
+
+                var confirmBtn = e.target.closest('[data-paste-confirm]');
+                if (confirmBtn) {
+                    confirmPaste(confirmBtn.getAttribute('data-paste-confirm'));
+                    return;
+                }
+
+                var cancelBtn = e.target.closest('[data-paste-cancel]');
+                if (cancelBtn) {
+                    cancelPaste(cancelBtn.getAttribute('data-paste-cancel'));
+                    return;
+                }
+            });
+
+            // ── Drag & Drop 바인딩 ──
+            function bindPlaceholderEvents(side) {
+                var placeholder = document.getElementById('placeholder-' + side);
+                if (!placeholder) return;
+
+                placeholder.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    placeholder.classList.add('dragover');
+                });
+
+                placeholder.addEventListener('dragleave', function() {
+                    placeholder.classList.remove('dragover');
+                });
+
+                placeholder.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    placeholder.classList.remove('dragover');
+                    var files = e.dataTransfer.files;
+                    if (files.length > 0) uploadFile(side, files[0]);
+                });
+            }
+
+            // 패널 전체에 drag-drop (파일 교체 지원)
+            function bindPanelDragDrop(side) {
+                var panel = getPanel(side);
+
+                panel.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    var placeholder = document.getElementById('placeholder-' + side);
+                    if (placeholder) placeholder.classList.add('dragover');
+                });
+
+                panel.addEventListener('dragleave', function(e) {
+                    // 패널 밖으로 나갔을 때만
+                    if (!panel.contains(e.relatedTarget)) {
+                        var placeholder = document.getElementById('placeholder-' + side);
+                        if (placeholder) placeholder.classList.remove('dragover');
+                    }
+                });
+
+                panel.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    var placeholder = document.getElementById('placeholder-' + side);
+                    if (placeholder) placeholder.classList.remove('dragover');
+                    var files = e.dataTransfer.files;
+                    if (files.length > 0) uploadFile(side, files[0]);
+                });
+            }
+
+            // file input change 이벤트
+            fileInputA.addEventListener('change', function() {
+                if (fileInputA.files.length > 0) uploadFile('a', fileInputA.files[0]);
+                fileInputA.value = '';
+            });
+            fileInputB.addEventListener('change', function() {
+                if (fileInputB.files.length > 0) uploadFile('b', fileInputB.files[0]);
+                fileInputB.value = '';
+            });
+
+            // 파일 제거 버튼
+            fileRemoveA.addEventListener('click', function() { restorePlaceholder('a'); });
+            fileRemoveB.addEventListener('click', function() { restorePlaceholder('b'); });
+
+            // 초기 이벤트 바인딩
+            bindPlaceholderEvents('a');
+            bindPlaceholderEvents('b');
+            bindPanelDragDrop('a');
+            bindPanelDragDrop('b');
+
+            // ── 그리드 레이아웃 갱신 ──
+            function updateGrid() {
+                var sw = sidebarOpen ? SIDEBAR_WIDTH : '0';
+                compareMain.style.gridTemplateColumns = '1fr ' + sw;
+            }
 
             // ── 모드 전환 ──
             function setMode(mode) {
@@ -285,25 +1112,30 @@
                     hint.textContent = '문서를 업로드하여 규칙을 검증하세요';
                 }
 
-                // 패널 라벨 변경
-                var labelA = document.getElementById('label-a');
-                var labelB = document.getElementById('label-b');
-                if (mode === 'compare') {
-                    if (labelA) labelA.textContent = '문서 A';
-                    if (labelB) labelB.textContent = '문서 B';
-                } else {
-                    if (labelA) labelA.textContent = '검증 문서';
+                // 라벨 변경 (파일이 로드된 경우 파일명 유지)
+                if (!docState.a.filename) {
+                    labelA.textContent = getDefaultLabel('a');
+                }
+                if (!docState.b.filename) {
+                    labelB.textContent = getDefaultLabel('b');
                 }
 
-                // 검증 모드: 패널 A placeholder 변경
-                var placeholderA = document.querySelector('#panel-a .panel-placeholder-text');
-                if (placeholderA) {
-                    if (mode === 'compare') {
-                        placeholderA.innerHTML = '문서 A<br>파일을 업로드하세요';
-                    } else {
-                        placeholderA.innerHTML = '검증할 문서<br>파일을 업로드하세요';
-                    }
+                // placeholder 텍스트 변경 (파일이 없을 때만)
+                var phTextA = panelBodyA.querySelector('.panel-placeholder-text');
+                if (phTextA) {
+                    phTextA.textContent = getDefaultLabel('a');
                 }
+
+                // 사이드바 타이틀/빈 메시지 변경
+                if (mode === 'compare') {
+                    sidebarTitle.textContent = '변경 목록';
+                    sidebarEmpty.textContent = '비교 결과가 여기에 표시됩니다';
+                } else {
+                    sidebarTitle.textContent = '검증 결과';
+                    sidebarEmpty.textContent = '검증 결과가 여기에 표시됩니다';
+                }
+
+                updateGrid();
             }
 
             btnCompare.addEventListener('click', function() { setMode('compare'); });
@@ -311,6 +1143,24 @@
 
             // 초기 모드 적용
             document.getElementById('compare-body').classList.add('mode-compare');
+
+            // ── 사이드바 접기/펼치기 ──
+            function collapseSidebar() {
+                sidebarOpen = false;
+                sidebar.style.overflow = 'hidden';
+                sidebarRestore.classList.add('visible');
+                updateGrid();
+            }
+
+            function expandSidebar() {
+                sidebarOpen = true;
+                sidebar.style.overflow = '';
+                sidebarRestore.classList.remove('visible');
+                updateGrid();
+            }
+
+            sidebarCollapse.addEventListener('click', collapseSidebar);
+            sidebarRestore.addEventListener('click', expandSidebar);
 
             // ── 테마 토글 ──
             function applyTheme(theme) {
@@ -345,7 +1195,7 @@
                 }
             });
 
-            // 모드 토글을 툴바 끝에 삽입 (우측 정렬: spacer → hint → toggle)
+            // 모드 토글을 툴바 끝에 삽입
             var toolbar = document.getElementById('compare-toolbar');
             toolbar.appendChild(modeToggle);
 
@@ -354,8 +1204,26 @@
                 headerResult.themeToggle.addEventListener('click', toggleTheme);
             }
 
-            // ── 푸터 초기화 ──
-            initPlatformFooter('compare-footer');
+            // ── 스크롤 동기화 ──
+            scrollSyncBtn.addEventListener('click', function() {
+                scrollSyncEnabled = !scrollSyncEnabled;
+                scrollSyncBtn.classList.toggle('active', scrollSyncEnabled);
+            });
+
+            function syncScroll(source, target) {
+                if (!scrollSyncEnabled || scrollSyncing) return;
+                scrollSyncing = true;
+                var maxS = source.scrollHeight - source.clientHeight;
+                var maxT = target.scrollHeight - target.clientHeight;
+                if (maxS > 0 && maxT > 0) {
+                    var ratio = source.scrollTop / maxS;
+                    target.scrollTop = ratio * maxT;
+                }
+                scrollSyncing = false;
+            }
+
+            panelBodyA.addEventListener('scroll', function() { syncScroll(panelBodyA, panelBodyB); });
+            panelBodyB.addEventListener('scroll', function() { syncScroll(panelBodyB, panelBodyA); });
         })();
     </script>
 </body>

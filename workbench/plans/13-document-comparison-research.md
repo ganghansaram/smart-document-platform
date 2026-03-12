@@ -1,7 +1,7 @@
 # 문서 비교 시스템 (Compare) — 실행 계획서
 
 > 작성일: 2026-03-12
-> 상태: 계획 수립 중
+> 상태: Phase 1-2 + 1-3 완료
 
 ---
 
@@ -127,23 +127,23 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 
 > 목표: 화면이 보이고, 파일을 올려서 텍스트가 나란히 표시된다
 
-- [ ] **1-1. 페이지 생성**
-  - [ ] `compare.html` 생성 (모놀리식, inline JS/CSS)
-  - [ ] `platform-header` 연동
-  - [ ] `platform-footer` 연동
-  - [ ] 비교/검증 모드 전환 버튼 (빈 화면 전환만)
-  - [ ] `launcher.html`에서 Compare 카드 연결
-  - [ ] 다크 모드 지원
+- [x] **1-1. 페이지 생성**
+  - [x] `compare.html` 생성 (모놀리식, inline JS/CSS)
+  - [x] `platform-header` 연동
+  - [x] `platform-footer` 연동
+  - [x] 비교/검증 모드 전환 버튼 (빈 화면 전환만)
+  - [x] `launcher.html`에서 Compare 카드 연결
+  - [x] 다크 모드 지원
 
-- [ ] **1-2. 비교 모드 레이아웃**
-  - [ ] 좌우 split-pane (빈 패널, 리사이즈 핸들)
-  - [ ] 패널 헤더 (sticky)
-  - [ ] 우측 변경 목록 사이드바 (빈 상태, 접기/펼치기)
-  - [ ] 서브 헤더 (툴바 영역)
+- [x] **1-2. 비교 모드 레이아웃**
+  - [x] 좌우 split-pane (CSS Grid `1fr 4px 1fr 280px`, 리사이즈 핸들)
+  - [x] 패널 헤더 (sticky, theme-guide 9.4: `padding:10px`, `z-index:10`)
+  - [x] 우측 변경 목록 사이드바 (빈 상태, 접기/펼치기 — Explorer `.show-panel-btn` 패턴)
+  - [x] 서브 헤더 (툴바 영역, Translator `.viewer-toolbar`과 동일 높이 42px)
 
-- [ ] **1-3. 검증 모드 레이아웃**
-  - [ ] 단일 문서 패널 + 우측 이슈 사이드바 (빈 상태)
-  - [ ] 서브 헤더 (툴바 영역)
+- [x] **1-3. 검증 모드 레이아웃**
+  - [x] 단일 문서 패널 + 우측 이슈 사이드바 (빈 상태, `grid-template-columns: 1fr 0 0 280px`)
+  - [x] 서브 헤더 (툴바 영역, 모드 전환 시 타이틀/힌트 자동 변경)
 
 - [ ] **1-4. 파일 업로드 + 텍스트 추출**
   - [ ] 프론트: 파일 업로드 UI (드래그&드롭 또는 파일 선택)
