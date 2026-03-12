@@ -25,6 +25,11 @@
 - **통합 검색**: 사전 인덱싱 방식, 키워드 + FAISS 벡터 검색 RRF 병합
 - **Cross-encoder 리랭커**: bge-reranker-v2-m3로 검색 정밀도 향상
 - **AI 채팅**: Ollama 기반 문서 Q&A, 멀티턴 대화, 스트리밍 응답
+  - **질문 라우팅**: SIMPLE/COMPARE/REASON/CHAT 4유형 자동 분류 → 최적 RAG 전략 적용
+  - **쿼리 분해**: 복합 질문을 1~3개 독립 서브쿼리로 분할 → 병렬 검색 후 병합
+  - **Agentic RAG**: 반복적 검색-판단-재검색 루프 (최대 3회) — 복합 추론 질문 대응
+  - **LLM 프로바이더 추상화**: Ollama + OpenAI 호환 API (vLLM, NIM 등) 교체 가능
+  - **채팅 UI**: 답변 복사 버튼, 스크롤-투-바텀 버튼, 어시스턴트 버블 제거 (ChatGPT/Claude 스타일)
 - **구조 보존 인덱싱**: 테이블→마크다운, 수식→LaTeX 변환 후 인덱싱
 - **문서 편집**: Monaco 에디터 기반 HTML 소스 편집 + 실시간 미리보기
 - **문서 업로드/변환**: Word(.docx)/PDF 업로드 → HTML 자동 변환
@@ -39,6 +44,7 @@
 - **듀얼 패널 뷰어**: 좌측 원문 + 우측 번역 PDF, 스크롤 동기화
 - **텍스트 선택 AI 메뉴**: 원문 드래그 → 번역/요약/마킹 3버튼 액션 바
 - **마킹/메모**: 형광펜 4색, popover 편집, 페이지별 목록 탐색, 플로팅 위젯
+- **리사이즈 가능 팝업**: AI 결과·마킹·범위 다이얼로그에 `resize:both` 지원 — 사용자가 모서리 드래그로 크기 조절
 - **개인 폴더 트리**: 폴더 생성/이동/삭제, 드래그 앤 드롭
 - **카드 기반 문서 관리**: 상태별 UI (pending/translating/done/error)
 - **개인 작업공간**: 사용자별 디렉토리 격리
@@ -189,6 +195,12 @@ smart-document-platform/
 │       ├── reranker.py        # Cross-encoder 리랭킹
 │       ├── conversation.py    # 대화 세션 저장소
 │       ├── query_rewriter.py  # LLM 쿼리 재작성
+│       ├── question_router.py # 질문 유형 분류 (SIMPLE/COMPARE/REASON/CHAT)
+│       ├── query_decomposer.py # 복합 쿼리 분해 (1~3개 서브쿼리)
+│       ├── rag_agent.py       # Agentic RAG 반복 검색-판단 루프
+│       ├── llm_provider.py    # LLM 프로바이더 추상화 (Ollama/OpenAI 호환)
+│       ├── llm_client.py      # LLM 응답 생성 래퍼 (동기/스트리밍)
+│       ├── korean_tokenizer.py # 한국어 형태소 분석 (kiwipiepy, 폴백: 공백 분리)
 │       └── settings_service.py # settings.json CRUD
 ├── models/                 # 로컬 리랭커 모델 (bge-reranker-v2-m3)
 ├── tools/                  # 유틸리티 스크립트
@@ -216,7 +228,7 @@ smart-document-platform/
 |------|------|
 | **프론트엔드** | Vanilla HTML5/CSS3/JavaScript (프레임워크 없음) |
 | **백엔드** | FastAPI (Python 3.11+) |
-| **AI/LLM** | Ollama (로컬 LLM, 에어갭 호환) |
+| **AI/LLM** | Ollama (로컬 LLM, 에어갭 호환) + OpenAI 호환 API (vLLM, NIM 등) |
 | **검색** | BM25 + FAISS (faiss-cpu), bge-m3 임베딩 |
 | **리랭킹** | sentence-transformers, bge-reranker-v2-m3 |
 | **PDF** | PDF.js v3.11.174 (뷰어), PDFMathTranslate/pdf2zh (번역), PyMuPDF (페이지 수 추출) |

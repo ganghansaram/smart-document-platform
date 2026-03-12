@@ -56,7 +56,12 @@ AI 챗봇 + 문서 편집기 백엔드 시스템 설계 및 배포 문서
 │                         │  - Reranker (Cross-encoder)  │    │
 │                         │  - ConversationStore         │    │
 │                         │  - QueryRewriter             │    │
-│                         │  - LLMClient (gemma3:27b)     │    │
+│                         │  - QuestionRouter (4유형 분류)│    │
+│                         │  - QueryDecomposer (쿼리 분해)│    │
+│                         │  - RAGAgent (반복 검색-판단)  │    │
+│                         │  - LLMProvider (Ollama/OpenAI)│    │
+│                         │  - LLMClient (응답 생성 래퍼) │    │
+│                         │  - KoreanTokenizer           │    │
 │                         │  - DocumentSave              │    │
 │                         │  - SettingsService (settings.json)  │    │
 │                         │  - Analytics (heartbeat/dashboard)  │    │
@@ -164,7 +169,12 @@ smart-document-platform/
 │   │   ├── reranker.py             # Cross-encoder 리랭킹 (bge-reranker-v2-m3)
 │   │   ├── conversation.py         # 인메모리 대화 세션 저장소 (LRU)
 │   │   ├── query_rewriter.py       # LLM 기반 쿼리 재작성
-│   │   ├── llm_client.py           # Ollama LLM 클라이언트
+│   │   ├── question_router.py      # 질문 유형 분류 (SIMPLE/COMPARE/REASON/CHAT)
+│   │   ├── query_decomposer.py     # 복합 쿼리 분해 (1~3개 서브쿼리)
+│   │   ├── rag_agent.py            # Agentic RAG 반복 검색-판단 루프
+│   │   ├── llm_provider.py         # LLM 프로바이더 추상화 (Ollama/OpenAI 호환)
+│   │   ├── llm_client.py           # LLM 응답 생성 래퍼 (동기/스트리밍)
+│   │   ├── korean_tokenizer.py     # 한국어 형태소 분석 (kiwipiepy/폴백)
 │   │   ├── settings_service.py    # settings.json CRUD, 런타임 config 적용
 │   │   └── analytics.py           # 접속 통계 서비스
 │   │
@@ -294,8 +304,23 @@ Response:
 **멀티턴 대화 동작:**
 - `conversation_id` 미전달 → 새 세션 생성, 응답에 ID 포함
 - `conversation_id` 전달 → 기존 세션 조회, 대화 기록 활용
-- `context` 미전달 + 백엔드 모드 → 쿼리 재작성 + 자체 하이브리드 검색
+- `context` 미전달 + 백엔드 모드 → 질문 라우팅 + 쿼리 재작성/분해 + 검색
 - `context` 전달 → 프론트엔드 검색 결과 사용 (직접 호출 모드)
+
+**스트리밍 채팅 API:**
+```
+POST /api/chat/stream
+→ NDJSON 스트리밍 응답
+{"type": "token", "content": "답변 토큰"}
+...
+{"type": "done", "sources": [...], "confidence": "high", "route": "SIMPLE"}
+```
+
+**피드백 API:**
+```
+POST /api/chat/feedback
+{"question": "...", "answer": "...", "feedback": "positive"}
+```
 
 ### 4.3 인증 API
 
@@ -572,11 +597,14 @@ const AI_CONFIG = {
 ```
 사용자 질문
     ↓
-requestViaBackend() → POST /api/chat (question + conversation_id)
+requestViaBackend() → POST /api/chat/stream (question + conversation_id)
     ↓
-백엔드 내부: 쿼리 재작성 → 하이브리드 검색 → 리랭킹 → LLM (기록 포함)
+백엔드 내부:
+    질문 라우팅 (SIMPLE/COMPARE/REASON/CHAT)
+    → 쿼리 재작성 → 쿼리 분해(COMPARE) 또는 Agentic RAG(REASON)
+    → 하이브리드 검색 → 리랭킹 → LLM 스트리밍 (기록 포함)
     ↓
-응답 표시 (참고 링크 포함, conversation_id 유지)
+NDJSON 토큰 스트리밍 → rAF 렌더링 → 응답 표시 (참고 링크, conversation_id 유지)
 ```
 
 **직접 호출 모드:**
@@ -601,6 +629,7 @@ requestViaOllama() → Ollama /api/generate 직접 호출
 | Phase 1 | ✅ 완료 | 백엔드 구축, 키워드 검색 API |
 | Phase 2 | ✅ 완료 | 섹션 레벨 인덱싱, 참조 링크 이동 |
 | Phase 3 | ✅ 완료 | 하이브리드 검색, 리랭킹, 멀티턴 대화, 구조 보존 인덱싱 |
+| Phase 4 | ✅ 완료 | 질문 라우팅, 쿼리 분해, Agentic RAG, LLM 프로바이더 추상화 |
 
 **Phase 3 세부 항목:**
 - FAISS + bge-m3 하이브리드 검색 (RRF 병합, keyword 30% + vector 70%)
@@ -609,6 +638,15 @@ requestViaOllama() → Ollama /api/generate 직접 호출
 - 구조 보존 인덱싱 (테이블→마크다운, 수식→LaTeX)
 - 토큰 예산 관리 (8000자), temperature=0
 - 예외 처리, 메모리 보호, 타임아웃 강화
+
+**Phase 4 세부 항목:**
+- 질문 라우팅 (SIMPLE/COMPARE/REASON/CHAT 4유형 자동 분류)
+- 쿼리 분해 (복합 질문 → 1~3개 서브쿼리 병렬 검색)
+- Agentic RAG (반복 검색-판단-재검색 루프, 최대 3회)
+- LLM 프로바이더 추상화 (Ollama + OpenAI 호환 API)
+- 스트리밍 채팅 (NDJSON 토큰 스트리밍, rAF 렌더링 최적화)
+- 채팅 UI 개선 (버블 제거, 복사 버튼, 스크롤-투-바텀)
+- 한국어 형태소 분석 (kiwipiepy), 피드백 기록
 
 > **기술 상세**: [06-RAG-PIPELINE.md](06-RAG-PIPELINE.md#8-구현-체크리스트) 참조
 > **기술 보고서**: [RAG-TECHNICAL-REPORT.md](RAG-TECHNICAL-REPORT.md) 참조
