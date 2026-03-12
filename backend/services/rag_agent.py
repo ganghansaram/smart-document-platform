@@ -32,19 +32,6 @@ PLAN_PROMPT = """당신은 기술 문서 검색 에이전트입니다.
 - 이전 검색과 다른 관점의 쿼리를 생성 (중복 검색 방지)
 - **query는 반드시 한국어로 작성** (영어 약어는 예외: AESA, BM25 등)"""
 
-CONFIDENCE_PROMPT = """수집된 문서를 기반으로 질문에 대한 답변 신뢰도를 판단하세요.
-
-질문: {question}
-수집된 문서 수: {doc_count}
-검색 반복 횟수: {iterations}
-
-다음 중 하나만 출력하세요:
-- high: 문서에서 직접적인 답변을 찾을 수 있음
-- medium: 관련 정보는 있지만 일부 부족
-- low: 관련 문서를 충분히 찾지 못함
-
-신뢰도:"""
-
 
 def _summarize_collected(context: List[dict]) -> str:
     """수집된 문서를 간략히 요약 (플래닝 프롬프트용)"""
@@ -100,34 +87,13 @@ def _parse_plan(text: str) -> dict:
     return {"sufficient": False, "query": "", "reason": "파싱 실패 → 불충분으로 간주"}
 
 
-async def _judge_confidence(question: str, context: List[dict], iterations: int) -> str:
-    """응답 신뢰도 판단 (high/medium/low)"""
-    # 문서가 없으면 무조건 low
+def _judge_confidence(context: List[dict]) -> str:
+    """응답 신뢰도 판단 — 문서 개수 기반 (LLM 판정 제거)"""
     if not context:
         return "low"
-
-    # 단일 패스 + 문서 충분 → high (LLM 호출 절약)
-    if iterations <= 1 and len(context) >= 3:
+    if len(context) >= 2:
         return "high"
-
-    provider = get_provider()
-    try:
-        prompt = CONFIDENCE_PROMPT.format(
-            question=question,
-            doc_count=len(context),
-            iterations=iterations,
-        )
-        result = await provider.generate(prompt, timeout=10)
-        result = result.strip().lower()
-
-        for level in ("high", "medium", "low"):
-            if level in result:
-                return level
-
-        return "medium"
-    except Exception:
-        # 판단 실패 시 보수적으로
-        return "medium" if context else "low"
+    return "medium"
 
 
 async def agentic_rag(question: str, search_fn, top_k: int = 5) -> dict:
@@ -212,7 +178,7 @@ async def agentic_rag(question: str, search_fn, top_k: int = 5) -> dict:
         collected_context = collected_context[:top_k]
 
     # 신뢰도 판단
-    confidence = await _judge_confidence(question, collected_context, iterations)
+    confidence = _judge_confidence(collected_context)
 
     return {
         "context": collected_context,

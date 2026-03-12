@@ -99,6 +99,9 @@ function initAIChat() {
         }
     });
 
+    // 스크롤 투 바텀 버튼
+    initScrollToBottom();
+
 }
 
 /**
@@ -540,6 +543,22 @@ async function requestViaBackendStream(question) {
     var decoder = new TextDecoder();
     var buffer = '';
 
+    // rAF 버퍼링 상태 리셋
+    _streamRafId = null;
+    _streamAutoScroll = true;
+    _streamRenderedLen = 0;
+
+    // 사용자가 위로 스크롤하면 자동 스크롤 중지
+    var messagesContainer = document.getElementById('ai-chat-messages');
+    var _scrollListener = null;
+    if (messagesContainer) {
+        _scrollListener = function() {
+            var gap = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
+            _streamAutoScroll = gap < 40;
+        };
+        messagesContainer.addEventListener('scroll', _scrollListener);
+    }
+
     var streamComplete = false;
     try {
         while (true) {
@@ -562,6 +581,9 @@ async function requestViaBackendStream(question) {
                         if (firstToken) {
                             hideTypingIndicator();
                             messageEl = createStreamingMessage();
+                            // 첫 토큰 수신 → 점 커서 즉시 제거
+                            var cursor = messageEl.querySelector('.streaming-cursor');
+                            if (cursor) cursor.remove();
                             firstToken = false;
                         }
                         fullText += data.content;
@@ -617,6 +639,11 @@ async function requestViaBackendStream(question) {
         return;
     } finally {
         try { reader.releaseLock(); } catch (e) { /* already released */ }
+        // rAF 버퍼링 정리
+        if (_streamRafId) { cancelAnimationFrame(_streamRafId); _streamRafId = null; }
+        if (messagesContainer && _scrollListener) {
+            messagesContainer.removeEventListener('scroll', _scrollListener);
+        }
     }
 
     // 스트리밍 완료 → 마크다운 렌더링 + 소스 + 신뢰도 + 피드백 표시
@@ -745,7 +772,7 @@ function createStreamingMessage() {
     contentEl.className = 'message-content';
     messageEl.appendChild(contentEl);
 
-    // 점 3개 타이핑 인디케이터
+    // 점 3개 타이핑 인디케이터 (첫 토큰 수신 시 제거됨)
     var cursorEl = document.createElement('span');
     cursorEl.className = 'streaming-cursor';
     cursorEl.innerHTML = '<span></span><span></span><span></span>';
@@ -758,21 +785,43 @@ function createStreamingMessage() {
 }
 
 /**
- * 스트리밍 메시지 업데이트
+ * 스트리밍 메시지 업데이트 (rAF 버퍼링 + 델타 append)
+ * 전체 교체 대신 새 텍스트만 append → 레이아웃 비용 최소화
  */
+var _streamRafId = null;
+var _streamAutoScroll = true;
+var _streamRenderedLen = 0;
+
 function updateStreamingMessage(messageEl, text) {
     if (!messageEl) return;
 
-    var contentEl = messageEl.querySelector('.message-content');
-    if (contentEl) {
-        // 스트리밍 중에는 단순 텍스트로 표시 (박스 크기 문제 방지)
-        contentEl.textContent = text;
-    }
+    messageEl._pendingText = text;
 
-    var messagesContainer = document.getElementById('ai-chat-messages');
-    if (messagesContainer) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
+    if (_streamRafId) return;
+
+    _streamRafId = requestAnimationFrame(function() {
+        _streamRafId = null;
+
+        var contentEl = messageEl.querySelector('.message-content');
+        if (contentEl && messageEl._pendingText !== undefined) {
+            // 이미 렌더링된 부분 이후의 새 텍스트만 append
+            var full = messageEl._pendingText;
+            if (_streamRenderedLen === 0) {
+                contentEl.textContent = full;
+            } else {
+                var delta = full.slice(_streamRenderedLen);
+                if (delta) {
+                    contentEl.appendChild(document.createTextNode(delta));
+                }
+            }
+            _streamRenderedLen = full.length;
+        }
+
+        if (_streamAutoScroll) {
+            var mc = document.getElementById('ai-chat-messages');
+            if (mc) mc.scrollTop = mc.scrollHeight;
+        }
+    });
 }
 
 /**
@@ -816,6 +865,9 @@ function finalizeStreamingMessage(messageEl, sources, meta) {
         sourcesEl.className = 'ai-chat-sources';
         sourcesEl.innerHTML = '참고: ' + sources.map(function(s) {
             if (s.path) {
+                if (s.sectionId) {
+                    return '<a href="#" onclick="navigateToSection(\'' + s.path + '\', \'' + s.sectionId + '\'); return false;">' + s.title + '</a>';
+                }
                 return '<a href="#" onclick="loadContent(\'' + s.path + '\'); return false;">' + s.title + '</a>';
             }
             return s.title;
@@ -823,23 +875,42 @@ function finalizeStreamingMessage(messageEl, sources, meta) {
         messageEl.appendChild(sourcesEl);
     }
 
+    // 액션 바 (복사 + 피드백)
+    var actionsEl = document.createElement('div');
+    actionsEl.className = 'ai-chat-actions';
+
+    // 복사 버튼
+    var btnCopy = document.createElement('button');
+    btnCopy.className = 'action-btn copy';
+    btnCopy.title = '복사';
+    btnCopy.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    btnCopy.addEventListener('click', function() {
+        var textToCopy = rawText || '';
+        navigator.clipboard.writeText(textToCopy).then(function() {
+            btnCopy.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+            btnCopy.title = '복사됨';
+            setTimeout(function() {
+                btnCopy.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+                btnCopy.title = '복사';
+            }, 2000);
+        });
+    });
+    actionsEl.appendChild(btnCopy);
+
     // 피드백 버튼 (백엔드 RAG + CHAT 아닌 경우만)
     if (feedbackMeta && feedbackMeta.route !== 'CHAT') {
-        var feedbackEl = document.createElement('div');
-        feedbackEl.className = 'ai-chat-feedback';
-
         var btnPositive = document.createElement('button');
-        btnPositive.className = 'feedback-btn positive';
+        btnPositive.className = 'action-btn positive';
         btnPositive.title = '도움이 됐어요';
         btnPositive.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>';
 
         var btnNegative = document.createElement('button');
-        btnNegative.className = 'feedback-btn negative';
+        btnNegative.className = 'action-btn negative';
         btnNegative.title = '아쉬워요';
         btnNegative.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></svg>';
 
         var answerPreview = rawText ? rawText.substring(0, 200) : '';
-        var currentFeedback = null; // 현재 선택된 피드백 ('positive' | 'negative' | null)
+        var currentFeedback = null;
 
         function sendFeedback(feedbackType) {
             fetch(AI_CONFIG.backendUrl + '/api/chat/feedback', {
@@ -868,7 +939,7 @@ function finalizeStreamingMessage(messageEl, sources, meta) {
 
         btnPositive.addEventListener('click', function() {
             if (currentFeedback === 'positive') {
-                currentFeedback = null; // 취소 (토글)
+                currentFeedback = null;
             } else {
                 currentFeedback = 'positive';
                 sendFeedback('positive');
@@ -886,10 +957,11 @@ function finalizeStreamingMessage(messageEl, sources, meta) {
             updateFeedbackUI();
         });
 
-        feedbackEl.appendChild(btnPositive);
-        feedbackEl.appendChild(btnNegative);
-        messageEl.appendChild(feedbackEl);
+        actionsEl.appendChild(btnPositive);
+        actionsEl.appendChild(btnNegative);
     }
+
+    messageEl.appendChild(actionsEl);
 
     // 상태에 저장
     AIChatState.messages.push({ role: 'assistant', content: rawText });
@@ -959,6 +1031,41 @@ function navigateToSection(pagePath, sectionId) {
         window._pendingScrollToSection = sectionId;
         loadContent(pagePath);
     }
+}
+
+
+/**
+ * 스크롤 투 바텀 버튼 초기화
+ */
+function initScrollToBottom() {
+    var messagesContainer = document.getElementById('ai-chat-messages');
+    if (!messagesContainer) return;
+
+    // 버튼 생성
+    var btn = document.createElement('button');
+    btn.className = 'ai-chat-scroll-bottom';
+    btn.title = '최신 메시지로 이동';
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+
+    // 메시지 영역을 감싸는 wrapper 생성 (absolute 기준점)
+    var wrapper = document.createElement('div');
+    wrapper.className = 'ai-chat-messages-wrapper';
+    messagesContainer.parentElement.insertBefore(wrapper, messagesContainer);
+    wrapper.appendChild(messagesContainer);
+    wrapper.appendChild(btn);
+
+    // 스크롤 감지 → 바닥에서 벗어나면 버튼 표시
+    function checkScroll() {
+        var gap = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
+        btn.classList.toggle('visible', gap > 80);
+    }
+    messagesContainer.addEventListener('scroll', checkScroll);
+
+    // 클릭 → 바닥으로 이동
+    btn.addEventListener('click', function() {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        _streamAutoScroll = true;
+    });
 }
 
 
