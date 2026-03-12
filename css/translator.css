@@ -13,7 +13,7 @@ body {
     overflow: hidden;
 }
 
-/* ── 페이지 네비게이션 (뷰어 전용, midSlot) ── */
+/* ── 페이지 네비게이션 (뷰어 툴바 중앙) ── */
 .translator-page-nav {
     display: flex;
     align-items: center;
@@ -21,9 +21,9 @@ body {
 }
 
 .translator-page-nav .pn-btn {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: #fff;
+    background: var(--bg-gray);
+    border: 1px solid var(--border-color);
+    color: var(--text-dark);
     width: 28px;
     height: 28px;
     border-radius: 4px;
@@ -35,13 +35,13 @@ body {
     padding: 0;
 }
 
-.translator-page-nav .pn-btn:hover { background: rgba(255,255,255,0.2); }
+.translator-page-nav .pn-btn:hover { background: var(--hover-bg); }
 .translator-page-nav .pn-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .translator-page-nav .pn-btn svg { width: 14px; height: 14px; }
 
 .translator-page-info {
     font-size: 13px;
-    color: rgba(255,255,255,0.7);
+    color: var(--text-light);
     min-width: 60px;
     text-align: center;
     white-space: nowrap;
@@ -983,6 +983,10 @@ body[data-theme="dark"] .zoom-btn:hover { background: rgba(88,166,255,0.15); bor
 body[data-theme="dark"] .scroll-sync-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.65); }
 body[data-theme="dark"] .scroll-sync-btn:hover { border-color: rgba(88,166,255,0.4); color: #58a6ff; }
 body[data-theme="dark"] .scroll-sync-btn.active { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
+
+body[data-theme="dark"] .translator-page-nav .pn-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); }
+body[data-theme="dark"] .translator-page-nav .pn-btn:hover { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
+body[data-theme="dark"] .translator-page-info { color: rgba(255,255,255,0.6); }
 
 body[data-theme="dark"] .viewer-panel { background: #0d0d12; }
 body[data-theme="dark"] .viewer-panel .panel-label { background: rgba(30,30,46,0.8); color: rgba(255,255,255,0.55); }

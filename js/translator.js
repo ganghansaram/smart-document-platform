@@ -8,9 +8,6 @@
             ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
 
         // ── Platform Header ──
-        var $pageNavSource = document.getElementById('page-nav');
-        $pageNavSource.style.display = '';
-
         var header = initPlatformHeader({
             title: 'Smart Translator',
             currentSystem: 'translator',
@@ -18,7 +15,6 @@
                 { id: 'back-list', label: 'Home', hidden: true },
                 { id: 'search-trigger', label: 'Search', onClick: function() { openSearchOverlay(); } },
             ],
-            midSlot: $pageNavSource,
             showThemeToggle: true,
             onAuth: function(user) {
                 currentUser = user;
@@ -441,7 +437,6 @@
         function showViewer() {
             $viewList.style.display = 'none';
             $viewViewer.style.display = 'flex';
-            header.midSlot.classList.add('visible');
             header.nav['back-list'].style.display = '';
             updatePageNav();
         }
@@ -449,7 +444,6 @@
         function showList() {
             $viewViewer.style.display = 'none';
             $viewList.style.display = 'flex';
-            header.midSlot.classList.remove('visible');
             header.nav['back-list'].style.display = 'none';
             currentDocId = null;
             annotationsCache = null;

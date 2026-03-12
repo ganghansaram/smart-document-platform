@@ -78,12 +78,11 @@
         .compare-toolbar {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 10px 24px;
+            gap: 8px;
+            padding: 6px 16px;
             background: var(--white);
             border-bottom: 1px solid var(--border-color);
             flex-shrink: 0;
-            min-height: 48px;
         }
 
         .toolbar-spacer {
@@ -108,11 +107,26 @@
             display: flex;
             flex-direction: column;
             overflow: auto;
-            background: var(--white);
+            background: var(--light-gray);
+            position: relative;
         }
 
         .compare-panel + .compare-panel {
-            border-left: 1px solid var(--border-color);
+            border-left: 2px solid var(--border-color);
+        }
+
+        /* ── 패널 라벨 ── */
+        .panel-label {
+            position: absolute;
+            top: 8px;
+            left: 12px;
+            font-size: 11px;
+            color: var(--text-light);
+            background: rgba(255,255,255,0.8);
+            padding: 2px 8px;
+            border-radius: 4px;
+            z-index: 1;
+            pointer-events: none;
         }
 
         .panel-placeholder {
@@ -159,16 +173,21 @@
 
         /* ── 다크 모드 보정 ── */
         body[data-theme="dark"] .compare-toolbar {
-            background: var(--white);
-            border-bottom-color: var(--border-color);
+            background: #1e1e2e;
+            border-bottom-color: rgba(255,255,255,0.08);
         }
 
         body[data-theme="dark"] .compare-panel {
-            background: var(--white);
+            background: #0d0d12;
         }
 
         body[data-theme="dark"] .compare-panel + .compare-panel {
             border-left-color: var(--border-color);
+        }
+
+        body[data-theme="dark"] .panel-label {
+            background: rgba(30,30,46,0.8);
+            color: rgba(255,255,255,0.55);
         }
 
         body[data-theme="dark"] .mode-toggle {
@@ -186,13 +205,14 @@
     <div class="compare-body" id="compare-body">
         <!-- 서브 헤더 (툴바) -->
         <div class="compare-toolbar" id="compare-toolbar">
-            <span class="toolbar-label" id="toolbar-hint">문서 두 개를 업로드하여 비교하세요</span>
             <span class="toolbar-spacer"></span>
+            <span class="toolbar-label" id="toolbar-hint">문서 두 개를 업로드하여 비교하세요</span>
         </div>
 
         <!-- 비교 모드: 좌우 패널 -->
         <div class="compare-main" id="compare-main">
             <div class="compare-panel panel-a" id="panel-a">
+                <span class="panel-label" id="label-a">문서 A</span>
                 <div class="panel-placeholder">
                     <svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -204,6 +224,7 @@
                 </div>
             </div>
             <div class="compare-panel panel-b" id="panel-b">
+                <span class="panel-label" id="label-b">문서 B</span>
                 <div class="panel-placeholder">
                     <svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -264,6 +285,16 @@
                     hint.textContent = '문서를 업로드하여 규칙을 검증하세요';
                 }
 
+                // 패널 라벨 변경
+                var labelA = document.getElementById('label-a');
+                var labelB = document.getElementById('label-b');
+                if (mode === 'compare') {
+                    if (labelA) labelA.textContent = '문서 A';
+                    if (labelB) labelB.textContent = '문서 B';
+                } else {
+                    if (labelA) labelA.textContent = '검증 문서';
+                }
+
                 // 검증 모드: 패널 A placeholder 변경
                 var placeholderA = document.querySelector('#panel-a .panel-placeholder-text');
                 if (placeholderA) {
@@ -314,9 +345,9 @@
                 }
             });
 
-            // 모드 토글을 헤더 midSlot에 삽입
-            headerResult.midSlot.appendChild(modeToggle);
-            headerResult.midSlot.classList.add('visible');
+            // 모드 토글을 툴바 끝에 삽입 (우측 정렬: spacer → hint → toggle)
+            var toolbar = document.getElementById('compare-toolbar');
+            toolbar.appendChild(modeToggle);
 
             // 테마 토글 이벤트
             if (headerResult.themeToggle) {
