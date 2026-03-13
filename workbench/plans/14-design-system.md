@@ -2,7 +2,7 @@
 
 > 작성일: 2026-03-13
 > 브랜치: `feature/design-system`
-> 상태: **Step A 완료 — 점진 적용(Step B) 진행 중**
+> 상태: **B-1 완료, B-2 적용 완료(커밋 대기) — B-3~B-6 남음**
 
 ---
 
@@ -69,15 +69,15 @@
 
 | 컴포넌트 | 판정 | 사유 |
 |----------|------|------|
-| `.admin-input` → `.form-input` | **(a)** | padding·radius·font 완전 일치. 변수명만 다름 (같은 값) |
-| `.admin-select` → `.form-select` | **(a)** | 완전 일치 |
-| `.admin-btn` + `.admin-btn-save` → `.btn .btn-primary` | **(a)** | padding·radius 일치. hover 차이(색변경→opacity)는 현대적 개선 |
-| `.admin-btn-reset` | **(c)** | hover 시 빨간색 전환 — "초기화" 의미론적 디자인, `.btn-secondary`와 다른 의도 |
+| `.admin-input` → `.form-input` | ✅ B-1 | 중복 CSS 제거, border-color override만 유지 |
+| `.admin-select` → `.form-select` | ✅ B-1 | 중복 CSS 제거, border-color override만 유지 |
+| `.admin-btn` + `.admin-btn-save` → `.btn .btn-primary` | ✅ B-1 | 중복 CSS 제거, hover override 유지 |
+| `.admin-btn-reset` → `.btn .btn-secondary` | ✅ B-1 | 병행 적용, 중복 CSS 제거 |
 | `.admin-btn-sm` → `.btn-sm` | **(b)** | padding 2px 차이 (10px→12px). 테이블 밀도 위해 `4px 10px` override |
 | `.admin-textarea` | **(c)** | padding 8px 10px vs 12px, font 13px vs 14px — 설정 패널 밀도에 맞는 의도적 차이 |
-| `.admin-spinner` | ✅ 완료 | Step A에서 병행 적용 |
+| `.admin-spinner` | ✅ A+B-1 | Step A 병행, B-1에서 독자 CSS 제거 |
 | `.admin-toggle` | **(c)** | 디자인 시스템에 미정의. 향후 `.toggle` 컴포넌트로 승격 검토 |
-| `.admin-role-badge` | **(b)** | `.badge` 기반 구조 동일, role 색상은 admin 전용 override |
+| `.admin-role-badge` → `.badge` | ✅ B-1 | 병행 적용, 중복 CSS 제거 |
 | `.admin-restart-badge` | **(c)** | padding·font 미세 차이 + 전용 경고 색상. 유지 |
 
 #### Compare
@@ -87,13 +87,13 @@
 | `.scroll-sync-btn` (툴바 버튼 7종) | **(c)** | padding 3px 10px — 툴바 밀도 의도적. `.btn-sm`(4px 12px)보다 컴팩트 |
 | `.cp-nav-btn` (네비게이션 4종) | **(c)** | 26×26px — 그룹 밀도 의도적. `.btn-icon`(28px)과 다른 컨텍스트 |
 | `.cp-file-remove` (닫기 2종) | **(c)** | 16×16px 마이크로 버튼 — hover-reveal 패턴, 표준화 불필요 |
-| `.placeholder-upload-btn` (업로드 2종) | **(a)** | padding 7px→8px (1px 차이) — 비의도적 불일치, `.btn .btn-primary`로 통일 |
-| `.cp-paste-textarea` | **(b)** | `.form-textarea` 기반 + `resize: none` override (flex 높이 관리) |
-| `.cp-upload-spinner` | ✅ 완료 | Step A에서 병행 적용 |
+| `.placeholder-upload-btn` (업로드 2종) | ✅ B-2 | `btn btn-primary` 병행, 중복 CSS 제거 (svg 크기만 유지) |
+| `.cp-paste-textarea` | ✅ B-2 | `form-textarea` 병행, flex:1 + resize:none override만 유지 |
+| `.cp-upload-spinner` | ✅ A | Step A에서 병행 적용 |
 | `.mode-toggle-btn` | **(c)** | 세그먼트 컨트롤 패턴 — 버튼이 아닌 별도 UI 패턴 |
 | `.cp-sidebar-collapse` | **(c)** | 24×24px — `.btn-icon`(28px)보다 작은 사이드바 전용 |
 | 배지 3종 (.cp-stat, .cp-change-badge, .vd-issue-badge) | **(c)** | 의도적 크기 계층 (요약=큰 pill, 목록=작은 태그) |
-| 모달 입력 (preset, severity, term) | **(b)** | 3가지 크기 → `.form-input-sm`(4px 8px, 12px)으로 통일 권장 |
+| 모달 입력 (preset, severity, term, param) | ✅ B-2 | `form-select-sm`/`form-input-sm` 병행, 4px 8px 12px로 통일 |
 
 #### Explorer (index.html)
 
@@ -139,29 +139,24 @@
 - **(a)** 항목: 시각 변화 없음 또는 비일관성 수정 (1~2px)
 - **(b)** 항목: 의도된 미세 개선, 사전 고지 필수
 
-### B-1: Admin (위험도: 낮)
+### B-1: Admin ✅ (d0bc534)
 
-> admin의 `--as-*` 변수는 글로벌 토큰 별칭이므로, 공통 클래스 적용 시 렌더링 값 동일
+> Playwright 전후 비교 검증 완료 — 시각적 변화 없음
 
-| 작업 | 유형 | 예상 시각 변화 |
-|------|------|--------------|
-| `.admin-input` → `form-input admin-input` 병행, 중복 CSS 제거 | (a) | 없음 (값 동일) |
-| `.admin-select` → `form-select admin-select` 병행, 중복 CSS 제거 | (a) | 없음 |
-| `.admin-btn-save` → `btn btn-primary admin-btn-save` 병행, 중복 CSS 제거 | (a) | hover 효과: 색변경→opacity (미세) |
-| `.admin-spinner` 중복 CSS 제거 (클래스 이미 병행 중) | (a) | animation 0.7s→0.8s (감지 불가) |
-| `.admin-role-badge` → `badge admin-role-badge` 병행 | (b) | 없음 (구조 동일, 색상 override 유지) |
+- [x] `.admin-input` → `form-input admin-input` 병행, 중복 CSS ~15줄 제거
+- [x] `.admin-select` → `form-select admin-select` 병행
+- [x] `.admin-btn-save` → `btn btn-primary`, `.admin-btn-reset` → `btn btn-secondary` 병행
+- [x] `.admin-spinner` + `@keyframes admin-spin` 독자 CSS 17줄 제거
+- [x] `.admin-role-badge` → `badge` 병행
 
-**확인 포인트**: admin 전체 페이지 — 설정 입력, 저장/초기화 버튼, 사용자 관리 테이블, 메뉴 편집기
+### B-2: Compare ✅ (커밋 대기)
 
-### B-2: Compare (위험도: 낮~중)
+> Playwright 전후 비교 검증 완료 — 메인/붙여넣기 변화 없음, 모달 입력 크기 통일 (의도적 미세 변화)
 
-| 작업 | 유형 | 예상 시각 변화 |
-|------|------|--------------|
-| `.placeholder-upload-btn` → `btn btn-primary placeholder-upload-btn`, 중복 CSS 제거 | (a) | 세로 padding 7px→8px (1px, 감지 어려움) |
-| `.cp-paste-textarea` → `form-textarea cp-paste-textarea`, 중복 CSS 제거 | (b) | 없음 (resize:none override 유지) |
-| 모달 입력 3종 크기 통일 → `.form-input-sm` 신규 정의 | (b) | preset select 약간 작아짐 (5px→4px), severity/term 약간 커짐 (2px→4px) |
-
-**확인 포인트**: 문서 업로드 화면, 붙여넣기 모드, 검증 규칙 설정 모달
+- [x] `.placeholder-upload-btn` → `btn btn-primary` 병행, 중복 CSS ~18줄 제거 + 다크모드 4줄 제거
+- [x] `.cp-paste-textarea` → `form-textarea` 병행, 중복 CSS ~15줄 제거 (flex:1, resize:none override 유지)
+- [x] 모달 입력 4종 → `form-select-sm`/`form-input-sm` 병행, 중복 CSS ~30줄 제거
+- [x] `components.css`에 `.form-input-sm`/`.form-select-sm` 신규 추가
 
 ### B-3: Explorer/Index (위험도: 중)
 
@@ -203,7 +198,7 @@
 
 | 컴포넌트 | 스펙 | 용도 | 추가 시점 |
 |----------|------|------|----------|
-| `.form-input-sm` | padding 4px 8px, font 12px, radius 4px | 모달/밀집 폼 | B-2 (Compare 모달) |
+| `.form-input-sm`/`.form-select-sm` | padding 4px 8px, font 12px, radius 4px | 모달/밀집 폼 | ✅ B-2에서 추가 |
 | `.btn-icon-lg` | 32×32px | 에디터 모달 헤더 | B-3 (Explorer) |
 | `.spinner-lg` | 36×36px | 에디터 로딩 오버레이 | B-3 (Explorer) |
 | `.form-input-lg` | padding 12px 14px, font 14px | 로그인 폼 | B-5 (Login) |
@@ -255,6 +250,23 @@
 ### Step 8: 규칙 문서화 ✅ (부분 — 테마 기준서 미갱신)
 ### Step 9: 기반 검증 ✅
 
+### B-1: Admin 통합 ✅ (d0bc534)
+
+- [x] 버튼 6종 → `.btn .btn-primary`/`.btn-secondary` 병행, `.admin-btn` 10속성→1속성
+- [x] 입력 4종 → `.form-input` 병행, 공유 CSS 제거 (border-color override만 유지)
+- [x] 셀렉트 3종 → `.form-select` 병행
+- [x] 배지 1종 → `.badge` 병행
+- [x] 스피너 독자 CSS + `@keyframes` 17줄 제거
+- Playwright 전후 비교: 시각적 변화 0건
+
+### B-2: Compare 통합 ✅ (커밋 대기)
+
+- [x] 업로드 버튼 3개소 → `.btn .btn-primary` 병행, CSS ~18줄 제거
+- [x] 붙여넣기 textarea → `.form-textarea` 병행, CSS ~15줄 제거
+- [x] 모달 입력 4종 → `.form-input-sm`/`.form-select-sm` 병행, CSS ~30줄 제거
+- [x] `components.css`에 `.form-input-sm`/`.form-select-sm` 신규 컴포넌트 추가
+- Playwright 전후 비교: 메인/붙여넣기 변화 0건, 모달 입력 크기 통일 (의도적)
+
 ---
 
 ## 변경 수치 요약 (현재까지)
@@ -262,11 +274,11 @@
 | 지표 | 값 |
 |------|---|
 | 신규 파일 | 6개 CSS + 계획서 1개 |
-| 수정 파일 | 15개 (HTML 5 + CSS 3 + JS 4 + CLAUDE.md) |
-| 제거된 중복 코드 | ~1,640줄 |
-| 추가된 공통 코드 | ~1,949줄 |
-| 시각적 변화 | 0건 |
-| 커밋 | 2건 (c186620, a110311) |
+| 수정 파일 | 18개 (HTML 5 + CSS 4 + JS 4 + CLAUDE.md) |
+| 제거된 중복 코드 | ~1,740줄 |
+| 추가된 공통 코드 | ~1,956줄 |
+| 시각적 변화 | 0건 (의도적 모달 입력 통일 제외) |
+| 커밋 | 3건 (c186620, a110311, d0bc534) + B-2 대기 |
 
 ---
 

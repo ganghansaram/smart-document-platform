@@ -230,27 +230,7 @@ body {
     margin-bottom: 16px;
 }
 
-/* 주요 액션: 파일 선택 버튼 */
-.placeholder-upload-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 20px;
-    border: 1px solid var(--active-color);
-    border-radius: 6px;
-    background: var(--active-color);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: opacity 0.15s ease, box-shadow 0.15s ease;
-}
-
-.placeholder-upload-btn:hover {
-    opacity: 0.88;
-    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.2);
-}
-
+/* 주요 액션: 파일 선택 버튼 — .btn .btn-primary 기반, 아이콘 크기만 유지 */
 .placeholder-upload-btn svg {
     width: 14px;
     height: 14px;
@@ -343,25 +323,10 @@ body {
     opacity: 0.9;
 }
 
+/* .cp-paste-textarea — .form-textarea 기반, compare 전용 override만 유지 */
 .cp-paste-textarea {
     flex: 1;
-    width: 100%;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 12px;
-    font-size: 14px;
-    line-height: 1.6;
-    font-family: inherit;
-    color: var(--text-dark);
-    background: var(--white);
     resize: none;
-    outline: none;
-    transition: border-color 0.15s ease;
-}
-
-.cp-paste-textarea:focus {
-    border-color: var(--active-color);
-    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
 }
 
 .cp-paste-textarea::placeholder {
@@ -580,11 +545,6 @@ body[data-theme="dark"] .panel-placeholder:hover {
 body[data-theme="dark"] .panel-placeholder.dragover {
     border-color: #58a6ff;
     background: rgba(88,166,255,0.05);
-}
-
-body[data-theme="dark"] .placeholder-upload-btn {
-    background: var(--active-color);
-    border-color: var(--active-color);
 }
 
 body[data-theme="dark"] .placeholder-paste-link {
@@ -1065,15 +1025,9 @@ body[data-theme="dark"] .validate-mark.validate-active { background: rgba(59,130
     font-size: 13px;
 }
 
+/* .vd-preset-select — .form-select .form-select-sm 기반, flex override만 유지 */
 .vd-preset-select {
     flex: 1;
-    padding: 5px 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    font-size: 13px;
-    font-family: inherit;
-    background: var(--white);
-    color: var(--text-dark);
 }
 
 /* 규칙 행 */
@@ -1103,14 +1057,9 @@ body[data-theme="dark"] .validate-mark.validate-active { background: rgba(59,130
     color: var(--text-dark);
 }
 
+/* .vd-rule-severity — .form-select .form-select-sm 기반, 독자 CSS 제거 */
 .vd-rule-severity {
-    padding: 2px 6px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 12px;
-    font-family: inherit;
-    background: var(--white);
-    color: var(--text-dark);
+    width: auto;
 }
 
 .vd-rule-toggle {
@@ -1145,15 +1094,9 @@ body[data-theme="dark"] .validate-mark.validate-active { background: rgba(59,130
     color: var(--text-light);
 }
 
+/* .vd-rule-param input — .form-input .form-input-sm 기반, 폭만 유지 */
 .vd-rule-param input[type="number"] {
     width: 60px;
-    padding: 2px 6px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 12px;
-    font-family: inherit;
-    background: var(--white);
-    color: var(--text-dark);
 }
 
 /* ── 용어 편집 패널 ── */
@@ -1235,22 +1178,10 @@ body[data-theme="dark"] .validate-mark.validate-active { background: rgba(59,130
     border-top: 1px solid var(--border-color);
 }
 
+/* .vd-term-add input — .form-input .form-input-sm 기반, flex override만 유지 */
 .vd-term-add input {
     flex: 1;
     min-width: 0;
-    padding: 4px 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 12px;
-    font-family: inherit;
-    background: var(--white);
-    color: var(--text-dark);
-    outline: none;
-    transition: border-color 0.15s ease;
-}
-.vd-term-add input:focus {
-    border-color: var(--active-color);
-    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
 }
 .vd-term-add input::placeholder { color: var(--medium-gray); }
 

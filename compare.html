@@ -103,7 +103,7 @@
                                 <line x1="9" y1="15" x2="15" y2="15"/>
                             </svg>
                             <span class="panel-placeholder-desc">파일을 드래그하거나</span>
-                            <button class="placeholder-upload-btn" data-action="upload" data-side="a">
+                            <button class="btn btn-primary placeholder-upload-btn" data-action="upload" data-side="a">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                                 파일 선택
                             </button>
@@ -133,7 +133,7 @@
                                 <line x1="9" y1="15" x2="15" y2="15"/>
                             </svg>
                             <span class="panel-placeholder-desc">파일을 드래그하거나</span>
-                            <button class="placeholder-upload-btn" data-action="upload" data-side="b">
+                            <button class="btn btn-primary placeholder-upload-btn" data-action="upload" data-side="b">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                                 파일 선택
                             </button>
@@ -258,7 +258,7 @@
                 return '<div class="panel-placeholder" id="placeholder-' + side + '">'
                     + PLACEHOLDER_SVG
                     + '<span class="panel-placeholder-desc">파일을 드래그하거나</span>'
-                    + '<button class="placeholder-upload-btn" data-action="upload" data-side="' + side + '">'
+                    + '<button class="btn btn-primary placeholder-upload-btn" data-action="upload" data-side="' + side + '">'
                     + UPLOAD_ICON + ' 파일 선택</button>'
                     + '<span class="placeholder-or">또는</span>'
                     + '<button class="placeholder-paste-link" data-action="paste" data-side="' + side + '">'
@@ -422,7 +422,7 @@
                     + '<button class="cp-paste-btn" data-paste-cancel="' + side + '">취소</button>'
                     + '<button class="cp-paste-btn primary" data-paste-confirm="' + side + '">확인</button>'
                     + '</div>'
-                    + '<textarea class="cp-paste-textarea" id="paste-textarea-' + side + '" placeholder="여기에 텍스트를 붙여넣으세요..."></textarea>'
+                    + '<textarea class="form-textarea cp-paste-textarea" id="paste-textarea-' + side + '" placeholder="여기에 텍스트를 붙여넣으세요..."></textarea>'
                     + '</div>';
                 panel.insertAdjacentHTML('beforeend', html);
 
@@ -1989,7 +1989,7 @@
 
                             html += '<div class="vd-rule-row" data-rule-id="' + ruleId + '">'
                                 + '<span class="vd-rule-name">' + RULE_LABELS[ruleId] + '</span>'
-                                + '<select class="vd-rule-severity" data-rule-severity="' + ruleId + '">'
+                                + '<select class="form-select form-select-sm vd-rule-severity" data-rule-severity="' + ruleId + '">'
                                 + '<option value="error"' + (rule.severity === 'error' ? ' selected' : '') + '>오류</option>'
                                 + '<option value="warning"' + (rule.severity === 'warning' ? ' selected' : '') + '>경고</option>'
                                 + '<option value="suggestion"' + (rule.severity === 'suggestion' ? ' selected' : '') + '>제안</option>'
@@ -2000,7 +2000,7 @@
                             // 파라미터 표시
                             if (ruleId === 'sentence_length' && rule.params) {
                                 html += '<div class="vd-rule-param">'
-                                    + '최대 <input type="number" data-rule-param="sentence_length.max_chars" value="' + (rule.params.max_chars || 80) + '"> 자'
+                                    + '최대 <input type="number" class="form-input form-input-sm" data-rule-param="sentence_length.max_chars" value="' + (rule.params.max_chars || 80) + '"> 자'
                                     + '</div>';
                             }
 
@@ -2023,9 +2023,9 @@
                                 }
                                 html += '</div>';
                                 html += '<div class="vd-term-add">'
-                                    + '<input type="text" placeholder="금지어" data-add-forbidden-term>'
+                                    + '<input type="text" class="form-input form-input-sm" placeholder="금지어" data-add-forbidden-term>'
                                     + '<span class="vd-term-arrow">&rarr;</span>'
-                                    + '<input type="text" placeholder="대체어" data-add-forbidden-replacement>'
+                                    + '<input type="text" class="form-input form-input-sm" placeholder="대체어" data-add-forbidden-replacement>'
                                     + '<button class="vd-term-add-btn" data-add-forbidden-btn title="추가">+</button>'
                                     + '</div>';
                                 html += '</div>';
@@ -2052,7 +2052,7 @@
                                 }
                                 html += '</div>';
                                 html += '<div class="vd-term-add">'
-                                    + '<input type="text" placeholder="쉼표로 구분 (예: 항공기, 비행기)" data-add-group-input style="flex:3">'
+                                    + '<input type="text" class="form-input form-input-sm" placeholder="쉼표로 구분 (예: 항공기, 비행기)" data-add-group-input style="flex:3">'
                                     + '<button class="vd-term-add-btn" data-add-group-btn title="추가">+</button>'
                                     + '</div>';
                                 html += '</div>';
@@ -2068,7 +2068,7 @@
                     + '<div class="vd-modal-body">'
                     + '<div class="vd-preset-row">'
                     + '<span>프리셋:</span>'
-                    + '<select class="vd-preset-select" id="vd-preset-select">';
+                    + '<select class="form-select form-select-sm vd-preset-select" id="vd-preset-select">';
 
                 for (var pKey in presets) {
                     modalHTML += '<option value="' + pKey + '"' + (pKey === activePreset ? ' selected' : '') + '>'
