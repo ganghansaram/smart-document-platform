@@ -42,6 +42,36 @@
 
     /* 포커스 링 */
     --focus-ring: 0 0 0 2px rgba(0,102,204,0.15);
+
+    /* 스페이싱 */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 40px;
+
+    /* Border-radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-pill: 50%;
+
+    /* 트랜지션 */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.2s ease;
+    --transition-slow: 0.3s ease;
+
+    /* Diff 색상 */
+    --diff-added: #e6ffec;
+    --diff-deleted: #ffeef0;
+    --diff-modified: #fff8e1;
+    --diff-added-text: #1a7f37;
+    --diff-deleted-text: #cf222e;
+    --diff-modified-text: #9a6700;
+    --diff-added-border: #2ea043;
+    --diff-deleted-border: #f85149;
 }
 
 /* 다크 테마 변수 오버라이드 */
@@ -75,6 +105,16 @@ body[data-theme="dark"] {
 
     /* 포커스 링 */
     --focus-ring: 0 0 0 2px rgba(91,163,245,0.2);
+
+    /* Diff 색상 */
+    --diff-added: rgba(46,160,67,0.15);
+    --diff-deleted: rgba(248,81,73,0.15);
+    --diff-modified: rgba(245,158,11,0.15);
+    --diff-added-text: #3fb950;
+    --diff-deleted-text: #f85149;
+    --diff-modified-text: #d29922;
+    --diff-added-border: #3fb950;
+    --diff-deleted-border: #f85149;
 }
 
 /* 글로벌 키보드 포커스 링 */

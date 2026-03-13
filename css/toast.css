@@ -1,0 +1,31 @@
+/* ===================================
+   토스트 알림 — 전 페이지 공유
+   =================================== */
+
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    padding: 12px 24px;
+    background-color: var(--dark-gray);
+    color: #fff;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 5000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 500px;
+    text-align: center;
+    pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background-color: var(--color-success); }
+.toast.error { background-color: var(--color-error); }
+.toast.warning { background-color: var(--color-warning); }
+
+body[data-theme="dark"] .toast { background-color: #2d2f3e; color: #e0e0e0; }
+body[data-theme="dark"] .toast.success { background-color: var(--color-success); color: #fff; }
+body[data-theme="dark"] .toast.error { background-color: var(--color-error); color: #fff; }
+body[data-theme="dark"] .toast.warning { background-color: var(--color-warning); color: #fff; }

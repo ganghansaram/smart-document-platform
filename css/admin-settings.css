@@ -705,30 +705,6 @@ body[data-theme="dark"] .admin-spinner {
    공용 토스트 (admin.html용 — main.css 미로드)
    ══════════════════════════════════════════════════════════════════════════════ */
 
-.toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    padding: 12px 24px;
-    background-color: #333;
-    color: #fff;
-    border-radius: 8px;
-    font-size: 14px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 5000;
-    opacity: 0;
-    transition: all 0.3s ease;
-    max-width: 500px;
-    text-align: center;
-    pointer-events: none;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.success { background-color: #22c55e; }
-.toast.error { background-color: #ef4444; }
-.toast.warning { background-color: #f59e0b; }
-
-body[data-theme="dark"] .toast { background-color: #2d2f3e; color: #e0e0e0; }
 
 
 /* ══════════════════════════════════════════════════════════════════════════════
