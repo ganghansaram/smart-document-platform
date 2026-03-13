@@ -626,7 +626,7 @@
             $rightPlaceholder.style.display = 'flex';
             var stage = (ps && ps.progress_stage) || '번역 준비 중...';
             $rightPlaceholder.innerHTML =
-                '<div class="page-spinner"></div>' +
+                '<div class="spinner page-spinner"></div>' +
                 '<div class="placeholder-text">' + escHtml(stage) + '</div>';
         }
 

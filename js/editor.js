@@ -62,7 +62,7 @@ function createEditorModal() {
                     <button class="editor-cancel-btn" id="editor-cancel">
                         Cancel
                     </button>
-                    <button class="editor-save-btn" id="editor-save">
+                    <button class="btn btn-primary editor-save-btn" id="editor-save">
                         <span class="icon"></span>
                         Save
                     </button>

@@ -295,7 +295,7 @@
                 if (paste) paste.remove();
                 panel.insertAdjacentHTML('beforeend',
                     '<div class="cp-upload-loading">'
-                    + '<div class="cp-upload-spinner"></div>'
+                    + '<div class="spinner cp-upload-spinner"></div>'
                     + '<span>텍스트 추출 중...</span></div>');
             }
 
@@ -1507,7 +1507,7 @@
 
                 // 사이드바에 로딩 표시
                 sidebarBody.innerHTML = '<div class="vd-loading">'
-                    + '<div class="cp-upload-spinner"></div>'
+                    + '<div class="spinner cp-upload-spinner"></div>'
                     + '<span>검증 중...</span></div>';
 
                 fetch(API_BASE + '/compare/validate', {

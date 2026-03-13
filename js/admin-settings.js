@@ -366,7 +366,7 @@ async function renderAdminSettings() {
     var container = document.getElementById('main-content');
     if (!container) return;
 
-    container.innerHTML = '<div class="admin-settings-page"><div class="admin-settings-loading"><div class="admin-spinner"></div>설정 로드 중...</div></div>';
+    container.innerHTML = '<div class="admin-settings-page"><div class="admin-settings-loading"><div class="spinner admin-spinner"></div>설정 로드 중...</div></div>';
     if (typeof updateSectionNav === 'function') updateSectionNav();
 
     var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
@@ -828,7 +828,7 @@ function _renderMenuTab() {
         '<div class="admin-section">' +
             '<h3 class="admin-section-title">\uBA54\uB274 \uAD6C\uC870 \uD3B8\uC9D1</h3>' +
             '<div class="menu-editor">' +
-                '<div class="menu-editor-loading"><div class="admin-spinner"></div> \uBA54\uB274 \uB85C\uB4DC \uC911...</div>' +
+                '<div class="menu-editor-loading"><div class="spinner admin-spinner"></div> \uBA54\uB274 \uB85C\uB4DC \uC911...</div>' +
             '</div>' +
         '</div>';
 
