@@ -2,7 +2,7 @@
 
 > 작성일: 2026-03-13
 > 브랜치: `feature/design-system`
-> 상태: **기반 구축 완료** — 점진 적용 대기
+> 상태: **Step A 완료 — 점진 적용(Step B) 진행 중**
 
 ---
 
@@ -12,266 +12,261 @@
 **어떤 페이지에서든 클래스만 붙이면 동일한 컴포넌트가 나오는 구조**를 만든다.
 
 ### 핵심 원칙
-- **시각적 변화 제로**: 리팩토링 전후 화면이 완전히 동일해야 함
-- **단계별 검증 필수**: 각 단계마다 반영 전/후 스크린샷 비교
+- **시각적 변화 제로** (Step A) / **의도된 미세 개선만** (Step B)
+- **단계별 검증 필수**: 각 단계마다 반영 전/후 사용자 확인
 - **기존 제약 유지**: Vanilla JS, 빌드 없음, 모놀리식 HTML, 폐쇄망
 
 ---
 
-## 적용 결과 현황
+## 현황 요약
 
-### CSS 파일 구조 (21개, 11,044줄)
+### CSS 로드 현황 (Step A 적용 후)
 
-#### 신규 공통 CSS (6개)
+| 페이지 | 공통 CSS | 공통 수 |
+|--------|---------|--------|
+| index.html | tokens, scrollbar, toast, **components** | 4/6 |
+| translator.html | tokens, scrollbar, **components** | 3/6 |
+| compare.html | tokens, scrollbar, **components**, compare | 4/6 |
+| admin.html | tokens, toast, **components** | 3/6 |
+| launcher.html | tokens | 1/6 |
+| login.html | tokens | 1/6 |
 
-| 파일 | 줄 수 | 역할 | 추출 원본 |
-|------|-------|------|----------|
-| tokens.css | 124 | 디자인 토큰 (색상, 그림자, 스페이싱, radius, 트랜지션, diff) | 기존 84줄 + 40줄 추가 |
-| scrollbar.css | 87 | 스크롤바 (라이트+다크) | main.css, translator.css, compare.html 3곳 |
-| toast.css | 31 | 토스트 알림 (라이트+다크) | main.css, admin-settings.css 2곳 |
-| components.css | 283 | 버튼, 입력, 배지, 스피너, 리사이즈 핸들 | main.css 리사이즈 + 신규 정의 |
-| modal.css | 97 | 모달 기반 클래스 | 신규 정의 (기존 미터치) |
-| compare.css | 1,327 | Compare 전용 (인라인 추출) | compare.html `<style>` 전량 |
+### Step A 적용 완료 항목
 
-#### 기존 CSS (변경된 파일)
+| 페이지 | 요소 | 적용 방식 |
+|--------|------|----------|
+| compare | 스피너 ×2 | `spinner cp-upload-spinner` 병행 |
+| translator | 스피너 ×1 | `spinner page-spinner` 병행 |
+| admin | 스피너 ×2 | `spinner admin-spinner` 병행 |
+| index | 에디터 저장 버튼 | `btn btn-primary editor-save-btn` 병행 |
 
-| 파일 | 변경 전 | 변경 후 | 제거 내용 |
-|------|---------|---------|----------|
-| main.css | 705줄 | 567줄 | 스크롤바(-70), 토스트(-28), 리사이즈 핸들(-23), 다크 스크롤바(-12) |
-| translator.css | 1,696줄 | 1,639줄 | 스크롤바(-57) |
-| admin-settings.css | 1,180줄 | 1,156줄 | 토스트(-24) |
-
-#### 기존 CSS (변경 없음, 15개)
-
-| 파일 | 줄 수 |
-|------|-------|
-| platform-header.css | 266 |
-| platform-footer.css | 38 |
-| tree-menu.css | 719 |
-| content.css | 1,164 |
-| ai-chat.css | 855 |
-| auth.css | 494 |
-| analytics.css | 601 |
-| editor.css | 567 |
-| bookmarks.css | 250 |
-| glossary.css | 552 |
-| figure-popup.css | 227 |
-
-### 페이지별 CSS 로드 현황
-
-| 페이지 | 외부 CSS | 인라인 CSS | 공통 CSS 수 |
-|--------|----------|-----------|------------|
-| index.html | tokens, **scrollbar**, **toast**, **components**, platform-header, main, tree-menu, content, ai-chat, editor, figure-popup, bookmarks, glossary, auth, analytics, platform-footer | 없음 | 4/6 |
-| translator.html | tokens, **scrollbar**, platform-header, platform-footer, tree-menu, translator | 없음 | 1/6 |
-| compare.html | tokens, **scrollbar**, **components**, platform-header, **compare** | 없음 | 3/6 |
-| launcher.html | tokens, platform-header, platform-footer | **179줄** (페이지 고유) | 0/6 |
-| login.html | tokens | **197줄** (페이지 고유) | 0/6 |
-| admin.html | tokens, **toast**, platform-header, admin-settings, analytics, platform-footer | 없음 | 1/6 |
-
-### 인라인 CSS 잔존 분석
-
-| 페이지 | 줄 수 | 내용 | 외부 추출 가치 |
-|--------|-------|------|--------------|
-| launcher.html | 179줄 | bg-video, hero-phrase, system-cards, 반응형 | **낮음** — 100% 페이지 고유, 재사용 없음 |
-| login.html | 197줄 | bg-image, login-card, form, 반응형 | **낮음** — 100% 페이지 고유, 재사용 없음 |
+> 기존 페이지 CSS 미변경 → cascade 순서(components.css → page CSS)로 시각적 변화 제로
 
 ---
 
-## 컴포넌트 현황표 (적용 후)
+## UX 감사 결과
 
-> 범례: ● 공통 CSS 참조 | ▲ 전용 파일에 독자 구현 | ✦ 인라인 하드코딩 | − 미사용
+### 핵심 발견
 
-### 추출 완료 (중복 제거됨)
+1. **admin `--as-*` 변수 = 글로벌 토큰 별칭**: `--as-primary` = `var(--active-color)`, `--as-text` = `var(--text-dark)` 등. 값이 동일하므로 통합 안전.
 
-| 컴포넌트 | 관리 파일 | index | translator | compare | launcher | login | admin |
-|----------|----------|-------|-----------|---------|----------|-------|-------|
-| 스크롤바 | scrollbar.css | ● | ● | ● | − | − | − |
-| 토스트 | toast.css | ● | − | − | − | − | ● |
-| 리사이즈 핸들 | components.css | ● | − | ● | − | − | − |
+2. **3가지 버튼 크기 체계**: 플랫폼 전체에서 의도적으로 3단계 밀도를 사용 중.
+   - 툴바/사이드바: 26px 아이콘, 3~5px padding (밀도 우선)
+   - 모달/다이얼로그: 28~32px, 8~20px padding (접근성 우선)
+   - 브랜드/FAB: 44~56px (터치 타겟)
 
-### 기반 정의 완료, 점진 적용 대기
+3. **실제 비일관성** (수정 필요):
+   - editor 취소 버튼: padding `8px 16px` → 표준 `8px 20px` (4px 부족)
+   - translator model-select: padding `4px 8px` → 표준 `8px 10px` (같은 툴바 내 불일치)
 
-| 컴포넌트 | 관리 파일 | index | translator | compare | launcher | login | admin |
-|----------|----------|-------|-----------|---------|----------|-------|-------|
-| 모달/오버레이 | modal.css | ▲ ×4 | ▲ | ▲ compare | − | − | − |
-| 버튼 (Primary) | components.css | ▲ editor | ▲ translator | ▲ compare | ✦ | ✦ | ▲ admin |
-| 버튼 (Secondary) | components.css | ▲ editor | ▲ translator | ▲ compare | − | − | ▲ admin |
-| 버튼 (Icon) | components.css | ▲ main | − | ▲ compare | − | − | − |
-| 입력 필드 | components.css | ▲ main | ▲ translator | ▲ compare | − | ✦ | ▲ admin |
-| 배지 | components.css | − | − | ▲ compare | ✦ | − | ▲ admin |
-| 스피너 | components.css | ▲ content | − | ▲ compare | − | − | ▲ admin |
+4. **디자인 시스템 누락 컴포넌트**: `.form-input-sm`, `.btn-icon-lg`, `.spinner-lg`, `.toggle`
 
-> 위 ▲/✦ 항목이 남은 점진 적용 대상. 기존 코드의 독자 구현을 `.btn-primary`, `.form-input` 등 공통 클래스로 교체하는 작업.
+### 컴포넌트별 판정 결과
 
-### 다크 모드 현황
+> (a) 공통 클래스 그대로 적용 | (b) 공통 클래스 + 페이지 override | (c) 커스텀 유지 (의도적 차이)
 
-| 파일 | 다크 규칙 수 | 상태 |
-|------|------------|------|
-| tokens.css | 31개 변수 | ✅ 완전 |
-| scrollbar.css | 2개 셀렉터 | ✅ 완전 |
-| toast.css | 4개 셀렉터 | ✅ 완전 |
-| components.css | 5개 셀렉터 | ✅ 완전 (나머지는 CSS 변수로 자동 적용) |
-| modal.css | 3개 셀렉터 | ✅ 완전 |
-| compare.css | 64개 셀렉터 | ✅ 완전 (Phase 1~3 전체 커버) |
+#### Admin
+
+| 컴포넌트 | 판정 | 사유 |
+|----------|------|------|
+| `.admin-input` → `.form-input` | **(a)** | padding·radius·font 완전 일치. 변수명만 다름 (같은 값) |
+| `.admin-select` → `.form-select` | **(a)** | 완전 일치 |
+| `.admin-btn` + `.admin-btn-save` → `.btn .btn-primary` | **(a)** | padding·radius 일치. hover 차이(색변경→opacity)는 현대적 개선 |
+| `.admin-btn-reset` | **(c)** | hover 시 빨간색 전환 — "초기화" 의미론적 디자인, `.btn-secondary`와 다른 의도 |
+| `.admin-btn-sm` → `.btn-sm` | **(b)** | padding 2px 차이 (10px→12px). 테이블 밀도 위해 `4px 10px` override |
+| `.admin-textarea` | **(c)** | padding 8px 10px vs 12px, font 13px vs 14px — 설정 패널 밀도에 맞는 의도적 차이 |
+| `.admin-spinner` | ✅ 완료 | Step A에서 병행 적용 |
+| `.admin-toggle` | **(c)** | 디자인 시스템에 미정의. 향후 `.toggle` 컴포넌트로 승격 검토 |
+| `.admin-role-badge` | **(b)** | `.badge` 기반 구조 동일, role 색상은 admin 전용 override |
+| `.admin-restart-badge` | **(c)** | padding·font 미세 차이 + 전용 경고 색상. 유지 |
+
+#### Compare
+
+| 컴포넌트 | 판정 | 사유 |
+|----------|------|------|
+| `.scroll-sync-btn` (툴바 버튼 7종) | **(c)** | padding 3px 10px — 툴바 밀도 의도적. `.btn-sm`(4px 12px)보다 컴팩트 |
+| `.cp-nav-btn` (네비게이션 4종) | **(c)** | 26×26px — 그룹 밀도 의도적. `.btn-icon`(28px)과 다른 컨텍스트 |
+| `.cp-file-remove` (닫기 2종) | **(c)** | 16×16px 마이크로 버튼 — hover-reveal 패턴, 표준화 불필요 |
+| `.placeholder-upload-btn` (업로드 2종) | **(a)** | padding 7px→8px (1px 차이) — 비의도적 불일치, `.btn .btn-primary`로 통일 |
+| `.cp-paste-textarea` | **(b)** | `.form-textarea` 기반 + `resize: none` override (flex 높이 관리) |
+| `.cp-upload-spinner` | ✅ 완료 | Step A에서 병행 적용 |
+| `.mode-toggle-btn` | **(c)** | 세그먼트 컨트롤 패턴 — 버튼이 아닌 별도 UI 패턴 |
+| `.cp-sidebar-collapse` | **(c)** | 24×24px — `.btn-icon`(28px)보다 작은 사이드바 전용 |
+| 배지 3종 (.cp-stat, .cp-change-badge, .vd-issue-badge) | **(c)** | 의도적 크기 계층 (요약=큰 pill, 목록=작은 태그) |
+| 모달 입력 (preset, severity, term) | **(b)** | 3가지 크기 → `.form-input-sm`(4px 8px, 12px)으로 통일 권장 |
+
+#### Explorer (index.html)
+
+| 컴포넌트 | 판정 | 사유 |
+|----------|------|------|
+| `.editor-save-btn` | ✅ 완료 | Step A에서 병행 적용 |
+| `.editor-cancel-btn` | **(a)** | padding `8px 16px` → `8px 20px`. `.btn .btn-secondary` 적용 (비일관성 수정) |
+| `.editor-fullscreen-btn`, `.editor-close-btn` | **(b)** | 32×32px — `.btn-icon` 기반 + 크기 override. 향후 `.btn-icon-lg` 추가 |
+| `.panel-action-btn` | **(c)** | 26×26px, border 없음 — 패널 헤더 전용 아이콘 |
+| `.loading-spinner` (editor) | **(b)** | 36×36px — `.spinner` 기반 + 크기 override. 향후 `.spinner-lg` 추가 |
+| AI 챗 전체 (FAB, send, quick, input) | **(c)** | 브랜드 디자인 — pill/원형/그라디언트. 표준화 대상 아님 |
+| `#search-input` | **(c)** | 모달 검색 전용 oversized input — 표준 폼과 다른 용도 |
+
+#### Translator
+
+| 컴포넌트 | 판정 | 사유 |
+|----------|------|------|
+| `.page-spinner` | ✅ 완료 | Step A에서 병행 적용 |
+| `.tp-btn`, `.zoom-btn` | **(c)** | 26×26px — 사이드바/툴바 밀도 의도적 |
+| `.pn-btn` | **(c)** | 28×28px, radius 4px — 툴바 톤 일관성 (전체 4px radius) |
+| `.translate-page-btn` 외 3종 | **(c)** | padding 5px 14px — 툴바 밀도 의도적 |
+| `.card-btn` | **(c)** | padding 5px 12px — 카드 그리드 밀도 |
+| `#model-select` | **(a)** | padding `4px 8px` → `8px 10px` — 같은 툴바 내 폼 불일치 수정 |
+| `.font-scale-btn` | **(c)** | 3px 7px 초소형 — 글꼴 크기 조절 전용 |
+| Title edit input | **(c)** | 2px 4px 인라인 편집 — 최소 패딩 의도적 |
+| 다이얼로그 버튼 (range, folder picker) | **(b)** | padding 6px 18px → `.btn` 기반 + override 검토 |
+
+#### Login / Launcher
+
+| 컴포넌트 | 판정 | 사유 |
+|----------|------|------|
+| `.login-btn` | **(c)** | 13px 0 full-width — 로그인 전용 대형 버튼 |
+| Login inputs | **(b)** | padding 12px 14px — `.form-input` 기반 + 크기 override. 향후 `.form-input-lg` |
+| `.system-card-badge` | **(a)** | `.badge` + `.badge-info` 적용 가능 (미세 차이 1~2px) |
 
 ---
 
-## 영향성 분석
+## Step B: 점진 적용 계획
 
-### 확인된 안전 사항
+### 작업 원칙
+- 한 번에 한 화면, 한 카테고리씩 적용
+- 적용 전 변경 내용 고지 → 사용자 확인 후 다음 진행
+- **(a)** 항목: 시각 변화 없음 또는 비일관성 수정 (1~2px)
+- **(b)** 항목: 의도된 미세 개선, 사전 고지 필수
 
-| 항목 | 검증 결과 |
-|------|----------|
-| JS 셀렉터 정합성 | ✅ `cp-resize-handle` → `resize-handle` 전수 교체 확인. getElementById, classList 모두 정상 |
-| `body.cp-resizing` CSS | ✅ compare.css에 정의 유지. JS의 `classList.add/remove('cp-resizing')` 정상 |
-| 스크롤바 중복 제거 | ✅ main.css, translator.css, compare 인라인 3곳 모두 제거 + scrollbar.css로 통합 |
-| 토스트 중복 제거 | ✅ main.css(변수 버전), admin-settings.css(하드코딩 버전) 모두 제거 → toast.css(변수 버전)로 통합 |
-| diff 변수 중복 | ✅ compare.html 인라인의 `:root`/`dark` diff 변수 제거 → tokens.css에서 제공 |
-| CSS cascade 순서 | ✅ 모든 `<link>` 에서 tokens → scrollbar → toast → components → platform-header → 페이지전용 순서 유지 |
-| 클래스명 충돌 | ✅ `.btn`, `.badge`, `.spinner`, `.form-input` 등 기존 HTML에서 미사용 확인 |
-| 다크 모드 | ✅ 전 파일 다크 규칙 완비. 스크린샷으로 Compare 다크 모드 확인 |
+### B-1: Admin (위험도: 낮)
 
-### 잠재 주의 사항
+> admin의 `--as-*` 변수는 글로벌 토큰 별칭이므로, 공통 클래스 적용 시 렌더링 값 동일
 
-| 항목 | 위험도 | 설명 | 대응 |
-|------|--------|------|------|
-| ai-chat.css 스크롤바 오버라이드 | 없음 | `.ai-chat-input::-webkit-scrollbar` (숨김 목적) — scrollbar.css와 무관한 컴포넌트 스코프 | 정상 동작, 간섭 없음 |
-| translator에 toast/components 미로드 | 없음 | 현재 사용하지 않으므로 미로드가 정상. 향후 필요 시 `<link>` 추가 | 필요 시 추가 |
-| launcher/login 인라인 잔존 | 없음 | 100% 페이지 고유 스타일, 추출 가치 없음 | 의도적 유지 |
-| 점진 적용 시 specificity 충돌 | **중간** | 기존 `.editor-save-btn` 등을 `.btn .btn-primary`로 교체 시, 기존 CSS가 남아있으면 충돌 가능 | 교체 시 기존 규칙 제거 필수 |
-| 점진 적용 시 padding/size 차이 | **중간** | 공통 클래스의 padding(8px 20px)과 기존 padding이 다를 수 있음 | 교체 전후 스크린샷 비교 필수 |
+| 작업 | 유형 | 예상 시각 변화 |
+|------|------|--------------|
+| `.admin-input` → `form-input admin-input` 병행, 중복 CSS 제거 | (a) | 없음 (값 동일) |
+| `.admin-select` → `form-select admin-select` 병행, 중복 CSS 제거 | (a) | 없음 |
+| `.admin-btn-save` → `btn btn-primary admin-btn-save` 병행, 중복 CSS 제거 | (a) | hover 효과: 색변경→opacity (미세) |
+| `.admin-spinner` 중복 CSS 제거 (클래스 이미 병행 중) | (a) | animation 0.7s→0.8s (감지 불가) |
+| `.admin-role-badge` → `badge admin-role-badge` 병행 | (b) | 없음 (구조 동일, 색상 override 유지) |
+
+**확인 포인트**: admin 전체 페이지 — 설정 입력, 저장/초기화 버튼, 사용자 관리 테이블, 메뉴 편집기
+
+### B-2: Compare (위험도: 낮~중)
+
+| 작업 | 유형 | 예상 시각 변화 |
+|------|------|--------------|
+| `.placeholder-upload-btn` → `btn btn-primary placeholder-upload-btn`, 중복 CSS 제거 | (a) | 세로 padding 7px→8px (1px, 감지 어려움) |
+| `.cp-paste-textarea` → `form-textarea cp-paste-textarea`, 중복 CSS 제거 | (b) | 없음 (resize:none override 유지) |
+| 모달 입력 3종 크기 통일 → `.form-input-sm` 신규 정의 | (b) | preset select 약간 작아짐 (5px→4px), severity/term 약간 커짐 (2px→4px) |
+
+**확인 포인트**: 문서 업로드 화면, 붙여넣기 모드, 검증 규칙 설정 모달
+
+### B-3: Explorer/Index (위험도: 중)
+
+| 작업 | 유형 | 예상 시각 변화 |
+|------|------|--------------|
+| `.editor-cancel-btn` → `btn btn-secondary editor-cancel-btn`, 중복 CSS 제거 | (a) | 좌우 padding 16px→20px (4px 넓어짐) |
+| `.editor-fullscreen-btn`/`.editor-close-btn` → `btn-icon` 기반 + 32px override | (b) | border 1px 추가 가능 — 검토 필요 |
+| `.loading-spinner` → `spinner` 기반 + 36px override | (b) | 없음 (크기 override 유지) |
+
+**확인 포인트**: 에디터 모달 (열기 → 저장/취소/전체화면/닫기 버튼), 에디터 로딩 스피너
+
+### B-4: Translator (위험도: 낮)
+
+| 작업 | 유형 | 예상 시각 변화 |
+|------|------|--------------|
+| `#model-select` padding 통일 → `.form-select` 적용 | (a) | padding 4px 8px → 8px 10px (셀렉트 높이 약간 증가) |
+
+**확인 포인트**: 번역 툴바의 모델 선택 드롭다운
+
+### B-5: Login (위험도: 낮)
+
+| 작업 | 유형 | 예상 시각 변화 |
+|------|------|--------------|
+| Login inputs → `form-input` 기반 + 크기 override (12px 14px 유지) | (b) | 없음 (override로 기존 크기 유지) |
+
+**확인 포인트**: 로그인 화면 입력 필드
+
+### B-6: Launcher (위험도: 최소)
+
+| 작업 | 유형 | 예상 시각 변화 |
+|------|------|--------------|
+| `.system-card-badge` → `badge badge-info` 적용 | (a) | padding 3px→2px, font 10px→11px, radius 3px→4px (미세) |
+
+**확인 포인트**: 런처 카드의 "개발중" 배지
+
+---
+
+## 디자인 시스템 확장 (Step B 과정에서 필요 시 추가)
+
+| 컴포넌트 | 스펙 | 용도 | 추가 시점 |
+|----------|------|------|----------|
+| `.form-input-sm` | padding 4px 8px, font 12px, radius 4px | 모달/밀집 폼 | B-2 (Compare 모달) |
+| `.btn-icon-lg` | 32×32px | 에디터 모달 헤더 | B-3 (Explorer) |
+| `.spinner-lg` | 36×36px | 에디터 로딩 오버레이 | B-3 (Explorer) |
+| `.form-input-lg` | padding 12px 14px, font 14px | 로그인 폼 | B-5 (Login) |
+
+> `.toggle` 컴포넌트(admin-toggle 기반)는 B 완료 후 별도 검토.
+
+---
+
+## 의도적 커스텀 유지 목록
+
+아래는 UX 감사 결과 **표준화하지 않기로 판정**한 항목. 각 페이지의 맥락에 맞는 의도적 차이.
+
+| 페이지 | 컴포넌트 | 사유 |
+|--------|----------|------|
+| Compare | `.scroll-sync-btn`, `.cp-nav-btn` | 툴바/네비 밀도 (3~5px padding, 26px 아이콘) |
+| Compare | `.mode-toggle-btn` | 세그먼트 컨트롤 패턴 (버튼 아님) |
+| Compare | `.cp-file-remove` | 16px 마이크로 close — hover-reveal |
+| Compare | `.cp-sidebar-collapse` | 24px 사이드바 전용 |
+| Compare | 배지 3종 | 의도적 크기 계층 (요약 vs 목록) |
+| Admin | `.admin-btn-reset` | hover 시 빨간색 → "초기화" 의미론 |
+| Admin | `.admin-textarea` | 설정 패널 밀도 (13px/1.5 vs 14px/1.6) |
+| Admin | `.admin-toggle` | 토글 스위치 — 디자인 시스템 미정의 |
+| Admin | `.admin-restart-badge` | 전용 경고 색상 |
+| Translator | `.tp-btn`, `.zoom-btn`, `.font-scale-btn` | 툴바 초소형 버튼 (26px, 3px padding) |
+| Translator | `.pn-btn` | 28px, radius 4px — 툴바 톤 일관성 |
+| Translator | `.translate-page-btn` 외 액션 버튼 | 5px 14px — 툴바 밀도 |
+| Translator | `.card-btn` | 카드 그리드 밀도 |
+| Translator | Title edit input | 인라인 편집 최소 패딩 |
+| Explorer | `.panel-action-btn` | 26px, border 없음 — 패널 헤더 전용 |
+| Explorer | AI 챗 전체 | 브랜드 디자인 (pill/원형/그라디언트) |
+| Explorer | `#search-input` | 모달 검색 oversized input |
+| Login | `.login-btn` | full-width 대형 버튼 |
 
 ---
 
 ## 실행 완료 Step
 
-### Step 1: tokens.css 확장 ✅
+### Step 1~4: 토큰 확장 + CSS 추출 ✅
+### Step 5: 모달 기반 정의 ✅ (기존 모달 교체는 보류)
+### Step 6-A: 공통 컴포넌트 클래스 정의 ✅
+### Step 6-B (A): 안전 항목 병행 적용 ✅
 
-- [x] 스페이싱 토큰 6개: `--space-xs(4)` ~ `--space-2xl(40)`
-- [x] Border-radius 토큰 5개: `--radius-sm(4)` ~ `--radius-pill(50%)`
-- [x] 트랜지션 토큰 3개: `--transition-fast(0.15s)` ~ `--transition-slow(0.3s)`
-- [x] diff 색상 토큰 8개: `--diff-added/deleted/modified` + text/border 변형, 라이트+다크
+- [x] compare 스피너 ×2 → `spinner` 병행
+- [x] translator 스피너 ×1 → `spinner` 병행 + components.css `<link>`
+- [x] admin 스피너 ×2 → `spinner` 병행 + components.css `<link>`
+- [x] editor 저장 버튼 → `btn btn-primary` 병행
 
-### Step 2: 스크롤바 추출 ✅
-
-- [x] `css/scrollbar.css` 생성 (87줄, 라이트+다크)
-- [x] main.css에서 82줄 제거
-- [x] translator.css에서 57줄 제거
-- [x] compare.html 인라인에서 제거
-- [x] index.html, translator.html, compare.html에 `<link>` 추가
-
-### Step 3: 토스트 추출 ✅
-
-- [x] `css/toast.css` 생성 (31줄, CSS 변수 사용 버전)
-- [x] main.css에서 28줄 제거
-- [x] admin-settings.css에서 24줄 제거 (하드코딩 → 변수 버전으로 통합)
-- [x] index.html, admin.html에 `<link>` 추가
-
-### Step 4: 리사이즈 핸들 공통화 ✅
-
-- [x] `css/components.css` 생성 + `.resize-handle` 정의
-- [x] main.css에서 23줄 제거
-- [x] compare.html: 클래스명 `cp-resize-handle` → `resize-handle` (HTML + JS)
-- [x] compare.html: 인라인 CSS에서 해당 스타일 제거
-- [x] index.html, compare.html에 `<link>` 추가
-
-### Step 5: 모달 기반 정의 ✅ (부분)
-
-- [x] `css/modal.css` 생성 (97줄) — `.modal-overlay`, `.modal-box`, `.modal-header/body/footer`, `.modal-close`
-- [ ] 기존 모달 점진 교체 — z-index(1000~20000)/animation/blur 편차가 커서 보류
-
-### Step 6: 공통 컴포넌트 정의 ✅ (부분)
-
-**6-A. 클래스 정의 완료:**
-- [x] 버튼: `.btn`, `.btn-primary/secondary/ghost/danger/success/icon`, `.btn-sm/lg`
-- [x] 입력: `.form-input`, `.form-textarea`, `.form-select`, `.form-group`
-- [x] 배지: `.badge`, `.badge-success/warning/error/info`
-- [x] 스피너: `.spinner`, `.spinner-sm`, `@keyframes spin`
-- [x] 다크 모드 변형 포함
-
-**6-B. 페이지별 적용 — 미완료:**
-- [ ] compare.html — 버튼/입력을 `.btn-primary`, `.form-input` 등으로 교체
-- [ ] translator.html — 버튼/입력 교체
-- [ ] launcher.html — 배지 교체
-- [ ] login.html — 입력/버튼 교체
-- [ ] index.html — 에디터/패널 버튼, 검색 입력 교체
-- [ ] admin.html — 설정 버튼/입력 교체
-
-### Step 7: 인라인 CSS 추출 ✅ (부분)
-
-- [x] compare.html → `css/compare.css` (1,327줄 추출, 인라인 완전 제거)
-- [—] launcher.html — 179줄 인라인 유지 (100% 고유, 추출 가치 없음)
-- [—] login.html — 197줄 인라인 유지 (100% 고유, 추출 가치 없음)
-
-### Step 8: 규칙 문서화 ✅ (부분)
-
-- [x] CLAUDE.md에 디자인 시스템 섹션 추가 (CSS 로드 순서, 하드코딩 금지, 컴포넌트 클래스표)
-- [ ] 테마 기준서(`memory/theme-guide.md`) 업데이트
-
-### Step 9: 최종 검증 ✅
-
-- [x] 전 페이지 라이트/다크 스크린샷 → 베이스라인과 동일 확인
-- [x] JS 셀렉터 전수 검증 (resize-handle 교체 확인)
-- [x] 다크 모드 전 파일 커버리지 확인
+### Step 7: 인라인 CSS 추출 ✅ (compare 완료, launcher/login 유지)
+### Step 8: 규칙 문서화 ✅ (부분 — 테마 기준서 미갱신)
+### Step 9: 기반 검증 ✅
 
 ---
 
-## 남은 작업 (점진 적용 Phase)
-
-> 아래 작업은 기반 구축과 달리 **기존 HTML class를 교체**하므로 위험도가 높다.
-> 한 페이지, 한 컴포넌트씩 진행하며 전/후 스크린샷 비교 필수.
-
-### A. 페이지별 공통 클래스 적용 (Step 6-B)
-
-각 페이지에서 기존 독자 구현을 공통 클래스로 교체하는 작업.
-
-**교체 전략**: 기존 class에 공통 class를 **추가**하고, 기존 CSS에서 중복 속성만 제거.
-기존 class를 제거하면 JS 셀렉터가 깨질 수 있으므로, class는 병행 유지 후 안정화 확인 뒤 제거.
-
-| 페이지 | 교체 대상 | 예상 작업량 | 위험도 |
-|--------|----------|-----------|--------|
-| compare.html | 버튼 5종, 입력 2종, 배지 3종, 스피너 1종 | 중 | 중 — JS 셀렉터 다수 |
-| admin.html | 버튼 3종, 입력 4종, 배지 2종, 스피너 1종 | 중 | 낮 — JS 셀렉터 단순 |
-| translator.html | 버튼 4종, 입력 1종 | 소 | 중 — 뷰어 상태 관리 |
-| index.html | 에디터 버튼 3종, 검색 입력 1종, 스피너 1종 | 소 | 중 — 모달 내부 |
-| launcher.html | 배지 1종 | 최소 | 낮 |
-| login.html | 입력 2종, 버튼 1종 | 소 | 낮 |
-
-### B. 기존 모달 교체 (Step 5-2)
-
-| 모달 | 파일 | z-index | 특이 사항 |
-|------|------|---------|----------|
-| 검색 오버레이 | main.css | 2000 | blur(4px), translateY 애니메이션 |
-| 단축키 오버레이 | main.css | 2000 | blur(4px), translateY 애니메이션 |
-| 에디터 모달 | editor.css | 1000 | fadeIn+slideUp, 85vh, sticky 헤더 |
-| 에디터 확인 다이얼로그 | editor.css | 1100 | 에디터 위에 중첩 |
-| 인증 모달 | auth.css | 10002 | 최고 우선순위 |
-| 로그인 게이트 | auth.css | 20000 | blur(6px), 불투명 배경 |
-| 그림 팝업 | figure-popup.css | 3000 | scale 애니메이션, 이미지 뷰어 |
-| 검증 규칙 설정 | compare.css | 10000 | blur(4px), 폼 컨트롤 다수 |
-
-> z-index가 1000~20000으로 산재. 교체 시 z-index 통일 계획도 함께 수립해야 함.
-
-### C. 컴포넌트 인벤토리 (Step 10)
-
-- `docs/component-inventory.md` 생성 — 지속 운용 문서
-- 건강 지표: 공통 사용률, 이탈 건수, 미등록 컴포넌트 수
-- CLAUDE.md에 경로 등록
-
----
-
-## 변경 수치 요약
+## 변경 수치 요약 (현재까지)
 
 | 지표 | 값 |
 |------|---|
-| 신규 파일 | 6개 (scrollbar, toast, components, modal, compare.css + tokens 확장) |
-| 수정 파일 | 9개 (HTML 5개 + CSS 3개 + CLAUDE.md) |
-| 제거된 중복 코드 | **~1,640줄** (main -138, translator -57, admin -24, compare.html 인라인 -1,335, tokens 중복 diff 변수 -12) |
-| 추가된 공통 코드 | **~1,949줄** (scrollbar 87 + toast 31 + components 283 + modal 97 + compare.css 1,327 + tokens +40) |
-| 순 증감 | +309줄 (공통 파일로 재배치, 실질 신규는 components+modal+tokens = ~420줄) |
-| 시각적 변화 | **0건** — 전 페이지 라이트/다크 스크린샷 동일 확인 |
-| JS 셀렉터 변경 | 1건 (`cp-resize-handle` → `resize-handle`) — 전수 검증 완료 |
-| 다크 모드 누락 | **0건** — 전 파일 다크 규칙 완비 |
+| 신규 파일 | 6개 CSS + 계획서 1개 |
+| 수정 파일 | 15개 (HTML 5 + CSS 3 + JS 4 + CLAUDE.md) |
+| 제거된 중복 코드 | ~1,640줄 |
+| 추가된 공통 코드 | ~1,949줄 |
+| 시각적 변화 | 0건 |
+| 커밋 | 2건 (c186620, a110311) |
 
 ---
 
@@ -280,4 +275,3 @@
 - 베이스라인 스크린샷: `workbench/screenshots/design-system/baseline-*.png`
 - 테마 기준서: `memory/theme-guide.md`
 - CLAUDE.md 스타일 규칙: `CLAUDE.md` > "스타일 규칙 (디자인 시스템)" 섹션
-- 플랫폼 리뷰 계획: `workbench/plans/done-06-platform-review.md`

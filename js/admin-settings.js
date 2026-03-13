@@ -410,8 +410,8 @@ function _renderAdminSettingsUI(container, settings) {
     html += '<h1 class="ph-icon-settings">관리자 설정</h1>';
     html += '</div>';
     html += '<div class="page-header-actions">';
-    html += '<button class="admin-btn admin-btn-reset" onclick="_adminReset()">초기화</button>';
-    html += '<button class="admin-btn admin-btn-save" id="admin-save-btn" onclick="_adminSave()">저장</button>';
+    html += '<button class="btn btn-secondary admin-btn admin-btn-reset" onclick="_adminReset()">초기화</button>';
+    html += '<button class="btn btn-primary admin-btn admin-btn-save" id="admin-save-btn" onclick="_adminSave()">저장</button>';
     html += '</div>';
     html += '</div>';
 
@@ -634,7 +634,7 @@ function _renderControl(field, val, id) {
                 var sel = (String(val) === String(opt[0])) ? ' selected' : '';
                 return '<option value="' + _escHtml(opt[0]) + '"' + sel + '>' + _escHtml(opt[1]) + '</option>';
             }).join('');
-            return '<select class="admin-select" id="' + id + '">' + opts + '</select>';
+            return '<select class="form-select admin-select" id="' + id + '">' + opts + '</select>';
         }
 
         case 'number': {
@@ -642,7 +642,7 @@ function _renderControl(field, val, id) {
             if (field.min !== undefined) attrs += ' min="' + field.min + '"';
             if (field.max !== undefined) attrs += ' max="' + field.max + '"';
             if (field.step !== undefined) attrs += ' step="' + field.step + '"';
-            return '<input type="number" class="admin-input admin-number" id="' + id + '"' + attrs + '>';
+            return '<input type="number" class="form-input admin-input admin-number" id="' + id + '"' + attrs + '>';
         }
 
         case 'textarea': {
@@ -658,7 +658,7 @@ function _renderControl(field, val, id) {
         }
 
         default: // text
-            return '<input type="text" class="admin-input" id="' + id + '" value="' +
+            return '<input type="text" class="form-input admin-input" id="' + id + '" value="' +
                 _escHtml(val !== undefined && val !== null ? String(val) : '') + '">';
     }
 }
@@ -862,7 +862,7 @@ function _menuRenderEditor() {
     if (!editor) return;
 
     var html = '<div class="menu-toolbar">';
-    html += '<button class="admin-btn admin-btn-save" onclick="_menuAddTopLevel()" style="padding:6px 14px;font-size:12px;">+ \uCD5C\uC0C1\uC704 \uD56D\uBAA9 \uCD94\uAC00</button>';
+    html += '<button class="btn btn-primary admin-btn admin-btn-save" onclick="_menuAddTopLevel()" style="padding:6px 14px;font-size:12px;">+ \uCD5C\uC0C1\uC704 \uD56D\uBAA9 \uCD94\uAC00</button>';
     html += '</div>';
     html += '<div class="menu-tree">';
     if (_menuEditorData && _menuEditorData.length > 0) {
@@ -872,7 +872,7 @@ function _menuRenderEditor() {
     }
     html += '</div>';
     html += '<div class="menu-editor-actions">';
-    html += '<button class="admin-btn admin-btn-save" onclick="_menuSave()">\uC800\uC7A5</button>';
+    html += '<button class="btn btn-primary admin-btn admin-btn-save" onclick="_menuSave()">\uC800\uC7A5</button>';
     html += '</div>';
     editor.innerHTML = html;
 }
@@ -1055,8 +1055,8 @@ function _menuEditByPath(pathStr) {
 
     var editHtml =
         '<div class="menu-node-edit" style="padding-left:' + rowEl.style.paddingLeft + '">' +
-            '<input class="admin-input menu-edit-label" placeholder="\uC774\uB984" value="' + _escHtml(ctx.node.label || '') + '">' +
-            '<input class="admin-input menu-edit-url" placeholder="URL (\uBE44\uC6CC\uB450\uBA74 \uD3F4\uB354)" value="' + _escHtml(ctx.node.url || '') + '">' +
+            '<input class="form-input admin-input menu-edit-label" placeholder="\uC774\uB984" value="' + _escHtml(ctx.node.label || '') + '">' +
+            '<input class="form-input admin-input menu-edit-url" placeholder="URL (\uBE44\uC6CC\uB450\uBA74 \uD3F4\uB354)" value="' + _escHtml(ctx.node.url || '') + '">' +
             '<button class="menu-btn menu-btn-ok" onclick="_menuEditConfirm(\'' + pathStr + '\',this)">\uD655\uC778</button>' +
             '<button class="menu-btn" onclick="_menuEditCancel()">\uCDE8\uC18C</button>' +
         '</div>';
@@ -1150,14 +1150,14 @@ function _renderUsersPanel(area) {
         '<div class="admin-section">' +
             '<h3 class="admin-section-title">사용자 추가</h3>' +
             '<div class="admin-users-add-form">' +
-                '<input type="text" class="admin-input" id="admin-new-user-name" placeholder="Username">' +
-                '<input type="password" class="admin-input" id="admin-new-user-pw" placeholder="Password">' +
-                '<select class="admin-select" id="admin-new-user-role">' +
+                '<input type="text" class="form-input admin-input" id="admin-new-user-name" placeholder="Username">' +
+                '<input type="password" class="form-input admin-input" id="admin-new-user-pw" placeholder="Password">' +
+                '<select class="form-select admin-select" id="admin-new-user-role">' +
                     '<option value="viewer">viewer</option>' +
                     '<option value="editor">editor</option>' +
                     '<option value="admin">admin</option>' +
                 '</select>' +
-                '<button class="admin-btn admin-btn-save" id="admin-add-user-btn">추가</button>' +
+                '<button class="btn btn-primary admin-btn admin-btn-save" id="admin-add-user-btn">추가</button>' +
             '</div>' +
         '</div>';
 
@@ -1186,7 +1186,7 @@ async function _loadUsersTable(backendUrl) {
             tr.innerHTML =
                 '<td>' + u.id + '</td>' +
                 '<td>' + _escHtml(u.username) + '</td>' +
-                '<td><span class="admin-role-badge role-' + u.role + '">' + u.role + '</span></td>' +
+                '<td><span class="badge admin-role-badge role-' + u.role + '">' + u.role + '</span></td>' +
                 '<td>' + (u.created_at || '-') + '</td>' +
                 '<td class="admin-users-actions">' +
                     '<button class="admin-btn-sm" data-action="edit" data-id="' + u.id + '" data-name="' + _escHtml(u.username) + '" data-role="' + u.role + '">Edit</button>' +
@@ -1256,19 +1256,19 @@ function _editUserInline(backendUrl, userId, currentName, currentRole) {
             '<h3>Edit User: ' + _escHtml(currentName) + '</h3>' +
             '<div class="admin-field" style="margin-bottom:12px">' +
                 '<label class="admin-field-label">New Password <span style="font-weight:normal;opacity:.6">(leave empty to keep)</span></label>' +
-                '<input type="password" class="admin-input" id="admin-edit-pw" autocomplete="new-password">' +
+                '<input type="password" class="form-input admin-input" id="admin-edit-pw" autocomplete="new-password">' +
             '</div>' +
             '<div class="admin-field" style="margin-bottom:16px">' +
                 '<label class="admin-field-label">Role</label>' +
-                '<select class="admin-select" id="admin-edit-role">' +
+                '<select class="form-select admin-select" id="admin-edit-role">' +
                     '<option value="viewer"' + (currentRole === 'viewer' ? ' selected' : '') + '>viewer</option>' +
                     '<option value="editor"' + (currentRole === 'editor' ? ' selected' : '') + '>editor</option>' +
                     '<option value="admin"' + (currentRole === 'admin' ? ' selected' : '') + '>admin</option>' +
                 '</select>' +
             '</div>' +
             '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-                '<button class="admin-btn admin-btn-reset" id="admin-edit-cancel">Cancel</button>' +
-                '<button class="admin-btn admin-btn-save" id="admin-edit-save">Save</button>' +
+                '<button class="btn btn-secondary admin-btn admin-btn-reset" id="admin-edit-cancel">Cancel</button>' +
+                '<button class="btn btn-primary admin-btn admin-btn-save" id="admin-edit-save">Save</button>' +
             '</div>' +
         '</div>';
 
