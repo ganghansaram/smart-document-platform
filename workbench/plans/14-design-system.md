@@ -2,7 +2,7 @@
 
 > 작성일: 2026-03-13
 > 브랜치: `feature/design-system`
-> 상태: **B-1 완료, B-2 적용 완료(커밋 대기) — B-3~B-6 남음**
+> 상태: **Step B 전체 완료 (B-1~B-6) — 커밋 대기**
 
 ---
 
@@ -158,39 +158,32 @@
 - [x] 모달 입력 4종 → `form-select-sm`/`form-input-sm` 병행, 중복 CSS ~30줄 제거
 - [x] `components.css`에 `.form-input-sm`/`.form-select-sm` 신규 추가
 
-### B-3: Explorer/Index (위험도: 중)
+### B-3: Explorer/Index (위험도: 중) ✅ 완료
 
-| 작업 | 유형 | 예상 시각 변화 |
-|------|------|--------------|
-| `.editor-cancel-btn` → `btn btn-secondary editor-cancel-btn`, 중복 CSS 제거 | (a) | 좌우 padding 16px→20px (4px 넓어짐) |
-| `.editor-fullscreen-btn`/`.editor-close-btn` → `btn-icon` 기반 + 32px override | (b) | border 1px 추가 가능 — 검토 필요 |
-| `.loading-spinner` → `spinner` 기반 + 36px override | (b) | 없음 (크기 override 유지) |
+- [x] `.editor-cancel-btn` → `btn btn-secondary` 병행, 중복 CSS ~18줄 제거 (padding 16→20px 미세 변화)
+- [x] `.editor-fullscreen-btn` → `btn btn-icon btn-icon-lg` 병행, 중복 CSS ~12줄 제거 (hover border-color override 유지)
+- [x] `.editor-close-btn` → `btn btn-icon btn-icon-lg` 병행 + border:none override, 중복 CSS ~15줄 제거
+- [x] `.loading-spinner` → `spinner spinner-lg` 병행, 중복 CSS ~8줄 제거 (색상 override 유지)
+- [x] `.editor-save-btn` 중복 CSS ~14줄 제거 (hover/disabled override만 유지, Step A에서 클래스 적용 완료)
+- [x] `components.css`에 `.btn-icon-lg` (32×32), `.spinner-lg` (36×36) 신규 추가
 
-**확인 포인트**: 에디터 모달 (열기 → 저장/취소/전체화면/닫기 버튼), 에디터 로딩 스피너
+### B-4: Translator (위험도: 낮) ✅ 완료
 
-### B-4: Translator (위험도: 낮)
+- [x] `#model-select` → `form-select form-select-sm` 병행, CSS ~7줄 제거 (max-width override 유지)
+- [x] font-size 13→12px, radius 5→4px 미세 변화 (시각적 구분 불가)
 
-| 작업 | 유형 | 예상 시각 변화 |
-|------|------|--------------|
-| `#model-select` padding 통일 → `.form-select` 적용 | (a) | padding 4px 8px → 8px 10px (셀렉트 높이 약간 증가) |
+### B-5: Login (위험도: 낮) ✅ 완료
 
-**확인 포인트**: 번역 툴바의 모델 선택 드롭다운
+- [x] `login.html`에 `components.css` 링크 추가
+- [x] 입력 2개 → `form-input form-input-lg` 병행, 인라인 CSS ~10줄 제거
+- [x] `components.css`에 `.form-input-lg` (12px 14px, font 14px) 신규 추가
+- [x] 시각적 변화 없음 (override로 기존 크기 유지)
 
-### B-5: Login (위험도: 낮)
+### B-6: Launcher (위험도: 최소) ✅ 완료
 
-| 작업 | 유형 | 예상 시각 변화 |
-|------|------|--------------|
-| Login inputs → `form-input` 기반 + 크기 override (12px 14px 유지) | (b) | 없음 (override로 기존 크기 유지) |
-
-**확인 포인트**: 로그인 화면 입력 필드
-
-### B-6: Launcher (위험도: 최소)
-
-| 작업 | 유형 | 예상 시각 변화 |
-|------|------|--------------|
-| `.system-card-badge` → `badge badge-info` 적용 | (a) | padding 3px→2px, font 10px→11px, radius 3px→4px (미세) |
-
-**확인 포인트**: 런처 카드의 "개발중" 배지
+- [x] `launcher.html`에 `components.css` 링크 추가
+- [x] `.system-card-badge` → `badge badge-warning` 병행, 인라인 CSS ~8줄 제거
+- [x] padding 3→2px, font 10→11px, radius 3→4px 미세 변화 (시각적 구분 불가)
 
 ---
 
@@ -199,9 +192,9 @@
 | 컴포넌트 | 스펙 | 용도 | 추가 시점 |
 |----------|------|------|----------|
 | `.form-input-sm`/`.form-select-sm` | padding 4px 8px, font 12px, radius 4px | 모달/밀집 폼 | ✅ B-2에서 추가 |
-| `.btn-icon-lg` | 32×32px | 에디터 모달 헤더 | B-3 (Explorer) |
-| `.spinner-lg` | 36×36px | 에디터 로딩 오버레이 | B-3 (Explorer) |
-| `.form-input-lg` | padding 12px 14px, font 14px | 로그인 폼 | B-5 (Login) |
+| `.btn-icon-lg` | 32×32px | 에디터 모달 헤더 | ✅ B-3에서 추가 |
+| `.spinner-lg` | 36×36px | 에디터 로딩 오버레이 | ✅ B-3에서 추가 |
+| `.form-input-lg` | padding 12px 14px, font 14px | 로그인 폼 | ✅ B-5에서 추가 |
 
 > `.toggle` 컴포넌트(admin-toggle 기반)는 B 완료 후 별도 검토.
 

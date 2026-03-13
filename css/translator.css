@@ -301,14 +301,8 @@ body[data-theme="dark"] .hero-banner-img {
 
 .viewer-toolbar .spacer { flex: 1; }
 
+/* model-select — .form-select .form-select-sm 기반, max-width만 유지 */
 .viewer-toolbar select {
-    padding: 4px 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    font-size: 13px;
-    font-family: inherit;
-    background: var(--white);
-    color: var(--text-dark);
     max-width: 160px;
 }
 

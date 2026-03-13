@@ -93,6 +93,11 @@
     background: var(--hover-bg);
 }
 
+.btn-icon-lg {
+    width: 32px;
+    height: 32px;
+}
+
 /* 크기 변형 */
 .btn-sm {
     padding: 4px 12px;
@@ -190,6 +195,11 @@
     border-radius: 4px;
 }
 
+.form-input-lg {
+    padding: 12px 14px;
+    font-size: 14px;
+}
+
 /* ── 배지 ── */
 .badge {
     display: inline-block;
@@ -234,6 +244,11 @@
     width: 20px;
     height: 20px;
     border-width: 2px;
+}
+
+.spinner-lg {
+    width: 36px;
+    height: 36px;
 }
 
 @keyframes spin {
