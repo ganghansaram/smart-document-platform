@@ -7,6 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/platform-header.css">
+    <script src="js/lib/jsdiff/diff.min.js"></script>
     <!-- platform-footer 불필요 (도구형 화면) -->
     <style>
         /* ── Diff 색상 변수 ── */
@@ -703,6 +704,215 @@
             color: var(--text-dark);
         }
 
+        /* ── Phase 2: Diff 시각화 ── */
+        .cp-paragraph.diff-para-added    { background: var(--diff-added); border-left: 3px solid #2ea043; }
+        .cp-paragraph.diff-para-deleted  { background: var(--diff-deleted); border-left: 3px solid #f85149; }
+        .cp-paragraph.diff-para-modified { border-left: 3px solid #f59e0b; }
+
+        .diff-word-added   { background: var(--diff-added); }
+        .diff-word-deleted { background: var(--diff-deleted); text-decoration: line-through; }
+
+        .cp-paragraph.diff-gap {
+            min-height: 28px; opacity: 0.3;
+            background: repeating-linear-gradient(-45deg, transparent, transparent 4px, var(--border-color) 4px, var(--border-color) 5px);
+            border-left: 3px solid transparent;
+        }
+
+        .cp-paragraph.diff-active { box-shadow: 0 0 0 2px var(--active-color); border-radius: 4px; }
+
+        .cp-paragraph.diff-hidden { display: none; }
+
+        /* ── 네비게이션 그룹 ── */
+        .cp-nav-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .cp-nav-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background: var(--white);
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 11px;
+            transition: border-color 0.15s ease, color 0.15s ease;
+        }
+        .cp-nav-btn:hover:not(:disabled) { border-color: var(--active-color); color: var(--active-color); }
+        .cp-nav-btn:disabled { opacity: 0.4; cursor: default; }
+
+        .cp-nav-indicator {
+            font-size: 12px;
+            color: var(--text-light);
+            min-width: 36px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── 필터 드롭다운 ── */
+        .cp-filter-group { position: relative; }
+
+        .cp-filter-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            padding: 8px 12px;
+            z-index: 1000;
+            min-width: 140px;
+        }
+
+        .cp-filter-dropdown label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-dark);
+            padding: 4px 0;
+            cursor: pointer;
+        }
+
+        .cp-filter-dropdown hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 4px 0;
+        }
+
+        /* ── 사이드바: 변경 목록 ── */
+        .cp-diff-stats {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .cp-stat {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .cp-stat-added   { background: var(--diff-added); color: #1a7f37; }
+        .cp-stat-deleted { background: var(--diff-deleted); color: #cf222e; }
+        .cp-stat-modified { background: var(--diff-modified); color: #9a6700; }
+
+        .cp-change-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .cp-change-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 6px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            border-left: 3px solid transparent;
+        }
+        .cp-change-item:hover { background: var(--light-gray); }
+        .cp-change-item.active { background: var(--hover-bg); box-shadow: inset 0 0 0 1px var(--active-color); }
+
+        .cp-change-item.cp-change-added   { border-left-color: #2ea043; }
+        .cp-change-item.cp-change-deleted  { border-left-color: #f85149; }
+        .cp-change-item.cp-change-modified { border-left-color: #f59e0b; }
+
+        .cp-change-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 1px 5px;
+            border-radius: 3px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .cp-change-added .cp-change-badge   { background: var(--diff-added); color: #1a7f37; }
+        .cp-change-deleted .cp-change-badge  { background: var(--diff-deleted); color: #cf222e; }
+        .cp-change-modified .cp-change-badge { background: var(--diff-modified); color: #9a6700; }
+
+        .cp-change-text {
+            font-size: 12px;
+            color: var(--text-light);
+            line-height: 1.4;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            word-break: break-all;
+        }
+
+        .cp-change-item.cp-change-hidden { display: none; }
+
+        /* ── 편집 모드 ── */
+        .cp-paragraph.cp-editable {
+            outline: 1px dashed var(--border-color);
+            outline-offset: 2px;
+            border-radius: 3px;
+            min-height: 1.8em;
+            transition: outline-color 0.15s ease, background 0.15s ease;
+        }
+        .cp-paragraph.cp-editable:focus {
+            outline-color: var(--active-color);
+            background: var(--hover-bg);
+        }
+
+        /* ── 다크 모드 Phase 2 추가 ── */
+        body[data-theme="dark"] .cp-stat-added   { color: #3fb950; }
+        body[data-theme="dark"] .cp-stat-deleted  { color: #f85149; }
+        body[data-theme="dark"] .cp-stat-modified { color: #d29922; }
+
+        body[data-theme="dark"] .cp-change-item:hover { background: rgba(255,255,255,0.05); }
+        body[data-theme="dark"] .cp-change-item.active { background: rgba(88,166,255,0.1); }
+
+        body[data-theme="dark"] .cp-change-added .cp-change-badge   { color: #3fb950; }
+        body[data-theme="dark"] .cp-change-deleted .cp-change-badge  { color: #f85149; }
+        body[data-theme="dark"] .cp-change-modified .cp-change-badge { color: #d29922; }
+
+        body[data-theme="dark"] .cp-filter-dropdown {
+            background: var(--white);
+            border-color: rgba(255,255,255,0.12);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+        }
+
+        body[data-theme="dark"] .cp-change-item.cp-change-added   { border-left-color: #3fb950; }
+        body[data-theme="dark"] .cp-change-item.cp-change-deleted  { border-left-color: #f85149; }
+        body[data-theme="dark"] .cp-change-item.cp-change-modified { border-left-color: #d29922; }
+
+        body[data-theme="dark"] .cp-paragraph.diff-para-added   { border-left-color: #3fb950; }
+        body[data-theme="dark"] .cp-paragraph.diff-para-deleted  { border-left-color: #f85149; }
+        body[data-theme="dark"] .cp-paragraph.diff-para-modified { border-left-color: #d29922; }
+
+        body[data-theme="dark"] .cp-nav-btn {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.65);
+        }
+        body[data-theme="dark"] .cp-nav-btn:hover:not(:disabled) {
+            border-color: rgba(88,166,255,0.4);
+            color: #58a6ff;
+        }
+
+        body[data-theme="dark"] .cp-paragraph.cp-editable {
+            outline-color: rgba(255,255,255,0.15);
+        }
+        body[data-theme="dark"] .cp-paragraph.cp-editable:focus {
+            outline-color: var(--active-color);
+            background: rgba(88,166,255,0.05);
+        }
+
         /* 다크 스크롤바 */
         body[data-theme="dark"] ::-webkit-scrollbar-thumb {
             background: rgba(160,170,180,0.3);
@@ -725,6 +935,34 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h-4v10h4"/><path d="M16 7h4v10h-4"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                 동기화
             </button>
+
+            <div class="cp-nav-group" id="cp-nav-group" style="display:none">
+                <button class="cp-nav-btn" id="nav-prev" title="이전 변경점 (↑)">&#9650;</button>
+                <span class="cp-nav-indicator" id="nav-indicator">0/0</span>
+                <button class="cp-nav-btn" id="nav-next" title="다음 변경점 (↓)">&#9660;</button>
+            </div>
+
+            <button class="scroll-sync-btn" id="swap-btn" style="display:none" title="A ↔ B 교체">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                A⇄B
+            </button>
+
+            <button class="scroll-sync-btn" id="edit-toggle-btn" style="display:none" title="텍스트 편집 모드">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                편집
+            </button>
+
+            <div class="cp-filter-group" id="cp-filter-group" style="display:none">
+                <button class="scroll-sync-btn" id="filter-btn">필터</button>
+                <div class="cp-filter-dropdown" id="cp-filter-dropdown" style="display:none">
+                    <label><input type="checkbox" checked data-filter="added"> 추가</label>
+                    <label><input type="checkbox" checked data-filter="deleted"> 삭제</label>
+                    <label><input type="checkbox" checked data-filter="modified"> 수정</label>
+                    <hr>
+                    <label><input type="checkbox" data-filter="ignoreWhitespace"> 공백 무시</label>
+                </div>
+            </div>
+
             <span class="toolbar-spacer"></span>
             <span class="toolbar-label" id="toolbar-hint">문서 두 개를 업로드하여 비교하세요</span>
         </div>
@@ -972,7 +1210,30 @@
                 label.textContent = getDefaultLabel(side);
                 label.title = '';
                 removeBtn.classList.remove('visible');
+                clearDiff();
             }
+
+            // ── Diff 상태 ──
+            var diffState = {
+                changes: [],
+                currentIndex: -1,
+                filter: { added: true, deleted: true, modified: true },
+                ignoreWhitespace: false
+            };
+
+            var editMode = false;
+
+            // ── Diff DOM 참조 ──
+            var navGroup = document.getElementById('cp-nav-group');
+            var navPrev = document.getElementById('nav-prev');
+            var navNext = document.getElementById('nav-next');
+            var navIndicator = document.getElementById('nav-indicator');
+            var swapBtn = document.getElementById('swap-btn');
+            var editToggleBtn = document.getElementById('edit-toggle-btn');
+            var filterGroup = document.getElementById('cp-filter-group');
+            var filterBtn = document.getElementById('filter-btn');
+            var filterDropdown = document.getElementById('cp-filter-dropdown');
+            var sidebarBody = document.getElementById('cp-sidebar-body');
 
             // ── 문서 로드 완료 처리 ──
             function onDocumentLoaded(side, filename, paragraphs) {
@@ -991,6 +1252,7 @@
                 label.title = filename;
                 removeBtn.classList.add('visible');
                 renderParagraphs(panel, paragraphs);
+                tryRunDiff();
             }
 
             // ── 파일 업로드 처리 ──
@@ -1353,6 +1615,713 @@
 
             panelBodyA.addEventListener('scroll', function() { syncScroll(panelBodyA, panelBodyB); });
             panelBodyB.addEventListener('scroll', function() { syncScroll(panelBodyB, panelBodyA); });
+
+            // ══════════════════════════════════════════
+            // Phase 2: Diff 엔진 + 시각화 + 사이드바 + 네비게이션 + 편집 + 필터
+            // ══════════════════════════════════════════
+
+            // ── 2-1. Diff 엔진 ──
+            function normalizeText(text) {
+                if (!diffState.ignoreWhitespace) return text;
+                return text.replace(/\s+/g, ' ').trim();
+            }
+
+            // 유사도 계산 (0~1): 공통 단어 비율
+            function similarity(a, b) {
+                var wordsA = a.split(/\s+/);
+                var wordsB = b.split(/\s+/);
+                if (wordsA.length === 0 && wordsB.length === 0) return 1;
+                if (wordsA.length === 0 || wordsB.length === 0) return 0;
+                var setB = {};
+                wordsB.forEach(function(w) { setB[w] = (setB[w] || 0) + 1; });
+                var common = 0;
+                wordsA.forEach(function(w) {
+                    if (setB[w] > 0) { common++; setB[w]--; }
+                });
+                return (2 * common) / (wordsA.length + wordsB.length);
+            }
+
+            function computeDiff() {
+                var parasA = docState.a.paragraphs;
+                var parasB = docState.b.paragraphs;
+
+                // Level 1: 단락 정렬 (diffArrays)
+                var normA = parasA.map(normalizeText);
+                var normB = parasB.map(normalizeText);
+                var arrayDiff = Diff.diffArrays(normA, normB);
+
+                // 중간 결과 수집 (removed/added 연속 구간을 페어링하기 위해)
+                var rawChanges = [];
+                var idxA = 0, idxB = 0;
+
+                for (var i = 0; i < arrayDiff.length; i++) {
+                    var part = arrayDiff[i];
+                    if (part.added) {
+                        for (var j = 0; j < part.count; j++) {
+                            rawChanges.push({ type: 'added', idxA: null, idxB: idxB++ });
+                        }
+                    } else if (part.removed) {
+                        for (var j = 0; j < part.count; j++) {
+                            rawChanges.push({ type: 'deleted', idxA: idxA++, idxB: null });
+                        }
+                    } else {
+                        for (var j = 0; j < part.count; j++) {
+                            rawChanges.push({ type: 'equal', idxA: idxA++, idxB: idxB++ });
+                        }
+                    }
+                }
+
+                // Level 2: 인접 deleted+added 페어링 → modified 변환
+                var SIMILARITY_THRESHOLD = 0.5;
+                var changes = [];
+
+                var k = 0;
+                while (k < rawChanges.length) {
+                    var rc = rawChanges[k];
+
+                    if (rc.type === 'equal') {
+                        // equal — 원문이 다를 수 있음 (공백 무시 시)
+                        var tA = parasA[rc.idxA];
+                        var tB = parasB[rc.idxB];
+                        if (tA !== tB) {
+                            var wordDiffs = Diff.diffWords(
+                                diffState.ignoreWhitespace ? normalizeText(tA) : tA,
+                                diffState.ignoreWhitespace ? normalizeText(tB) : tB
+                            );
+                            var hasChange = wordDiffs.some(function(w) { return w.added || w.removed; });
+                            if (hasChange) {
+                                changes.push({
+                                    type: 'modified', indexA: rc.idxA, indexB: rc.idxB,
+                                    textA: tA, textB: tB, wordDiffs: wordDiffs,
+                                    summary: tA.substring(0, 60)
+                                });
+                            }
+                        }
+                        k++;
+                        continue;
+                    }
+
+                    // 연속된 deleted + added 수집
+                    var dels = [], adds = [];
+                    while (k < rawChanges.length && (rawChanges[k].type === 'deleted' || rawChanges[k].type === 'added')) {
+                        if (rawChanges[k].type === 'deleted') dels.push(rawChanges[k]);
+                        else adds.push(rawChanges[k]);
+                        k++;
+                    }
+
+                    // 페어링: 유사한 deleted-added 쌍을 modified로
+                    var usedDel = {}, usedAdd = {};
+                    var pairs = [];
+
+                    for (var di = 0; di < dels.length; di++) {
+                        var bestSim = 0, bestAi = -1;
+                        for (var ai = 0; ai < adds.length; ai++) {
+                            if (usedAdd[ai]) continue;
+                            var sim = similarity(parasA[dels[di].idxA], parasB[adds[ai].idxB]);
+                            if (sim > bestSim) { bestSim = sim; bestAi = ai; }
+                        }
+                        if (bestSim >= SIMILARITY_THRESHOLD && bestAi >= 0) {
+                            pairs.push({ di: di, ai: bestAi, sim: bestSim });
+                            usedDel[di] = true;
+                            usedAdd[bestAi] = true;
+                        }
+                    }
+
+                    // 출력 순서: 원래 인덱스 순
+                    var allEntries = [];
+                    for (var di = 0; di < dels.length; di++) {
+                        if (usedDel[di]) {
+                            var pair = pairs.filter(function(p) { return p.di === di; })[0];
+                            var tA = parasA[dels[di].idxA];
+                            var tB = parasB[adds[pair.ai].idxB];
+                            var wordDiffs = Diff.diffWords(
+                                diffState.ignoreWhitespace ? normalizeText(tA) : tA,
+                                diffState.ignoreWhitespace ? normalizeText(tB) : tB
+                            );
+                            allEntries.push({
+                                sortKey: dels[di].idxA,
+                                change: {
+                                    type: 'modified', indexA: dels[di].idxA, indexB: adds[pair.ai].idxB,
+                                    textA: tA, textB: tB, wordDiffs: wordDiffs,
+                                    summary: tA.substring(0, 60)
+                                }
+                            });
+                        } else {
+                            allEntries.push({
+                                sortKey: dels[di].idxA,
+                                change: {
+                                    type: 'deleted', indexA: dels[di].idxA, indexB: null,
+                                    textA: parasA[dels[di].idxA], textB: null,
+                                    wordDiffs: null, summary: parasA[dels[di].idxA]
+                                }
+                            });
+                        }
+                    }
+                    for (var ai = 0; ai < adds.length; ai++) {
+                        if (!usedAdd[ai]) {
+                            allEntries.push({
+                                sortKey: adds[ai].idxB + 0.5,  // added는 deleted 뒤에
+                                change: {
+                                    type: 'added', indexA: null, indexB: adds[ai].idxB,
+                                    textA: null, textB: parasB[adds[ai].idxB],
+                                    wordDiffs: null, summary: parasB[adds[ai].idxB]
+                                }
+                            });
+                        }
+                    }
+
+                    allEntries.sort(function(a, b) { return a.sortKey - b.sortKey; });
+                    for (var ei = 0; ei < allEntries.length; ei++) {
+                        changes.push(allEntries[ei].change);
+                    }
+                }
+
+                return changes;
+            }
+
+            function tryRunDiff() {
+                if (currentMode !== 'compare') return;
+                if (docState.a.paragraphs.length > 0 && docState.b.paragraphs.length > 0) {
+                    runDiff();
+                }
+            }
+
+            function runDiff() {
+                diffState.changes = computeDiff();
+                diffState.currentIndex = -1;
+                renderDiffHighlights(diffState.changes);
+                renderSidebar(diffState.changes);
+                showDiffUI(true);
+                updateNavigation();
+            }
+
+            function clearDiff() {
+                diffState.changes = [];
+                diffState.currentIndex = -1;
+
+                // 패널 원래 렌더링 복원 (양쪽 모두 파일이 있는 경우)
+                ['a', 'b'].forEach(function(side) {
+                    if (docState[side].paragraphs.length > 0) {
+                        renderParagraphs(getPanel(side), docState[side].paragraphs);
+                    }
+                });
+
+                renderSidebar([]);
+                showDiffUI(false);
+                updateNavigation();
+            }
+
+            function showDiffUI(show) {
+                navGroup.style.display = show ? '' : 'none';
+                swapBtn.style.display = show ? '' : 'none';
+                editToggleBtn.style.display = show ? '' : 'none';
+                filterGroup.style.display = show ? '' : 'none';
+                if (!show && editMode) toggleEditMode();
+            }
+
+            // ── 2-2. Diff 시각화 ──
+            function renderDiffHighlights(changes) {
+                var parasA = docState.a.paragraphs;
+                var parasB = docState.b.paragraphs;
+
+                // 단락별 매핑 구축
+                var mapA = {}; // indexA → change
+                var mapB = {}; // indexB → change
+                var gapsA = []; // panel A에 삽입할 gap (added 항목)
+                var gapsB = []; // panel B에 삽입할 gap (deleted 항목)
+
+                for (var i = 0; i < changes.length; i++) {
+                    var c = changes[i];
+                    c._changeIndex = i;
+                    if (c.type === 'added') {
+                        mapB[c.indexB] = c;
+                    } else if (c.type === 'deleted') {
+                        mapA[c.indexA] = c;
+                    } else if (c.type === 'modified') {
+                        mapA[c.indexA] = c;
+                        mapB[c.indexB] = c;
+                    }
+                }
+
+                // 양쪽 패널 동시 재구성
+                // 전략: 두 문서의 인덱스를 동기 진행하면서 HTML 빌드
+                var htmlA = '<div class="cp-text-content">';
+                var htmlB = '<div class="cp-text-content">';
+
+                var iA = 0, iB = 0;
+                var changeOrder = buildChangeOrder(changes, parasA, parasB);
+
+                for (var k = 0; k < changeOrder.length; k++) {
+                    var entry = changeOrder[k];
+
+                    if (entry.type === 'equal') {
+                        htmlA += '<div class="cp-paragraph" data-index="' + entry.iA + '">' + escapeHTML(parasA[entry.iA]) + '</div>';
+                        htmlB += '<div class="cp-paragraph" data-index="' + entry.iB + '">' + escapeHTML(parasB[entry.iB]) + '</div>';
+                    } else if (entry.type === 'added') {
+                        var c = entry.change;
+                        var hidden = !diffState.filter.added ? ' diff-hidden' : '';
+                        htmlA += '<div class="cp-paragraph diff-gap' + hidden + '" data-change-index="' + c._changeIndex + '"></div>';
+                        htmlB += '<div class="cp-paragraph diff-para-added' + hidden + '" data-change-index="' + c._changeIndex + '" data-index="' + c.indexB + '">' + escapeHTML(parasB[c.indexB]) + '</div>';
+                    } else if (entry.type === 'deleted') {
+                        var c = entry.change;
+                        var hidden = !diffState.filter.deleted ? ' diff-hidden' : '';
+                        htmlA += '<div class="cp-paragraph diff-para-deleted' + hidden + '" data-change-index="' + c._changeIndex + '" data-index="' + c.indexA + '">' + escapeHTML(parasA[c.indexA]) + '</div>';
+                        htmlB += '<div class="cp-paragraph diff-gap' + hidden + '" data-change-index="' + c._changeIndex + '"></div>';
+                    } else if (entry.type === 'modified') {
+                        var c = entry.change;
+                        var hidden = !diffState.filter.modified ? ' diff-hidden' : '';
+                        htmlA += '<div class="cp-paragraph diff-para-modified' + hidden + '" data-change-index="' + c._changeIndex + '" data-index="' + c.indexA + '">' + renderWordDiffsA(c.wordDiffs) + '</div>';
+                        htmlB += '<div class="cp-paragraph diff-para-modified' + hidden + '" data-change-index="' + c._changeIndex + '" data-index="' + c.indexB + '">' + renderWordDiffsB(c.wordDiffs) + '</div>';
+                    }
+                }
+
+                htmlA += '</div>';
+                htmlB += '</div>';
+
+                // 기존 콘텐츠 교체
+                replaceContent(panelBodyA, htmlA);
+                replaceContent(panelBodyB, htmlB);
+
+                // diff 결과 렌더링 후 스크롤 초기화
+                panelBodyA.scrollTop = 0;
+                panelBodyB.scrollTop = 0;
+            }
+
+            function replaceContent(panel, html) {
+                var old = panel.querySelector('.cp-text-content');
+                if (old) old.remove();
+                var ph = panel.querySelector('.panel-placeholder');
+                if (ph) ph.remove();
+                var loading = panel.querySelector('.cp-upload-loading');
+                if (loading) loading.remove();
+                var paste = panel.querySelector('.cp-paste-container');
+                if (paste) paste.remove();
+                panel.insertAdjacentHTML('beforeend', html);
+            }
+
+            function buildChangeOrder(changes, parasA, parasB) {
+                // 변경점을 원래 단락 순서대로 정렬하여 양쪽 패널 동기화
+                var order = [];
+                var iA = 0, iB = 0;
+                var changesByA = {};
+                var changesByB = {};
+                var addedAtB = {};
+                var deletedAtA = {};
+
+                for (var i = 0; i < changes.length; i++) {
+                    var c = changes[i];
+                    if (c.type === 'modified') {
+                        changesByA[c.indexA] = c;
+                        changesByB[c.indexB] = c;
+                    } else if (c.type === 'deleted') {
+                        deletedAtA[c.indexA] = c;
+                    } else if (c.type === 'added') {
+                        addedAtB[c.indexB] = c;
+                    }
+                }
+
+                while (iA < parasA.length || iB < parasB.length) {
+                    // deleted at iA?
+                    if (deletedAtA[iA]) {
+                        order.push({ type: 'deleted', change: deletedAtA[iA] });
+                        iA++;
+                        continue;
+                    }
+                    // added at iB?
+                    if (addedAtB[iB]) {
+                        order.push({ type: 'added', change: addedAtB[iB] });
+                        iB++;
+                        continue;
+                    }
+                    // modified at iA/iB?
+                    if (changesByA[iA]) {
+                        order.push({ type: 'modified', change: changesByA[iA] });
+                        iA++;
+                        iB++;
+                        continue;
+                    }
+                    // equal
+                    if (iA < parasA.length && iB < parasB.length) {
+                        order.push({ type: 'equal', iA: iA, iB: iB });
+                        iA++;
+                        iB++;
+                    } else if (iA < parasA.length) {
+                        // 남은 A는 deleted로 처리 (safety)
+                        order.push({ type: 'equal', iA: iA, iB: iB });
+                        iA++;
+                    } else {
+                        order.push({ type: 'equal', iA: iA, iB: iB });
+                        iB++;
+                    }
+                }
+
+                return order;
+            }
+
+            function renderWordDiffsA(wordDiffs) {
+                // Panel A: removed 표시, added 숨김
+                var html = '';
+                for (var i = 0; i < wordDiffs.length; i++) {
+                    var w = wordDiffs[i];
+                    if (w.added) continue;
+                    if (w.removed) {
+                        html += '<span class="diff-word-deleted">' + escapeHTML(w.value) + '</span>';
+                    } else {
+                        html += escapeHTML(w.value);
+                    }
+                }
+                return html;
+            }
+
+            function renderWordDiffsB(wordDiffs) {
+                // Panel B: added 표시, removed 숨김
+                var html = '';
+                for (var i = 0; i < wordDiffs.length; i++) {
+                    var w = wordDiffs[i];
+                    if (w.removed) continue;
+                    if (w.added) {
+                        html += '<span class="diff-word-added">' + escapeHTML(w.value) + '</span>';
+                    } else {
+                        html += escapeHTML(w.value);
+                    }
+                }
+                return html;
+            }
+
+            // ── 2-4. 변경 목록 사이드바 ──
+            function renderSidebar(changes) {
+                if (changes.length === 0) {
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">'
+                        + (docState.a.paragraphs.length > 0 && docState.b.paragraphs.length > 0
+                            ? '변경점이 없습니다'
+                            : '비교 결과가 여기에 표시됩니다')
+                        + '</div>';
+                    return;
+                }
+
+                var added = 0, deleted = 0, modified = 0;
+                for (var i = 0; i < changes.length; i++) {
+                    if (changes[i].type === 'added') added++;
+                    else if (changes[i].type === 'deleted') deleted++;
+                    else if (changes[i].type === 'modified') modified++;
+                }
+
+                var badgeLabels = { added: '추가', deleted: '삭제', modified: '수정' };
+
+                var html = '<div class="cp-diff-stats">';
+                if (added > 0) html += '<span class="cp-stat cp-stat-added">+' + added + '</span>';
+                if (deleted > 0) html += '<span class="cp-stat cp-stat-deleted">-' + deleted + '</span>';
+                if (modified > 0) html += '<span class="cp-stat cp-stat-modified">~' + modified + '</span>';
+                html += '</div>';
+
+                html += '<div class="cp-change-list" id="cp-change-list">';
+                for (var i = 0; i < changes.length; i++) {
+                    var c = changes[i];
+                    var hidden = !diffState.filter[c.type] ? ' cp-change-hidden' : '';
+                    var summaryText = c.summary || '';
+                    if (summaryText.length > 80) summaryText = summaryText.substring(0, 80) + '…';
+
+                    html += '<div class="cp-change-item cp-change-' + c.type + hidden + '" data-change-index="' + i + '">'
+                        + '<span class="cp-change-badge">' + badgeLabels[c.type] + '</span>'
+                        + '<span class="cp-change-text">' + escapeHTML(summaryText) + '</span>'
+                        + '</div>';
+                }
+                html += '</div>';
+
+                sidebarBody.innerHTML = html;
+            }
+
+            // 사이드바 클릭 이벤트 위임
+            sidebarBody.addEventListener('click', function(e) {
+                var item = e.target.closest('[data-change-index]');
+                if (!item) return;
+                var idx = parseInt(item.getAttribute('data-change-index'), 10);
+                navigateToChange(idx);
+            });
+
+            // ── 2-3. 변경점 네비게이션 ──
+            function getFilteredIndices() {
+                var indices = [];
+                for (var i = 0; i < diffState.changes.length; i++) {
+                    if (diffState.filter[diffState.changes[i].type]) {
+                        indices.push(i);
+                    }
+                }
+                return indices;
+            }
+
+            function updateNavigation() {
+                var filtered = getFilteredIndices();
+                var total = filtered.length;
+
+                if (total === 0) {
+                    navIndicator.textContent = '0/0';
+                    navPrev.disabled = true;
+                    navNext.disabled = true;
+                    return;
+                }
+
+                var pos = 0;
+                if (diffState.currentIndex >= 0) {
+                    pos = filtered.indexOf(diffState.currentIndex);
+                    if (pos < 0) pos = 0;
+                }
+
+                navIndicator.textContent = (diffState.currentIndex >= 0 ? (pos + 1) : 0) + '/' + total;
+                navPrev.disabled = pos <= 0 || diffState.currentIndex < 0;
+                navNext.disabled = pos >= total - 1 && diffState.currentIndex >= 0;
+            }
+
+            function navigateToChange(index) {
+                if (index < 0 || index >= diffState.changes.length) return;
+                var c = diffState.changes[index];
+
+                // 이전 활성 해제
+                document.querySelectorAll('.diff-active').forEach(function(el) {
+                    el.classList.remove('diff-active');
+                });
+                document.querySelectorAll('.cp-change-item.active').forEach(function(el) {
+                    el.classList.remove('active');
+                });
+
+                diffState.currentIndex = index;
+
+                // 패널 하이라이트 + 스크롤
+                // added → Panel B 기준 (A에는 gap뿐), 나머지 → Panel A 기준
+                var scrollTarget = (c.type === 'added') ? panelBodyB : panelBodyA;
+                var otherPanel = (scrollTarget === panelBodyA) ? panelBodyB : panelBodyA;
+                var targets = document.querySelectorAll('[data-change-index="' + index + '"]');
+                var scrollEl = null;
+                targets.forEach(function(el) {
+                    if (el.classList.contains('cp-paragraph')) {
+                        el.classList.add('diff-active');
+                        if (!scrollEl && scrollTarget.contains(el)) {
+                            scrollEl = el;
+                        }
+                    }
+                    if (el.classList.contains('cp-change-item')) {
+                        el.classList.add('active');
+                        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                });
+
+                // 양쪽 패널 동시 instant 스크롤 (scrollTop 직접 설정)
+                if (scrollEl) {
+                    var elTop = scrollEl.offsetTop;
+                    var panelH = scrollTarget.clientHeight;
+                    var desiredTop = elTop - (panelH / 2) + (scrollEl.offsetHeight / 2);
+                    desiredTop = Math.max(0, Math.min(desiredTop, scrollTarget.scrollHeight - panelH));
+
+                    // scroll 이벤트에 의한 역방향 동기화 방지
+                    scrollSyncing = true;
+                    scrollTarget.scrollTop = desiredTop;
+
+                    if (scrollSyncEnabled) {
+                        var maxS = scrollTarget.scrollHeight - panelH;
+                        var maxT = otherPanel.scrollHeight - otherPanel.clientHeight;
+                        if (maxS > 0 && maxT > 0) {
+                            otherPanel.scrollTop = (desiredTop / maxS) * maxT;
+                        }
+                    }
+                    scrollSyncing = false;
+                }
+
+                updateNavigation();
+            }
+
+            function navigatePrev() {
+                var filtered = getFilteredIndices();
+                if (filtered.length === 0) return;
+                var pos = filtered.indexOf(diffState.currentIndex);
+                if (pos > 0) {
+                    navigateToChange(filtered[pos - 1]);
+                } else if (diffState.currentIndex < 0) {
+                    navigateToChange(filtered[0]);
+                }
+            }
+
+            function navigateNext() {
+                var filtered = getFilteredIndices();
+                if (filtered.length === 0) return;
+                var pos = filtered.indexOf(diffState.currentIndex);
+                if (pos < 0) {
+                    navigateToChange(filtered[0]);
+                } else if (pos < filtered.length - 1) {
+                    navigateToChange(filtered[pos + 1]);
+                }
+            }
+
+            navPrev.addEventListener('click', navigatePrev);
+            navNext.addEventListener('click', navigateNext);
+
+            // 키보드 네비게이션
+            document.addEventListener('keydown', function(e) {
+                if (diffState.changes.length === 0) return;
+                // 편집 중이면 무시
+                if (e.target.isContentEditable || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+
+                if (e.key === 'ArrowUp' || e.key === 'k') {
+                    e.preventDefault();
+                    navigatePrev();
+                } else if (e.key === 'ArrowDown' || e.key === 'j') {
+                    e.preventDefault();
+                    navigateNext();
+                }
+            });
+
+            // ── 2-5. 텍스트 편집 모드 ──
+            function toggleEditMode() {
+                editMode = !editMode;
+                editToggleBtn.classList.toggle('active', editMode);
+
+                if (editMode) {
+                    // 편집 ON: diff 하이라이트 제거, contenteditable 설정
+                    ['a', 'b'].forEach(function(side) {
+                        if (docState[side].paragraphs.length === 0) return;
+                        var panel = getPanel(side);
+                        renderParagraphs(panel, docState[side].paragraphs);
+                        var paras = panel.querySelectorAll('.cp-paragraph');
+                        paras.forEach(function(p) {
+                            p.setAttribute('contenteditable', 'true');
+                            p.classList.add('cp-editable');
+                        });
+                    });
+                    // 네비/필터 숨기기
+                    navGroup.style.display = 'none';
+                    filterGroup.style.display = 'none';
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty">편집 모드 — 변경 후 편집을 끄면 재비교합니다</div>';
+                } else {
+                    // 편집 OFF: 텍스트 추출 → docState 갱신 → 재비교
+                    ['a', 'b'].forEach(function(side) {
+                        if (docState[side].paragraphs.length === 0) return;
+                        syncEditsToState(side);
+                    });
+                    navGroup.style.display = '';
+                    filterGroup.style.display = '';
+                    tryRunDiff();
+                }
+            }
+
+            function syncEditsToState(side) {
+                var panel = getPanel(side);
+                var paras = panel.querySelectorAll('.cp-paragraph');
+                var newParagraphs = [];
+                paras.forEach(function(p) {
+                    // textContent 그대로 유지 (빈 단락도 보존)
+                    newParagraphs.push(p.textContent);
+                });
+                // 후행 빈 단락만 제거
+                while (newParagraphs.length > 0 && !newParagraphs[newParagraphs.length - 1].trim()) {
+                    newParagraphs.pop();
+                }
+                docState[side].paragraphs = newParagraphs;
+                docState[side].text = newParagraphs.join('\n');
+            }
+
+            // ── 2-8. A ↔ B 교체 ──
+            swapBtn.addEventListener('click', function() {
+                if (editMode) return; // 편집 중에는 교체 불가
+
+                // docState 교체
+                var tmp = docState.a;
+                docState.a = docState.b;
+                docState.b = tmp;
+
+                // 라벨 교체
+                labelA.textContent = docState.a.filename || getDefaultLabel('a');
+                labelA.title = docState.a.filename || '';
+                labelB.textContent = docState.b.filename || getDefaultLabel('b');
+                labelB.title = docState.b.filename || '';
+
+                // 제거 버튼 상태
+                fileRemoveA.classList.toggle('visible', !!docState.a.filename);
+                fileRemoveB.classList.toggle('visible', !!docState.b.filename);
+
+                // 재렌더 + 재비교
+                if (docState.a.paragraphs.length > 0) {
+                    renderParagraphs(panelBodyA, docState.a.paragraphs);
+                } else {
+                    restorePlaceholder('a');
+                }
+                if (docState.b.paragraphs.length > 0) {
+                    renderParagraphs(panelBodyB, docState.b.paragraphs);
+                } else {
+                    restorePlaceholder('b');
+                }
+
+                tryRunDiff();
+            });
+
+            editToggleBtn.addEventListener('click', toggleEditMode);
+
+            // ── 2-6. 필터링 ──
+            filterBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var isVisible = filterDropdown.style.display !== 'none';
+                filterDropdown.style.display = isVisible ? 'none' : '';
+                filterBtn.classList.toggle('active', !isVisible);
+            });
+
+            // 드롭다운 외부 클릭 시 닫기
+            document.addEventListener('click', function(e) {
+                if (!filterGroup.contains(e.target)) {
+                    filterDropdown.style.display = 'none';
+                    filterBtn.classList.remove('active');
+                }
+            });
+
+            filterDropdown.addEventListener('change', function(e) {
+                var input = e.target;
+                if (!input.dataset.filter) return;
+
+                var filterType = input.dataset.filter;
+
+                if (filterType === 'ignoreWhitespace') {
+                    diffState.ignoreWhitespace = input.checked;
+                    // 재비교
+                    if (docState.a.paragraphs.length > 0 && docState.b.paragraphs.length > 0) {
+                        runDiff();
+                    }
+                } else {
+                    diffState.filter[filterType] = input.checked;
+                    applyFilter();
+                }
+            });
+
+            function applyFilter() {
+                // 패널 하이라이트 토글
+                for (var i = 0; i < diffState.changes.length; i++) {
+                    var c = diffState.changes[i];
+                    var show = diffState.filter[c.type];
+                    var els = document.querySelectorAll('.cp-paragraph[data-change-index="' + i + '"]');
+                    els.forEach(function(el) {
+                        el.classList.toggle('diff-hidden', !show);
+                    });
+                }
+
+                // 사이드바 항목 토글
+                var items = document.querySelectorAll('.cp-change-item');
+                items.forEach(function(item) {
+                    var idx = parseInt(item.getAttribute('data-change-index'), 10);
+                    var c = diffState.changes[idx];
+                    if (c) {
+                        item.classList.toggle('cp-change-hidden', !diffState.filter[c.type]);
+                    }
+                });
+
+                // 현재 인덱스가 필터 밖이면 리셋
+                if (diffState.currentIndex >= 0 && !diffState.filter[diffState.changes[diffState.currentIndex].type]) {
+                    diffState.currentIndex = -1;
+                    document.querySelectorAll('.diff-active').forEach(function(el) {
+                        el.classList.remove('diff-active');
+                    });
+                    document.querySelectorAll('.cp-change-item.active').forEach(function(el) {
+                        el.classList.remove('active');
+                    });
+                }
+
+                updateNavigation();
+            }
         })();
     </script>
 </body>
