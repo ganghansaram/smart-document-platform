@@ -228,6 +228,12 @@ body[data-theme="dark"] .platform-header {
     white-space: nowrap;
 }
 
+.ph-system-badge.dev {
+    background: rgba(245, 158, 11, 0.85);
+    color: #fff;
+    font-weight: 600;
+}
+
 .ph-system-separator {
     height: 1px;
     background: var(--border-color);

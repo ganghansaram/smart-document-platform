@@ -13,7 +13,7 @@ body {
     overflow: hidden;
 }
 
-/* ── 페이지 네비게이션 (뷰어 전용, midSlot) ── */
+/* ── 페이지 네비게이션 (뷰어 툴바 중앙) ── */
 .translator-page-nav {
     display: flex;
     align-items: center;
@@ -21,9 +21,9 @@ body {
 }
 
 .translator-page-nav .pn-btn {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: #fff;
+    background: var(--bg-gray);
+    border: 1px solid var(--border-color);
+    color: var(--text-dark);
     width: 28px;
     height: 28px;
     border-radius: 4px;
@@ -35,13 +35,13 @@ body {
     padding: 0;
 }
 
-.translator-page-nav .pn-btn:hover { background: rgba(255,255,255,0.2); }
+.translator-page-nav .pn-btn:hover { background: var(--hover-bg); }
 .translator-page-nav .pn-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .translator-page-nav .pn-btn svg { width: 14px; height: 14px; }
 
 .translator-page-info {
     font-size: 13px;
-    color: rgba(255,255,255,0.7);
+    color: var(--text-light);
     min-width: 60px;
     text-align: center;
     white-space: nowrap;
@@ -984,6 +984,10 @@ body[data-theme="dark"] .scroll-sync-btn { background: rgba(255,255,255,0.06); b
 body[data-theme="dark"] .scroll-sync-btn:hover { border-color: rgba(88,166,255,0.4); color: #58a6ff; }
 body[data-theme="dark"] .scroll-sync-btn.active { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
 
+body[data-theme="dark"] .translator-page-nav .pn-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); }
+body[data-theme="dark"] .translator-page-nav .pn-btn:hover { background: rgba(88,166,255,0.15); border-color: rgba(88,166,255,0.4); color: #58a6ff; }
+body[data-theme="dark"] .translator-page-info { color: rgba(255,255,255,0.6); }
+
 body[data-theme="dark"] .viewer-panel { background: #0d0d12; }
 body[data-theme="dark"] .viewer-panel .panel-label { background: rgba(30,30,46,0.8); color: rgba(255,255,255,0.55); }
 
@@ -1632,3 +1636,61 @@ body[data-theme="dark"] .doc-grid.drag-over { outline-color: #58a6ff; background
 body[data-theme="dark"] .ts-search-overlay { background-color: rgba(0, 0, 0, 0.7); }
 body[data-theme="dark"] .ts-search-container { box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
 body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; color: #ffe066; }
+
+/* ── 스크롤바 (Explorer 기준서 §12 동일) ── */
+::-webkit-scrollbar { width: 14px; height: 14px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: rgba(127,140,141,0.3);
+    border: 4px solid transparent;
+    background-clip: padding-box;
+    border-radius: 7px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--medium-gray);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+::-webkit-scrollbar-button:single-button {
+    height: 14px; width: 14px; display: block;
+    background-color: transparent; background-size: 12px;
+    background-repeat: no-repeat; background-position: center;
+}
+::-webkit-scrollbar-button:single-button:vertical:decrement {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 4L2 10h12z' fill='rgba(127,140,141,0.3)'/%3E%3C/svg%3E");
+}
+::-webkit-scrollbar-button:single-button:vertical:increment {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 12L2 6h12z' fill='rgba(127,140,141,0.3)'/%3E%3C/svg%3E");
+}
+::-webkit-scrollbar-button:single-button:horizontal:decrement {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8l6-6v12z' fill='rgba(127,140,141,0.3)'/%3E%3C/svg%3E");
+}
+::-webkit-scrollbar-button:single-button:horizontal:increment {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M12 8L6 2v12z' fill='rgba(127,140,141,0.3)'/%3E%3C/svg%3E");
+}
+::-webkit-scrollbar-button:single-button:hover {
+    background-color: rgba(127,140,141,0.1);
+}
+::-webkit-scrollbar-button:single-button:vertical:decrement:hover {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 4L2 10h12z' fill='%237f8c8d'/%3E%3C/svg%3E");
+}
+::-webkit-scrollbar-button:single-button:vertical:increment:hover {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 12L2 6h12z' fill='%237f8c8d'/%3E%3C/svg%3E");
+}
+::-webkit-scrollbar-button:single-button:horizontal:decrement:hover {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8l6-6v12z' fill='%237f8c8d'/%3E%3C/svg%3E");
+}
+::-webkit-scrollbar-button:single-button:horizontal:increment:hover {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M12 8L6 2v12z' fill='%237f8c8d'/%3E%3C/svg%3E");
+}
+/* 다크 스크롤바 */
+body[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: rgba(160,170,180,0.3);
+    border: 4px solid transparent;
+    background-clip: padding-box;
+}
+body[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: rgba(160,170,180,0.5);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
