@@ -56,17 +56,17 @@ function createEditorModal() {
                     <span class="doc-path" id="editor-doc-path"></span>
                 </div>
                 <div class="editor-actions">
-                    <button class="editor-fullscreen-btn" id="editor-fullscreen" title="Fullscreen">
+                    <button class="btn btn-icon btn-icon-lg editor-fullscreen-btn" id="editor-fullscreen" title="Fullscreen">
                         <span class="icon"></span>
                     </button>
-                    <button class="editor-cancel-btn" id="editor-cancel">
+                    <button class="btn btn-secondary editor-cancel-btn" id="editor-cancel">
                         Cancel
                     </button>
-                    <button class="editor-save-btn" id="editor-save">
+                    <button class="btn btn-primary editor-save-btn" id="editor-save">
                         <span class="icon"></span>
                         Save
                     </button>
-                    <button class="editor-close-btn" id="editor-close">&times;</button>
+                    <button class="btn btn-icon btn-icon-lg editor-close-btn" id="editor-close">&times;</button>
                 </div>
             </div>
             <div class="editor-body">
@@ -272,7 +272,7 @@ function initToastEditor(content) {
     const editorContainer = document.getElementById('toast-editor');
     editorContainer.innerHTML = `
         <div class="editor-loading-overlay" id="editor-loading">
-            <div class="loading-spinner"></div>
+            <div class="spinner spinner-lg loading-spinner"></div>
             <div class="loading-text">Loading editor...</div>
         </div>
         <div class="monaco-split-container">

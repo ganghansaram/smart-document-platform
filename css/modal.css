@@ -1,0 +1,97 @@
+/* ===================================
+   모달/오버레이 — 전 페이지 공유 기반 클래스
+   기존 모달은 자체 class를 유지하며,
+   신규 모달은 이 클래스들을 조합하여 사용.
+   =================================== */
+
+/* ── 오버레이 ── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay.blur {
+    backdrop-filter: blur(4px);
+}
+
+/* ── 컨테이너 ── */
+.modal-box {
+    background-color: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── 헤더 ── */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.modal-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+/* ── 본문 ── */
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* ── 푸터 ── */
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+/* ── 닫기 버튼 ── */
+.modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--medium-gray);
+    font-size: 24px;
+    line-height: 1;
+    border-radius: 6px;
+    padding: 4px;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-dark);
+}
+
+/* ── 다크 모드 ── */
+body[data-theme="dark"] .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+body[data-theme="dark"] .modal-box {
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+body[data-theme="dark"] .modal-close:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}

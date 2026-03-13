@@ -1,0 +1,306 @@
+/* ===================================
+   공통 컴포넌트 — 전 페이지 공유
+   버튼, 입력, 배지, 스피너, 리사이즈 핸들 등
+   =================================== */
+
+/* ── 버튼 공통 ── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* Primary (파란 배경) */
+.btn-primary {
+    background: var(--active-color);
+    color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+/* Secondary (테두리) */
+.btn-secondary {
+    background: transparent;
+    color: var(--text-dark);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--bg-gray);
+    border-color: var(--medium-gray);
+}
+
+/* Ghost (투명) */
+.btn-ghost {
+    background: transparent;
+    color: var(--text-dark);
+}
+
+.btn-ghost:hover:not(:disabled) {
+    background: var(--hover-bg);
+}
+
+/* Danger (빨간) */
+.btn-danger {
+    background: var(--color-error);
+    color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+/* Success (초록) */
+.btn-success {
+    background: var(--color-success-btn);
+    color: #fff;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: var(--color-success-btn-hover);
+}
+
+/* 아이콘 전용 */
+.btn-icon {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-dark);
+}
+
+.btn-icon:hover:not(:disabled) {
+    background: var(--hover-bg);
+}
+
+.btn-icon-lg {
+    width: 32px;
+    height: 32px;
+}
+
+/* 크기 변형 */
+.btn-sm {
+    padding: 4px 12px;
+    font-size: 12px;
+}
+
+.btn-lg {
+    padding: 12px 28px;
+    font-size: 15px;
+}
+
+/* ── 입력 필드 ── */
+.form-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-dark);
+    background: var(--white);
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-input:focus {
+    border-color: var(--active-color);
+    box-shadow: var(--focus-ring);
+}
+
+.form-input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text-dark);
+    background: var(--white);
+    outline: none;
+    resize: vertical;
+    min-height: 72px;
+    line-height: 1.6;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-textarea:focus {
+    border-color: var(--active-color);
+    box-shadow: var(--focus-ring);
+}
+
+.form-select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-dark);
+    background: var(--white);
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-select:focus {
+    border-color: var(--active-color);
+    box-shadow: var(--focus-ring);
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+/* ── 입력 크기 변형 ── */
+.form-input-sm,
+.form-select-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.form-input-lg {
+    padding: 12px 14px;
+    font-size: 14px;
+}
+
+/* ── 배지 ── */
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.badge-success {
+    background: var(--color-success);
+    color: #fff;
+}
+
+.badge-warning {
+    background: var(--color-warning);
+    color: #fff;
+}
+
+.badge-error {
+    background: var(--color-error);
+    color: #fff;
+}
+
+.badge-info {
+    background: var(--active-color);
+    color: #fff;
+}
+
+/* ── 스피너 ── */
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(0, 102, 204, 0.15);
+    border-top-color: var(--active-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.spinner-sm {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
+.spinner-lg {
+    width: 36px;
+    height: 36px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── 리사이즈 핸들 ── */
+.resize-handle {
+    width: 4px;
+    background-color: transparent;
+    cursor: col-resize;
+    position: relative;
+    z-index: 100;
+    transition: background-color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.resize-handle:hover,
+.resize-handle.dragging {
+    background-color: var(--active-color);
+}
+
+.resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 12px;
+    left: -4px;
+}
+
+/* ── 다크 모드 ── */
+body[data-theme="dark"] .btn-secondary {
+    border-color: var(--border-color);
+    color: var(--text-dark);
+}
+
+body[data-theme="dark"] .btn-secondary:hover:not(:disabled) {
+    background: var(--hover-bg);
+    border-color: var(--medium-gray);
+}
+
+body[data-theme="dark"] .btn-icon {
+    border-color: var(--border-color);
+    color: var(--text-dark);
+}
+
+body[data-theme="dark"] .btn-icon:hover:not(:disabled) {
+    background: var(--hover-bg);
+}
+
+body[data-theme="dark"] .spinner {
+    border-color: rgba(91, 163, 245, 0.15);
+    border-top-color: var(--active-color);
+}

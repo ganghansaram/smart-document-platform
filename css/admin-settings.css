@@ -197,30 +197,15 @@ body[data-theme="dark"] .admin-sidebar-btn:hover:not(.active) {
     padding-top: 4px;
 }
 
+/* .admin-btn — .btn 기반, admin 전용 override만 유지 */
 .admin-btn {
-    padding: 8px 20px;
     min-width: 72px;
-    font-size: 13px;
-    font-weight: 600;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-    white-space: nowrap;
 }
 
-.admin-btn:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-}
-
-.admin-btn-save {
-    background: var(--as-primary);
-    color: #ffffff;
-}
-
+/* .admin-btn-save — .btn-primary 기반, admin hover만 유지 */
 .admin-btn-save:hover:not(:disabled) {
     background: var(--as-primary-hover);
+    opacity: 1;
 }
 
 .admin-btn-reset {
@@ -503,8 +488,18 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
 }
 
 /* ── 입력 컨트롤 ────────────────────────────────────────────────────────────── */
+/* .admin-input/.admin-select — .form-input/.form-select 기반, admin 전용 override만 유지 */
 .admin-input,
-.admin-select,
+.admin-select {
+    border-color: var(--as-input-border);
+}
+
+.admin-input:focus,
+.admin-select:focus {
+    border-color: var(--as-primary);
+}
+
+/* .admin-textarea — 별도 크기 유지 (설정 패널 밀도) */
 .admin-textarea {
     width: 100%;
     box-sizing: border-box;
@@ -519,8 +514,6 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
     transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.admin-input:focus,
-.admin-select:focus,
 .admin-textarea:focus {
     border-color: var(--as-primary);
     box-shadow: var(--focus-ring);
@@ -599,23 +592,7 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
     font-size: 14px;
 }
 
-.admin-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(0, 102, 204, 0.15);
-    border-top-color: var(--active-color);
-    border-radius: 50%;
-    animation: admin-spin 0.7s linear infinite;
-}
-
-body[data-theme="dark"] .admin-spinner {
-    border-color: rgba(91, 163, 245, 0.15);
-    border-top-color: var(--active-color);
-}
-
-@keyframes admin-spin {
-    to { transform: rotate(360deg); }
-}
+/* .admin-spinner — .spinner 기반으로 통합, 독자 CSS 제거 */
 
 .admin-settings-error {
     display: flex;
@@ -705,30 +682,6 @@ body[data-theme="dark"] .admin-spinner {
    공용 토스트 (admin.html용 — main.css 미로드)
    ══════════════════════════════════════════════════════════════════════════════ */
 
-.toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    padding: 12px 24px;
-    background-color: #333;
-    color: #fff;
-    border-radius: 8px;
-    font-size: 14px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 5000;
-    opacity: 0;
-    transition: all 0.3s ease;
-    max-width: 500px;
-    text-align: center;
-    pointer-events: none;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.success { background-color: #22c55e; }
-.toast.error { background-color: #ef4444; }
-.toast.warning { background-color: #f59e0b; }
-
-body[data-theme="dark"] .toast { background-color: #2d2f3e; color: #e0e0e0; }
 
 
 /* ══════════════════════════════════════════════════════════════════════════════

@@ -1,6 +1,9 @@
 /* ===================================
    디자인 토큰 — 전 페이지 공유 변수
    모든 HTML에서 첫 번째로 로드해야 합니다.
+
+   악센트 컬러: 플랫폼 통일 블루 (#2c5282 / #63a0e0)
+   모든 서브시스템이 동일한 악센트 컬러를 사용합니다.
    =================================== */
 
 /* 기본 리셋 */
@@ -24,7 +27,9 @@
     --text-light: #7f8c8d;
     --border-color: #dde4e8;
     --hover-bg: #e8f4f8;
-    --active-color: #0066cc;
+    --active-color: #2c5282;
+    --active-color-hover: #234a73;
+    --active-color-subtle: rgba(44,82,130,0.08);
 
     /* 시맨틱 색상 */
     --color-success: #22c55e;
@@ -41,7 +46,37 @@
     --shadow-xl: 0 20px 60px rgba(0,0,0,0.3);
 
     /* 포커스 링 */
-    --focus-ring: 0 0 0 2px rgba(0,102,204,0.15);
+    --focus-ring: 0 0 0 2px rgba(44,82,130,0.15);
+
+    /* 스페이싱 */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 40px;
+
+    /* Border-radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-pill: 50%;
+
+    /* 트랜지션 */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.2s ease;
+    --transition-slow: 0.3s ease;
+
+    /* Diff 색상 */
+    --diff-added: #e6ffec;
+    --diff-deleted: #ffeef0;
+    --diff-modified: #fff8e1;
+    --diff-added-text: #1a7f37;
+    --diff-deleted-text: #cf222e;
+    --diff-modified-text: #9a6700;
+    --diff-added-border: #2ea043;
+    --diff-deleted-border: #f85149;
 }
 
 /* 다크 테마 변수 오버라이드 */
@@ -57,7 +92,9 @@ body[data-theme="dark"] {
     --text-light: #a0a4b8;
     --border-color: #3d3f50;
     --hover-bg: #2d2f3e;
-    --active-color: #5ba3f5;
+    --active-color: #63a0e0;
+    --active-color-hover: #74ade5;
+    --active-color-subtle: rgba(99,160,224,0.12);
 
     /* 시맨틱 색상 */
     --color-success: #4ade80;
@@ -74,7 +111,17 @@ body[data-theme="dark"] {
     --shadow-xl: 0 20px 60px rgba(0,0,0,0.5);
 
     /* 포커스 링 */
-    --focus-ring: 0 0 0 2px rgba(91,163,245,0.2);
+    --focus-ring: 0 0 0 2px rgba(99,160,224,0.2);
+
+    /* Diff 색상 */
+    --diff-added: rgba(46,160,67,0.15);
+    --diff-deleted: rgba(248,81,73,0.15);
+    --diff-modified: rgba(245,158,11,0.15);
+    --diff-added-text: #3fb950;
+    --diff-deleted-text: #f85149;
+    --diff-modified-text: #d29922;
+    --diff-added-border: #3fb950;
+    --diff-deleted-border: #f85149;
 }
 
 /* 글로벌 키보드 포커스 링 */

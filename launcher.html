@@ -6,6 +6,7 @@
     <title>Smart Document Platform</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/platform-header.css">
     <link rel="stylesheet" href="css/platform-footer.css">
     <style>
@@ -143,20 +144,14 @@
             transform: none;
         }
 
+        /* .badge .badge-warning 기반, 런처 전용 override만 유지 */
         .system-card-badge {
-            font-size: 10px;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 3px;
-            background: rgba(255, 255, 255, 0.15);
-            color: #fff;
             letter-spacing: 0.5px;
             margin-top: 4px;
         }
 
         .system-card-badge.dev {
             background: rgba(245, 158, 11, 0.7);
-            color: #fff;
         }
 
         /* ── 푸터 투명 오버라이드 ── */
@@ -214,7 +209,7 @@
             <a class="system-card" id="card-compare" href="compare.html">
                 <h3>Compare</h3>
                 <div class="system-card-desc">문서 비교 · 규칙 검증</div>
-                <span class="system-card-badge dev">개발중</span>
+                <span class="badge badge-warning system-card-badge dev">개발중</span>
             </a>
         </div>
     </div>

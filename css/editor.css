@@ -108,29 +108,14 @@
     gap: 12px;
 }
 
-/* 저장 버튼 */
-.editor-save-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 20px;
-    background-color: var(--primary-navy);
-    color: var(--white);
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
+/* 저장 버튼 — .btn .btn-primary 기반, 호버/비활성 override만 유지 */
 .editor-save-btn:hover {
     background-color: var(--secondary-navy);
+    opacity: 1;
 }
 
 .editor-save-btn:disabled {
     background-color: var(--medium-gray);
-    cursor: not-allowed;
 }
 
 .editor-save-btn .icon {
@@ -141,42 +126,10 @@
     background-repeat: no-repeat;
 }
 
-/* 취소 버튼 */
-.editor-cancel-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background-color: transparent;
-    color: var(--text-dark);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
+/* 취소 버튼 — .btn .btn-secondary 기반, 중복 제거 */
 
-.editor-cancel-btn:hover {
-    background-color: var(--bg-gray);
-    border-color: var(--medium-gray);
-}
-
-/* 전체화면 버튼 */
-.editor-fullscreen-btn {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
+/* 전체화면 버튼 — .btn-icon .btn-icon-lg 기반, 호버 border-color override만 유지 */
 .editor-fullscreen-btn:hover {
-    background-color: var(--hover-bg);
     border-color: var(--medium-gray);
 }
 
@@ -188,24 +141,14 @@
     background-repeat: no-repeat;
 }
 
-/* 닫기 버튼 */
+/* 닫기 버튼 — .btn-icon .btn-icon-lg 기반, border 제거 + 색상 override */
 .editor-close-btn {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
     border: none;
-    border-radius: 6px;
     color: var(--medium-gray);
     font-size: 24px;
-    cursor: pointer;
-    transition: all 0.2s ease;
 }
 
 .editor-close-btn:hover {
-    background-color: var(--hover-bg);
     color: var(--text-dark);
 }
 
@@ -245,13 +188,10 @@
     transition: opacity 0.3s ease;
 }
 
+/* .loading-spinner — .spinner .spinner-lg 기반, 색상 override만 유지 */
 .editor-loading-overlay .loading-spinner {
-    width: 36px;
-    height: 36px;
-    border: 3px solid var(--border-color);
+    border-color: var(--border-color);
     border-top-color: var(--primary-navy);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
 }
 
 .editor-loading-overlay .loading-text {
