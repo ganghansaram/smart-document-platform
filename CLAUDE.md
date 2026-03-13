@@ -36,6 +36,12 @@ python -m http.server 8080            # http://localhost:8080
 <!-- 이후 페이지 전용 CSS -->
 ```
 
+### 악센트 컬러 — 플랫폼 통일 블루
+- 모든 서브시스템이 동일한 악센트 컬러를 사용한다 (서브시스템별 오버라이드 금지)
+- Light `#2c5282` / Dark `#63a0e0` — `tokens.css`에 정의
+- 새 페이지에서 `--active-color`를 인라인 `<style>`로 오버라이드하지 않는다
+- 다크모드에서도 `#58a6ff` 등 하드코딩 대신 `var(--active-color)` 사용
+
 ### 하드코딩 금지
 - 색상 → `var(--active-color)`, `var(--color-error)` 등 tokens.css 변수 사용
 - 간격 → `var(--space-sm)` ~ `var(--space-2xl)` 사용 권장
@@ -46,10 +52,10 @@ python -m http.server 8080            # http://localhost:8080
 ### 공통 컴포넌트 클래스 (components.css)
 | 용도 | 클래스 | 변형 |
 |------|--------|------|
-| 버튼 | `.btn` | `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-danger`, `.btn-icon`, `.btn-sm` |
-| 입력 | `.form-input` | `.form-textarea`, `.form-select`, `.form-group` |
+| 버튼 | `.btn` | `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-danger`, `.btn-icon`, `.btn-icon-lg`, `.btn-sm` |
+| 입력 | `.form-input` | `.form-textarea`, `.form-select`, `.form-group`, `.form-input-sm`, `.form-select-sm`, `.form-input-lg` |
 | 배지 | `.badge` | `.badge-success`, `.badge-warning`, `.badge-error`, `.badge-info` |
-| 스피너 | `.spinner` | `.spinner-sm` |
+| 스피너 | `.spinner` | `.spinner-sm`, `.spinner-lg` |
 | 리사이즈 | `.resize-handle` | — |
 
 ### 모달 (modal.css)
@@ -58,7 +64,7 @@ python -m http.server 8080            # http://localhost:8080
 ### 새 공통 패턴 추가 시
 1. `css/components.css` 또는 해당 공통 CSS에 클래스 정의
 2. 다크 모드 변형 포함
-3. 컴포넌트 인벤토리(`docs/component-inventory.md`) 업데이트
+3. 위 컴포넌트 테이블 업데이트
 
 ## 작업 원칙
 1. **의견 먼저, 구현은 승인 후** — 비자명한 작업은 먼저 논의

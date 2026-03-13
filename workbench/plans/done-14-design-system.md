@@ -2,7 +2,7 @@
 
 > 작성일: 2026-03-13
 > 브랜치: `feature/design-system`
-> 상태: **Step B 전체 완료 (B-1~B-6) — 코드 작업 완료, PR 대기**
+> 상태: **완료 — 악센트 통일 + 문서 갱신까지 완료**
 
 ---
 
@@ -240,7 +240,7 @@
 - [x] editor 저장 버튼 → `btn btn-primary` 병행
 
 ### Step 7: 인라인 CSS 추출 ✅ (compare 완료, launcher/login 유지)
-### Step 8: 규칙 문서화 ✅ (부분 — 테마 기준서 미갱신)
+### Step 8: 규칙 문서화 ✅
 ### Step 9: 기반 검증 ✅
 
 ### B-1: Admin 통합 ✅ (d0bc534)
@@ -260,6 +260,17 @@
 - [x] `components.css`에 `.form-input-sm`/`.form-select-sm` 신규 컴포넌트 추가
 - Playwright 전후 비교: 메인/붙여넣기 변화 0건, 모달 입력 크기 통일 (의도적)
 
+### C: 악센트 통일 ✅ (6ef8dee)
+
+- [x] `tokens.css` 기본값을 Explorer 블루(`#2c5282`/`#63a0e0`)로 교체
+- [x] 6개 HTML 인라인 `<style>` 악센트 오버라이드 삭제 (Navy/Green/Amber → 통일 블루)
+- [x] `translator.css` 다크모드 `#58a6ff` 21곳 → `var(--active-color)` 등 토큰 교체
+- [x] `compare.css` 다크모드 `#58a6ff` 10곳 → `var(--active-color)` 등 토큰 교체
+- [x] `translator.css` `.card-btn.primary` 다크모드 `#238636` → `var(--active-color)`
+- [x] `content.css` `@media print` 폴백 `#0066cc` → `#2c5282`
+- [x] `theme-guide.md` 색상 팔레트 전면 갱신
+- [x] `CLAUDE.md`에 "악센트 통일 블루, 오버라이드 금지" 규칙 추가
+
 ---
 
 ## 변경 수치 요약 (최종)
@@ -271,7 +282,7 @@
 | 제거된 중복 코드 | ~1,810줄 |
 | 추가된 공통 코드 | ~1,970줄 |
 | 시각적 변화 | 0건 (의도적 미세 통일 제외) |
-| 커밋 | 5건 (c186620, a110311, d0bc534, 216f509, ac8d39c) |
+| 커밋 | 6건 (c186620, a110311, d0bc534, 216f509, ac8d39c, 6ef8dee) |
 
 ---
 
