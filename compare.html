@@ -924,6 +924,506 @@
             border: 2px solid transparent;
             background-clip: padding-box;
         }
+
+        /* ══ Phase 3: 검증 모드 ══ */
+
+        /* ── 물결 밑줄 하이라이트 ── */
+        .validate-mark {
+            text-decoration: underline wavy;
+            text-decoration-thickness: 2px;
+            text-underline-offset: 2px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .validate-mark:hover { background: rgba(0,0,0,0.04); }
+        .validate-mark.severity-error   { text-decoration-color: var(--color-error); }
+        .validate-mark.severity-warning { text-decoration-color: var(--color-warning); }
+        .validate-mark.severity-suggestion { text-decoration-color: var(--color-info); }
+        .validate-mark.validate-active  { background: rgba(59,130,246,0.1); }
+        .validate-mark.vd-mark-hidden  { text-decoration: none; }
+
+        body[data-theme="dark"] .validate-mark:hover { background: rgba(255,255,255,0.06); }
+        body[data-theme="dark"] .validate-mark.validate-active { background: rgba(59,130,246,0.15); }
+
+        /* ── 검증 사이드바: 스코어 카드 ── */
+        .vd-score-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: var(--light-gray);
+            margin-bottom: 12px;
+        }
+
+        .vd-score-ring {
+            flex-shrink: 0;
+        }
+
+        .vd-score-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .vd-score-stat {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-weight: 600;
+        }
+        .vd-score-stat.stat-error   { color: var(--color-error); }
+        .vd-score-stat.stat-warning { color: var(--color-warning); }
+        .vd-score-stat.stat-suggestion { color: var(--color-info); }
+
+        /* ── 카테고리 그룹 ── */
+        .vd-category {
+            margin-bottom: 8px;
+        }
+
+        .vd-category-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+            user-select: none;
+        }
+        .vd-category-header:hover { color: var(--active-color); }
+
+        .vd-category-arrow {
+            font-size: 10px;
+            transition: transform 0.15s ease;
+            color: var(--text-light);
+        }
+        .vd-category.collapsed .vd-category-arrow {
+            transform: rotate(-90deg);
+        }
+
+        .vd-category-count {
+            font-weight: 400;
+            color: var(--text-light);
+            font-size: 12px;
+        }
+
+        .vd-category-body {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding-left: 4px;
+        }
+        .vd-category.collapsed .vd-category-body { display: none; }
+
+        /* ── 이슈 항목 (cp-change-item 패턴 재활용) ── */
+        .vd-issue-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 6px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            border-left: 3px solid transparent;
+        }
+        .vd-issue-item:hover { background: var(--light-gray); }
+        .vd-issue-item.active { background: var(--hover-bg); box-shadow: inset 0 0 0 1px var(--active-color); }
+
+        .vd-issue-item.severity-error   { border-left-color: var(--color-error); }
+        .vd-issue-item.severity-warning { border-left-color: var(--color-warning); }
+        .vd-issue-item.severity-suggestion { border-left-color: var(--color-info); }
+
+        .vd-issue-item.vd-issue-hidden { display: none; }
+
+        .vd-issue-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 1px 5px;
+            border-radius: 3px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .severity-error .vd-issue-badge   { background: rgba(239,68,68,0.12); color: var(--color-error); }
+        .severity-warning .vd-issue-badge { background: rgba(245,158,11,0.12); color: var(--color-warning); }
+        .severity-suggestion .vd-issue-badge { background: rgba(59,130,246,0.12); color: var(--color-info); }
+
+        .vd-issue-text {
+            font-size: 12px;
+            color: var(--text-light);
+            line-height: 1.4;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            word-break: break-all;
+        }
+
+        /* ── 검증 로딩 ── */
+        .vd-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 40px 0;
+            color: var(--text-light);
+            font-size: 13px;
+        }
+
+        /* ── 규칙 설정 모달 ── */
+        .vd-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .vd-modal {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 520px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .vd-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .vd-modal-close {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-light);
+            border-radius: 4px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .vd-modal-close:hover { background: var(--light-gray); color: var(--text-dark); }
+
+        .vd-modal-body {
+            flex: 1;
+            overflow: auto;
+            padding: 16px 20px;
+        }
+
+        .vd-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .vd-modal-btn {
+            padding: 7px 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--white);
+            color: var(--text-dark);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .vd-modal-btn:hover { border-color: var(--active-color); }
+        .vd-modal-btn.primary {
+            background: var(--active-color);
+            border-color: var(--active-color);
+            color: #fff;
+        }
+        .vd-modal-btn.primary:hover { opacity: 0.9; }
+
+        /* 프리셋 선택 */
+        .vd-preset-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .vd-preset-select {
+            flex: 1;
+            padding: 5px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 13px;
+            font-family: inherit;
+            background: var(--white);
+            color: var(--text-dark);
+        }
+
+        /* 규칙 행 */
+        .vd-rule-group {
+            margin-bottom: 12px;
+        }
+
+        .vd-rule-group-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .vd-rule-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 13px;
+        }
+
+        .vd-rule-name {
+            flex: 1;
+            color: var(--text-dark);
+        }
+
+        .vd-rule-severity {
+            padding: 2px 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: inherit;
+            background: var(--white);
+            color: var(--text-dark);
+        }
+
+        .vd-rule-toggle {
+            position: relative;
+            width: 34px;
+            height: 18px;
+            background: var(--medium-gray);
+            border-radius: 9px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            border: none;
+            padding: 0;
+            flex-shrink: 0;
+        }
+        .vd-rule-toggle.on { background: var(--active-color); }
+        .vd-rule-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: white;
+            transition: transform 0.2s ease;
+        }
+        .vd-rule-toggle.on::after { transform: translateX(16px); }
+
+        .vd-rule-param {
+            padding: 4px 0 4px 20px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .vd-rule-param input[type="number"] {
+            width: 60px;
+            padding: 2px 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: inherit;
+            background: var(--white);
+            color: var(--text-dark);
+        }
+
+        /* ── 용어 편집 패널 ── */
+        .vd-terms-panel {
+            margin: 2px 0 8px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .vd-terms-list {
+            max-height: 160px;
+            overflow: auto;
+        }
+
+        .vd-term-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: var(--text-dark);
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.1s ease;
+        }
+        .vd-term-row:last-child { border-bottom: none; }
+        .vd-term-row:hover { background: var(--light-gray); }
+
+        .vd-term-text {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .vd-term-arrow {
+            color: var(--text-light);
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .vd-term-replacement {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--active-color);
+        }
+
+        .vd-term-remove {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-light);
+            border-radius: 3px;
+            font-size: 14px;
+            line-height: 1;
+            padding: 0;
+            flex-shrink: 0;
+            opacity: 0;
+            transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+        }
+        .vd-term-row:hover .vd-term-remove { opacity: 1; }
+        .vd-term-remove:hover { background: rgba(239,68,68,0.1); color: var(--color-error); }
+
+        .vd-term-add {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: var(--light-gray);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .vd-term-add input {
+            flex: 1;
+            min-width: 0;
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: inherit;
+            background: var(--white);
+            color: var(--text-dark);
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+        .vd-term-add input:focus {
+            border-color: var(--active-color);
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
+        }
+        .vd-term-add input::placeholder { color: var(--medium-gray); }
+
+        .vd-term-add-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background: var(--white);
+            color: var(--active-color);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+        }
+        .vd-term-add-btn:hover {
+            background: var(--active-color);
+            border-color: var(--active-color);
+            color: #fff;
+        }
+
+        .vd-terms-empty {
+            padding: 12px 10px;
+            font-size: 12px;
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        /* 용어 그룹 (일관성) — 태그 스타일 */
+        .vd-group-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .vd-group-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 1px 6px;
+            background: var(--hover-bg);
+            border-radius: 3px;
+            font-size: 11px;
+            color: var(--text-dark);
+            white-space: nowrap;
+        }
+
+        /* ── 다크 모드 Phase 3 ── */
+        body[data-theme="dark"] .vd-score-card { background: rgba(255,255,255,0.05); }
+        body[data-theme="dark"] .vd-issue-item:hover { background: rgba(255,255,255,0.05); }
+        body[data-theme="dark"] .vd-issue-item.active { background: rgba(88,166,255,0.1); }
+        body[data-theme="dark"] .vd-modal { background: #1e1e2e; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+        body[data-theme="dark"] .vd-modal-header { border-bottom-color: rgba(255,255,255,0.08); }
+        body[data-theme="dark"] .vd-modal-footer { border-top-color: rgba(255,255,255,0.08); }
+        body[data-theme="dark"] .vd-modal-close:hover { background: rgba(255,255,255,0.1); }
+        body[data-theme="dark"] .vd-modal-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+        body[data-theme="dark"] .vd-preset-select { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+        body[data-theme="dark"] .vd-rule-severity { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+        body[data-theme="dark"] .vd-rule-param input { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: var(--text-dark); }
+        body[data-theme="dark"] .vd-rule-group-title { border-bottom-color: rgba(255,255,255,0.08); }
+        body[data-theme="dark"] .vd-terms-panel { border-color: rgba(255,255,255,0.08); }
+        body[data-theme="dark"] .vd-term-row { border-bottom-color: rgba(255,255,255,0.06); }
+        body[data-theme="dark"] .vd-term-row:hover { background: rgba(255,255,255,0.04); }
+        body[data-theme="dark"] .vd-term-add { background: rgba(255,255,255,0.03); border-top-color: rgba(255,255,255,0.06); }
+        body[data-theme="dark"] .vd-term-add input { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+        body[data-theme="dark"] .vd-term-add-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+        body[data-theme="dark"] .vd-term-add-btn:hover { background: var(--active-color); border-color: var(--active-color); }
+        body[data-theme="dark"] .vd-term-remove:hover { background: rgba(248,113,113,0.15); }
+        body[data-theme="dark"] .vd-group-tag { background: rgba(255,255,255,0.08); }
     </style>
 </head>
 <body>
@@ -962,6 +1462,32 @@
                     <label><input type="checkbox" data-filter="ignoreWhitespace"> 공백 무시</label>
                 </div>
             </div>
+
+            <!-- 검증 모드 전용 -->
+            <div class="cp-nav-group" id="vd-nav-group" style="display:none">
+                <button class="cp-nav-btn" id="vd-nav-prev" title="이전 이슈 (↑)">&#9650;</button>
+                <span class="cp-nav-indicator" id="vd-nav-indicator">0/0</span>
+                <button class="cp-nav-btn" id="vd-nav-next" title="다음 이슈 (↓)">&#9660;</button>
+            </div>
+
+            <div class="cp-filter-group" id="vd-filter-group" style="display:none">
+                <button class="scroll-sync-btn" id="vd-filter-btn">필터</button>
+                <div class="cp-filter-dropdown" id="vd-filter-dropdown" style="display:none">
+                    <label><input type="checkbox" checked data-vd-filter="error"> 오류</label>
+                    <label><input type="checkbox" checked data-vd-filter="warning"> 경고</label>
+                    <label><input type="checkbox" checked data-vd-filter="suggestion"> 제안</label>
+                </div>
+            </div>
+
+            <button class="scroll-sync-btn" id="vd-settings-btn" style="display:none" title="검증 규칙 설정">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                규칙
+            </button>
+
+            <button class="scroll-sync-btn" id="vd-revalidate-btn" style="display:none" title="재검증">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                재검증
+            </button>
 
             <span class="toolbar-spacer"></span>
             <span class="toolbar-label" id="toolbar-hint">문서 두 개를 업로드하여 비교하세요</span>
@@ -1066,7 +1592,7 @@
             var sidebarOpen = true;
             var sidebarWidth = 280; // px, 리사이즈 가능
             var SIDEBAR_MIN = 180;
-            var SIDEBAR_MAX = 450;
+            var SIDEBAR_MAX = 700;
             var API_BASE = (window.DISPLAY_CONFIG && DISPLAY_CONFIG.API_BASE) || 'http://localhost:8000/api';
 
             // ── 문서 상태 ──
@@ -1211,6 +1737,7 @@
                 label.title = '';
                 removeBtn.classList.remove('visible');
                 clearDiff();
+                clearValidation();
             }
 
             // ── Diff 상태 ──
@@ -1253,6 +1780,7 @@
                 removeBtn.classList.add('visible');
                 renderParagraphs(panel, paragraphs);
                 tryRunDiff();
+                tryRunValidation();
             }
 
             // ── 파일 업로드 처리 ──
@@ -1494,6 +2022,28 @@
                 } else {
                     sidebarTitle.textContent = '검증 결과';
                     sidebarEmpty.textContent = '검증 결과가 여기에 표시됩니다';
+                }
+
+                // 비교 모드 전용 UI (scrollSync만 항상 표시, swap/edit는 diff 결과에 따라)
+                scrollSyncBtn.style.display = mode === 'compare' ? '' : 'none';
+
+                // 모드 전환 시 하이라이트 정리 + 재실행
+                if (mode === 'verify') {
+                    clearDiff();
+                    showDiffUI(false);
+                    // 검증 모드 전용 UI 표시
+                    vdSettingsBtn.style.display = '';
+                    vdRevalidateBtn.style.display = '';
+                    tryRunValidation();
+                } else {
+                    clearValidation();
+                    // 검증 모드 전용 UI 숨기기
+                    vdNavGroup.style.display = 'none';
+                    vdFilterGroup.style.display = 'none';
+                    vdSettingsBtn.style.display = 'none';
+                    vdRevalidateBtn.style.display = 'none';
+                    if (editMode) toggleEditMode();
+                    tryRunDiff();
                 }
 
                 updateGrid();
@@ -2154,18 +2704,26 @@
             navPrev.addEventListener('click', navigatePrev);
             navNext.addEventListener('click', navigateNext);
 
-            // 키보드 네비게이션
+            // 키보드 네비게이션 (모드에 따라 diff/validation 분기)
             document.addEventListener('keydown', function(e) {
-                if (diffState.changes.length === 0) return;
-                // 편집 중이면 무시
                 if (e.target.isContentEditable || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
 
                 if (e.key === 'ArrowUp' || e.key === 'k') {
-                    e.preventDefault();
-                    navigatePrev();
+                    if (currentMode === 'verify' && validateState.issues.length > 0) {
+                        e.preventDefault();
+                        vdNavigatePrev();
+                    } else if (currentMode === 'compare' && diffState.changes.length > 0) {
+                        e.preventDefault();
+                        navigatePrev();
+                    }
                 } else if (e.key === 'ArrowDown' || e.key === 'j') {
-                    e.preventDefault();
-                    navigateNext();
+                    if (currentMode === 'verify' && validateState.issues.length > 0) {
+                        e.preventDefault();
+                        vdNavigateNext();
+                    } else if (currentMode === 'compare' && diffState.changes.length > 0) {
+                        e.preventDefault();
+                        navigateNext();
+                    }
                 }
             });
 
@@ -2322,6 +2880,809 @@
 
                 updateNavigation();
             }
+
+            // ══════════════════════════════════════════
+            // Phase 3: 검증 모드 (Validation Mode)
+            // ══════════════════════════════════════════
+
+            // ── 검증 상태 ──
+            var validateState = {
+                score: -1,
+                summary: { error: 0, warning: 0, suggestion: 0 },
+                issues: [],
+                currentIndex: -1,
+                filter: { error: true, warning: true, suggestion: true },
+                isLoading: false
+            };
+
+            // ── 검증 DOM 참조 ──
+            var vdNavGroup = document.getElementById('vd-nav-group');
+            var vdNavPrev = document.getElementById('vd-nav-prev');
+            var vdNavNext = document.getElementById('vd-nav-next');
+            var vdNavIndicator = document.getElementById('vd-nav-indicator');
+            var vdFilterGroup = document.getElementById('vd-filter-group');
+            var vdFilterBtn = document.getElementById('vd-filter-btn');
+            var vdFilterDropdown = document.getElementById('vd-filter-dropdown');
+            var vdSettingsBtn = document.getElementById('vd-settings-btn');
+            var vdRevalidateBtn = document.getElementById('vd-revalidate-btn');
+
+            // ── 3-1. 검증 실행 ──
+            function tryRunValidation() {
+                if (currentMode !== 'verify') return;
+                if (docState.a.paragraphs.length > 0) {
+                    runValidation();
+                }
+            }
+
+            function runValidation() {
+                validateState.isLoading = true;
+                validateState.currentIndex = -1;
+
+                // 사이드바에 로딩 표시
+                sidebarBody.innerHTML = '<div class="vd-loading">'
+                    + '<div class="cp-upload-spinner"></div>'
+                    + '<span>검증 중...</span></div>';
+
+                fetch(API_BASE + '/compare/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        paragraphs: docState.a.paragraphs,
+                        preset: null
+                    })
+                })
+                .then(function(res) {
+                    if (!res.ok) {
+                        return res.json().then(function(err) {
+                            throw new Error(err.detail || '검증 실패');
+                        });
+                    }
+                    return res.json();
+                })
+                .then(function(data) {
+                    validateState.score = data.score;
+                    validateState.summary = data.summary;
+                    validateState.issues = data.issues;
+                    validateState.isLoading = false;
+
+                    renderValidationHighlights(data.issues);
+                    renderValidationSidebar();
+                    showValidationUI(true);
+                    updateValidationNavigation();
+                })
+                .catch(function(err) {
+                    validateState.isLoading = false;
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" style="color:var(--color-error)">'
+                        + '검증 오류: ' + escapeHTML(err.message) + '</div>';
+                });
+            }
+
+            function clearValidation() {
+                validateState.score = -1;
+                validateState.summary = { error: 0, warning: 0, suggestion: 0 };
+                validateState.issues = [];
+                validateState.currentIndex = -1;
+                validateState.isLoading = false;
+
+                // 인라인 하이라이트 제거: 원래 텍스트로 복원
+                if (docState.a.paragraphs.length > 0) {
+                    renderParagraphs(panelBodyA, docState.a.paragraphs);
+                }
+
+                showValidationUI(false);
+
+                // 사이드바 빈 상태
+                if (currentMode === 'verify') {
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">검증 결과가 여기에 표시됩니다</div>';
+                }
+            }
+
+            function showValidationUI(show) {
+                vdNavGroup.style.display = show ? '' : 'none';
+                vdFilterGroup.style.display = show ? '' : 'none';
+            }
+
+            // ── 3-2. 인라인 하이라이트 렌더링 ──
+            function renderValidationHighlights(issues) {
+                if (!issues || issues.length === 0) return;
+
+                // 단락별 이슈 그룹화
+                var byParagraph = {};
+                for (var i = 0; i < issues.length; i++) {
+                    var iss = issues[i];
+                    var pi = iss.paragraph_index;
+                    if (!byParagraph[pi]) byParagraph[pi] = [];
+                    byParagraph[pi].push({ issue: iss, globalIndex: i });
+                }
+
+                // Panel A의 각 단락에 마크 삽입
+                var content = panelBodyA.querySelector('.cp-text-content');
+                if (!content) return;
+
+                var paragraphEls = content.querySelectorAll('.cp-paragraph');
+
+                for (var pi in byParagraph) {
+                    var pIdx = parseInt(pi, 10);
+                    if (pIdx >= paragraphEls.length) continue;
+
+                    var el = paragraphEls[pIdx];
+                    var text = docState.a.paragraphs[pIdx];
+                    if (!text) continue;
+
+                    // 이슈를 char_start 오름차순 정렬
+                    var pIssues = byParagraph[pi].slice().sort(function(a, b) {
+                        return a.issue.char_start - b.issue.char_start;
+                    });
+
+                    // 비중첩 span 삽입
+                    var html = '';
+                    var lastEnd = 0;
+
+                    for (var j = 0; j < pIssues.length; j++) {
+                        var iss = pIssues[j].issue;
+                        var gIdx = pIssues[j].globalIndex;
+                        var start = Math.max(iss.char_start, lastEnd);
+                        var end = iss.char_end;
+
+                        if (start >= end) continue;
+
+                        // 마크 이전 텍스트
+                        if (start > lastEnd) {
+                            html += escapeHTML(text.substring(lastEnd, start));
+                        }
+
+                        var hidden = !validateState.filter[iss.severity] ? ' vd-mark-hidden' : '';
+                        html += '<span class="validate-mark severity-' + iss.severity + hidden
+                            + '" data-issue-index="' + gIdx + '"'
+                            + ' title="' + escapeHTML(iss.message) + '">'
+                            + escapeHTML(text.substring(start, end))
+                            + '</span>';
+                        lastEnd = end;
+                    }
+
+                    // 나머지 텍스트
+                    if (lastEnd < text.length) {
+                        html += escapeHTML(text.substring(lastEnd));
+                    }
+
+                    el.innerHTML = html;
+                }
+
+            }
+
+            // ── 3-2. 검증 사이드바 렌더링 ──
+            function renderValidationSidebar() {
+                var issues = validateState.issues;
+                var score = validateState.score;
+                var summary = validateState.summary;
+
+                if (issues.length === 0) {
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty">'
+                        + (docState.a.paragraphs.length > 0 ? '이슈가 없습니다' : '검증 결과가 여기에 표시됩니다')
+                        + '</div>';
+                    return;
+                }
+
+                // 스코어 색상 — CSS 변수에서 런타임 읽기 (다크 모드 대응)
+                var cs = getComputedStyle(document.documentElement);
+                var colorGood = cs.getPropertyValue('--color-success').trim() || '#22c55e';
+                var colorWarn = cs.getPropertyValue('--color-warning').trim() || '#f59e0b';
+                var colorBad = cs.getPropertyValue('--color-error').trim() || '#ef4444';
+                var scoreColor = score >= 90 ? colorGood : (score >= 70 ? colorWarn : colorBad);
+                var scoreBg = score >= 90 ? 'rgba(34,197,94,0.1)' : (score >= 70 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)');
+
+                // SVG 도넛 링
+                var circumference = 2 * Math.PI * 14;
+                var offset = circumference - (score / 100) * circumference;
+
+                var html = '<div class="vd-score-card" style="background:' + scoreBg + '">'
+                    + '<svg class="vd-score-ring" width="40" height="40" viewBox="0 0 36 36">'
+                    + '<circle cx="18" cy="18" r="14" fill="none" stroke="' + scoreColor + '" stroke-opacity="0.2" stroke-width="3"/>'
+                    + '<circle cx="18" cy="18" r="14" fill="none" stroke="' + scoreColor + '" stroke-width="3" stroke-linecap="round"'
+                    + ' stroke-dasharray="' + circumference.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '"'
+                    + ' transform="rotate(-90 18 18)"/>'
+                    + '<text x="18" y="18" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="700" fill="' + scoreColor + '">' + score + '</text>'
+                    + '</svg>'
+                    + '<div class="vd-score-details">';
+
+                if (summary.error > 0) html += '<span class="vd-score-stat stat-error">오류 ' + summary.error + '</span>';
+                if (summary.warning > 0) html += '<span class="vd-score-stat stat-warning">경고 ' + summary.warning + '</span>';
+                if (summary.suggestion > 0) html += '<span class="vd-score-stat stat-suggestion">제안 ' + summary.suggestion + '</span>';
+
+                html += '</div></div>';
+
+                // 카테고리별 그룹화
+                var categories = {};
+                var categoryLabels = { structure: '구조', terminology: '용어', readability: '가독성' };
+                var categoryOrder = ['structure', 'terminology', 'readability'];
+
+                for (var i = 0; i < issues.length; i++) {
+                    var cat = issues[i].category || 'etc';
+                    if (!categories[cat]) categories[cat] = [];
+                    categories[cat].push({ issue: issues[i], globalIndex: i });
+                }
+
+                var totalIssues = issues.length;
+                var firstCategory = true;
+
+                for (var ci = 0; ci < categoryOrder.length; ci++) {
+                    var cat = categoryOrder[ci];
+                    if (!categories[cat]) continue;
+                    var catIssues = categories[cat];
+                    var collapsed = totalIssues >= 15 && !firstCategory;
+
+                    html += '<div class="vd-category' + (collapsed ? ' collapsed' : '') + '" data-vd-category="' + cat + '">'
+                        + '<div class="vd-category-header">'
+                        + '<span class="vd-category-arrow">&#9660;</span> '
+                        + (categoryLabels[cat] || cat)
+                        + ' <span class="vd-category-count">(' + catIssues.length + ')</span>'
+                        + '</div>'
+                        + '<div class="vd-category-body">';
+
+                    for (var j = 0; j < catIssues.length; j++) {
+                        var iss = catIssues[j].issue;
+                        var gIdx = catIssues[j].globalIndex;
+                        var sevLabel = iss.severity === 'error' ? '오류' : (iss.severity === 'warning' ? '경고' : '제안');
+                        var hidden = !validateState.filter[iss.severity] ? ' vd-issue-hidden' : '';
+
+                        html += '<div class="vd-issue-item severity-' + iss.severity + hidden + '" data-vd-issue-index="' + gIdx + '">'
+                            + '<span class="vd-issue-badge">' + sevLabel + '</span>'
+                            + '<span class="vd-issue-text">' + escapeHTML(iss.message) + '</span>'
+                            + '</div>';
+                    }
+
+                    html += '</div></div>';
+                    firstCategory = false;
+                }
+
+                sidebarBody.innerHTML = html;
+
+                // 카테고리 접기/펼치기 이벤트
+                sidebarBody.querySelectorAll('.vd-category-header').forEach(function(header) {
+                    header.addEventListener('click', function() {
+                        header.parentElement.classList.toggle('collapsed');
+                    });
+                });
+            }
+
+            // 사이드바 이슈 클릭 이벤트 위임
+            sidebarBody.addEventListener('click', function(e) {
+                var item = e.target.closest('[data-vd-issue-index]');
+                if (!item) return;
+                var idx = parseInt(item.getAttribute('data-vd-issue-index'), 10);
+                if (!isNaN(idx)) {
+                    vdNavigateToIssue(idx);
+                }
+            });
+
+            // ── 3-4. 이슈 네비게이션 ──
+            function getVdFilteredIndices() {
+                var indices = [];
+                for (var i = 0; i < validateState.issues.length; i++) {
+                    if (validateState.filter[validateState.issues[i].severity]) {
+                        indices.push(i);
+                    }
+                }
+                return indices;
+            }
+
+            function updateValidationNavigation() {
+                var filtered = getVdFilteredIndices();
+                var total = filtered.length;
+
+                if (total === 0) {
+                    vdNavIndicator.textContent = '0/0';
+                    vdNavPrev.disabled = true;
+                    vdNavNext.disabled = true;
+                    return;
+                }
+
+                var pos = 0;
+                if (validateState.currentIndex >= 0) {
+                    pos = filtered.indexOf(validateState.currentIndex);
+                    if (pos < 0) pos = 0;
+                }
+
+                vdNavIndicator.textContent = (validateState.currentIndex >= 0 ? (pos + 1) : 0) + '/' + total;
+                vdNavPrev.disabled = pos <= 0 || validateState.currentIndex < 0;
+                vdNavNext.disabled = pos >= total - 1 && validateState.currentIndex >= 0;
+            }
+
+            function vdNavigateToIssue(index) {
+                if (index < 0 || index >= validateState.issues.length) return;
+
+                // 이전 활성 해제
+                document.querySelectorAll('.validate-active').forEach(function(el) {
+                    el.classList.remove('validate-active');
+                });
+                document.querySelectorAll('.vd-issue-item.active').forEach(function(el) {
+                    el.classList.remove('active');
+                });
+
+                validateState.currentIndex = index;
+
+                // 인라인 mark 활성화 + 스크롤
+                var mark = panelBodyA.querySelector('.validate-mark[data-issue-index="' + index + '"]');
+                if (mark) {
+                    mark.classList.add('validate-active');
+                    // instant 스크롤
+                    var elTop = mark.offsetTop;
+                    var panelH = panelBodyA.clientHeight;
+                    var desiredTop = elTop - (panelH / 2) + (mark.offsetHeight / 2);
+                    desiredTop = Math.max(0, Math.min(desiredTop, panelBodyA.scrollHeight - panelH));
+                    panelBodyA.scrollTop = desiredTop;
+                }
+
+                // 사이드바 항목 활성화 + 스크롤
+                var sidebarItem = sidebarBody.querySelector('.vd-issue-item[data-vd-issue-index="' + index + '"]');
+                if (sidebarItem) {
+                    sidebarItem.classList.add('active');
+                    sidebarItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                    // 카테고리가 접혀 있으면 펼치기
+                    var category = sidebarItem.closest('.vd-category');
+                    if (category && category.classList.contains('collapsed')) {
+                        category.classList.remove('collapsed');
+                    }
+                }
+
+                updateValidationNavigation();
+            }
+
+            function vdNavigatePrev() {
+                var filtered = getVdFilteredIndices();
+                if (filtered.length === 0) return;
+                var pos = filtered.indexOf(validateState.currentIndex);
+                if (pos > 0) {
+                    vdNavigateToIssue(filtered[pos - 1]);
+                } else if (validateState.currentIndex < 0) {
+                    vdNavigateToIssue(filtered[0]);
+                }
+            }
+
+            function vdNavigateNext() {
+                var filtered = getVdFilteredIndices();
+                if (filtered.length === 0) return;
+                var pos = filtered.indexOf(validateState.currentIndex);
+                if (pos < 0) {
+                    vdNavigateToIssue(filtered[0]);
+                } else if (pos < filtered.length - 1) {
+                    vdNavigateToIssue(filtered[pos + 1]);
+                }
+            }
+
+            vdNavPrev.addEventListener('click', vdNavigatePrev);
+            vdNavNext.addEventListener('click', vdNavigateNext);
+
+            // 인라인 mark 클릭: panelBodyA 레벨 이벤트 위임 (리스너 누적 방지)
+            panelBodyA.addEventListener('click', function(e) {
+                var mark = e.target.closest('.validate-mark');
+                if (!mark) return;
+                var idx = parseInt(mark.getAttribute('data-issue-index'), 10);
+                if (!isNaN(idx)) {
+                    vdNavigateToIssue(idx);
+                }
+            });
+
+            // ── 검증 필터 ──
+            vdFilterBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var isVisible = vdFilterDropdown.style.display !== 'none';
+                vdFilterDropdown.style.display = isVisible ? 'none' : '';
+                vdFilterBtn.classList.toggle('active', !isVisible);
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!vdFilterGroup.contains(e.target)) {
+                    vdFilterDropdown.style.display = 'none';
+                    vdFilterBtn.classList.remove('active');
+                }
+            });
+
+            vdFilterDropdown.addEventListener('change', function(e) {
+                var input = e.target;
+                var filterType = input.getAttribute('data-vd-filter');
+                if (!filterType) return;
+                validateState.filter[filterType] = input.checked;
+                applyValidationFilter();
+            });
+
+            function applyValidationFilter() {
+                // 인라인 마크 토글 (CSS 클래스로 제어)
+                var marks = panelBodyA.querySelectorAll('.validate-mark');
+                marks.forEach(function(mark) {
+                    var idx = parseInt(mark.getAttribute('data-issue-index'), 10);
+                    var iss = validateState.issues[idx];
+                    if (iss) {
+                        mark.classList.toggle('vd-mark-hidden', !validateState.filter[iss.severity]);
+                    }
+                });
+
+                // 사이드바 항목 토글
+                var items = sidebarBody.querySelectorAll('.vd-issue-item');
+                items.forEach(function(item) {
+                    var idx = parseInt(item.getAttribute('data-vd-issue-index'), 10);
+                    var iss = validateState.issues[idx];
+                    if (iss) {
+                        item.classList.toggle('vd-issue-hidden', !validateState.filter[iss.severity]);
+                    }
+                });
+
+                // 현재 인덱스가 필터 밖이면 리셋
+                if (validateState.currentIndex >= 0 && !validateState.filter[validateState.issues[validateState.currentIndex].severity]) {
+                    validateState.currentIndex = -1;
+                    document.querySelectorAll('.validate-active').forEach(function(el) {
+                        el.classList.remove('validate-active');
+                    });
+                    document.querySelectorAll('.vd-issue-item.active').forEach(function(el) {
+                        el.classList.remove('active');
+                    });
+                }
+
+                updateValidationNavigation();
+            }
+
+            // ── 재검증 버튼 ──
+            vdRevalidateBtn.addEventListener('click', function() {
+                if (docState.a.paragraphs.length > 0) {
+                    runValidation();
+                }
+            });
+
+            // ── 3-3. 규칙 설정 모달 ──
+            var RULE_LABELS = {
+                numbering_continuity: '번호 체계 연속성',
+                table_caption: '표 캡션 존재',
+                figure_caption: '그림 캡션 존재',
+                forbidden_terms: '금지 용어 감지',
+                inconsistent_terms: '용어 일관성',
+                sentence_length: '문장 길이 제한'
+            };
+
+            var RULE_CATEGORIES = {
+                numbering_continuity: '구조 검사',
+                table_caption: '구조 검사',
+                figure_caption: '구조 검사',
+                forbidden_terms: '용어 검사',
+                inconsistent_terms: '용어 검사',
+                sentence_length: '가독성 검사'
+            };
+
+            var SEVERITY_LABELS = { error: '오류', warning: '경고', suggestion: '제안' };
+
+            vdSettingsBtn.addEventListener('click', function() {
+                openRulesModal();
+            });
+
+            function openRulesModal() {
+                // 서버에서 규칙 로드
+                fetch(API_BASE + '/compare/rules', { credentials: 'include' })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    showRulesModal(data);
+                })
+                .catch(function(err) {
+                    alert('규칙 로드 실패: ' + err.message);
+                });
+            }
+
+            function showRulesModal(rulesData) {
+                var overlay = document.createElement('div');
+                overlay.className = 'vd-modal-overlay';
+
+                var presets = rulesData.presets || {};
+                var activePreset = rulesData.active_preset || 'technical';
+                var currentRules = JSON.parse(JSON.stringify(presets[activePreset] || {}));
+
+                function buildBody() {
+                    var rules = currentRules.rules || {};
+
+                    // 카테고리별 그룹화
+                    var groups = {};
+                    var groupOrder = ['구조 검사', '용어 검사', '가독성 검사'];
+                    for (var ruleId in RULE_LABELS) {
+                        var cat = RULE_CATEGORIES[ruleId];
+                        if (!groups[cat]) groups[cat] = [];
+                        groups[cat].push(ruleId);
+                    }
+
+                    var html = '';
+                    for (var gi = 0; gi < groupOrder.length; gi++) {
+                        var groupName = groupOrder[gi];
+                        var ruleIds = groups[groupName];
+                        if (!ruleIds) continue;
+
+                        html += '<div class="vd-rule-group">'
+                            + '<div class="vd-rule-group-title">' + groupName + '</div>';
+
+                        for (var ri = 0; ri < ruleIds.length; ri++) {
+                            var ruleId = ruleIds[ri];
+                            var rule = rules[ruleId] || { enabled: false, severity: 'warning' };
+
+                            html += '<div class="vd-rule-row" data-rule-id="' + ruleId + '">'
+                                + '<span class="vd-rule-name">' + RULE_LABELS[ruleId] + '</span>'
+                                + '<select class="vd-rule-severity" data-rule-severity="' + ruleId + '">'
+                                + '<option value="error"' + (rule.severity === 'error' ? ' selected' : '') + '>오류</option>'
+                                + '<option value="warning"' + (rule.severity === 'warning' ? ' selected' : '') + '>경고</option>'
+                                + '<option value="suggestion"' + (rule.severity === 'suggestion' ? ' selected' : '') + '>제안</option>'
+                                + '</select>'
+                                + '<button class="vd-rule-toggle' + (rule.enabled ? ' on' : '') + '" data-rule-toggle="' + ruleId + '"></button>'
+                                + '</div>';
+
+                            // 파라미터 표시
+                            if (ruleId === 'sentence_length' && rule.params) {
+                                html += '<div class="vd-rule-param">'
+                                    + '최대 <input type="number" data-rule-param="sentence_length.max_chars" value="' + (rule.params.max_chars || 80) + '"> 자'
+                                    + '</div>';
+                            }
+
+                            // 금지 용어 편집 패널
+                            if (ruleId === 'forbidden_terms') {
+                                var terms = (rule.params && rule.params.terms) || [];
+                                html += '<div class="vd-terms-panel" data-terms-for="forbidden_terms">';
+                                html += '<div class="vd-terms-list">';
+                                if (terms.length === 0) {
+                                    html += '<div class="vd-terms-empty">등록된 금지 용어가 없습니다</div>';
+                                } else {
+                                    for (var ti = 0; ti < terms.length; ti++) {
+                                        html += '<div class="vd-term-row" data-term-index="' + ti + '">'
+                                            + '<span class="vd-term-text">' + escapeHTML(terms[ti].term) + '</span>'
+                                            + '<span class="vd-term-arrow">&rarr;</span>'
+                                            + '<span class="vd-term-replacement">' + escapeHTML(terms[ti].replacement) + '</span>'
+                                            + '<button class="vd-term-remove" data-remove-term="' + ti + '" title="삭제">&times;</button>'
+                                            + '</div>';
+                                    }
+                                }
+                                html += '</div>';
+                                html += '<div class="vd-term-add">'
+                                    + '<input type="text" placeholder="금지어" data-add-forbidden-term>'
+                                    + '<span class="vd-term-arrow">&rarr;</span>'
+                                    + '<input type="text" placeholder="대체어" data-add-forbidden-replacement>'
+                                    + '<button class="vd-term-add-btn" data-add-forbidden-btn title="추가">+</button>'
+                                    + '</div>';
+                                html += '</div>';
+                            }
+
+                            // 용어 일관성 그룹 편집 패널
+                            if (ruleId === 'inconsistent_terms') {
+                                var groups = (rule.params && rule.params.groups) || [];
+                                html += '<div class="vd-terms-panel" data-terms-for="inconsistent_terms">';
+                                html += '<div class="vd-terms-list">';
+                                if (groups.length === 0) {
+                                    html += '<div class="vd-terms-empty">등록된 용어 그룹이 없습니다</div>';
+                                } else {
+                                    for (var gi2 = 0; gi2 < groups.length; gi2++) {
+                                        html += '<div class="vd-term-row" data-group-index="' + gi2 + '">'
+                                            + '<div class="vd-group-tags">';
+                                        for (var gti = 0; gti < groups[gi2].length; gti++) {
+                                            html += '<span class="vd-group-tag">' + escapeHTML(groups[gi2][gti]) + '</span>';
+                                        }
+                                        html += '</div>'
+                                            + '<button class="vd-term-remove" data-remove-group="' + gi2 + '" title="삭제">&times;</button>'
+                                            + '</div>';
+                                    }
+                                }
+                                html += '</div>';
+                                html += '<div class="vd-term-add">'
+                                    + '<input type="text" placeholder="쉼표로 구분 (예: 항공기, 비행기)" data-add-group-input style="flex:3">'
+                                    + '<button class="vd-term-add-btn" data-add-group-btn title="추가">+</button>'
+                                    + '</div>';
+                                html += '</div>';
+                            }
+                        }
+                        html += '</div>';
+                    }
+                    return html;
+                }
+
+                var modalHTML = '<div class="vd-modal">'
+                    + '<div class="vd-modal-header"><span>검증 규칙 설정</span><button class="vd-modal-close">&times;</button></div>'
+                    + '<div class="vd-modal-body">'
+                    + '<div class="vd-preset-row">'
+                    + '<span>프리셋:</span>'
+                    + '<select class="vd-preset-select" id="vd-preset-select">';
+
+                for (var pKey in presets) {
+                    modalHTML += '<option value="' + pKey + '"' + (pKey === activePreset ? ' selected' : '') + '>'
+                        + escapeHTML(presets[pKey].label || pKey) + '</option>';
+                }
+
+                modalHTML += '</select></div>'
+                    + '<div id="vd-rules-body">' + buildBody() + '</div>'
+                    + '</div>'
+                    + '<div class="vd-modal-footer">'
+                    + '<button class="vd-modal-btn" id="vd-modal-cancel">취소</button>'
+                    + '<button class="vd-modal-btn primary" id="vd-modal-apply">적용 + 재검증</button>'
+                    + '</div></div>';
+
+                overlay.innerHTML = modalHTML;
+                document.body.appendChild(overlay);
+
+                // 이벤트
+                var modal = overlay.querySelector('.vd-modal');
+                var presetSelect = overlay.querySelector('#vd-preset-select');
+                var rulesBody = overlay.querySelector('#vd-rules-body');
+
+                function closeModal() {
+                    overlay.remove();
+                }
+
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay) closeModal();
+                });
+                overlay.querySelector('.vd-modal-close').addEventListener('click', closeModal);
+                overlay.querySelector('#vd-modal-cancel').addEventListener('click', closeModal);
+
+                // ESC 닫기
+                function onEsc(e) {
+                    if (e.key === 'Escape') closeModal();
+                }
+                document.addEventListener('keydown', onEsc);
+                var origClose = closeModal;
+                closeModal = function() {
+                    document.removeEventListener('keydown', onEsc);
+                    origClose();
+                };
+
+                // 프리셋 변경
+                presetSelect.addEventListener('change', function() {
+                    activePreset = presetSelect.value;
+                    currentRules = JSON.parse(JSON.stringify(presets[activePreset] || {}));
+                    rulesBody.innerHTML = buildBody();
+                    bindRuleEvents();
+                });
+
+                function bindRuleEvents() {
+                    // 토글 버튼
+                    rulesBody.querySelectorAll('.vd-rule-toggle').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var ruleId = btn.getAttribute('data-rule-toggle');
+                            btn.classList.toggle('on');
+                            if (currentRules.rules && currentRules.rules[ruleId]) {
+                                currentRules.rules[ruleId].enabled = btn.classList.contains('on');
+                            }
+                        });
+                    });
+
+                    // 심각도 변경
+                    rulesBody.querySelectorAll('.vd-rule-severity').forEach(function(sel) {
+                        sel.addEventListener('change', function() {
+                            var ruleId = sel.getAttribute('data-rule-severity');
+                            if (currentRules.rules && currentRules.rules[ruleId]) {
+                                currentRules.rules[ruleId].severity = sel.value;
+                            }
+                        });
+                    });
+
+                    // 파라미터 변경
+                    rulesBody.querySelectorAll('[data-rule-param]').forEach(function(input) {
+                        input.addEventListener('change', function() {
+                            var parts = input.getAttribute('data-rule-param').split('.');
+                            var ruleId = parts[0];
+                            var paramKey = parts[1];
+                            if (currentRules.rules && currentRules.rules[ruleId] && currentRules.rules[ruleId].params) {
+                                currentRules.rules[ruleId].params[paramKey] = parseInt(input.value, 10) || 80;
+                            }
+                        });
+                    });
+
+                    // ── 금지 용어 편집 ──
+                    // 삭제
+                    rulesBody.querySelectorAll('[data-remove-term]').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var idx = parseInt(btn.getAttribute('data-remove-term'), 10);
+                            var rule = currentRules.rules && currentRules.rules.forbidden_terms;
+                            if (rule && rule.params && rule.params.terms) {
+                                rule.params.terms.splice(idx, 1);
+                                rebuildAndBind();
+                            }
+                        });
+                    });
+
+                    // 추가
+                    var addForbiddenBtn = rulesBody.querySelector('[data-add-forbidden-btn]');
+                    if (addForbiddenBtn) {
+                        var termInput = rulesBody.querySelector('[data-add-forbidden-term]');
+                        var replInput = rulesBody.querySelector('[data-add-forbidden-replacement]');
+
+                        function addForbiddenTerm() {
+                            var term = termInput.value.trim();
+                            var repl = replInput.value.trim();
+                            if (!term) { termInput.focus(); return; }
+                            if (!repl) { replInput.focus(); return; }
+                            var rule = currentRules.rules && currentRules.rules.forbidden_terms;
+                            if (rule) {
+                                if (!rule.params) rule.params = { terms: [] };
+                                if (!rule.params.terms) rule.params.terms = [];
+                                // 중복 검사
+                                var exists = rule.params.terms.some(function(t) { return t.term === term; });
+                                if (exists) { termInput.focus(); termInput.select(); return; }
+                                rule.params.terms.push({ term: term, replacement: repl });
+                                rebuildAndBind();
+                            }
+                        }
+
+                        addForbiddenBtn.addEventListener('click', addForbiddenTerm);
+                        // Enter 키로 추가
+                        [termInput, replInput].forEach(function(inp) {
+                            inp.addEventListener('keydown', function(e) {
+                                if (e.key === 'Enter') { e.preventDefault(); addForbiddenTerm(); }
+                            });
+                        });
+                    }
+
+                    // ── 용어 그룹 편집 ──
+                    // 삭제
+                    rulesBody.querySelectorAll('[data-remove-group]').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var idx = parseInt(btn.getAttribute('data-remove-group'), 10);
+                            var rule = currentRules.rules && currentRules.rules.inconsistent_terms;
+                            if (rule && rule.params && rule.params.groups) {
+                                rule.params.groups.splice(idx, 1);
+                                rebuildAndBind();
+                            }
+                        });
+                    });
+
+                    // 추가
+                    var addGroupBtn = rulesBody.querySelector('[data-add-group-btn]');
+                    if (addGroupBtn) {
+                        var groupInput = rulesBody.querySelector('[data-add-group-input]');
+
+                        function addTermGroup() {
+                            var raw = groupInput.value.trim();
+                            if (!raw) { groupInput.focus(); return; }
+                            var terms = raw.split(/[,，]/).map(function(t) { return t.trim(); }).filter(Boolean);
+                            if (terms.length < 2) { groupInput.focus(); return; }
+                            var rule = currentRules.rules && currentRules.rules.inconsistent_terms;
+                            if (rule) {
+                                if (!rule.params) rule.params = { groups: [] };
+                                if (!rule.params.groups) rule.params.groups = [];
+                                rule.params.groups.push(terms);
+                                rebuildAndBind();
+                            }
+                        }
+
+                        addGroupBtn.addEventListener('click', addTermGroup);
+                        groupInput.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter') { e.preventDefault(); addTermGroup(); }
+                        });
+                    }
+                }
+
+                function rebuildAndBind() {
+                    rulesBody.innerHTML = buildBody();
+                    bindRuleEvents();
+                }
+
+                bindRuleEvents();
+
+                // 적용 + 재검증
+                overlay.querySelector('#vd-modal-apply').addEventListener('click', function() {
+                    // 현재 수정사항을 presets에 반영
+                    presets[activePreset] = currentRules;
+                    var saveData = { presets: presets, active_preset: activePreset };
+
+                    fetch(API_BASE + '/compare/rules', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(saveData)
+                    })
+                    .then(function(res) {
+                        if (!res.ok) throw new Error('저장 실패');
+                        closeModal();
+                        if (docState.a.paragraphs.length > 0) {
+                            runValidation();
+                        }
+                    })
+                    .catch(function(err) {
+                        alert('규칙 저장 실패: ' + err.message);
+                    });
+                });
+            }
+
         })();
     </script>
 </body>

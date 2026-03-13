@@ -1,0 +1,100 @@
+{
+  "presets": {
+    "technical": {
+      "label": "기술문서",
+      "rules": {
+        "numbering_continuity": {
+          "enabled": true,
+          "severity": "error"
+        },
+        "table_caption": {
+          "enabled": true,
+          "severity": "warning"
+        },
+        "figure_caption": {
+          "enabled": true,
+          "severity": "warning"
+        },
+        "forbidden_terms": {
+          "enabled": true,
+          "severity": "warning",
+          "params": {
+            "terms": [
+              {
+                "term": "비행기",
+                "replacement": "항공기"
+              },
+              {
+                "term": "체크",
+                "replacement": "점검"
+              }
+            ]
+          }
+        },
+        "inconsistent_terms": {
+          "enabled": true,
+          "severity": "warning",
+          "params": {
+            "groups": [
+              [
+                "항공기",
+                "비행기",
+                "비행체"
+              ],
+              [
+                "시험",
+                "테스트"
+              ]
+            ]
+          }
+        },
+        "sentence_length": {
+          "enabled": true,
+          "severity": "suggestion",
+          "params": {
+            "max_chars": 80
+          }
+        }
+      }
+    },
+    "general": {
+      "label": "일반",
+      "rules": {
+        "numbering_continuity": {
+          "enabled": false,
+          "severity": "warning"
+        },
+        "table_caption": {
+          "enabled": false,
+          "severity": "suggestion"
+        },
+        "figure_caption": {
+          "enabled": false,
+          "severity": "suggestion"
+        },
+        "forbidden_terms": {
+          "enabled": true,
+          "severity": "suggestion",
+          "params": {
+            "terms": []
+          }
+        },
+        "inconsistent_terms": {
+          "enabled": true,
+          "severity": "suggestion",
+          "params": {
+            "groups": []
+          }
+        },
+        "sentence_length": {
+          "enabled": true,
+          "severity": "suggestion",
+          "params": {
+            "max_chars": 100
+          }
+        }
+      }
+    }
+  },
+  "active_preset": "technical"
+}

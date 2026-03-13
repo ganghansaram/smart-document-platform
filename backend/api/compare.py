@@ -1,12 +1,17 @@
 """
-Compare API — 문서 업로드 및 텍스트 추출
+Compare API — 문서 업로드, 텍스트 추출, 검증
 """
 import os
 
-from fastapi import APIRouter, File, UploadFile, Depends, HTTPException
+from fastapi import APIRouter, File, UploadFile, Depends, HTTPException, Request
 
 from dependencies import get_current_user
-from services.compare_service import extract_text
+from services.compare_service import (
+    extract_text,
+    validate_paragraphs,
+    load_rules,
+    save_rules,
+)
 
 router = APIRouter(prefix="/compare", tags=["compare"])
 
@@ -49,3 +54,39 @@ async def api_compare_upload(
         "paragraphs": result["paragraphs"],
         "page_count": result["page_count"],
     }
+
+
+@router.post("/validate")
+async def api_compare_validate(
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """단락 배열 → 규칙 기반 검증 → 이슈 목록"""
+    body = await request.json()
+    paragraphs = body.get("paragraphs", [])
+    preset = body.get("preset")
+
+    if not paragraphs:
+        raise HTTPException(status_code=400, detail="paragraphs가 비어 있습니다")
+
+    result = validate_paragraphs(paragraphs, preset)
+    return result
+
+
+@router.get("/rules")
+async def api_compare_rules_get(
+    user: dict = Depends(get_current_user),
+):
+    """현재 규칙 설정 반환"""
+    return load_rules()
+
+
+@router.put("/rules")
+async def api_compare_rules_put(
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """규칙 설정 저장"""
+    body = await request.json()
+    save_rules(body)
+    return {"ok": True}
