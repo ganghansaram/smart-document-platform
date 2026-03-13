@@ -2,7 +2,7 @@
 
 > 작성일: 2026-03-13
 > 브랜치: `feature/design-system`
-> 상태: **Step B 전체 완료 (B-1~B-6) — 커밋 대기**
+> 상태: **Step B 전체 완료 (B-1~B-6) — 코드 작업 완료, PR 대기**
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## 현황 요약
 
-### CSS 로드 현황 (Step A 적용 후)
+### CSS 로드 현황 (Step B 완료 후)
 
 | 페이지 | 공통 CSS | 공통 수 |
 |--------|---------|--------|
@@ -28,8 +28,8 @@
 | translator.html | tokens, scrollbar, **components** | 3/6 |
 | compare.html | tokens, scrollbar, **components**, compare | 4/6 |
 | admin.html | tokens, toast, **components** | 3/6 |
-| launcher.html | tokens | 1/6 |
-| login.html | tokens | 1/6 |
+| launcher.html | tokens, **components**, platform-header, platform-footer | 4/6 |
+| login.html | tokens, **components** | 2/6 |
 
 ### Step A 적용 완료 항목
 
@@ -262,16 +262,16 @@
 
 ---
 
-## 변경 수치 요약 (현재까지)
+## 변경 수치 요약 (최종)
 
 | 지표 | 값 |
 |------|---|
 | 신규 파일 | 6개 CSS + 계획서 1개 |
-| 수정 파일 | 18개 (HTML 5 + CSS 4 + JS 4 + CLAUDE.md) |
-| 제거된 중복 코드 | ~1,740줄 |
-| 추가된 공통 코드 | ~1,956줄 |
-| 시각적 변화 | 0건 (의도적 모달 입력 통일 제외) |
-| 커밋 | 3건 (c186620, a110311, d0bc534) + B-2 대기 |
+| 수정 파일 | 22개 (HTML 7 + CSS 6 + JS 5 + CLAUDE.md) |
+| 제거된 중복 코드 | ~1,810줄 |
+| 추가된 공통 코드 | ~1,970줄 |
+| 시각적 변화 | 0건 (의도적 미세 통일 제외) |
+| 커밋 | 5건 (c186620, a110311, d0bc534, 216f509, ac8d39c) |
 
 ---
 
