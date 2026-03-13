@@ -361,7 +361,7 @@ body[data-theme="dark"] .main-content .page-header h1.ph-icon-glossary::before {
     padding: 16px 20px;
     background-color: #fff8e1;
     border: 1px dashed #f9a825;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     color: #795548;
     font-size: 13px;
     line-height: 1.6;
@@ -406,7 +406,7 @@ body[data-theme="dark"] .shape-placeholder {
         --text-light: #7f8c8d;
         --border-color: #dde4e8;
         --hover-bg: #e8f4f8;
-        --active-color: #0066cc;
+        --active-color: #2c5282;
     }
 }
 
@@ -486,7 +486,7 @@ body[data-table-style="minimal"] .main-content table tbody tr:last-child td {
     background-color: var(--dark-gray);
     color: var(--light-gray);
     padding: 20px;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     overflow-x: auto;
     margin: 24px 0;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
@@ -599,7 +599,7 @@ body[data-table-style="minimal"] .main-content table tbody tr:last-child td {
 }
 
 .section-nav a.active {
-    background-color: rgba(0, 102, 204, 0.08);
+    background-color: var(--active-color-subtle);
     border-left-color: var(--active-color);
     color: var(--active-color);
     font-weight: 600;
@@ -615,7 +615,7 @@ body[data-table-style="minimal"] .main-content table tbody tr:last-child td {
 }
 
 body[data-theme="dark"] .section-nav a.active {
-    background-color: rgba(91, 163, 245, 0.1);
+    background-color: var(--active-color-subtle);
 }
 
 /* 중첩 ul로 들여쓰기 (좌측 패널과 동일한 방식) */
@@ -897,7 +897,7 @@ body[data-theme="dark"] .search-glossary-abbr {
 .banner-dot.active {
     background-color: var(--white);
     width: 32px;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
 }
 
 /* 배너 텍스트 오버레이 */
@@ -1119,7 +1119,7 @@ body[data-theme="dark"][data-table-style="bordered"] .figure-popup-body table th
 /* 이미지 — 투명 배경 보호 */
 body[data-theme="dark"] .main-content img {
     background-color: #ffffff;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     padding: 4px;
 }
 
