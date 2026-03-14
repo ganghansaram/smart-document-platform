@@ -578,12 +578,12 @@ body[data-theme="dark"] .mode-toggle-btn.active {
 }
 
 /* ── Phase 2: Diff 시각화 ── */
-.cp-paragraph.diff-para-added    { background: var(--diff-added); border-left: 3px solid #2ea043; }
-.cp-paragraph.diff-para-deleted  { background: var(--diff-deleted); border-left: 3px solid #f85149; }
-.cp-paragraph.diff-para-modified { border-left: 3px solid #f59e0b; }
+.cp-paragraph.diff-para-added    { background: var(--diff-added); border-left: 3px solid var(--diff-added-border); }
+.cp-paragraph.diff-para-deleted  { background: var(--diff-deleted); border-left: 3px solid var(--diff-deleted-border); }
+.cp-paragraph.diff-para-modified { border-left: 3px solid var(--diff-modified-border); }
 
-.diff-word-added   { background: var(--diff-added); }
-.diff-word-deleted { background: var(--diff-deleted); text-decoration: line-through; }
+.diff-word-added   { background: var(--diff-added-word); border-radius: 2px; }
+.diff-word-deleted { background: var(--diff-deleted-word); border-radius: 2px; text-decoration: line-through; }
 
 .cp-paragraph.diff-gap {
     min-height: 28px; opacity: 0.3;
@@ -675,9 +675,9 @@ body[data-theme="dark"] .mode-toggle-btn.active {
     border-radius: var(--radius-lg);
 }
 
-.cp-stat-added   { background: var(--diff-added); color: #1a7f37; }
-.cp-stat-deleted { background: var(--diff-deleted); color: #cf222e; }
-.cp-stat-modified { background: var(--diff-modified); color: #9a6700; }
+.cp-stat-added   { background: var(--diff-added); color: var(--diff-added-text); }
+.cp-stat-deleted { background: var(--diff-deleted); color: var(--diff-deleted-text); }
+.cp-stat-modified { background: var(--diff-modified); color: var(--diff-modified-text); }
 
 .cp-change-list {
     display: flex;
@@ -698,9 +698,9 @@ body[data-theme="dark"] .mode-toggle-btn.active {
 .cp-change-item:hover { background: var(--light-gray); }
 .cp-change-item.active { background: var(--hover-bg); box-shadow: inset 0 0 0 1px var(--active-color); }
 
-.cp-change-item.cp-change-added   { border-left-color: #2ea043; }
-.cp-change-item.cp-change-deleted  { border-left-color: #f85149; }
-.cp-change-item.cp-change-modified { border-left-color: #f59e0b; }
+.cp-change-item.cp-change-added   { border-left-color: var(--diff-added-border); }
+.cp-change-item.cp-change-deleted  { border-left-color: var(--diff-deleted-border); }
+.cp-change-item.cp-change-modified { border-left-color: var(--diff-modified-border); }
 
 .cp-change-badge {
     font-size: 11px;
@@ -712,9 +712,9 @@ body[data-theme="dark"] .mode-toggle-btn.active {
     margin-top: 1px;
 }
 
-.cp-change-added .cp-change-badge   { background: var(--diff-added); color: #1a7f37; }
-.cp-change-deleted .cp-change-badge  { background: var(--diff-deleted); color: #cf222e; }
-.cp-change-modified .cp-change-badge { background: var(--diff-modified); color: #9a6700; }
+.cp-change-added .cp-change-badge   { background: var(--diff-added); color: var(--diff-added-text); }
+.cp-change-deleted .cp-change-badge  { background: var(--diff-deleted); color: var(--diff-deleted-text); }
+.cp-change-modified .cp-change-badge { background: var(--diff-modified); color: var(--diff-modified-text); }
 
 .cp-change-text {
     font-size: 12px;
@@ -743,30 +743,14 @@ body[data-theme="dark"] .mode-toggle-btn.active {
 }
 
 /* ── 다크 모드 Phase 2 추가 ── */
-body[data-theme="dark"] .cp-stat-added   { color: #3fb950; }
-body[data-theme="dark"] .cp-stat-deleted  { color: #f85149; }
-body[data-theme="dark"] .cp-stat-modified { color: #d29922; }
-
 body[data-theme="dark"] .cp-change-item:hover { background: rgba(255,255,255,0.05); }
 body[data-theme="dark"] .cp-change-item.active { background: var(--active-color-subtle); }
-
-body[data-theme="dark"] .cp-change-added .cp-change-badge   { color: #3fb950; }
-body[data-theme="dark"] .cp-change-deleted .cp-change-badge  { color: #f85149; }
-body[data-theme="dark"] .cp-change-modified .cp-change-badge { color: #d29922; }
 
 body[data-theme="dark"] .cp-filter-dropdown {
     background: var(--white);
     border-color: rgba(255,255,255,0.12);
     box-shadow: 0 8px 32px rgba(0,0,0,0.35);
 }
-
-body[data-theme="dark"] .cp-change-item.cp-change-added   { border-left-color: #3fb950; }
-body[data-theme="dark"] .cp-change-item.cp-change-deleted  { border-left-color: #f85149; }
-body[data-theme="dark"] .cp-change-item.cp-change-modified { border-left-color: #d29922; }
-
-body[data-theme="dark"] .cp-paragraph.diff-para-added   { border-left-color: #3fb950; }
-body[data-theme="dark"] .cp-paragraph.diff-para-deleted  { border-left-color: #f85149; }
-body[data-theme="dark"] .cp-paragraph.diff-para-modified { border-left-color: #d29922; }
 
 body[data-theme="dark"] .cp-nav-btn {
     background: rgba(255,255,255,0.06);
@@ -1256,3 +1240,124 @@ body[data-theme="dark"] .vd-term-add-btn { background: rgba(255,255,255,0.06); b
 body[data-theme="dark"] .vd-term-add-btn:hover { background: var(--active-color); border-color: var(--active-color); }
 body[data-theme="dark"] .vd-term-remove:hover { background: rgba(248,113,113,0.15); }
 body[data-theme="dark"] .vd-group-tag { background: rgba(255,255,255,0.08); }
+
+/* ══════════════════════════════════════════
+   Phase 4: 수락/거절 + 내보내기 + 단락 번호
+   ══════════════════════════════════════════ */
+
+/* ── 4-1. 수락/거절 버튼 (사이드바 항목 내) ── */
+.cp-change-actions {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+.cp-accept-btn,
+.cp-reject-btn {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-light);
+    transition: all var(--transition-fast);
+}
+
+.cp-accept-btn:hover { color: var(--diff-added-text); background: var(--diff-added); }
+.cp-reject-btn:hover { color: var(--diff-deleted-text); background: var(--diff-deleted); }
+
+.cp-accept-btn.active { color: var(--diff-added-text); background: var(--diff-added); }
+.cp-reject-btn.active { color: var(--diff-deleted-text); background: var(--diff-deleted); }
+
+/* 결정된 사이드바 항목 시각 피드백 — 버튼만 선명, 나머지 흐림 */
+.cp-change-item.cp-decision-accepted .cp-change-text,
+.cp-change-item.cp-decision-rejected .cp-change-text { opacity: 0.45; }
+
+.cp-change-item.cp-decision-accepted .cp-change-badge,
+.cp-change-item.cp-decision-rejected .cp-change-badge { opacity: 0.45; }
+
+/* 결정된 패널 하이라이트 시각 피드백 — border 색상은 유형 색상 유지 */
+.cp-paragraph.diff-decision-accepted {
+    opacity: 0.5;
+}
+.cp-paragraph.diff-decision-rejected {
+    opacity: 0.5;
+    text-decoration: line-through;
+    text-decoration-color: var(--diff-deleted-word);
+}
+
+/* 진행률 표시 */
+.cp-stat-progress {
+    color: var(--text-light);
+    background: transparent;
+    font-weight: 500;
+}
+
+/* 일괄 처리 버튼 */
+.cp-bulk-actions {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    margin-left: auto;
+    margin-right: 4px;
+}
+
+.cp-bulk-actions .btn {
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
+/* ── 힌트 문구 ── */
+.cp-decision-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: var(--text-light);
+    background: var(--active-color-subtle);
+    border-radius: var(--radius-sm);
+}
+
+.cp-decision-hint-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-light);
+    font-size: 14px;
+    padding: 0 2px;
+    line-height: 1;
+}
+
+.cp-decision-hint-close:hover {
+    color: var(--text-dark);
+}
+
+/* ── 4-3. 단락 번호 ── */
+.show-para-numbers .cp-paragraph {
+    counter-increment: para;
+}
+
+.show-para-numbers .cp-paragraph:not(.diff-gap)::before {
+    content: counter(para);
+    display: inline-block;
+    width: 28px;
+    margin-right: 8px;
+    text-align: right;
+    font-size: 11px;
+    color: var(--text-light);
+    opacity: 0.6;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+/* gap 단락은 번호 건너뛰되 카운터 증가 안 함 */
+.show-para-numbers .cp-paragraph.diff-gap {
+    counter-increment: none;
+}
+
+.show-para-numbers .cp-text-content {
+    counter-reset: para;
+}
+
+

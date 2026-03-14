@@ -2,7 +2,7 @@
 
 > 작성일: 2026-03-12
 > 최종 갱신: 2026-03-13
-> 상태: Phase 3 완료 — Phase 4 대기
+> 상태: Phase 4 완료 (UX 개선·토큰화 포함) — Phase 5 대기
 
 ---
 
@@ -55,14 +55,25 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 | radius | sm(4px), md(6px), lg(8px), xl(12px) |
 | 다크 모드 | `body[data-theme="dark"]` 변수 오버라이드 — 지원 필수 |
 
-**Compare 고유 diff 색상** (CSS 변수로 선언):
+**Compare 고유 diff 색상** (`tokens.css`에 정의, 다크모드 자동 전환):
 
-| 용도 | 라이트 | 다크 |
-|------|--------|------|
-| `--diff-added` | `#e6ffec` | `rgba(46,160,67,0.15)` |
-| `--diff-deleted` | `#ffeef0` | `rgba(248,81,73,0.15)` |
-| `--diff-modified` | `#fff8e1` | `rgba(245,158,11,0.15)` |
-| 검증 이슈 | 기존 `--color-warning`, `--color-error` 재사용 |
+| 용도 | 토큰 | 라이트 | 다크 |
+|------|------|--------|------|
+| 추가 단락 배경 | `--diff-added` | `#e6ffec` | `rgba(46,160,67,0.15)` |
+| 삭제 단락 배경 | `--diff-deleted` | `#fce4e4` | `rgba(248,81,73,0.25)` |
+| 수정 단락 배경 | `--diff-modified` | `#fef3cd` | `rgba(245,158,11,0.25)` |
+| 추가 텍스트/배지 | `--diff-added-text` | `#1a7f37` | `#3fb950` |
+| 삭제 텍스트/배지 | `--diff-deleted-text` | `#cf222e` | `#f85149` |
+| 수정 텍스트/배지 | `--diff-modified-text` | `#9a6700` | `#d29922` |
+| 추가 테두리 | `--diff-added-border` | `#2ea043` | `#3fb950` |
+| 삭제 테두리 | `--diff-deleted-border` | `#f85149` | `#f85149` |
+| 수정 테두리 | `--diff-modified-border` | `#f59e0b` | `#d29922` |
+| 추가 단어 하이라이트 | `--diff-added-word` | `#86efac` | `rgba(46,160,67,0.4)` |
+| 삭제 단어 하이라이트 | `--diff-deleted-word` | `#fca5a5` | `rgba(248,81,73,0.4)` |
+| 검증 이슈 | 기존 `--color-warning`, `--color-error` 재사용 | | |
+
+> 2단계 diff 색상 체계: 단락 배경(연한) + 단어 배경(진한) — GitHub 스타일.
+> compare.css에서 하드코딩 금지, 반드시 위 토큰 참조.
 
 ---
 
@@ -273,21 +284,44 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 > 목표: 비교 결과를 "보는 것"에서 "처리하는 것"으로 — 수락/거절 + 내보내기
 > 기존 Phase 2.5를 승격. 비교 모드의 실용 가치를 완성하는 핵심 기능.
 
-- [ ] **4-1. 변경 수락/거절 (Accept/Reject)**
-  - [ ] 각 변경 항목에 ✓(수락) / ✗(거절) 버튼
-  - [ ] 수락 → B 텍스트를 최종본에 반영, 거절 → A 텍스트 유지
-  - [ ] 사이드바 항목 상태 표시 (처리됨/미처리)
-  - [ ] "모두 수락" / "모두 거절" 일괄 버튼
-  - [ ] 처리 진행률 표시 (3/7 처리됨)
+- [x] **4-0. 선행 수정 (기술 부채)**
+  - [x] `PUT /api/compare/rules` 권한: `get_current_user` → `require_admin` (compare.py:87, 1줄)
+  - [x] 편집 모드 plain text 붙여넣기: contenteditable 영역에 `paste` 이벤트 핸들러 추가 (`e.preventDefault()` → `getData('text/plain')` → `insertText`)
+  > Undo/Redo는 브라우저 네이티브 `Ctrl+Z`가 contenteditable에서 기본 작동하므로 별도 구현 불필요. 기술 부채에서 제거.
 
-- [ ] **4-2. 병합 결과 내보내기**
-  - [ ] 수락/거절 완료 후 "최종본 다운로드" 버튼
-  - [ ] `.txt` 내보내기 (즉시 지원)
+- [x] **4-1. 변경 수락/거절 (Accept/Reject)**
+  - [x] `diffState.decisions[]` 배열 추가 (`null` → `'accepted'` / `'rejected'`, 재클릭 시 `null`로 토글)
+  - [x] 사이드바 항목에 ✓(수락) / ✗(거절) `.btn-icon-sm` 버튼 추가 (`.cp-change-actions` 영역)
+  - [x] 수락 → B 텍스트를 최종본에 반영, 거절 → A 텍스트 유지, 미처리 → A 유지
+  - [x] 처리된 항목 시각 피드백: 사이드바 배지+텍스트 흐림(`opacity:0.45`) + ✓/✗ 버튼만 선명 유지, 패널 `opacity:0.5` (유형 border 색상 유지)
+  - [x] 사이드바 헤더에 "✓ 전체" / "✗ 전체" / "↺" 일괄 버튼
+  - [x] 진행률 표시: 사이드바 통계 영역에 `N/M 처리`
+  - [x] 편집 모드와의 충돌 방지: `editMode === true`일 때 `setDecision()` 무시
+  - [x] 키보드 단축키: 활성 변경점에서 `Enter`(수락), `Delete`(거절)
+
+- [x] **4-2. 병합 결과 내보내기**
+  - [x] 툴바에 "내보내기" 버튼 (diff 존재 시 표시, `.scroll-sync-btn` 패턴)
+  - [x] 병합 로직: `buildChangeOrder()` 재활용 → accepted=B텍스트, rejected/null=A텍스트, 변경 없는 단락=원본
+  - [x] 미처리 항목 있을 경우 `modal.css` 확인 다이얼로그: "미처리 N건은 원본(A)으로 유지됩니다"
+  - [x] `.txt` 내보내기 (프론트엔드 Blob → `<a download>`, 백엔드 불필요)
   - [ ] (향후) `.docx` 재생성
 
-- [ ] **4-3. 단락 번호 표시**
-  - [ ] 패널 좌측 거터에 단락 번호
-  - [ ] 토글 옵션 (기본 OFF)
+- [x] **4-3. 단락 번호 표시**
+  - [x] 패널 좌측 거터에 단락 번호 (CSS `::before` + counter, gap 단락은 번호 건너뜀)
+  - [x] 툴바 토글 버튼 (기본 OFF, `.scroll-sync-btn` 패턴)
+  - [x] 비교/검증 모드 양쪽 지원
+
+#### Phase 4 후속: UX 개선 및 디자인 토큰 정리
+
+- [x] diff 단락 배경색 강화 (`--diff-deleted`, `--diff-modified` 값 조정)
+- [x] 단어 수준 하이라이트 토큰 신설 (`--diff-added-word`, `--diff-deleted-word`)
+- [x] 사이드바 결정 상태 구분 개선 — 배지+텍스트 흐림, ✓/✗ 버튼만 선명 유지
+- [x] 본문 결정 피드백 — border-left는 유형 색상 유지, opacity만 적용
+- [x] 사이드바 힌트 텍스트 + localStorage dismiss
+- [x] 내보내기 버튼 라벨 명확화 ("최종본 저장")
+- [x] compare.css 하드코딩 31곳 → diff 토큰 치환, 다크모드 오버라이드 18줄 삭제
+- [x] `--diff-modified-border` 토큰 신설 (tokens.css)
+- [x] theme-guide.md §1.3 Diff 색상 섹션 추가
 
 ### Phase 5: 규칙·데이터 고도화
 
@@ -379,8 +413,8 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 
 | 항목 | 심각도 | 설명 | 처리 시점 |
 |------|--------|------|----------|
-| 편집 모드 Undo/Redo | 중간 | contenteditable에 히스토리 없음 | Phase 4-1 |
-| 편집 시 plain text 붙여넣기 | 중간 | 리치 텍스트 붙여넣기 시 서식 유입 | Phase 4-1 |
+| ~~편집 모드 Undo/Redo~~ | ~~중간~~ | ~~contenteditable에 히스토리 없음~~ | 브라우저 네이티브 Ctrl+Z로 충분 — 제거 |
+| 편집 시 plain text 붙여넣기 | 중간 | 리치 텍스트 붙여넣기 시 서식 유입 | **4-0** (선행 수정) |
 | 필터 드롭다운 키보드 접근성 | 낮음 | 화살표 키 탐색, 포커스 트랩 미구현 | Phase 7 |
 | 아이콘 버튼 `aria-label` | 낮음 | 스크린리더 접근성 미비 | Phase 7 |
 

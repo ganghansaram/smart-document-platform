@@ -93,6 +93,22 @@
     background: var(--hover-bg);
 }
 
+.btn-icon-sm {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--text-light);
+    font-size: 12px;
+}
+
+.btn-icon-sm:hover:not(:disabled) {
+    background: var(--hover-bg);
+    color: var(--text-dark);
+}
+
 .btn-icon-lg {
     width: 32px;
     height: 32px;

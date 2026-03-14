@@ -70,13 +70,16 @@
 
     /* Diff 색상 */
     --diff-added: #e6ffec;
-    --diff-deleted: #ffeef0;
-    --diff-modified: #fff8e1;
+    --diff-deleted: #fce4e4;
+    --diff-modified: #fef3cd;
     --diff-added-text: #1a7f37;
     --diff-deleted-text: #cf222e;
     --diff-modified-text: #9a6700;
     --diff-added-border: #2ea043;
     --diff-deleted-border: #f85149;
+    --diff-modified-border: #f59e0b;
+    --diff-added-word: #86efac;
+    --diff-deleted-word: #fca5a5;
 }
 
 /* 다크 테마 변수 오버라이드 */
@@ -115,13 +118,16 @@ body[data-theme="dark"] {
 
     /* Diff 색상 */
     --diff-added: rgba(46,160,67,0.15);
-    --diff-deleted: rgba(248,81,73,0.15);
-    --diff-modified: rgba(245,158,11,0.15);
+    --diff-deleted: rgba(248,81,73,0.25);
+    --diff-modified: rgba(245,158,11,0.25);
     --diff-added-text: #3fb950;
     --diff-deleted-text: #f85149;
     --diff-modified-text: #d29922;
     --diff-added-border: #3fb950;
     --diff-deleted-border: #f85149;
+    --diff-modified-border: #d29922;
+    --diff-added-word: rgba(46,160,67,0.4);
+    --diff-deleted-word: rgba(248,81,73,0.4);
 }
 
 /* 글로벌 키보드 포커스 링 */

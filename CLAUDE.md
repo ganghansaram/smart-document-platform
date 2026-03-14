@@ -47,12 +47,12 @@ python -m http.server 8080            # http://localhost:8080
 - 간격 → `var(--space-sm)` ~ `var(--space-2xl)` 사용 권장
 - 둥글기 → `var(--radius-sm)` ~ `var(--radius-xl)` 사용 권장
 - 트랜지션 → `var(--transition-fast)` ~ `var(--transition-slow)` 사용 권장
-- diff 색상 → `var(--diff-added)`, `var(--diff-deleted)` 등 사용
+- diff 색상 → `var(--diff-added)`, `var(--diff-deleted)` 등 사용 (배경/텍스트/테두리/단어 토큰 구분, 다크모드 자동 전환)
 
 ### 공통 컴포넌트 클래스 (components.css)
 | 용도 | 클래스 | 변형 |
 |------|--------|------|
-| 버튼 | `.btn` | `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-danger`, `.btn-icon`, `.btn-icon-lg`, `.btn-sm` |
+| 버튼 | `.btn` | `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-danger`, `.btn-icon`, `.btn-icon-sm`, `.btn-icon-lg`, `.btn-sm` |
 | 입력 | `.form-input` | `.form-textarea`, `.form-select`, `.form-group`, `.form-input-sm`, `.form-select-sm`, `.form-input-lg` |
 | 배지 | `.badge` | `.badge-success`, `.badge-warning`, `.badge-error`, `.badge-info` |
 | 스피너 | `.spinner` | `.spinner-sm`, `.spinner-lg` |

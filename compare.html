@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/scrollbar.css">
     <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/modal.css">
     <link rel="stylesheet" href="css/platform-header.css">
     <script src="js/lib/jsdiff/diff.min.js"></script>
     <!-- platform-footer 불필요 (도구형 화면) -->
@@ -74,6 +75,16 @@
             <button class="scroll-sync-btn" id="vd-revalidate-btn" style="display:none" title="재검증">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                 재검증
+            </button>
+
+            <button class="scroll-sync-btn" id="paragraph-num-btn" style="display:none" title="단락 번호 표시">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+                번호
+            </button>
+
+            <button class="scroll-sync-btn" id="download-btn" style="display:none" title="수락/거절 결과를 반영한 최종 텍스트 저장">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                최종본 저장
             </button>
 
             <span class="toolbar-spacer"></span>
@@ -152,6 +163,11 @@
             <div class="cp-sidebar" id="cp-sidebar">
                 <div class="cp-sidebar-header">
                     <span class="cp-sidebar-title" id="cp-sidebar-title">변경 목록</span>
+                    <span class="cp-bulk-actions" id="cp-bulk-actions" style="display:none">
+                        <button class="btn btn-sm btn-ghost" id="bulk-accept-btn" title="모두 수락">✓ 전체</button>
+                        <button class="btn btn-sm btn-ghost" id="bulk-reject-btn" title="모두 거절">✗ 전체</button>
+                        <button class="btn btn-sm btn-ghost" id="bulk-reset-btn" title="모두 초기화">↺</button>
+                    </span>
                     <button class="cp-sidebar-collapse" id="cp-sidebar-collapse" title="접기">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"/>
@@ -332,7 +348,8 @@
                 changes: [],
                 currentIndex: -1,
                 filter: { added: true, deleted: true, modified: true },
-                ignoreWhitespace: false
+                ignoreWhitespace: false,
+                decisions: [] // null | 'accepted' | 'rejected' (인덱스 = changes 인덱스)
             };
 
             var editMode = false;
@@ -348,6 +365,13 @@
             var filterBtn = document.getElementById('filter-btn');
             var filterDropdown = document.getElementById('cp-filter-dropdown');
             var sidebarBody = document.getElementById('cp-sidebar-body');
+            var downloadBtn = document.getElementById('download-btn');
+            var paragraphNumBtn = document.getElementById('paragraph-num-btn');
+            var bulkActions = document.getElementById('cp-bulk-actions');
+            var bulkAcceptBtn = document.getElementById('bulk-accept-btn');
+            var bulkRejectBtn = document.getElementById('bulk-reject-btn');
+            var bulkResetBtn = document.getElementById('bulk-reset-btn');
+            var showParagraphNumbers = false;
 
             // ── 문서 로드 완료 처리 ──
             function onDocumentLoaded(side, filename, paragraphs) {
@@ -926,6 +950,7 @@
             function runDiff() {
                 diffState.changes = computeDiff();
                 diffState.currentIndex = -1;
+                diffState.decisions = new Array(diffState.changes.length).fill(null);
                 renderDiffHighlights(diffState.changes);
                 renderSidebar(diffState.changes);
                 showDiffUI(true);
@@ -935,6 +960,7 @@
             function clearDiff() {
                 diffState.changes = [];
                 diffState.currentIndex = -1;
+                diffState.decisions = [];
 
                 // 패널 원래 렌더링 복원 (양쪽 모두 파일이 있는 경우)
                 ['a', 'b'].forEach(function(side) {
@@ -953,6 +979,8 @@
                 swapBtn.style.display = show ? '' : 'none';
                 editToggleBtn.style.display = show ? '' : 'none';
                 filterGroup.style.display = show ? '' : 'none';
+                downloadBtn.style.display = show ? '' : 'none';
+                paragraphNumBtn.style.display = show ? '' : 'none';
                 if (!show && editMode) toggleEditMode();
             }
 
@@ -1127,6 +1155,8 @@
 
             // ── 2-4. 변경 목록 사이드바 ──
             function renderSidebar(changes) {
+                bulkActions.style.display = changes.length > 0 ? '' : 'none';
+
                 if (changes.length === 0) {
                     sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">'
                         + (docState.a.paragraphs.length > 0 && docState.b.paragraphs.length > 0
@@ -1149,32 +1179,39 @@
                 if (added > 0) html += '<span class="cp-stat cp-stat-added">+' + added + '</span>';
                 if (deleted > 0) html += '<span class="cp-stat cp-stat-deleted">-' + deleted + '</span>';
                 if (modified > 0) html += '<span class="cp-stat cp-stat-modified">~' + modified + '</span>';
+                html += '<span class="cp-stat cp-stat-progress" id="cp-decision-progress"></span>';
                 html += '</div>';
+
+                if (!localStorage.getItem('cp-hint-dismissed')) {
+                    html += '<div class="cp-decision-hint" id="cp-decision-hint">'
+                        + '<span>✓ 수락 = 변경 반영 &nbsp;|&nbsp; ✗ 거절 = 원본 유지</span>'
+                        + '<button class="cp-decision-hint-close" id="cp-hint-close" title="닫기">&times;</button>'
+                        + '</div>';
+                }
 
                 html += '<div class="cp-change-list" id="cp-change-list">';
                 for (var i = 0; i < changes.length; i++) {
                     var c = changes[i];
                     var hidden = !diffState.filter[c.type] ? ' cp-change-hidden' : '';
+                    var decision = diffState.decisions[i];
+                    var decClass = decision ? ' cp-decision-' + decision : '';
                     var summaryText = c.summary || '';
                     if (summaryText.length > 80) summaryText = summaryText.substring(0, 80) + '…';
 
-                    html += '<div class="cp-change-item cp-change-' + c.type + hidden + '" data-change-index="' + i + '">'
+                    html += '<div class="cp-change-item cp-change-' + c.type + hidden + decClass + '" data-change-index="' + i + '">'
                         + '<span class="cp-change-badge">' + badgeLabels[c.type] + '</span>'
                         + '<span class="cp-change-text">' + escapeHTML(summaryText) + '</span>'
+                        + '<span class="cp-change-actions">'
+                        + '<button class="btn-icon-sm cp-accept-btn' + (decision === 'accepted' ? ' active' : '') + '" data-decision="accept" data-idx="' + i + '" title="수락">✓</button>'
+                        + '<button class="btn-icon-sm cp-reject-btn' + (decision === 'rejected' ? ' active' : '') + '" data-decision="reject" data-idx="' + i + '" title="거절">✗</button>'
+                        + '</span>'
                         + '</div>';
                 }
                 html += '</div>';
 
                 sidebarBody.innerHTML = html;
+                updateDecisionProgress();
             }
-
-            // 사이드바 클릭 이벤트 위임
-            sidebarBody.addEventListener('click', function(e) {
-                var item = e.target.closest('[data-change-index]');
-                if (!item) return;
-                var idx = parseInt(item.getAttribute('data-change-index'), 10);
-                navigateToChange(idx);
-            });
 
             // ── 2-3. 변경점 네비게이션 ──
             function getFilteredIndices() {
@@ -1363,6 +1400,15 @@
                 docState[side].text = newParagraphs.join('\n');
             }
 
+            // ── 편집 모드: plain text 붙여넣기 강제 ──
+            cpPanels.addEventListener('paste', function(e) {
+                if (!editMode) return;
+                if (!e.target.isContentEditable) return;
+                e.preventDefault();
+                var text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                document.execCommand('insertText', false, text);
+            });
+
             // ── 2-8. A ↔ B 교체 ──
             swapBtn.addEventListener('click', function() {
                 if (editMode) return; // 편집 중에는 교체 불가
@@ -1469,6 +1515,226 @@
             }
 
             // ══════════════════════════════════════════
+            // Phase 4: 수락/거절 + 내보내기
+            // ══════════════════════════════════════════
+
+            // ── 4-1. 수락/거절 ──
+            function setDecision(index, type) {
+                if (editMode) return;
+                if (index < 0 || index >= diffState.changes.length) return;
+                // 토글: 같은 결정 재클릭 → null
+                diffState.decisions[index] = diffState.decisions[index] === type ? null : type;
+                updateDecisionUI(index);
+                updateDecisionProgress();
+            }
+
+            function updateDecisionUI(index) {
+                var decision = diffState.decisions[index];
+                // 사이드바 항목
+                var item = sidebarBody.querySelector('.cp-change-item[data-change-index="' + index + '"]');
+                if (item) {
+                    item.classList.remove('cp-decision-accepted', 'cp-decision-rejected');
+                    if (decision) item.classList.add('cp-decision-' + decision);
+                    var accBtn = item.querySelector('.cp-accept-btn');
+                    var rejBtn = item.querySelector('.cp-reject-btn');
+                    if (accBtn) accBtn.classList.toggle('active', decision === 'accepted');
+                    if (rejBtn) rejBtn.classList.toggle('active', decision === 'rejected');
+                }
+                // 패널 하이라이트
+                var panelEls = document.querySelectorAll('.cp-paragraph[data-change-index="' + index + '"]');
+                panelEls.forEach(function(el) {
+                    el.classList.remove('diff-decision-accepted', 'diff-decision-rejected');
+                    if (decision) el.classList.add('diff-decision-' + decision);
+                });
+            }
+
+            function updateDecisionProgress() {
+                var total = diffState.changes.length;
+                if (total === 0) return;
+                var decided = 0;
+                for (var i = 0; i < total; i++) {
+                    if (diffState.decisions[i]) decided++;
+                }
+                var el = document.getElementById('cp-decision-progress');
+                if (el) {
+                    el.textContent = decided > 0 ? decided + '/' + total + ' 처리' : '';
+                }
+            }
+
+            // 사이드바 클릭 — 힌트 닫기 + 수락/거절 버튼 처리
+            sidebarBody.addEventListener('click', function(e) {
+                if (e.target.id === 'cp-hint-close') {
+                    localStorage.setItem('cp-hint-dismissed', '1');
+                    var hint = document.getElementById('cp-decision-hint');
+                    if (hint) hint.remove();
+                    return;
+                }
+                var decBtn = e.target.closest('[data-decision]');
+                if (decBtn) {
+                    e.stopPropagation();
+                    var idx = parseInt(decBtn.getAttribute('data-idx'), 10);
+                    var type = decBtn.getAttribute('data-decision') === 'accept' ? 'accepted' : 'rejected';
+                    setDecision(idx, type);
+                    return;
+                }
+                var item = e.target.closest('[data-change-index]');
+                if (!item) return;
+                var idx = parseInt(item.getAttribute('data-change-index'), 10);
+                navigateToChange(idx);
+            });
+
+            // 일괄 처리
+            bulkAcceptBtn.addEventListener('click', function() {
+                if (editMode) return;
+                for (var i = 0; i < diffState.changes.length; i++) {
+                    diffState.decisions[i] = 'accepted';
+                    updateDecisionUI(i);
+                }
+                updateDecisionProgress();
+            });
+
+            bulkRejectBtn.addEventListener('click', function() {
+                if (editMode) return;
+                for (var i = 0; i < diffState.changes.length; i++) {
+                    diffState.decisions[i] = 'rejected';
+                    updateDecisionUI(i);
+                }
+                updateDecisionProgress();
+            });
+
+            bulkResetBtn.addEventListener('click', function() {
+                for (var i = 0; i < diffState.changes.length; i++) {
+                    diffState.decisions[i] = null;
+                    updateDecisionUI(i);
+                }
+                updateDecisionProgress();
+            });
+
+            // ── 4-2. 내보내기 ──
+            downloadBtn.addEventListener('click', function() {
+                if (editMode || diffState.changes.length === 0) return;
+
+                // 미처리 항목 확인
+                var undecided = 0;
+                for (var i = 0; i < diffState.decisions.length; i++) {
+                    if (!diffState.decisions[i]) undecided++;
+                }
+
+                if (undecided > 0) {
+                    showExportConfirm(undecided, doExport);
+                } else {
+                    doExport();
+                }
+            });
+
+            function doExport() {
+                var parasA = docState.a.paragraphs;
+                var parasB = docState.b.paragraphs;
+                var changes = diffState.changes;
+                var decisions = diffState.decisions;
+
+                // changeOrder를 재활용하여 원래 순서대로 병합
+                var order = buildChangeOrder(changes, parasA, parasB);
+
+                // change → decision 매핑 (changeIndex 기준)
+                var decisionByChange = {};
+                for (var i = 0; i < changes.length; i++) {
+                    decisionByChange[i] = decisions[i];
+                }
+
+                var result = [];
+                for (var k = 0; k < order.length; k++) {
+                    var entry = order[k];
+
+                    if (entry.type === 'equal') {
+                        result.push(parasA[entry.iA]);
+                    } else if (entry.type === 'added') {
+                        var ci = entry.change._changeIndex;
+                        // 수락 → B텍스트 포함, 그 외 → 무시
+                        if (decisionByChange[ci] === 'accepted') {
+                            result.push(parasB[entry.change.indexB]);
+                        }
+                    } else if (entry.type === 'deleted') {
+                        var ci = entry.change._changeIndex;
+                        // 수락(삭제 확정) → 건너뜀, 그 외 → A 유지
+                        if (decisionByChange[ci] !== 'accepted') {
+                            result.push(parasA[entry.change.indexA]);
+                        }
+                    } else if (entry.type === 'modified') {
+                        var ci = entry.change._changeIndex;
+                        // 수락 → B텍스트, 그 외 → A텍스트
+                        if (decisionByChange[ci] === 'accepted') {
+                            result.push(parasB[entry.change.indexB]);
+                        } else {
+                            result.push(parasA[entry.change.indexA]);
+                        }
+                    }
+                }
+
+                var text = result.join('\n\n');
+                var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = (docState.a.filename || 'document').replace(/\.[^.]+$/, '') + '_merged.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            function showExportConfirm(undecided, onConfirm) {
+                var overlay = document.createElement('div');
+                overlay.className = 'modal-overlay blur';
+                overlay.innerHTML = '<div class="modal-box" style="max-width:400px">'
+                    + '<div class="modal-header"><h3>내보내기 확인</h3>'
+                    + '<button class="modal-close" id="export-modal-close">&times;</button></div>'
+                    + '<div class="modal-body">'
+                    + '<p style="font-size:14px;color:var(--text-dark);margin:0">'
+                    + '미처리 <strong>' + undecided + '</strong>건은 원본(A) 텍스트로 유지됩니다.</p>'
+                    + '</div>'
+                    + '<div class="modal-footer">'
+                    + '<button class="btn btn-secondary" id="export-modal-cancel">취소</button>'
+                    + '<button class="btn btn-primary" id="export-modal-ok">내보내기</button>'
+                    + '</div></div>';
+                document.body.appendChild(overlay);
+
+                function close() { overlay.remove(); }
+                overlay.querySelector('#export-modal-close').addEventListener('click', close);
+                overlay.querySelector('#export-modal-cancel').addEventListener('click', close);
+                overlay.querySelector('#export-modal-ok').addEventListener('click', function() {
+                    close();
+                    onConfirm();
+                });
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay) close();
+                });
+            }
+
+            // ── 4-3. 단락 번호 ──
+            paragraphNumBtn.addEventListener('click', function() {
+                showParagraphNumbers = !showParagraphNumbers;
+                paragraphNumBtn.classList.toggle('active', showParagraphNumbers);
+                document.querySelectorAll('.cp-panel-body').forEach(function(panel) {
+                    panel.classList.toggle('show-para-numbers', showParagraphNumbers);
+                });
+            });
+
+            // ── 4-1 키보드: Enter(수락), Delete(거절) ──
+            // (기존 keydown 리스너에 추가하기 위한 별도 리스너)
+            document.addEventListener('keydown', function(e) {
+                if (e.target.isContentEditable || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+                if (editMode || currentMode !== 'compare') return;
+                if (diffState.currentIndex < 0) return;
+
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setDecision(diffState.currentIndex, 'accepted');
+                } else if (e.key === 'Delete') {
+                    e.preventDefault();
+                    setDecision(diffState.currentIndex, 'rejected');
+                }
+            });
+
+            // ══════════════════════════════════════════
             // Phase 3: 검증 모드 (Validation Mode)
             // ══════════════════════════════════════════
 
@@ -1568,6 +1834,7 @@
             function showValidationUI(show) {
                 vdNavGroup.style.display = show ? '' : 'none';
                 vdFilterGroup.style.display = show ? '' : 'none';
+                paragraphNumBtn.style.display = show ? '' : 'none';
             }
 
             // ── 3-2. 인라인 하이라이트 렌더링 ──

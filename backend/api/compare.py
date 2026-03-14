@@ -5,7 +5,7 @@ import os
 
 from fastapi import APIRouter, File, UploadFile, Depends, HTTPException, Request
 
-from dependencies import get_current_user
+from dependencies import get_current_user, require_admin, require_admin
 from services.compare_service import (
     extract_text,
     validate_paragraphs,
@@ -84,9 +84,9 @@ async def api_compare_rules_get(
 @router.put("/rules")
 async def api_compare_rules_put(
     request: Request,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
-    """규칙 설정 저장"""
+    """규칙 설정 저장 (관리자 전용)"""
     body = await request.json()
     save_rules(body)
     return {"ok": True}
