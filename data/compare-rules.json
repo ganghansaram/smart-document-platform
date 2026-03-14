@@ -20,14 +20,21 @@
           "severity": "warning",
           "params": {
             "terms": [
-              {
-                "term": "비행기",
-                "replacement": "항공기"
-              },
-              {
-                "term": "체크",
-                "replacement": "점검"
-              }
+              { "term": "비행기", "replacement": "항공기" },
+              { "term": "체크", "replacement": "점검" },
+              { "term": "할 수 있다", "replacement": "가능하다" },
+              { "term": "해야 한다", "replacement": "필수이다" },
+              { "term": "이것", "replacement": "해당 항목" },
+              { "term": "해보다", "replacement": "수행하다" },
+              { "term": "체크리스트", "replacement": "점검표" },
+              { "term": "스펙", "replacement": "사양" },
+              { "term": "매뉴얼", "replacement": "지침서" },
+              { "term": "컨트롤", "replacement": "제어" },
+              { "term": "셋업", "replacement": "설정" },
+              { "term": "아웃풋", "replacement": "출력" },
+              { "term": "인풋", "replacement": "입력" },
+              { "term": "업데이트", "replacement": "갱신" },
+              { "term": "트러블슈팅", "replacement": "결함 분석" }
             ]
           }
         },
@@ -36,15 +43,14 @@
           "severity": "warning",
           "params": {
             "groups": [
-              [
-                "항공기",
-                "비행기",
-                "비행체"
-              ],
-              [
-                "시험",
-                "테스트"
-              ]
+              ["항공기", "비행기", "비행체"],
+              ["시험", "테스트", "test"],
+              ["서버", "Server", "써버"],
+              ["소프트웨어", "SW", "software"],
+              ["하드웨어", "HW", "hardware"],
+              ["데이터", "자료", "data"],
+              ["인터페이스", "I/F", "interface"],
+              ["매개변수", "파라미터", "parameter"]
             ]
           }
         },

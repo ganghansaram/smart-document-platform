@@ -7,6 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/scrollbar.css">
+    <link rel="stylesheet" href="css/toast.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/modal.css">
     <link rel="stylesheet" href="css/platform-header.css">
@@ -253,6 +254,18 @@
                 return div.innerHTML;
             }
 
+            function showToast(msg, type, duration) {
+                var t = document.createElement('div');
+                t.className = 'toast' + (type ? ' ' + type : '');
+                t.textContent = msg;
+                document.body.appendChild(t);
+                requestAnimationFrame(function() { t.classList.add('show'); });
+                setTimeout(function() {
+                    t.classList.remove('show');
+                    setTimeout(function() { t.remove(); }, 300);
+                }, duration || 3000);
+            }
+
             function getPanel(side) { return side === 'a' ? panelBodyA : panelBodyB; }
             function getPanelRoot(side) { return side === 'a' ? panelA : panelB; }
             function getLabel(side) { return side === 'a' ? labelA : labelB; }
@@ -400,7 +413,7 @@
 
                 var ext = file.name.split('.').pop().toLowerCase();
                 if (ext !== 'docx' && ext !== 'pdf') {
-                    alert('지원하지 않는 형식입니다.\n허용: .docx, .pdf');
+                    showToast('지원하지 않는 형식입니다. 허용: .docx, .pdf', 'warning');
                     return;
                 }
 
@@ -428,7 +441,7 @@
                 })
                 .catch(function(err) {
                     restorePlaceholder(side);
-                    alert('업로드 오류: ' + err.message);
+                    showToast('업로드 오류: ' + err.message, 'error');
                 });
             }
 
@@ -461,7 +474,7 @@
 
                 var text = textarea.value.trim();
                 if (!text) {
-                    alert('텍스트를 입력해주세요.');
+                    showToast('텍스트를 입력해주세요.', 'warning');
                     return;
                 }
 
@@ -475,7 +488,7 @@
                 paragraphs = paragraphs.filter(function(p) { return p.trim(); });
 
                 if (paragraphs.length === 0) {
-                    alert('텍스트를 입력해주세요.');
+                    showToast('텍스트를 입력해주세요.', 'warning');
                     return;
                 }
 
@@ -1281,7 +1294,9 @@
 
                 // 양쪽 패널 동시 instant 스크롤 (scrollTop 직접 설정)
                 if (scrollEl) {
-                    var elTop = scrollEl.offsetTop;
+                    var scrollRect = scrollEl.getBoundingClientRect();
+                    var targetRect = scrollTarget.getBoundingClientRect();
+                    var elTop = scrollRect.top - targetRect.top + scrollTarget.scrollTop;
                     var panelH = scrollTarget.clientHeight;
                     var desiredTop = elTop - (panelH / 2) + (scrollEl.offsetHeight / 2);
                     desiredTop = Math.max(0, Math.min(desiredTop, scrollTarget.scrollHeight - panelH));
@@ -1864,40 +1879,48 @@
                     var text = docState.a.paragraphs[pIdx];
                     if (!text) continue;
 
-                    // 이슈를 char_start 오름차순 정렬
+                    // 이슈를 span 길이 오름차순 정렬 (짧은 이슈 우선 → 긴 문장길이 이슈는 뒤로)
                     var pIssues = byParagraph[pi].slice().sort(function(a, b) {
-                        return a.issue.char_start - b.issue.char_start;
+                        var lenA = a.issue.char_end - a.issue.char_start;
+                        var lenB = b.issue.char_end - b.issue.char_start;
+                        return lenA - lenB;
                     });
 
-                    // 비중첩 span 삽입
-                    var html = '';
-                    var lastEnd = 0;
-
+                    // 점유 맵: 각 문자 위치를 차지한 이슈 (짧은 이슈 우선)
+                    var charMap = [];  // charMap[pos] = { gIdx, severity, message }
                     for (var j = 0; j < pIssues.length; j++) {
                         var iss = pIssues[j].issue;
                         var gIdx = pIssues[j].globalIndex;
-                        var start = Math.max(iss.char_start, lastEnd);
-                        var end = iss.char_end;
-
-                        if (start >= end) continue;
-
-                        // 마크 이전 텍스트
-                        if (start > lastEnd) {
-                            html += escapeHTML(text.substring(lastEnd, start));
+                        for (var c = iss.char_start; c < iss.char_end; c++) {
+                            if (!charMap[c]) {
+                                charMap[c] = { gIdx: gIdx, severity: iss.severity, message: iss.message };
+                            }
                         }
-
-                        var hidden = !validateState.filter[iss.severity] ? ' vd-mark-hidden' : '';
-                        html += '<span class="validate-mark severity-' + iss.severity + hidden
-                            + '" data-issue-index="' + gIdx + '"'
-                            + ' title="' + escapeHTML(iss.message) + '">'
-                            + escapeHTML(text.substring(start, end))
-                            + '</span>';
-                        lastEnd = end;
                     }
 
-                    // 나머지 텍스트
-                    if (lastEnd < text.length) {
-                        html += escapeHTML(text.substring(lastEnd));
+                    // 연속 구간을 span으로 변환
+                    var html = '';
+                    var pos = 0;
+                    while (pos < text.length) {
+                        if (charMap[pos]) {
+                            var cur = charMap[pos];
+                            var spanStart = pos;
+                            while (pos < text.length && charMap[pos] && charMap[pos].gIdx === cur.gIdx) {
+                                pos++;
+                            }
+                            var hidden = !validateState.filter[cur.severity] ? ' vd-mark-hidden' : '';
+                            html += '<span class="validate-mark severity-' + cur.severity + hidden
+                                + '" data-issue-index="' + cur.gIdx + '"'
+                                + ' title="' + escapeHTML(cur.message) + '">'
+                                + escapeHTML(text.substring(spanStart, pos))
+                                + '</span>';
+                        } else {
+                            var plainStart = pos;
+                            while (pos < text.length && !charMap[pos]) {
+                                pos++;
+                            }
+                            html += escapeHTML(text.substring(plainStart, pos));
+                        }
                     }
 
                     el.innerHTML = html;
@@ -2060,8 +2083,10 @@
                 var mark = panelBodyA.querySelector('.validate-mark[data-issue-index="' + index + '"]');
                 if (mark) {
                     mark.classList.add('validate-active');
-                    // instant 스크롤
-                    var elTop = mark.offsetTop;
+                    // panelBodyA 기준 상대 오프셋 계산 후 중앙 스크롤
+                    var markRect = mark.getBoundingClientRect();
+                    var panelRect = panelBodyA.getBoundingClientRect();
+                    var elTop = markRect.top - panelRect.top + panelBodyA.scrollTop;
                     var panelH = panelBodyA.clientHeight;
                     var desiredTop = elTop - (panelH / 2) + (mark.offsetHeight / 2);
                     desiredTop = Math.max(0, Math.min(desiredTop, panelBodyA.scrollHeight - panelH));
@@ -2205,6 +2230,39 @@
 
             var SEVERITY_LABELS = { error: '오류', warning: '경고', suggestion: '제안' };
 
+            // ── 5-1 CSV 템플릿 ──
+            var CSV_TEMPLATE_FORBIDDEN = 'term,replacement\n비행기,항공기\n체크,점검\n';
+            var CSV_TEMPLATE_GROUPS = 'group_name,term1,term2,term3\n항공기,비행기,비행체\n시험,테스트,test\n';
+
+            // ── 5-1 CSV 파싱 유틸 ──
+            function parseCSV(text) {
+                var lines = text.split(/\r?\n/);
+                var rows = [];
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i].trim();
+                    if (!line) continue;
+                    rows.push(line.split(',').map(function(c) { return c.trim(); }));
+                }
+                return rows;
+            }
+
+            function detectHeaderRow(rows, type) {
+                if (rows.length === 0) return false;
+                var first = rows[0];
+                if (type === 'forbidden') {
+                    // term/replacement 또는 금지어/대체어 같은 헤더 감지
+                    var headerWords = ['term', 'replacement', '용어', '금지어', '대체어', '원어', '교체'];
+                    return first.some(function(c) {
+                        return headerWords.indexOf(c.toLowerCase()) !== -1;
+                    });
+                } else {
+                    var headerWords = ['group', 'name', '그룹', '그룹명'];
+                    return first.some(function(c) {
+                        return headerWords.indexOf(c.toLowerCase()) !== -1;
+                    });
+                }
+            }
+
             vdSettingsBtn.addEventListener('click', function() {
                 openRulesModal();
             });
@@ -2217,7 +2275,7 @@
                     showRulesModal(data);
                 })
                 .catch(function(err) {
-                    alert('규칙 로드 실패: ' + err.message);
+                    showToast('규칙 로드 실패: ' + err.message, 'error');
                 });
             }
 
@@ -2295,6 +2353,14 @@
                                     + '<input type="text" class="form-input form-input-sm" placeholder="대체어" data-add-forbidden-replacement>'
                                     + '<button class="vd-term-add-btn" data-add-forbidden-btn title="추가">+</button>'
                                     + '</div>';
+                                html += '<div class="vd-csv-actions">'
+                                    + '<button class="vd-csv-btn" data-csv-import="forbidden" title="CSV 파일에서 금지 용어를 일괄 가져옵니다">'
+                                    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+                                    + 'CSV 가져오기</button>'
+                                    + '<input type="file" accept=".csv" data-csv-file="forbidden" style="display:none">'
+                                    + '<span class="vd-csv-sample-link" data-csv-template="forbidden">템플릿 다운로드</span>'
+                                    + '</div>';
+                                html += '<div class="vd-csv-preview-area" data-preview-for="forbidden"></div>';
                                 html += '</div>';
                             }
 
@@ -2322,6 +2388,14 @@
                                     + '<input type="text" class="form-input form-input-sm" placeholder="쉼표로 구분 (예: 항공기, 비행기)" data-add-group-input style="flex:3">'
                                     + '<button class="vd-term-add-btn" data-add-group-btn title="추가">+</button>'
                                     + '</div>';
+                                html += '<div class="vd-csv-actions">'
+                                    + '<button class="vd-csv-btn" data-csv-import="groups" title="CSV 파일에서 용어 그룹을 일괄 가져옵니다">'
+                                    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+                                    + 'CSV 가져오기</button>'
+                                    + '<input type="file" accept=".csv" data-csv-file="groups" style="display:none">'
+                                    + '<span class="vd-csv-sample-link" data-csv-template="groups">템플릿 다운로드</span>'
+                                    + '</div>';
+                                html += '<div class="vd-csv-preview-area" data-preview-for="groups"></div>';
                                 html += '</div>';
                             }
                         }
@@ -2331,7 +2405,15 @@
                 }
 
                 var modalHTML = '<div class="vd-modal">'
-                    + '<div class="vd-modal-header"><span>검증 규칙 설정</span><button class="vd-modal-close">&times;</button></div>'
+                    + '<div class="vd-modal-header"><span>검증 규칙 설정</span>'
+                    + '<div class="vd-modal-header-actions">'
+                    + '<button class="vd-header-btn" id="vd-json-export" title="규칙 세트 내보내기 (JSON)">'
+                    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>'
+                    + '<button class="vd-header-btn" id="vd-json-import" title="규칙 세트 가져오기 (JSON)">'
+                    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>'
+                    + '<input type="file" accept=".json" id="vd-json-file" style="display:none">'
+                    + '</div>'
+                    + '<button class="vd-modal-close">&times;</button></div>'
                     + '<div class="vd-modal-body">'
                     + '<div class="vd-preset-row">'
                     + '<span>프리셋:</span>'
@@ -2503,6 +2585,165 @@
                             if (e.key === 'Enter') { e.preventDefault(); addTermGroup(); }
                         });
                     }
+
+                    // ── 5-1. CSV 가져오기 ──
+                    rulesBody.querySelectorAll('[data-csv-import]').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var type = btn.getAttribute('data-csv-import');
+                            var fileInput = rulesBody.querySelector('[data-csv-file="' + type + '"]');
+                            if (fileInput) { fileInput.value = ''; fileInput.click(); }
+                        });
+                    });
+
+                    rulesBody.querySelectorAll('[data-csv-file]').forEach(function(fileInput) {
+                        fileInput.addEventListener('change', function() {
+                            if (!fileInput.files || !fileInput.files[0]) return;
+                            var type = fileInput.getAttribute('data-csv-file');
+                            var reader = new FileReader();
+                            reader.onload = function(e) {
+                                var rows = parseCSV(e.target.result);
+                                if (rows.length === 0) {
+                                    showToast('CSV 파일이 비어 있습니다', 'warning');
+                                    return;
+                                }
+                                var hasHeader = detectHeaderRow(rows, type === 'forbidden' ? 'forbidden' : 'groups');
+                                if (hasHeader) rows = rows.slice(1);
+                                showCsvPreview(type, rows);
+                            };
+                            reader.readAsText(fileInput.files[0]);
+                        });
+                    });
+
+                    // ── 5-1. CSV 템플릿 다운로드 ──
+                    rulesBody.querySelectorAll('[data-csv-template]').forEach(function(link) {
+                        link.addEventListener('click', function() {
+                            var type = link.getAttribute('data-csv-template');
+                            var csv, filename;
+                            if (type === 'forbidden') {
+                                csv = CSV_TEMPLATE_FORBIDDEN;
+                                filename = 'forbidden-terms-template.csv';
+                            } else {
+                                csv = CSV_TEMPLATE_GROUPS;
+                                filename = 'consistency-groups-template.csv';
+                            }
+                            var bom = '\uFEFF';
+                            var blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.href = url;
+                            a.download = filename;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        });
+                    });
+                }
+
+                // ── 5-1. CSV 미리보기 렌더링 ──
+                function showCsvPreview(type, rows) {
+                    var area = rulesBody.querySelector('[data-preview-for="' + type + '"]');
+                    if (!area) return;
+
+                    var parsed = [];
+                    var skipped = 0;
+
+                    if (type === 'forbidden') {
+                        for (var i = 0; i < rows.length; i++) {
+                            if (rows[i].length < 2 || !rows[i][0]) { skipped++; continue; }
+                            parsed.push({ term: rows[i][0], replacement: rows[i][1] || '' });
+                        }
+                    } else {
+                        for (var i = 0; i < rows.length; i++) {
+                            var terms = rows[i].filter(Boolean);
+                            if (terms.length < 2) { skipped++; continue; }
+                            parsed.push(terms);
+                        }
+                    }
+
+                    if (parsed.length === 0) {
+                        showToast('유효한 데이터가 없습니다' + (skipped > 0 ? ' (' + skipped + '행 건너뜀)' : ''), 'warning');
+                        return;
+                    }
+
+                    var html = '<div class="vd-csv-preview">';
+                    html += '<div class="vd-csv-preview-header">'
+                        + '<span>미리보기</span>'
+                        + '<span class="vd-csv-preview-count">' + parsed.length + '건' + (skipped > 0 ? ' (건너뜀 ' + skipped + ')' : '') + '</span>'
+                        + '</div>';
+
+                    html += '<div class="vd-csv-preview-overflow"><table>';
+                    if (type === 'forbidden') {
+                        html += '<thead><tr><th>금지어</th><th>대체어</th></tr></thead><tbody>';
+                        for (var pi = 0; pi < parsed.length; pi++) {
+                            html += '<tr><td>' + escapeHTML(parsed[pi].term) + '</td><td>' + escapeHTML(parsed[pi].replacement) + '</td></tr>';
+                        }
+                    } else {
+                        html += '<thead><tr><th>그룹 용어</th></tr></thead><tbody>';
+                        for (var pi = 0; pi < parsed.length; pi++) {
+                            html += '<tr><td>' + parsed[pi].map(escapeHTML).join(', ') + '</td></tr>';
+                        }
+                    }
+                    html += '</tbody></table></div>';
+
+                    html += '<div class="vd-csv-merge">'
+                        + '<label><input type="radio" name="csv-merge-' + type + '" value="append" checked> 기존 데이터에 추가</label>'
+                        + '<label><input type="radio" name="csv-merge-' + type + '" value="replace"> 기존 데이터 대체</label>'
+                        + '</div>';
+
+                    html += '<div class="vd-csv-preview-actions">'
+                        + '<button data-csv-cancel="' + type + '">취소</button>'
+                        + '<button class="primary" data-csv-apply="' + type + '">적용 (' + parsed.length + '건)</button>'
+                        + '</div>';
+                    html += '</div>';
+
+                    area.innerHTML = html;
+
+                    // 미리보기 이벤트
+                    area.querySelector('[data-csv-cancel]').addEventListener('click', function() {
+                        area.innerHTML = '';
+                    });
+
+                    area.querySelector('[data-csv-apply]').addEventListener('click', function() {
+                        var mergeMode = area.querySelector('input[name="csv-merge-' + type + '"]:checked').value;
+
+                        if (type === 'forbidden') {
+                            var rule = currentRules.rules && currentRules.rules.forbidden_terms;
+                            if (rule) {
+                                if (!rule.params) rule.params = { terms: [] };
+                                if (!rule.params.terms) rule.params.terms = [];
+                                if (mergeMode === 'replace') {
+                                    rule.params.terms = parsed;
+                                } else {
+                                    var existing = {};
+                                    rule.params.terms.forEach(function(t) { existing[t.term] = true; });
+                                    var added = 0;
+                                    parsed.forEach(function(t) {
+                                        if (!existing[t.term]) { rule.params.terms.push(t); added++; }
+                                    });
+                                    showToast(added + '건 추가됨' + (parsed.length - added > 0 ? ', ' + (parsed.length - added) + '건 중복 건너뜀' : ''), 'success');
+                                    area.innerHTML = '';
+                                    rebuildAndBind();
+                                    return;
+                                }
+                            }
+                        } else {
+                            var rule = currentRules.rules && currentRules.rules.inconsistent_terms;
+                            if (rule) {
+                                if (!rule.params) rule.params = { groups: [] };
+                                if (!rule.params.groups) rule.params.groups = [];
+                                if (mergeMode === 'replace') {
+                                    rule.params.groups = parsed;
+                                } else {
+                                    parsed.forEach(function(g) { rule.params.groups.push(g); });
+                                }
+                            }
+                        }
+
+                        showToast(parsed.length + '건 적용됨', 'success');
+                        area.innerHTML = '';
+                        rebuildAndBind();
+                    });
                 }
 
                 function rebuildAndBind() {
@@ -2511,6 +2752,79 @@
                 }
 
                 bindRuleEvents();
+
+                // ── 5-2. JSON 내보내기 ──
+                overlay.querySelector('#vd-json-export').addEventListener('click', function() {
+                    var exportData = {
+                        presets: presets,
+                        active_preset: activePreset,
+                        exported_at: new Date().toISOString()
+                    };
+                    var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'compare-rules-' + activePreset + '.json';
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    showToast('규칙 세트를 내보냈습니다', 'success');
+                });
+
+                // ── 5-2. JSON 가져오기 ──
+                var jsonFileInput = overlay.querySelector('#vd-json-file');
+                overlay.querySelector('#vd-json-import').addEventListener('click', function() {
+                    jsonFileInput.value = '';
+                    jsonFileInput.click();
+                });
+                jsonFileInput.addEventListener('change', function() {
+                    if (!jsonFileInput.files || !jsonFileInput.files[0]) return;
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            var data = JSON.parse(e.target.result);
+                            // 스키마 검증
+                            if (!data.presets || typeof data.presets !== 'object') {
+                                showToast('잘못된 규칙 파일 형식입니다 (presets 누락)', 'error');
+                                return;
+                            }
+                            var keys = Object.keys(data.presets);
+                            if (keys.length === 0) {
+                                showToast('프리셋이 비어 있습니다', 'error');
+                                return;
+                            }
+                            // 각 프리셋 구조 검증
+                            for (var k = 0; k < keys.length; k++) {
+                                var p = data.presets[keys[k]];
+                                if (!p.rules || typeof p.rules !== 'object') {
+                                    showToast('프리셋 "' + keys[k] + '"의 rules가 올바르지 않습니다', 'error');
+                                    return;
+                                }
+                            }
+                            // 적용
+                            for (var k = 0; k < keys.length; k++) {
+                                presets[keys[k]] = data.presets[keys[k]];
+                            }
+                            if (data.active_preset && presets[data.active_preset]) {
+                                activePreset = data.active_preset;
+                            }
+                            currentRules = JSON.parse(JSON.stringify(presets[activePreset] || {}));
+                            // 프리셋 드롭다운 재생성
+                            var presetSelect = overlay.querySelector('#vd-preset-select');
+                            presetSelect.innerHTML = '';
+                            for (var pKey in presets) {
+                                var opt = document.createElement('option');
+                                opt.value = pKey;
+                                opt.textContent = presets[pKey].label || pKey;
+                                if (pKey === activePreset) opt.selected = true;
+                                presetSelect.appendChild(opt);
+                            }
+                            rebuildAndBind();
+                            showToast('규칙 세트를 가져왔습니다 (' + keys.length + '개 프리셋)', 'success');
+                        } catch (err) {
+                            showToast('JSON 파싱 실패: ' + err.message, 'error');
+                        }
+                    };
+                    reader.readAsText(jsonFileInput.files[0]);
+                });
 
                 // 적용 + 재검증
                 overlay.querySelector('#vd-modal-apply').addEventListener('click', function() {
@@ -2527,12 +2841,13 @@
                     .then(function(res) {
                         if (!res.ok) throw new Error('저장 실패');
                         closeModal();
+                        showToast('규칙이 저장되었습니다', 'success');
                         if (docState.a.paragraphs.length > 0) {
                             runValidation();
                         }
                     })
                     .catch(function(err) {
-                        alert('규칙 저장 실패: ' + err.message);
+                        showToast('규칙 저장 실패: ' + err.message, 'error');
                     });
                 });
             }

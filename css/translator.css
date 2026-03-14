@@ -125,6 +125,24 @@ body {
     height: 56px;
 }
 
+@keyframes starBreathing {
+    0%, 100% { opacity: 0.15; box-shadow: 0 0 4px 1px rgba(180, 210, 255, 0.2); }
+    50%      { opacity: 1;    box-shadow: 0 0 12px 4px rgba(180, 210, 255, 0.6); }
+}
+
+.hero-star {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(200, 220, 255, 0.9);
+    z-index: 3;
+    pointer-events: none;
+    will-change: opacity;
+    animation: starBreathing 5s ease-in-out infinite;
+    top: 15%; left: 55%;
+}
+
 body[data-theme="dark"] .hero-banner-img {
     filter: brightness(0.85);
 }
@@ -982,7 +1000,7 @@ body[data-theme="dark"] .translator-page-nav .pn-btn { background: rgba(255,255,
 body[data-theme="dark"] .translator-page-nav .pn-btn:hover { background: var(--active-color-subtle); border-color: color-mix(in srgb, var(--active-color) 40%, transparent); color: var(--active-color); }
 body[data-theme="dark"] .translator-page-info { color: rgba(255,255,255,0.6); }
 
-body[data-theme="dark"] .viewer-panel { background: #0d0d12; }
+body[data-theme="dark"] .viewer-panel { background: var(--light-gray); }
 body[data-theme="dark"] .viewer-panel .panel-label { background: rgba(30,30,46,0.8); color: rgba(255,255,255,0.55); }
 
 body[data-theme="dark"] .marking-popover {
@@ -1164,10 +1182,9 @@ body[data-theme="dark"] .highlight.has-memo::after {
 
 /* ── 마킹 플로팅 위젯 ── */
 .marking-float {
-    position: sticky;
+    position: absolute;
     top: 8px;
-    float: right;
-    margin-right: 12px;
+    right: 12px;
     z-index: 6;
 }
 .mf-trigger {

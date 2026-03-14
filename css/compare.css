@@ -500,7 +500,7 @@ body[data-theme="dark"] .scroll-sync-btn:hover { border-color: color-mix(in srgb
 body[data-theme="dark"] .scroll-sync-btn.active { background: var(--active-color-subtle); border-color: color-mix(in srgb, var(--active-color) 40%, transparent); color: var(--active-color); }
 
 body[data-theme="dark"] .compare-panel {
-    background: #0d0d12;
+    background: var(--light-gray);
 }
 
 body[data-theme="dark"] .compare-panel + .compare-panel {
@@ -780,15 +780,28 @@ body[data-theme="dark"] .cp-paragraph.cp-editable:focus {
     cursor: pointer;
     transition: background 0.15s ease;
 }
-.validate-mark:hover { background: rgba(0,0,0,0.04); }
 .validate-mark.severity-error   { text-decoration-color: var(--color-error); }
 .validate-mark.severity-warning { text-decoration-color: var(--color-warning); }
 .validate-mark.severity-suggestion { text-decoration-color: var(--color-info); }
-.validate-mark.validate-active  { background: rgba(59,130,246,0.1); }
 .validate-mark.vd-mark-hidden  { text-decoration: none; }
 
-body[data-theme="dark"] .validate-mark:hover { background: rgba(255,255,255,0.06); }
-body[data-theme="dark"] .validate-mark.validate-active { background: rgba(59,130,246,0.15); }
+/* hover — severity별 은은한 배경 */
+.validate-mark.severity-error:hover   { background: color-mix(in srgb, var(--color-error) 12%, transparent); }
+.validate-mark.severity-warning:hover { background: color-mix(in srgb, var(--color-warning) 12%, transparent); }
+.validate-mark.severity-suggestion:hover { background: color-mix(in srgb, var(--color-info) 12%, transparent); }
+
+/* active — severity별 강조 배경 */
+.validate-mark.severity-error.validate-active   { background: color-mix(in srgb, var(--color-error) 25%, transparent); }
+.validate-mark.severity-warning.validate-active { background: color-mix(in srgb, var(--color-warning) 25%, transparent); }
+.validate-mark.severity-suggestion.validate-active { background: color-mix(in srgb, var(--color-info) 25%, transparent); }
+
+/* 다크모드 hover/active 강도 증가 */
+body[data-theme="dark"] .validate-mark.severity-error:hover   { background: color-mix(in srgb, var(--color-error) 18%, transparent); }
+body[data-theme="dark"] .validate-mark.severity-warning:hover { background: color-mix(in srgb, var(--color-warning) 18%, transparent); }
+body[data-theme="dark"] .validate-mark.severity-suggestion:hover { background: color-mix(in srgb, var(--color-info) 18%, transparent); }
+body[data-theme="dark"] .validate-mark.severity-error.validate-active   { background: color-mix(in srgb, var(--color-error) 35%, transparent); }
+body[data-theme="dark"] .validate-mark.severity-warning.validate-active { background: color-mix(in srgb, var(--color-warning) 35%, transparent); }
+body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { background: color-mix(in srgb, var(--color-info) 35%, transparent); }
 
 /* ── 검증 사이드바: 스코어 카드 ── */
 .vd-score-card {
@@ -1240,6 +1253,200 @@ body[data-theme="dark"] .vd-term-add-btn { background: rgba(255,255,255,0.06); b
 body[data-theme="dark"] .vd-term-add-btn:hover { background: var(--active-color); border-color: var(--active-color); }
 body[data-theme="dark"] .vd-term-remove:hover { background: rgba(248,113,113,0.15); }
 body[data-theme="dark"] .vd-group-tag { background: rgba(255,255,255,0.08); }
+
+/* ══════════════════════════════════════════
+   Phase 5: CSV 임포트 + JSON 내보내기/가져오기
+   ══════════════════════════════════════════ */
+
+/* ── 5-1. CSV 액션 바 (패널 하단) ── */
+.vd-csv-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 6px 10px;
+    background: var(--light-gray);
+    border-top: 1px solid var(--border-color);
+    font-size: 12px;
+}
+.vd-csv-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: var(--text-dark);
+    cursor: pointer;
+    font-size: 11px;
+    white-space: nowrap;
+    transition: all var(--transition-fast);
+}
+.vd-csv-btn:hover {
+    border-color: var(--active-color);
+    color: var(--active-color);
+}
+.vd-csv-btn svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+}
+.vd-csv-sample-link {
+    margin-left: auto;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 11px;
+    text-decoration: underline;
+    transition: color var(--transition-fast);
+}
+.vd-csv-sample-link:hover {
+    color: var(--active-color);
+}
+
+/* ── 5-1. CSV 미리보기 테이블 ── */
+.vd-csv-preview {
+    margin: 0;
+    padding: 8px 10px;
+    background: var(--bg-gray);
+    border-top: 1px solid var(--border-color);
+}
+.vd-csv-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+.vd-csv-preview-count {
+    font-weight: 400;
+    color: var(--text-light);
+    font-size: 11px;
+}
+.vd-csv-preview table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+.vd-csv-preview th {
+    padding: 4px 8px;
+    background: var(--light-gray);
+    color: var(--text-dark);
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+.vd-csv-preview td {
+    padding: 3px 8px;
+    color: var(--text-dark);
+    border-bottom: 1px solid var(--border-color);
+}
+.vd-csv-preview tr:last-child td { border-bottom: none; }
+.vd-csv-preview tr:hover td { background: var(--hover-bg); }
+.vd-csv-preview-overflow {
+    max-height: 120px;
+    overflow: auto;
+}
+
+/* 머지 전략 라디오 */
+.vd-csv-merge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--text-dark);
+}
+.vd-csv-merge label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+}
+.vd-csv-merge input[type="radio"] {
+    margin: 0;
+    accent-color: var(--active-color);
+    cursor: pointer;
+}
+/* 미리보기 확인/취소 */
+.vd-csv-preview-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    margin-top: 6px;
+}
+.vd-csv-preview-actions button {
+    padding: 3px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: var(--text-dark);
+    cursor: pointer;
+    font-size: 11px;
+    transition: all var(--transition-fast);
+}
+.vd-csv-preview-actions button:hover {
+    border-color: var(--active-color);
+    color: var(--active-color);
+}
+.vd-csv-preview-actions button.primary {
+    background: var(--active-color);
+    border-color: var(--active-color);
+    color: #fff;
+}
+.vd-csv-preview-actions button.primary:hover {
+    background: var(--active-color-hover);
+    border-color: var(--active-color-hover);
+}
+
+/* ── 5-2. 모달 헤더 JSON 버튼 ── */
+.vd-modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    margin-right: 8px;
+}
+.vd-header-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+.vd-header-btn:hover {
+    background: var(--hover-bg);
+    color: var(--active-color);
+    border-color: var(--active-color);
+}
+.vd-header-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ── Phase 5 다크 모드 ── */
+body[data-theme="dark"] .vd-csv-actions { background: rgba(255,255,255,0.03); border-top-color: rgba(255,255,255,0.06); }
+body[data-theme="dark"] .vd-csv-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: var(--text-dark); }
+body[data-theme="dark"] .vd-csv-btn:hover { border-color: var(--active-color); color: var(--active-color); }
+body[data-theme="dark"] .vd-csv-preview { background: rgba(255,255,255,0.02); border-top-color: rgba(255,255,255,0.06); }
+body[data-theme="dark"] .vd-csv-preview th { background: rgba(255,255,255,0.05); border-bottom-color: rgba(255,255,255,0.08); }
+body[data-theme="dark"] .vd-csv-preview td { border-bottom-color: rgba(255,255,255,0.06); }
+body[data-theme="dark"] .vd-csv-preview tr:hover td { background: rgba(255,255,255,0.04); }
+body[data-theme="dark"] .vd-csv-preview table { border-color: rgba(255,255,255,0.08); }
+body[data-theme="dark"] .vd-csv-preview-actions button { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+body[data-theme="dark"] .vd-csv-preview-actions button.primary { background: var(--active-color); border-color: var(--active-color); }
+body[data-theme="dark"] .vd-header-btn { border-color: rgba(255,255,255,0.12); }
+body[data-theme="dark"] .vd-header-btn:hover { background: rgba(255,255,255,0.08); }
 
 /* ══════════════════════════════════════════
    Phase 4: 수락/거절 + 내보내기 + 단락 번호
