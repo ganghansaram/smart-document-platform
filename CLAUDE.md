@@ -57,6 +57,7 @@ python -m http.server 8080            # http://localhost:8080
 | 배지 | `.badge` | `.badge-success`, `.badge-warning`, `.badge-error`, `.badge-info` |
 | 스피너 | `.spinner` | `.spinner-sm`, `.spinner-lg` |
 | 리사이즈 | `.resize-handle` | — |
+| 툴팁 | `.tooltip-icon` | `.tooltip-bottom` — `data-tooltip="설명"` 속성으로 내용 지정 |
 
 ### 모달 (modal.css)
 새 모달은 `.modal-overlay` + `.modal-box` + `.modal-header` / `.modal-body` / `.modal-footer` 조합.

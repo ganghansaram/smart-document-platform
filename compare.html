@@ -2228,6 +2228,15 @@
                 sentence_length: '가독성 검사'
             };
 
+            var RULE_DESCRIPTIONS = {
+                numbering_continuity: '단락 번호가 1.1 → 1.3처럼 건너뛰거나, 2.1 다음에 1.1이 오는 등 번호 체계가 끊기면 오류로 표시합니다.',
+                table_caption: '표(Table) 위에 "표 N." 형식의 캡션이 없으면 경고합니다.',
+                figure_caption: '그림(Figure) 아래에 "그림 N." 형식의 캡션이 없으면 경고합니다.',
+                forbidden_terms: '아래 등록된 금지 용어가 문서에 사용되면 대체어와 함께 표시합니다. 예: "비행기" → "항공기"',
+                inconsistent_terms: '같은 의미의 용어가 문서 내에서 혼용되면 가장 많이 쓰인 용어로 통일을 권장합니다. 예: "서버"와 "Server" 혼용',
+                sentence_length: '설정한 글자 수를 초과하는 문장을 표시합니다. 기술문서는 80자 이내 권장.'
+            };
+
             var SEVERITY_LABELS = { error: '오류', warning: '경고', suggestion: '제안' };
 
             // ── 5-1 CSV 템플릿 ──
@@ -2313,7 +2322,9 @@
                             var rule = rules[ruleId] || { enabled: false, severity: 'warning' };
 
                             html += '<div class="vd-rule-row" data-rule-id="' + ruleId + '">'
-                                + '<span class="vd-rule-name">' + RULE_LABELS[ruleId] + '</span>'
+                                + '<span class="vd-rule-name">' + RULE_LABELS[ruleId]
+                                + '<span class="tooltip-icon" data-tooltip="' + escapeHTML(RULE_DESCRIPTIONS[ruleId] || '') + '">ⓘ</span>'
+                                + '</span>'
                                 + '<select class="form-select form-select-sm vd-rule-severity" data-rule-severity="' + ruleId + '">'
                                 + '<option value="error"' + (rule.severity === 'error' ? ' selected' : '') + '>오류</option>'
                                 + '<option value="warning"' + (rule.severity === 'warning' ? ' selected' : '') + '>경고</option>'
@@ -2852,6 +2863,70 @@
                 });
             }
 
+        })();
+
+        // ── 공통 툴팁 (이벤트 위임) ──
+        (function() {
+            var popup = document.createElement('div');
+            popup.className = 'tooltip-popup';
+            document.body.appendChild(popup);
+            var hideTimer = null;
+
+            document.addEventListener('mouseenter', function(e) {
+                if (e.target.nodeType !== 1) return;
+                var icon = e.target.closest('.tooltip-icon');
+                if (!icon) return;
+                var text = icon.getAttribute('data-tooltip');
+                if (!text) return;
+
+                clearTimeout(hideTimer);
+                popup.textContent = text;
+                popup.className = 'tooltip-popup';
+
+                // 위치 계산
+                var rect = icon.getBoundingClientRect();
+                var popupW = 280;
+                var left = rect.left;
+                if (left + popupW > window.innerWidth - 12) {
+                    left = window.innerWidth - popupW - 12;
+                }
+                if (left < 12) left = 12;
+
+                // 아래쪽 우선, 공간 부족 시 위쪽
+                popup.style.left = left + 'px';
+                popup.style.width = 'max-content';
+                popup.style.maxWidth = popupW + 'px';
+                popup.style.visibility = 'hidden';
+                popup.style.display = 'block';
+                popup.classList.add('visible');
+
+                var popupH = popup.offsetHeight;
+                var spaceBelow = window.innerHeight - rect.bottom - 12;
+
+                if (spaceBelow >= popupH + 8) {
+                    popup.style.top = (rect.bottom + 8) + 'px';
+                    popup.classList.add('arrow-top');
+                } else {
+                    popup.style.top = (rect.top - popupH - 8) + 'px';
+                    popup.classList.add('arrow-bottom');
+                }
+
+                // 꼬리 위치 (CSS 변수로 전달)
+                var arrowLeft = rect.left + rect.width / 2 - left - 5;
+                if (arrowLeft < 8) arrowLeft = 8;
+                if (arrowLeft > popupW - 18) arrowLeft = popupW - 18;
+                popup.style.setProperty('--_al', arrowLeft + 'px');
+                popup.style.visibility = '';
+            }, true);
+
+            document.addEventListener('mouseleave', function(e) {
+                if (e.target.nodeType !== 1) return;
+                var icon = e.target.closest('.tooltip-icon');
+                if (!icon) return;
+                hideTimer = setTimeout(function() {
+                    popup.classList.remove('visible');
+                }, 100);
+            }, true);
         })();
     </script>
 </body>

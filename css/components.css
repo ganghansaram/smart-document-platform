@@ -271,6 +271,83 @@
     to { transform: rotate(360deg); }
 }
 
+/* ── 툴팁 ── */
+.tooltip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 4px;
+    font-size: 12px;
+    font-style: normal;
+    color: var(--medium-gray);
+    cursor: help;
+    vertical-align: -1px;
+    transition: color 0.15s ease;
+}
+
+.tooltip-icon:hover {
+    color: var(--active-color);
+}
+
+/* 툴팁 팝업 (JS로 body에 추가) */
+.tooltip-popup {
+    position: fixed;
+    padding: 8px 12px;
+    max-width: 280px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #fff;
+    background: #2c3e50;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 50000;
+    white-space: normal;
+    text-align: left;
+}
+
+.tooltip-popup.visible {
+    opacity: 1;
+}
+
+/* 말풍선 꼬리 */
+.tooltip-popup::before {
+    content: '';
+    position: absolute;
+    left: var(--_al, 16px);
+    border: 5px solid transparent;
+}
+
+.tooltip-popup.arrow-top::before {
+    top: -10px;
+    border-bottom-color: #2c3e50;
+}
+
+.tooltip-popup.arrow-bottom::before {
+    bottom: -10px;
+    border-top-color: #2c3e50;
+}
+
+/* 다크 모드 */
+body[data-theme="dark"] .tooltip-popup {
+    background: #3d3f50;
+    color: #e0e0e0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+body[data-theme="dark"] .tooltip-popup.arrow-top::before {
+    border-bottom-color: #3d3f50;
+}
+
+body[data-theme="dark"] .tooltip-popup.arrow-bottom::before {
+    border-top-color: #3d3f50;
+}
+
 /* ── 리사이즈 핸들 ── */
 .resize-handle {
     width: 4px;
