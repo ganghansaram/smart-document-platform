@@ -86,11 +86,61 @@ body {
     min-height: 28px;
 }
 
+/* ── 패널 바디 래퍼 (미니맵 기준점) ── */
+.cp-panel-body-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
 /* ── 패널 바디 (스크롤 영역) ── */
 .cp-panel-body {
     flex: 1;
     overflow: auto;
     padding: 0 16px 16px;
+}
+
+/* ── 스크롤바 마커 (PyCharm 스타일) ── */
+.cp-minimap {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 14px;               /* scrollbar.css 너비와 동일 */
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.cp-minimap-mark {
+    position: absolute;
+    right: 2px;
+    width: 10px;
+    min-height: 3px;
+    border-radius: 1px;
+    pointer-events: auto;
+    cursor: pointer;
+    opacity: 0.85;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+.cp-minimap-mark:hover {
+    opacity: 1;
+    transform: scaleX(1.3);
+    transform-origin: right center;
+}
+
+.cp-minimap-mark.diff-para-added   { background: var(--diff-added-border); }
+.cp-minimap-mark.diff-para-deleted  { background: var(--diff-deleted-border); }
+.cp-minimap-mark.diff-para-modified { background: var(--diff-modified-border); }
+
+.cp-minimap-mark.active {
+    opacity: 1;
+    box-shadow: 0 0 0 1px var(--white), 0 0 4px rgba(0,0,0,0.3);
+}
+
+body[data-theme="dark"] .cp-minimap-mark.active {
+    box-shadow: 0 0 0 1px var(--white), 0 0 6px rgba(0,0,0,0.5);
 }
 
 /* ── 패널 라벨 (탭 패턴: 이름 + 닫기) ── */

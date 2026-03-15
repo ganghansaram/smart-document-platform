@@ -130,6 +130,7 @@
                             <button class="cp-file-remove" id="file-remove-a" title="파일 제거">&times;</button>
                         </span>
                     </div>
+                    <div class="cp-panel-body-wrap">
                     <div class="cp-panel-body" id="panel-body-a">
                         <div class="panel-placeholder" id="placeholder-a">
                             <svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -151,6 +152,8 @@
                             <span class="placeholder-hint">.docx, .pdf 지원</span>
                         </div>
                     </div>
+                    <div class="cp-minimap" id="cp-minimap-a"></div>
+                    </div>
                 </div>
 
                 <div class="compare-panel panel-b" id="panel-b">
@@ -160,6 +163,7 @@
                             <button class="cp-file-remove" id="file-remove-b" title="파일 제거">&times;</button>
                         </span>
                     </div>
+                    <div class="cp-panel-body-wrap">
                     <div class="cp-panel-body" id="panel-body-b">
                         <div class="panel-placeholder" id="placeholder-b">
                             <svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -180,6 +184,8 @@
                             </button>
                             <span class="placeholder-hint">.docx, .pdf 지원</span>
                         </div>
+                    </div>
+                    <div class="cp-minimap" id="cp-minimap-b"></div>
                     </div>
                 </div>
             </div>
@@ -1034,6 +1040,7 @@
                 renderSidebar([]);
                 showDiffUI(false);
                 updateNavigation();
+                updateMinimapMarkers();
             }
 
             function showDiffUI(show) {
@@ -1113,6 +1120,9 @@
                 // diff 결과 렌더링 후 스크롤 초기화
                 panelBodyA.scrollTop = 0;
                 panelBodyB.scrollTop = 0;
+
+                // 미니맵 마커 갱신 (레이아웃 계산을 위해 1프레임 대기)
+                requestAnimationFrame(updateMinimapMarkers);
             }
 
             function replaceContent(panel, html) {
@@ -1724,7 +1734,66 @@
                 }
 
                 updateNavigation();
+                updateMinimapMarkers();
             }
+
+            // ── 스크롤바 마커 (PyCharm 스타일) ──
+            var minimapA = document.getElementById('cp-minimap-a');
+            var minimapB = document.getElementById('cp-minimap-b');
+            var SCROLLBAR_ARROW_H = 14; // scrollbar.css 화살표 높이
+
+            function updateMinimapMarkers() {
+                renderMinimapFor(panelBodyA, minimapA);
+                renderMinimapFor(panelBodyB, minimapB);
+            }
+
+            function renderMinimapFor(panel, minimap) {
+                // 기존 마커 제거
+                var old = minimap.querySelectorAll('.cp-minimap-mark');
+                for (var i = 0; i < old.length; i++) old[i].remove();
+
+                var scrollH = panel.scrollHeight;
+                var trackH = panel.clientHeight - SCROLLBAR_ARROW_H * 2;
+                if (scrollH <= 0 || trackH <= 0) return;
+
+                var paras = panel.querySelectorAll('.cp-paragraph[data-change-index]');
+                for (var i = 0; i < paras.length; i++) {
+                    var p = paras[i];
+                    if (p.classList.contains('diff-gap')) continue;
+                    if (p.classList.contains('diff-hidden')) continue;
+
+                    var type = '';
+                    if (p.classList.contains('diff-para-added')) type = 'diff-para-added';
+                    else if (p.classList.contains('diff-para-deleted')) type = 'diff-para-deleted';
+                    else if (p.classList.contains('diff-para-modified')) type = 'diff-para-modified';
+                    if (!type) continue;
+
+                    var ratio = p.offsetTop / scrollH;
+                    var hRatio = p.offsetHeight / scrollH;
+
+                    var mark = document.createElement('div');
+                    mark.className = 'cp-minimap-mark ' + type;
+                    mark.style.top = (SCROLLBAR_ARROW_H + ratio * trackH) + 'px';
+                    mark.style.height = Math.max(3, hRatio * trackH) + 'px';
+                    mark.dataset.changeIndex = p.getAttribute('data-change-index');
+
+                    mark.addEventListener('click', (function(ci) {
+                        return function(e) {
+                            e.stopPropagation();
+                            navigateToChange(parseInt(ci, 10));
+                        };
+                    })(mark.dataset.changeIndex));
+
+                    minimap.appendChild(mark);
+                }
+            }
+
+            // 패널 크기 변경 시 마커 재계산 (창 리사이즈, 사이드바 리사이즈)
+            var minimapResizeTimer = null;
+            new ResizeObserver(function() {
+                clearTimeout(minimapResizeTimer);
+                minimapResizeTimer = setTimeout(updateMinimapMarkers, 100);
+            }).observe(panelBodyA);
 
             // ══════════════════════════════════════════
             // Phase 4: 수락/거절 + 내보내기
