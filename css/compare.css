@@ -23,39 +23,7 @@ body {
     overflow: hidden;
 }
 
-/* ── 모드 토글 ── */
-.mode-toggle {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    background: var(--light-gray);
-    border-radius: var(--radius-md);
-    padding: 2px;
-}
-
-.mode-toggle-btn {
-    padding: 3px 14px;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--text-light);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.mode-toggle-btn.active {
-    background: var(--white);
-    color: var(--text-dark);
-    box-shadow: var(--shadow-sm);
-    font-weight: 600;
-}
-
-.mode-toggle-btn:not(.active):hover {
-    color: var(--text-dark);
-}
+/* ── 모드 토글: components.css 로 이동 ── */
 
 /* ── 서브 헤더 (툴바) ── */
 .compare-toolbar {
@@ -77,36 +45,7 @@ body {
     color: var(--text-light);
 }
 
-/* ── 툴바 버튼 (아이콘 전용, 32×32) ── */
-.cp-toolbar-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--text-light);
-    cursor: pointer;
-    transition: background var(--transition-fast), color var(--transition-fast);
-    flex-shrink: 0;
-}
-.cp-toolbar-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
-.cp-toolbar-btn:hover { background: var(--hover-bg); color: var(--text-dark); }
-.cp-toolbar-btn.active {
-    background: var(--active-color-subtle);
-    color: var(--active-color);
-}
-
-/* ── 툴바 구분선 ── */
-.cp-toolbar-sep {
-    width: 1px;
-    height: 20px;
-    background: var(--border-color);
-    flex-shrink: 0;
-}
+/* ── 툴바 버튼/구분선: components.css .toolbar-btn / .toolbar-sep 사용 ── */
 
 /* ── 메인 레이아웃: Grid (패널영역 | 핸들 | 사이드바) ── */
 .compare-main {
@@ -502,10 +441,7 @@ body[data-theme="dark"] .compare-toolbar {
     border-bottom-color: rgba(255,255,255,0.08);
 }
 
-body[data-theme="dark"] .cp-toolbar-btn { color: rgba(255,255,255,0.65); }
-body[data-theme="dark"] .cp-toolbar-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); }
-body[data-theme="dark"] .cp-toolbar-btn.active { background: var(--active-color-subtle); color: var(--active-color); }
-body[data-theme="dark"] .cp-toolbar-sep { background: rgba(255,255,255,0.1); }
+/* 다크 모드 .toolbar-btn / .toolbar-sep → components.css 에서 처리 */
 
 body[data-theme="dark"] .compare-panel {
     background: var(--light-gray);
@@ -576,14 +512,7 @@ body[data-theme="dark"] .cp-paste-btn {
     color: var(--text-dark);
 }
 
-body[data-theme="dark"] .mode-toggle {
-    background: var(--light-gray);
-}
-
-body[data-theme="dark"] .mode-toggle-btn.active {
-    background: var(--white);
-    color: var(--text-dark);
-}
+/* 다크 모드 .mode-toggle → components.css 에서 처리 */
 
 /* ── Phase 2: Diff 시각화 ── */
 .cp-paragraph.diff-para-added    { background: var(--diff-added); border-left: 3px solid var(--diff-added-border); }
@@ -945,11 +874,11 @@ body[data-theme="dark"] .mode-toggle-btn.active {
 }
 
 /* AI 분석 중 */
-.cp-toolbar-btn.ai-analyzing {
+.toolbar-btn.ai-analyzing {
     pointer-events: none;
     opacity: 0.7;
 }
-.cp-toolbar-btn.ai-analyzing svg {
+.toolbar-btn.ai-analyzing svg {
     animation: ai-pulse 1.2s ease-in-out infinite;
 }
 @keyframes ai-pulse {

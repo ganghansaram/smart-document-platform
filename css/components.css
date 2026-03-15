@@ -502,3 +502,77 @@ body[data-theme="dark"] .spinner {
     border-color: rgba(91, 163, 245, 0.15);
     border-top-color: var(--active-color);
 }
+
+/* ── 툴바 아이콘 버튼 (뷰어 공통) ── */
+.toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+    flex-shrink: 0;
+}
+.toolbar-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.toolbar-btn:hover:not(:disabled) { background: var(--hover-bg); color: var(--text-dark); }
+.toolbar-btn.active {
+    background: var(--active-color-subtle);
+    color: var(--active-color);
+}
+.toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── 툴바 구분선 ── */
+.toolbar-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color);
+    flex-shrink: 0;
+}
+
+body[data-theme="dark"] .toolbar-btn { color: rgba(255,255,255,0.65); }
+body[data-theme="dark"] .toolbar-btn:hover:not(:disabled) { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); }
+body[data-theme="dark"] .toolbar-btn.active { background: var(--active-color-subtle); color: var(--active-color); }
+body[data-theme="dark"] .toolbar-sep { background: rgba(255,255,255,0.1); }
+
+/* ── 모드 토글 (pill 탭) ── */
+.mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--light-gray);
+    border-radius: var(--radius-md);
+    padding: 2px;
+}
+
+.mode-toggle-btn {
+    padding: 3px 14px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-light);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.mode-toggle-btn.active {
+    background: var(--white);
+    color: var(--text-dark);
+    box-shadow: var(--shadow-sm);
+    font-weight: 600;
+}
+
+.mode-toggle-btn:not(.active):hover {
+    color: var(--text-dark);
+}
+
+body[data-theme="dark"] .mode-toggle { background: var(--light-gray); }
+body[data-theme="dark"] .mode-toggle-btn.active { background: var(--white); color: var(--text-dark); }

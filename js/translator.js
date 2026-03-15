@@ -118,8 +118,8 @@
         var $rangeBtn       = document.getElementById('range-translate-btn');
         var $cancelBtn      = document.getElementById('cancel-page-btn');
 
-        // Engine radio + font scale
-        var $engineRadio    = document.getElementById('engine-radio');
+        // Engine toggle + font scale
+        var $engineToggle   = document.getElementById('engine-toggle');
         var $fontControls   = document.getElementById('font-scale-controls');
         var $fontScaleDown  = document.getElementById('font-scale-down');
         var $fontScaleUp    = document.getElementById('font-scale-up');
@@ -816,11 +816,15 @@
             }
         }
 
-        // ── Engine radio ──
+        // ── Engine toggle (mode-toggle 패턴) ──
 
-        $engineRadio.addEventListener('change', function(e) {
-            if (e.target.name !== 'translate-engine') return;
-            translateEngine = e.target.value;
+        $engineToggle.addEventListener('click', function(e) {
+            var btn = e.target.closest('.mode-toggle-btn');
+            if (!btn || btn.classList.contains('active')) return;
+            var btns = $engineToggle.querySelectorAll('.mode-toggle-btn');
+            for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+            btn.classList.add('active');
+            translateEngine = btn.getAttribute('data-engine');
             $fontControls.style.display = translateEngine === 'text' ? '' : 'none';
             updateFontScaleDisplay();
 

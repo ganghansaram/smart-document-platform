@@ -23,7 +23,7 @@
             <!-- 모드 탭 (JS에서 동적 삽입 → 좌측 첫 번째 위치) -->
             <span id="cp-mode-slot"></span>
 
-            <span class="cp-toolbar-sep"></span>
+            <span class="toolbar-sep"></span>
 
             <!-- 탐색 그룹 -->
             <div class="cp-nav-group" id="cp-nav-group" style="display:none">
@@ -37,19 +37,19 @@
                 <button class="cp-nav-btn" id="vd-nav-next" title="다음 이슈 (↓)">&#9660;</button>
             </div>
 
-            <button class="cp-toolbar-btn" id="swap-btn" style="display:none" title="원본 ↔ 수정본 바꾸기">
+            <button class="toolbar-btn" id="swap-btn" style="display:none" title="원본 ↔ 수정본 바꾸기">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             </button>
 
-            <button class="cp-toolbar-btn" id="scroll-sync-btn" title="스크롤 동기화">
+            <button class="toolbar-btn" id="scroll-sync-btn" title="스크롤 동기화">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h-4v10h4"/><path d="M16 7h4v10h-4"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </button>
 
-            <span class="cp-toolbar-sep"></span>
+            <span class="toolbar-sep"></span>
 
             <!-- 분석/보기 그룹 -->
             <div class="cp-filter-group" id="cp-filter-group" style="display:none">
-                <button class="cp-toolbar-btn" id="filter-btn" title="필터">
+                <button class="toolbar-btn" id="filter-btn" title="필터">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                 </button>
                 <div class="cp-filter-dropdown" id="cp-filter-dropdown" style="display:none">
@@ -74,7 +74,7 @@
             </div>
 
             <div class="cp-filter-group" id="vd-filter-group" style="display:none">
-                <button class="cp-toolbar-btn" id="vd-filter-btn" title="필터">
+                <button class="toolbar-btn" id="vd-filter-btn" title="필터">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                 </button>
                 <div class="cp-filter-dropdown" id="vd-filter-dropdown" style="display:none">
@@ -84,31 +84,31 @@
                 </div>
             </div>
 
-            <button class="cp-toolbar-btn" id="ai-classify-btn" style="display:none" title="AI 의미 분류 — 변경 유형을 자동 분석합니다">
+            <button class="toolbar-btn" id="ai-classify-btn" style="display:none" title="AI 의미 분류 — 변경 유형을 자동 분석합니다">
                 <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M9.937 3.243c.282-.83 1.444-.83 1.726 0l1.07 3.158a.9.9 0 0 0 .566.566l3.158 1.07c.83.282.83 1.444 0 1.726l-3.158 1.07a.9.9 0 0 0-.566.566l-1.07 3.158c-.282.83-1.444.83-1.726 0l-1.07-3.158a.9.9 0 0 0-.566-.566L5.143 9.763c-.83-.282-.83-1.444 0-1.726l3.158-1.07a.9.9 0 0 0 .566-.566l1.07-3.158zM17.5 13c.2-.59 1-.59 1.2 0l.5 1.5c.07.2.22.35.42.42l1.5.5c.59.2.59 1 0 1.2l-1.5.5a.6.6 0 0 0-.42.42l-.5 1.5c-.2.59-1 .59-1.2 0l-.5-1.5a.6.6 0 0 0-.42-.42l-1.5-.5c-.59-.2-.59-1 0-1.2l1.5-.5a.6.6 0 0 0 .42-.42l.5-1.5z"/></svg>
                 <span id="ai-classify-label" style="display:none">AI 분석</span>
             </button>
 
-            <button class="cp-toolbar-btn" id="vd-settings-btn" style="display:none" title="검증 규칙 설정">
+            <button class="toolbar-btn" id="vd-settings-btn" style="display:none" title="검증 규칙 설정">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
 
-            <button class="cp-toolbar-btn" id="vd-revalidate-btn" style="display:none" title="재검증">
+            <button class="toolbar-btn" id="vd-revalidate-btn" style="display:none" title="재검증">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </button>
 
-            <button class="cp-toolbar-btn" id="paragraph-num-btn" style="display:none" title="단락 번호 표시">
+            <button class="toolbar-btn" id="paragraph-num-btn" style="display:none" title="단락 번호 표시">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
             </button>
 
-            <span class="cp-toolbar-sep"></span>
+            <span class="toolbar-sep"></span>
 
             <!-- 출력 그룹 -->
-            <button class="cp-toolbar-btn" id="edit-toggle-btn" style="display:none" title="텍스트 편집 모드">
+            <button class="toolbar-btn" id="edit-toggle-btn" style="display:none" title="텍스트 편집 모드">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
             </button>
 
-            <button class="cp-toolbar-btn" id="download-btn" style="display:none" title="수락/거절 결과를 반영한 최종 텍스트 저장">
+            <button class="toolbar-btn" id="download-btn" style="display:none" title="수락/거절 결과를 반영한 최종 텍스트 저장">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
 
