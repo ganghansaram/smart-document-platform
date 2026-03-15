@@ -108,7 +108,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
             </button>
 
-            <button class="toolbar-btn" id="download-btn" style="display:none" title="수락/거절 결과를 반영한 최종 텍스트 저장">
+            <button class="toolbar-btn" id="download-btn" style="display:none" title="검토 리포트 저장">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
 
@@ -1876,55 +1876,19 @@
             });
 
             function doExport() {
-                var parasA = docState.a.paragraphs;
-                var parasB = docState.b.paragraphs;
                 var changes = diffState.changes;
                 var decisions = diffState.decisions;
+                var lines = [];
 
-                // changeOrder를 재활용하여 원래 순서대로 병합
-                var order = buildChangeOrder(changes, parasA, parasB);
+                // 1. 헤더
+                lines.push('=== 문서 비교 검토 리포트 ===');
+                lines.push('원본: ' + (docState.a.filename || '(없음)'));
+                lines.push('수정본: ' + (docState.b.filename || '(없음)'));
+                lines.push('검토일: ' + new Date().toISOString().slice(0, 10));
+                lines.push('');
 
-                // change → decision 매핑 (changeIndex 기준)
-                var decisionByChange = {};
-                for (var i = 0; i < changes.length; i++) {
-                    decisionByChange[i] = decisions[i];
-                }
-
-                var result = [];
-                for (var k = 0; k < order.length; k++) {
-                    var entry = order[k];
-
-                    if (entry.type === 'equal') {
-                        result.push(parasA[entry.iA]);
-                    } else if (entry.type === 'added') {
-                        var ci = entry.change._changeIndex;
-                        // 수락 → B텍스트 포함, 그 외 → 무시
-                        if (decisionByChange[ci] === 'accepted') {
-                            result.push(parasB[entry.change.indexB]);
-                        }
-                    } else if (entry.type === 'deleted') {
-                        var ci = entry.change._changeIndex;
-                        // 수락(삭제 확정) → 건너뜀, 그 외 → A 유지
-                        if (decisionByChange[ci] !== 'accepted') {
-                            result.push(parasA[entry.change.indexA]);
-                        }
-                    } else if (entry.type === 'modified') {
-                        var ci = entry.change._changeIndex;
-                        // 수락 → B텍스트, 그 외 → A텍스트
-                        if (decisionByChange[ci] === 'accepted') {
-                            result.push(parasB[entry.change.indexB]);
-                        } else {
-                            result.push(parasA[entry.change.indexA]);
-                        }
-                    }
-                }
-
-                // AI 분류 태그가 있으면 상단 요약 추가
-                var header = '';
+                // 2. AI 의미 분류 섹션 (있을 때만)
                 if (diffState.aiClassifications) {
-                    header = '=== AI 의미 분류 요약 ===\n';
-
-                    // 그룹별 집계 요약 행
                     var aiCounts = {};
                     for (var ci = 0; ci < changes.length; ci++) {
                         var cls = diffState.aiClassifications[ci];
@@ -1945,29 +1909,70 @@
                         }
                         if (grpTotal > 0) exportGroups.push(grp.label + ' ' + grpTotal + '건 (' + parts.join(' \u00b7 ') + ')');
                     }
-                    if (exportGroups.length > 0) header += exportGroups.join(' | ') + '\n\n';
-
-                    for (var ci = 0; ci < changes.length; ci++) {
-                        var cls = diffState.aiClassifications[ci];
-                        if (!cls) continue;
-                        var effTag = cls.userOverride || cls.tag;
-                        var meta = AI_TAG_META[effTag] || AI_TAG_META.UNKNOWN;
-                        var cInfo = changes[ci];
-                        var snippet = cInfo.summary || '';
-                        if (snippet.length > 60) snippet = snippet.substring(0, 60) + '…';
-                        header += '[' + effTag + '] ' + (ci + 1) + '. ' + snippet;
-                        if (cls.userOverride) header += ' (사용자 수정)';
-                        header += '\n';
+                    if (exportGroups.length > 0) {
+                        lines.push('── AI 의미 분류 ──────────────────────────────────');
+                        lines.push(exportGroups.join(' | '));
+                        lines.push('');
                     }
-                    header += '\n=== 본문 ===\n\n';
                 }
 
-                var text = header + result.join('\n\n');
+                // 3. 검토 결과 집계
+                var accepted = 0, rejected = 0, undecided = 0;
+                for (var i = 0; i < changes.length; i++) {
+                    if (decisions[i] === 'accepted') accepted++;
+                    else if (decisions[i] === 'rejected') rejected++;
+                    else undecided++;
+                }
+                lines.push('── 검토 결과 ────────────────────────────────────');
+                lines.push('총 ' + changes.length + '건 | 수락 ' + accepted + '건 \u00b7 거절 ' + rejected + '건 \u00b7 미처리 ' + undecided + '건');
+                lines.push('');
+
+                // 4. 전체 변경점 목록
+                for (var i = 0; i < changes.length; i++) {
+                    var dec = decisions[i] ? (decisions[i] === 'accepted' ? '수락' : '거절') : '미처리';
+                    var aiLabel = '';
+                    if (diffState.aiClassifications && diffState.aiClassifications[i]) {
+                        var effTag = diffState.aiClassifications[i].userOverride || diffState.aiClassifications[i].tag;
+                        if (effTag !== 'UNKNOWN') {
+                            aiLabel = ' (' + (AI_TAG_META[effTag] || AI_TAG_META.UNKNOWN).label + ')';
+                        }
+                    }
+                    var snippet = changes[i].summary || '';
+                    if (snippet.length > 80) snippet = snippet.substring(0, 80) + '…';
+                    var num = ' #' + (i + 1);
+                    while (num.length < 5) num = ' ' + num;
+                    lines.push(num + '  [' + dec + ']' + aiLabel + ' "' + snippet + '"');
+                }
+                lines.push('');
+
+                // 5. 미처리 항목 별도 섹션
+                if (undecided > 0) {
+                    lines.push('── 미처리 항목 ──────────────────────────────────');
+                    for (var i = 0; i < changes.length; i++) {
+                        if (decisions[i]) continue;
+                        var aiLabel2 = '';
+                        if (diffState.aiClassifications && diffState.aiClassifications[i]) {
+                            var effTag2 = diffState.aiClassifications[i].userOverride || diffState.aiClassifications[i].tag;
+                            if (effTag2 !== 'UNKNOWN') {
+                                aiLabel2 = ' (' + (AI_TAG_META[effTag2] || AI_TAG_META.UNKNOWN).label + ')';
+                            }
+                        }
+                        var snippet2 = changes[i].summary || '';
+                        if (snippet2.length > 80) snippet2 = snippet2.substring(0, 80) + '…';
+                        var num2 = ' #' + (i + 1);
+                        while (num2.length < 5) num2 = ' ' + num2;
+                        lines.push(num2 + aiLabel2 + ' "' + snippet2 + '"');
+                    }
+                    lines.push('');
+                }
+
+                // 6. Blob 다운로드
+                var text = lines.join('\n');
                 var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
                 var url = URL.createObjectURL(blob);
                 var a = document.createElement('a');
                 a.href = url;
-                a.download = (docState.a.filename || 'document').replace(/\.[^.]+$/, '') + '_merged.txt';
+                a.download = (docState.a.filename || 'document').replace(/\.[^.]+$/, '') + '_review.txt';
                 a.click();
                 URL.revokeObjectURL(url);
             }
@@ -1976,15 +1981,15 @@
                 var overlay = document.createElement('div');
                 overlay.className = 'modal-overlay blur';
                 overlay.innerHTML = '<div class="modal-box" style="max-width:400px">'
-                    + '<div class="modal-header"><h3>내보내기 확인</h3>'
+                    + '<div class="modal-header"><h3>리포트 내보내기</h3>'
                     + '<button class="modal-close" id="export-modal-close">&times;</button></div>'
                     + '<div class="modal-body">'
                     + '<p style="font-size:14px;color:var(--text-dark);margin:0">'
-                    + '미처리 <strong>' + undecided + '</strong>건은 원본 텍스트로 유지됩니다.</p>'
+                    + '미처리 <strong>' + undecided + '</strong>건은 리포트에 "미처리"로 표시됩니다.</p>'
                     + '</div>'
                     + '<div class="modal-footer">'
                     + '<button class="btn btn-secondary" id="export-modal-cancel">취소</button>'
-                    + '<button class="btn btn-primary" id="export-modal-ok">내보내기</button>'
+                    + '<button class="btn btn-primary" id="export-modal-ok">리포트 저장</button>'
                     + '</div></div>';
                 document.body.appendChild(overlay);
 

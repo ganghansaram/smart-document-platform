@@ -2,7 +2,7 @@
 
 > 작성일: 2026-03-12
 > 최종 갱신: 2026-03-15
-> 상태: Phase 1~5 핵심 완료 / Phase 6-1 완료 + 관리자 설정 UX 개선 / Phase 7 재배치 완료
+> 상태: Phase 1~6 완료 / Phase 7-1a 검토 리포트 완료 / 7-1b 레이아웃 비교 재설계 예정
 
 ---
 
@@ -299,12 +299,12 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
   - ✅ 편집 모드와의 충돌 방지: `editMode === true`일 때 `setDecision()` 무시
   - ✅ 키보드 단축키: 활성 변경점에서 `Enter`(수락), `Delete`(거절)
 
-- ✅ **4-2. 병합 결과 내보내기**
+- ✅ **4-2. 검토 리포트 내보내기** (7-1a에서 리포트 형태로 전환)
   - ✅ 툴바에 "내보내기" 버튼 (diff 존재 시 표시, `.scroll-sync-btn` 패턴)
-  - ✅ 병합 로직: `buildChangeOrder()` 재활용 → accepted=B텍스트, rejected/null=A텍스트, 변경 없는 단락=원본
-  - ✅ 미처리 항목 있을 경우 `modal.css` 확인 다이얼로그: "미처리 N건은 원본(A)으로 유지됩니다"
-  - ✅ `.txt` 내보내기 (프론트엔드 Blob → `<a download>`, 백엔드 불필요)
-  - ⬜ (향후) `.docx` 재생성
+  - ✅ `doExport()` → 검토 리포트 생성 (헤더 + AI 요약 + 검토 결과 집계 + 전체 변경점 + 미처리 섹션)
+  - ✅ 미처리 항목 있을 경우 `modal.css` 확인 다이얼로그: "미처리 N건은 리포트에 '미처리'로 표시됩니다"
+  - ✅ `_review.txt` 내보내기 (프론트엔드 Blob → `<a download>`, 백엔드 불필요)
+  - ⬜ (향후) PDF 리포트 생성 (7-2)
 
 - ✅ **4-3. 단락 번호 표시**
   - ✅ 패널 좌측 거터에 단락 번호 (CSS `::before` + counter, gap 단락은 번호 건너뜀)
@@ -505,15 +505,17 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 - ✅ **Settings 링크 제거** — 상단 nav의 "Settings" 링크 전 페이지에서 제거. 시스템 스위처 드롭다운에서만 접근 (중복 제거)
 - ✅ **range 필드 레이아웃 수정** — `admin-settings.css`에 `.admin-field-range` 1컬럼 규칙 추가 (설명이 라벨 아래 표시)
 
-- ⬜ **6-2. 변경 요약 (프론트엔드 집계)**
+- ✅ **6-2. 변경 요약 + UX 개선** ✅ (`4f5f633`, `94dee53`)
   > LLM 재호출 없이 분류 결과를 프론트엔드에서 카운팅.
   > AI 피로감 방지: 단순 통계가 "자연어 요약"보다 더 빠르고 신뢰성 높음.
-  - ⬜ 사이드바 상단 요약 헤더
+  - ✅ 사이드바 상단 요약 헤더
     - 분류 완료 후 그룹별 통계 배지 표시
     - 예: `"주의 5건 (강화 3 · 완화 2) · 참고 8건 · 편집 37건"`
     - 그룹별 색상 배지로 시각화
     - 요약 영역 클릭 → 해당 그룹 필터 토글
-  - ⬜ 요약을 내보내기 상단에 포함
+  - ✅ 요약을 내보내기 상단에 포함
+  - ✅ AI 태그 색상 3색 그룹 체계 통일 — 주의(빨강) · 참고(파랑) · 편집(회색)
+  - ✅ 분석 프로그레스 표시 + 상세 레이아웃 개선
 
 - ~~6-3. AI 기반 검증 규칙~~ → **별도 Phase로 분리** (후술)
   > 6-1/6-2와 성격이 다름: diff 구간 분류(소량) vs. 전체 문서 단락 스캔(대량).
@@ -544,7 +546,7 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 | 6-1a | `config.py`, `settings_service.py`, `admin-settings.js` | 관리자 설정 (AI 활성화, 모델, 프롬프트, placeholder 통일, 슬라이더, 메뉴 순서) |
 | 6-1b | `compare.py`, `compare_service.py` | AI 분류 API + 서비스 로직 |
 | 6-1c | `compare.html`, `css/compare.css`, `css/tokens.css` | 버튼, 배지, 필터, HITL 드롭다운 |
-| 6-2 | `compare.html` | 사이드바 요약 헤더 (프론트엔드 집계) |
+| 6-2 | `compare.html`, `css/compare.css` | 사이드바 요약 헤더 + 그룹 배지 + 분석 프로그레스 + AI 태그 3색 통일 |
 
 #### Phase 6 사용자 흐름
 
@@ -607,19 +609,31 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 
 #### 높음 — 실용 가치 큰 기능
 
-- ⬜ **7-1. 레이아웃 보존 비교 (Visual Diff)**
+- ⬜ **7-1. 레이아웃 보존 비교 (Visual Diff)** — 재설계 예정
   > 현재 텍스트 모드와 병행하는 **레이아웃 뷰** — 원본 서식을 유지한 채 diff 하이라이트 표시.
   > 텍스트 모드(수락/거절/편집)와 레이아웃 모드(서식/레이아웃 변경 확인)를 툴바 토글로 전환.
   >
   > **업계 현황**: 업계 표준 접근법. Draftable, Adobe Acrobat Compare, Workshare 등 주요 도구가 동일 방식 사용.
-  > 핵심 라이브러리(PyMuPDF, win32com)가 이미 프로젝트에 설치되어 있어 인프라 추가 비용 없음.
-  > **기술 부채 해소**: PDF 구조 평탄화 문제(다단, 표 내부 텍스트 선형화)가 레이아웃 모드에서는 원본 그대로 표시되므로 자연 해소.
-  - ⬜ **DOCX 비교**: `win32com.CompareDocuments()` → Track Changes DOCX 생성 → PDF 변환 → PDF.js 표시
-    - Word 네이티브 비교 엔진 활용 (서식, 표, 이미지 변경 감지)
-    - `word_preprocessor.py`와 동일한 COM 패턴 재사용
-  - ⬜ **PDF 비교**: PyMuPDF `get_text("words")` 좌표 추출 → difflib 비교 → `search_for()` + `add_highlight_annot()` 어노테이션
-    - 또는 백엔드에서 diff 좌표 JSON 반환 → PDF.js 위 커스텀 오버레이 레이어
-  - ⬜ **프론트엔드**: Translator PDF.js 뷰어 패턴 재사용, 좌우 PDF 렌더링 + diff 오버레이
+  >
+  > ##### 7-1a. 검토 리포트 ✅ (2026-03-15)
+  > `doExport()`를 병합 텍스트(`_merged.txt`)에서 검토 리포트(`_review.txt`)로 전환.
+  > 리포트 형식: 헤더 → AI 의미 분류 요약 → 검토 결과 집계 → 전체 변경점 목록(#번호 [판정] (AI태그) "요약") → 미처리 항목 별도 섹션.
+  > `showExportConfirm()` 모달 문구도 리포트에 맞게 변경.
+  >
+  > ##### 7-1b. DOCX 레이아웃 비교 — COM 접근 폐기, 재설계 필요
+  > **시도 (2026-03-15)**: `win32com.CompareDocuments()` → Redline PDF → PDF.js 렌더링.
+  > 백엔드 세션 관리, COM 직렬화(`asyncio.Lock`), 프론트엔드 `[텍스트|레이아웃]` 서브 토글 + PDF.js 뷰어까지 풀스택 구현 완료.
+  > **결과**: Word COM CompareDocuments의 Redline 품질이 기대 이하 — revision 마크업이 지저분하고, 읽기 어려움. 텍스트 비교보다 실용성이 낮다고 판단하여 전면 제거. (코드는 git stash에 보존)
+  >
+  > **향후 방향 — 자체 렌더링 DOCX→HTML diff**:
+  > - DOCX → HTML 변환 (서식/표/이미지 보존) → 좌우 HTML 렌더링 → 자체 diff 오버레이
+  > - Draftable/Workshare처럼 원본에 가까운 뷰 위에 직접 하이라이트 마킹
+  > - Word COM 의존성 제거 (Linux 서버 호환)
+  > - 기존 `tools/converter/` DOCX→HTML 변환기를 확장 활용 가능
+  >
+  - ✅ 검토 리포트 내보내기 전환 (7-1a)
+  - ⬜ DOCX→HTML 렌더링 + diff 오버레이 (7-1b 재설계)
+  - ⬜ **PDF 비교**: PyMuPDF 좌표 추출 → diff → 어노테이션 또는 커스텀 오버레이
   - ⬜ **뷰 모드 토글**: 툴바에 "텍스트" / "레이아웃" 전환 버튼 (모드 토글 패턴 재사용)
   - ⬜ 크로스 포맷 (DOCX↔PDF): DOCX → PDF 변환 후 PDF 비교 파이프라인 적용
 
@@ -739,9 +753,9 @@ POST /api/compare/ai-classify  — diff 변경 구간 AI 분류 (Phase 6)
 | AI 의미 분류 | **Ollama 구조화 출력 (format + JSON 스키마)** | 제약 디코딩 ~98% 신뢰도, 4B~27B 모델 대응, 폐쇄망 호환 |
 | AI 프롬프트 전략 | **Few-shot 3~5건 + 관리자 커스텀** | Zero-shot 대비 정확도 유의미 향상 (업계 검증) |
 | AI 설정 관리 | **관리자 전용 (admin-settings.js 확장)** | Grammarly/SonarQube 패턴 — 분류 기준 일관성 보장 |
-| DOCX 레이아웃 비교 | **win32com CompareDocuments** | 이미 설치됨 (word_preprocessor.py), Word 네이티브 품질, 업계 표준 |
-| PDF 레이아웃 비교 | **PyMuPDF 좌표 추출 + 어노테이션** | 이미 설치됨, 추출+어노테이션 일체, 폐쇄망 호환 |
-| 레이아웃 뷰 렌더링 | **PDF.js (기존)** | Translator와 동일 뷰어 재사용, 추가 의존성 없음 |
+| ~~DOCX 레이아웃 비교~~ | ~~win32com CompareDocuments~~ | ~~Redline 품질 미달로 폐기 (2026-03-15). 향후: DOCX→HTML 자체 렌더링 + diff 오버레이~~ |
+| PDF 레이아웃 비교 | **PyMuPDF 좌표 추출 + 어노테이션** (미구현) | 이미 설치됨, 추출+어노테이션 일체, 폐쇄망 호환 |
+| 검토 리포트 | **프론트엔드 Blob TXT** | 병합 텍스트 → 검토 리포트(`_review.txt`)로 전환. AI 요약 + 판정 목록 포함 |
 
 ### 참고한 서비스
 
@@ -753,14 +767,15 @@ POST /api/compare/ai-classify  — diff 변경 구간 AI 분류 (Phase 6)
 - **Acrolinx** — 문서 품질 스코어카드, 3단 규칙 계층
 - **Vale** — 규칙 유형 참고 (existence, substitution, occurrence)
 
-#### Phase 7-6 (레이아웃 보존 비교)
+#### Phase 7-1 (레이아웃 보존 비교)
+- **win32com CompareDocuments** — Word 네이티브 비교 엔진 COM 호출. ⚠️ **실험 결과 Redline 품질 미달로 폐기** (2026-03-15)
 - **PyMuPDF** — PDF 텍스트+좌표 추출 (`get_text("words")`), 어노테이션 (`add_highlight_annot`). 월 500만+ 다운로드, Artifex 지원
-- **win32com CompareDocuments** — Word 네이티브 비교 엔진 COM 호출. 법률/규격 문서 관리에서 수십 년간 사용된 표준 방식
 - **PDF-Diff-Viewer** (ssibb) — PyMuPDF 기반 시각적 PDF 비교 레퍼런스 구현 (Tkinter 데스크톱)
 - **diff-pdf** (vslavik) — C++ 픽셀 레벨 PDF 비교. 시맨틱 diff 아닌 이미지 비교라 보조 용도
 - **compare-pdf** (Formartha) — pdf2image + OpenCV `absdiff` 픽셀 비교. 순수 Python
 - **Adobe Acrobat Compare** — Old/New File 비대칭 UI + 색상 범례 (파랑=삽입, 보라=페이지 변경, 초록=이동/삭제)
 - **Workshare Compare** — Original/Modified 비교 → Redline 문서 생성. 법률 업계 표준
+- **향후 검토**: DOCX→HTML 자체 렌더링 (mammoth.js 등) + diff 오버레이 — COM 의존성 제거, Linux 호환
 
 #### Phase 6 (AI 의미 비교)
 - **Litera Compare + Lito** — 전통 diff 엔진 + AI 에이전트 오버레이 패턴. 법률 업계 72% 점유율
