@@ -245,6 +245,46 @@ var SETTINGS_SCHEMA = {
             ]
         },
         {
+            id: 'compare',
+            label: 'Compare',
+            group: '시스템 설정',
+            tabs: [
+                {
+                    tabId: 'tab-compare-ai',
+                    tabLabel: 'AI 분석',
+                    sections: [
+                        {
+                            title: 'AI 의미 분류',
+                            fields: [
+                                { group: 'compare', key: 'ai_enabled', label: 'AI 분석 활성화', type: 'toggle',
+                                  restart: false, desc: '비교 모드에서 "AI 분석" 버튼 표시 여부. 비활성화 시 기존 텍스트 diff만 사용' },
+                                { group: 'compare', key: 'ai_model', label: '분류 모델', type: 'text',
+                                  restart: false, desc: 'AI 분류에 사용할 Ollama 모델명. 비워두면 Explorer AI/RAG 탭의 LLM 모델 사용' },
+                                { group: 'compare', key: 'ai_temperature', label: '온도', type: 'number',
+                                  restart: false, min: 0, max: 2, step: 0.1,
+                                  desc: '0이면 결정적 출력 (분류 일관성 최대화). 높일수록 결과 다양성 증가' },
+                                { group: 'compare', key: 'ai_batch_size', label: '배치 크기', type: 'number',
+                                  restart: false, min: 1, max: 50, step: 1,
+                                  desc: '1회 LLM 호출당 최대 변경 구간 수. 4B 모델은 5, 12B 이상은 20 권장' },
+                                { group: 'compare', key: 'ai_timeout', label: '타임아웃 (초)', type: 'number',
+                                  restart: false, min: 10, max: 300, step: 10,
+                                  desc: 'LLM 호출 최대 대기 시간. 배치 크기가 클수록 늘려야 함' },
+                            ]
+                        },
+                        {
+                            title: '시스템 프롬프트',
+                            fields: [
+                                { group: 'compare', key: 'ai_system_prompt', label: '시스템 프롬프트',
+                                  type: 'textarea', restart: false, rows: 16,
+                                  placeholder: '당신은 기술문서 변경사항을 분류하는 전문가입니다.\n두 문서 버전 간의 변경 구간을 받아, 각 변경의 의미적 유형을 분류합니다.\n\n## 분류 태그 (정확히 6종 중 하나를 선택)\n\n- EDITORIAL: 편집상 변경...\n- CLARIFICATION: 기존 내용의 표현을 명확하게 보완...\n- STRICTER: 요구사항/기준/제약이 더 엄격해짐...\n- MORE_LENIENT: 요구사항/기준/제약이 완화됨...\n- EXPANDED: 기존에 없던 새 내용/범위/기능 추가...\n- RESTRUCTURED: 내용은 동일하나 위치/구조/번호 변경...',
+                                  desc: '변경 구간 분류 시 LLM에 전달되는 지침. 비워두면 회색 글씨의 기본 프롬프트가 적용됩니다. 도메인 특화 판단 기준을 추가할 수 있습니다.' },
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             id: 'translator',
             label: 'Translator',
             group: '시스템 설정',

@@ -441,37 +441,31 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
   - 4B 모델은 배치 5건 최적, 12B는 일괄 처리 가능 (프로덕션 27B도 일괄 예상)
   - 4B 유일한 오류: "테스트 커버리지 80%→70%"를 STRICTER로 오분류 — 27B에서 해결 예상
 
-- ⬜ **6-1. AI 의미 분류 (핵심 기능)**
+- ✅ **6-1. AI 의미 분류 (핵심 기능)** — 6-1a, 6-1b 완료 / 6-1c 프론트엔드 미착수
 
-  ##### 6-1a. 관리자 설정
+  ##### 6-1a. 관리자 설정 ✅
   > 업계 표준: 관리자가 AI 동작을 제어, 사용자는 결과만 소비 (Grammarly/SonarQube 패턴).
-  - ⬜ `config.py`에 Compare AI 기본값 추가
-    - `COMPARE_AI_ENABLED` (bool, 기본 True)
-    - `COMPARE_AI_MODEL` (str, 빈 문자열 → `OLLAMA_MODEL` 폴백)
-    - `COMPARE_AI_TEMPERATURE` (float, 기본 0)
-    - `COMPARE_AI_BATCH_SIZE` (int, 기본 20)
-    - `COMPARE_AI_TIMEOUT` (int, 기본 60초)
-    - `COMPARE_AI_SYSTEM_PROMPT` (str, 기본 내장 프롬프트 — 6-0에서 검증된 프롬프트)
-  - ⬜ `settings_service.py`에 `compare` 그룹 추가 (DEFAULT_SETTINGS, apply_to_config, _NO_RESTART)
-  - ⬜ `admin-settings.js` SETTINGS_SCHEMA에 Compare 시스템 탭 추가
+  - ✅ `config.py`에 Compare AI 기본값 추가 (ENABLED, MODEL, TEMPERATURE, BATCH_SIZE, TIMEOUT, SYSTEM_PROMPT)
+  - ✅ `settings_service.py`에 `compare` 그룹 추가 (DEFAULT_SETTINGS, apply_to_config, _NO_RESTART)
+  - ✅ `get_public_settings()`에 `compare_ai_enabled` 노출 (프론트엔드 버튼 가시성 제어)
+  - ✅ `admin-settings.js` SETTINGS_SCHEMA에 Compare 시스템 탭 추가
     - "AI 분석" 탭: 활성화 토글, 모델명, 온도, 배치 크기, 타임아웃
-    - "시스템 프롬프트" 섹션: textarea (기본 프롬프트 표시, 관리자 수정 가능)
+    - "시스템 프롬프트" 섹션: textarea (기본 프롬프트 placeholder, 관리자 수정 가능)
     - 모든 설정 즉시 적용 (`_NO_RESTART`), 서버 재시작 불필요
 
-  ##### 6-1b. 백엔드 API
-  - ⬜ `POST /api/compare/ai-classify` 엔드포인트 (`compare.py`)
+  ##### 6-1b. 백엔드 API ✅
+  - ✅ `POST /api/compare/ai-classify` 엔드포인트 (`compare.py`)
     - 입력: `{ changes: [{ index, type, text_a, text_b }] }`
     - 출력: `{ classifications: [{ index, tag, confidence, explanation }] }`
-    - Ollama 호출: 구조화 출력 (`format` 파라미터 + JSON 스키마)
-    - 배치 전략: N ≤ `BATCH_SIZE` → 1회 호출, 초과 시 분할 (각 배치 결과 병합)
-    - 파싱 실패 시 1회 재시도, 그래도 실패 시 해당 항목 `tag: "UNKNOWN"`
-    - 타임아웃: `COMPARE_AI_TIMEOUT`초
-    - 폴백: Ollama 미응답 → 적절한 HTTP 에러 + 메시지
+    - Ollama 구조화 출력 (`format` + JSON 스키마, 제약 디코딩)
+    - 배치 분할 (N > BATCH_SIZE 시), 결과 병합
+    - 파싱 실패 시 1회 재시도, 그래도 실패 시 `tag: "UNKNOWN"`
     - AI 비활성화 시 → 400 "AI 분석이 비활성화되어 있습니다"
-  - ⬜ `compare_service.py`에 분류 로직 함수 분리
-    - 프롬프트 조립: 시스템 프롬프트 + few-shot + 변경 구간 데이터
-    - `llm_provider.py` 호출 (기존 Ollama 추상화 재사용)
-    - JSON 파싱 + Pydantic 검증
+    - 최대 200건 제한, 502 에러 핸들링
+  - ✅ `compare_service.py`에 분류 로직 분리
+    - 6-0 검증 프롬프트 내장 (기본값) + 관리자 커스텀 오버라이드
+    - Few-shot 5건 내장
+    - `_validate_classifications()` — 태그 유효성·confidence 범위·누락 항목 검증
 
   ##### 6-1c. 프론트엔드 UI
   - ⬜ 툴바 "AI 분석" 버튼

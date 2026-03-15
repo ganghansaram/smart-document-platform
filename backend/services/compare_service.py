@@ -1,15 +1,22 @@
 """
-Compare 서비스 — 문서 텍스트 추출 + 검증 엔진
+Compare 서비스 — 문서 텍스트 추출 + 검증 엔진 + AI 의미 분류
 """
 import io
 import json
+import logging
 import os
 import re
 from collections import Counter
 from pathlib import Path
+from typing import Optional
 
+import httpx
 import fitz  # PyMuPDF
 from docx import Document
+
+import config
+
+logger = logging.getLogger(__name__)
 
 RULES_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "compare-rules.json"
 
@@ -357,3 +364,204 @@ def _check_sentence_length(paragraphs, severity, params):
             offset += len(sent)
 
     return issues
+
+
+# ══════════════════════════════════════════
+# AI 의미 분류 (Phase 6)
+# ══════════════════════════════════════════
+
+VALID_TAGS = {"EDITORIAL", "CLARIFICATION", "STRICTER", "MORE_LENIENT", "EXPANDED", "RESTRUCTURED"}
+
+_DEFAULT_SYSTEM_PROMPT = """당신은 기술문서 변경사항을 분류하는 전문가입니다.
+두 문서 버전 간의 변경 구간을 받아, 각 변경의 의미적 유형을 분류합니다.
+
+## 분류 태그 (정확히 6종 중 하나를 선택)
+
+- EDITORIAL: 편집상 변경. 오타 수정, 표현 다듬기, 접속사/어미 변경 등. 의미에 영향 없음.
+- CLARIFICATION: 기존 내용의 표현을 명확하게 보완. 약어 풀네임 병기, 용어 설명 추가 등. 의미 자체는 동일.
+- STRICTER: 요구사항/기준/제약이 더 엄격해짐. 시스템이 달성해야 할 의무가 강화된 경우.
+- MORE_LENIENT: 요구사항/기준/제약이 완화됨. 사용자에게 허용된 범위가 넓어지거나 의무가 줄어든 경우.
+- EXPANDED: 기존에 없던 새 내용/범위/기능 추가. 새 섹션, 새 요구사항, 적용 범위 확대.
+- RESTRUCTURED: 내용은 동일하나 위치/구조/번호 변경. 섹션 이동, 번호 재부여 등.
+
+## 판단 기준
+
+1. 수치 변경은 "의무 vs 허용" 관점으로 판단:
+   - 시스템이 달성해야 할 의무가 늘어남 → STRICTER
+     예: "응답 시간 3초→1초" (더 빠르게 응답해야 함), "동시 접속 50명→100명" (더 많은 사용자를 지원해야 함), "보관 기간 5년→10년" (더 오래 보관해야 함)
+   - 사용자/운영자에 대한 제약이 줄어듦 → MORE_LENIENT
+     예: "백업 매일→매주" (백업 빈도 의무 감소), "테스트 커버리지 80%→70%" (기준 완화), "업로드 제한 10MB→50MB" (사용자 허용 범위 확대)
+2. 단순 표현 변경(~하며/~하고, 이를/이 문제를)은 EDITORIAL
+3. 새 문장/절이 추가되어 기존 범위를 넘어서면 EXPANDED
+4. 약어에 풀네임을 병기하는 것은 CLARIFICATION
+5. 선택지가 추가되어 사용자의 선택 범위가 넓어진 경우("온프레미스"→"온프레미스 또는 클라우드")는 MORE_LENIENT
+
+## 출력 규칙
+
+각 변경에 대해 반드시 아래 JSON 형식으로 응답하세요:
+- tag: 6종 태그 중 하나 (대문자 영어)
+- confidence: 0.0~1.0 사이의 확신도
+- explanation: 한국어 1문장으로 분류 이유 설명"""
+
+_FEW_SHOT_EXAMPLES = """## 예시
+
+입력:
+[
+  {"index": 0, "type": "modified", "text_a": "시스템 가용성은 99.5%를 보장한다.", "text_b": "시스템 가용성은 99.9%를 보장한다."},
+  {"index": 1, "type": "modified", "text_a": "관리자는 사용자 권한을 설정한다.", "text_b": "관리자(Admin)는 사용자 권한을 설정한다."},
+  {"index": 2, "type": "added", "text_a": null, "text_b": "4.1 감사 로그: 모든 데이터 변경 이력을 90일간 보관한다."},
+  {"index": 3, "type": "modified", "text_a": "시스템은 동시 접속 사용자 200명을 지원해야 한다.", "text_b": "시스템은 동시 접속 사용자 500명을 지원해야 한다."},
+  {"index": 4, "type": "modified", "text_a": "첨부파일 최대 크기는 5MB이다.", "text_b": "첨부파일 최대 크기는 20MB이다."}
+]
+
+출력:
+[
+  {"index": 0, "tag": "STRICTER", "confidence": 0.95, "explanation": "가용성 기준이 99.5%에서 99.9%로 강화되었습니다."},
+  {"index": 1, "tag": "CLARIFICATION", "confidence": 0.9, "explanation": "관리자에 영문 약어(Admin)를 병기하여 의미를 명확히 했습니다."},
+  {"index": 2, "tag": "EXPANDED", "confidence": 0.95, "explanation": "감사 로그 보관 요구사항이 새로 추가되었습니다."},
+  {"index": 3, "tag": "STRICTER", "confidence": 0.9, "explanation": "시스템이 지원해야 하는 동시 접속 수가 200명에서 500명으로 강화되었습니다."},
+  {"index": 4, "tag": "MORE_LENIENT", "confidence": 0.9, "explanation": "사용자가 업로드할 수 있는 최대 파일 크기가 5MB에서 20MB로 완화되었습니다."}
+]"""
+
+_JSON_SCHEMA = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "index": {"type": "integer"},
+            "tag": {
+                "type": "string",
+                "enum": ["EDITORIAL", "CLARIFICATION", "STRICTER",
+                         "MORE_LENIENT", "EXPANDED", "RESTRUCTURED"]
+            },
+            "confidence": {"type": "number"},
+            "explanation": {"type": "string"}
+        },
+        "required": ["index", "tag", "confidence", "explanation"]
+    }
+}
+
+
+def _get_system_prompt() -> str:
+    """관리자 커스텀 프롬프트 또는 기본 프롬프트 반환"""
+    custom = getattr(config, "COMPARE_AI_SYSTEM_PROMPT", "")
+    return custom if custom else _DEFAULT_SYSTEM_PROMPT
+
+
+def _get_model() -> str:
+    """Compare 전용 모델 또는 기본 모델 반환"""
+    model = getattr(config, "COMPARE_AI_MODEL", "")
+    return model if model else config.OLLAMA_MODEL
+
+
+def _build_prompt(changes: list[dict]) -> str:
+    """Few-shot + 변경 구간 데이터 → 사용자 프롬프트 조립"""
+    items = []
+    for c in changes:
+        item = {"index": c["index"], "type": c["type"]}
+        item["text_a"] = c.get("text_a")
+        item["text_b"] = c.get("text_b")
+        items.append(item)
+
+    return f"""{_FEW_SHOT_EXAMPLES}
+
+---
+
+아래 변경 구간을 분류하세요:
+
+{json.dumps(items, ensure_ascii=False, indent=2)}"""
+
+
+async def _call_ollama_classify(changes: list[dict]) -> list[dict]:
+    """Ollama 구조화 출력으로 변경 구간 분류"""
+    model = _get_model()
+    system = _get_system_prompt()
+    prompt = _build_prompt(changes)
+    temperature = getattr(config, "COMPARE_AI_TEMPERATURE", 0)
+    timeout = getattr(config, "COMPARE_AI_TIMEOUT", 60)
+
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "system": system,
+        "stream": False,
+        "format": _JSON_SCHEMA,
+        "options": {"temperature": temperature},
+    }
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{config.OLLAMA_URL}/api/generate",
+            json=payload,
+            timeout=float(timeout),
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        raw = data.get("response", "")
+
+    parsed = json.loads(raw)
+    if not isinstance(parsed, list):
+        raise ValueError("LLM 응답이 배열 형식이 아닙니다")
+    return parsed
+
+
+def _validate_classifications(results: list[dict], expected_count: int) -> list[dict]:
+    """분류 결과 검증 및 정규화"""
+    validated = []
+    result_map = {r.get("index"): r for r in results if isinstance(r, dict)}
+
+    for i in range(expected_count):
+        r = result_map.get(i)
+        if r and r.get("tag") in VALID_TAGS:
+            validated.append({
+                "index": i,
+                "tag": r["tag"],
+                "confidence": max(0.0, min(1.0, float(r.get("confidence", 0.5)))),
+                "explanation": str(r.get("explanation", "")),
+            })
+        else:
+            validated.append({
+                "index": i,
+                "tag": "UNKNOWN",
+                "confidence": 0.0,
+                "explanation": "분류 실패",
+            })
+
+    return validated
+
+
+async def classify_changes(changes: list[dict]) -> list[dict]:
+    """
+    변경 구간 목록을 AI로 의미 분류.
+    배치 분할 → Ollama 호출 → 결과 병합 → 검증.
+    """
+    if not changes:
+        return []
+
+    batch_size = getattr(config, "COMPARE_AI_BATCH_SIZE", 20)
+    all_results = []
+
+    for i in range(0, len(changes), batch_size):
+        batch = changes[i:i + batch_size]
+
+        try:
+            results = await _call_ollama_classify(batch)
+            all_results.extend(results)
+        except Exception as e:
+            logger.warning("AI 분류 배치 %d 실패, 재시도: %s", i // batch_size, e)
+            # 1회 재시도
+            try:
+                results = await _call_ollama_classify(batch)
+                all_results.extend(results)
+            except Exception as e2:
+                logger.error("AI 분류 배치 %d 재시도 실패: %s", i // batch_size, e2)
+                # 실패한 배치의 항목은 UNKNOWN으로 채움
+                for c in batch:
+                    all_results.append({
+                        "index": c["index"],
+                        "tag": "UNKNOWN",
+                        "confidence": 0.0,
+                        "explanation": f"분류 실패: {e2}",
+                    })
+
+    return _validate_classifications(all_results, len(changes))

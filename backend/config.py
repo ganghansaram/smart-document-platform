@@ -107,6 +107,14 @@ TRANSLATOR_AI_SUMMARIZE_PROMPT = (
     "요약문만 출력하세요."
 )
 
+# Compare AI 의미 분류 설정
+COMPARE_AI_ENABLED = True
+COMPARE_AI_MODEL = ""           # 빈값이면 OLLAMA_MODEL 폴백
+COMPARE_AI_TEMPERATURE = 0      # 분류 일관성 최대화
+COMPARE_AI_BATCH_SIZE = 20      # 1회 LLM 호출당 최대 변경 구간 수
+COMPARE_AI_TIMEOUT = 60         # LLM 호출 타임아웃(초)
+COMPARE_AI_SYSTEM_PROMPT = ""   # 빈값이면 기본 내장 프롬프트 사용
+
 # 서버 설정
 HOST = "0.0.0.0"
 PORT = 8000

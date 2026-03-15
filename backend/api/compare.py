@@ -1,16 +1,18 @@
 """
-Compare API — 문서 업로드, 텍스트 추출, 검증
+Compare API — 문서 업로드, 텍스트 추출, 검증, AI 의미 분류
 """
 import os
 
 from fastapi import APIRouter, File, UploadFile, Depends, HTTPException, Request
 
-from dependencies import get_current_user, require_admin, require_admin
+import config
+from dependencies import get_current_user, require_admin
 from services.compare_service import (
     extract_text,
     validate_paragraphs,
     load_rules,
     save_rules,
+    classify_changes,
 )
 
 router = APIRouter(prefix="/compare", tags=["compare"])
@@ -90,3 +92,32 @@ async def api_compare_rules_put(
     body = await request.json()
     save_rules(body)
     return {"ok": True}
+
+
+@router.post("/ai-classify")
+async def api_compare_ai_classify(
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """diff 변경 구간 AI 의미 분류"""
+    if not getattr(config, "COMPARE_AI_ENABLED", True):
+        raise HTTPException(status_code=400, detail="AI 분석이 비활성화되어 있습니다")
+
+    body = await request.json()
+    changes = body.get("changes", [])
+
+    if not changes:
+        raise HTTPException(status_code=400, detail="changes가 비어 있습니다")
+
+    if len(changes) > 200:
+        raise HTTPException(status_code=400, detail="변경 구간이 너무 많습니다 (최대 200건)")
+
+    try:
+        classifications = await classify_changes(changes)
+    except Exception as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"AI 분류 실패: {e}",
+        )
+
+    return {"classifications": classifications}

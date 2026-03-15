@@ -82,6 +82,14 @@ DEFAULT_SETTINGS: dict = {
             "요약문만 출력하세요."
         ),
     },
+    "compare": {
+        "ai_enabled": True,
+        "ai_model": "",
+        "ai_temperature": 0,
+        "ai_batch_size": 20,
+        "ai_timeout": 60,
+        "ai_system_prompt": "",
+    },
     "upload": {
         "word_com_preprocess": False,
         "upload_temp_dir": None,
@@ -130,6 +138,8 @@ _NO_RESTART = {
     "ai.chat_system_prompt",
     "session.max_conversation_turns", "session.max_history_length",
     "session.max_sessions", "session.max_idle_minutes",
+    "compare.ai_enabled", "compare.ai_model", "compare.ai_temperature",
+    "compare.ai_batch_size", "compare.ai_timeout", "compare.ai_system_prompt",
     "upload.word_com_preprocess", "upload.upload_temp_dir",
     "translator.translation_model",
     "translator.custom_prompt", "translator.disable_rich_text",
@@ -185,9 +195,12 @@ def reset_settings() -> dict:
 
 
 def get_public_settings() -> dict:
-    """프론트엔드 공개용: frontend 그룹만 반환."""
+    """프론트엔드 공개용: frontend 그룹 + 서브시스템 공개 플래그."""
     s = load_settings()
-    return s.get("frontend", DEFAULT_SETTINGS["frontend"])
+    result = dict(s.get("frontend", DEFAULT_SETTINGS["frontend"]))
+    # Compare AI 활성화 상태를 프론트엔드에 노출
+    result["compare_ai_enabled"] = s.get("compare", {}).get("ai_enabled", True)
+    return result
 
 
 # ── 런타임 config 적용 ────────────────────────────────────────────────────────
@@ -260,6 +273,14 @@ def apply_to_config(settings: dict) -> list[str]:
     _set(rdr, "ai_selection_timeout", "TRANSLATOR_AI_SELECTION_TIMEOUT", restart_needed, immediate=True)
     _set(rdr, "ai_translate_prompt",  "TRANSLATOR_AI_TRANSLATE_PROMPT",  restart_needed, immediate=True)
     _set(rdr, "ai_summarize_prompt",  "TRANSLATOR_AI_SUMMARIZE_PROMPT",  restart_needed, immediate=True)
+
+    cmp = settings.get("compare", {})
+    _set(cmp, "ai_enabled",       "COMPARE_AI_ENABLED",        restart_needed, immediate=True)
+    _set(cmp, "ai_model",         "COMPARE_AI_MODEL",          restart_needed, immediate=True)
+    _set(cmp, "ai_temperature",   "COMPARE_AI_TEMPERATURE",    restart_needed, immediate=True)
+    _set(cmp, "ai_batch_size",    "COMPARE_AI_BATCH_SIZE",     restart_needed, immediate=True)
+    _set(cmp, "ai_timeout",       "COMPARE_AI_TIMEOUT",        restart_needed, immediate=True)
+    _set(cmp, "ai_system_prompt", "COMPARE_AI_SYSTEM_PROMPT",  restart_needed, immediate=True)
 
     upl = settings.get("upload", {})
     _set(upl, "word_com_preprocess", "WORD_COM_PREPROCESS", restart_needed, immediate=True)
