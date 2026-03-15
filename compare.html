@@ -32,7 +32,6 @@
             </div>
 
             <button class="scroll-sync-btn" id="swap-btn" style="display:none" title="원본 ↔ 수정본 바꾸기">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
                 A⇄B
             </button>
 
@@ -180,12 +179,7 @@
             <div class="resize-handle" id="resize-handle"></div>
             <div class="cp-sidebar" id="cp-sidebar">
                 <div class="cp-sidebar-header">
-                    <span class="cp-sidebar-title" id="cp-sidebar-title">변경 목록</span>
-                    <span class="cp-bulk-actions" id="cp-bulk-actions" style="display:none">
-                        <button class="btn btn-sm btn-ghost" id="bulk-accept-btn" title="모두 수락">✓ 전체</button>
-                        <button class="btn btn-sm btn-ghost" id="bulk-reject-btn" title="모두 거절">✗ 전체</button>
-                        <button class="btn btn-sm btn-ghost" id="bulk-reset-btn" title="모두 초기화">↺</button>
-                    </span>
+                    <span class="cp-sidebar-title" id="cp-sidebar-title">Changes</span>
                     <button class="cp-sidebar-collapse" id="cp-sidebar-collapse" title="접기">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"/>
@@ -211,8 +205,8 @@
 
             var currentMode = 'compare'; // 'compare' | 'verify'
             var sidebarOpen = true;
-            var sidebarWidth = 280; // px, 리사이즈 가능
-            var SIDEBAR_MIN = 220;
+            var sidebarWidth = 360; // px, 리사이즈 가능
+            var SIDEBAR_MIN = 280;
             var SIDEBAR_MAX = 700;
             var API_BASE = (window.DISPLAY_CONFIG && DISPLAY_CONFIG.API_BASE) || 'http://localhost:8000/api';
 
@@ -414,10 +408,7 @@
             var sidebarBody = document.getElementById('cp-sidebar-body');
             var downloadBtn = document.getElementById('download-btn');
             var paragraphNumBtn = document.getElementById('paragraph-num-btn');
-            var bulkActions = document.getElementById('cp-bulk-actions');
-            var bulkAcceptBtn = document.getElementById('bulk-accept-btn');
-            var bulkRejectBtn = document.getElementById('bulk-reject-btn');
-            var bulkResetBtn = document.getElementById('bulk-reset-btn');
+            // 벌크 버튼은 renderSidebar()에서 동적 생성 → 이벤트 위임 처리
             var aiClassifyBtn = document.getElementById('ai-classify-btn');
             var aiClassifyLabel = document.getElementById('ai-classify-label');
             var aiFilterSection = document.getElementById('cp-ai-filter-section');
@@ -679,10 +670,10 @@
 
                 // 사이드바 타이틀/빈 메시지 변경
                 if (mode === 'compare') {
-                    sidebarTitle.textContent = '변경 목록';
+                    sidebarTitle.textContent = 'Changes';
                     sidebarEmpty.textContent = '비교 결과가 여기에 표시됩니다';
                 } else {
-                    sidebarTitle.textContent = '검증 결과';
+                    sidebarTitle.textContent = 'Validation';
                     sidebarEmpty.textContent = '검증 결과가 여기에 표시됩니다';
                 }
 
@@ -1219,8 +1210,6 @@
 
             // ── 2-4. 변경 목록 사이드바 ──
             function renderSidebar(changes) {
-                bulkActions.style.display = changes.length > 0 ? '' : 'none';
-
                 if (changes.length === 0) {
                     sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">'
                         + (docState.a.paragraphs.length > 0 && docState.b.paragraphs.length > 0
@@ -1244,17 +1233,15 @@
                 if (deleted > 0) html += '<span class="cp-stat cp-stat-deleted">-' + deleted + '</span>';
                 if (modified > 0) html += '<span class="cp-stat cp-stat-modified">~' + modified + '</span>';
                 html += '<span class="cp-stat cp-stat-progress" id="cp-decision-progress"></span>';
+                html += '<span class="cp-bulk-actions">'
+                    + '<button class="cp-bulk-btn" id="bulk-accept-btn" title="모두 수락">✓</button>'
+                    + '<button class="cp-bulk-btn" id="bulk-reject-btn" title="모두 거절">✗</button>'
+                    + '<button class="cp-bulk-btn" id="bulk-reset-btn" title="모두 초기화">↺</button>'
+                    + '</span>';
                 html += '</div>';
 
                 // ── Layer 1: AI 요약 대시보드 ──
                 html += renderAiSummary();
-
-                if (!localStorage.getItem('cp-hint-dismissed')) {
-                    html += '<div class="cp-decision-hint" id="cp-decision-hint">'
-                        + '<span>✓ 수락 = 변경 반영 &nbsp;|&nbsp; ✗ 거절 = 원본 유지</span>'
-                        + '<button class="cp-decision-hint-close" id="cp-hint-close" title="닫기">&times;</button>'
-                        + '</div>';
-                }
 
                 html += '<div class="cp-change-list" id="cp-change-list">';
                 for (var i = 0; i < changes.length; i++) {
@@ -1737,14 +1724,8 @@
                 }
             }
 
-            // 사이드바 클릭 — 힌트 닫기 + 수락/거절 버튼 처리
+            // 사이드바 클릭 — 수락/거절 버튼 처리
             sidebarBody.addEventListener('click', function(e) {
-                if (e.target.id === 'cp-hint-close') {
-                    localStorage.setItem('cp-hint-dismissed', '1');
-                    var hint = document.getElementById('cp-decision-hint');
-                    if (hint) hint.remove();
-                    return;
-                }
                 // AI 요약 바 클릭 → 해당 태그만 필터 토글
                 var summaryRow = e.target.closest('[data-ai-summary-tag]');
                 if (summaryRow) {
@@ -1784,28 +1765,16 @@
                 navigateToChange(idx);
             });
 
-            // 일괄 처리
-            bulkAcceptBtn.addEventListener('click', function() {
-                if (editMode) return;
+            // 일괄 처리 (동적 생성 → 이벤트 위임)
+            sidebarBody.addEventListener('click', function(e) {
+                var btn = e.target.closest('#bulk-accept-btn, #bulk-reject-btn, #bulk-reset-btn');
+                if (!btn) return;
+                e.stopPropagation();
+                var action = btn.id === 'bulk-accept-btn' ? 'accepted'
+                    : btn.id === 'bulk-reject-btn' ? 'rejected' : null;
+                if (action && editMode) return;
                 for (var i = 0; i < diffState.changes.length; i++) {
-                    diffState.decisions[i] = 'accepted';
-                    updateDecisionUI(i);
-                }
-                updateDecisionProgress();
-            });
-
-            bulkRejectBtn.addEventListener('click', function() {
-                if (editMode) return;
-                for (var i = 0; i < diffState.changes.length; i++) {
-                    diffState.decisions[i] = 'rejected';
-                    updateDecisionUI(i);
-                }
-                updateDecisionProgress();
-            });
-
-            bulkResetBtn.addEventListener('click', function() {
-                for (var i = 0; i < diffState.changes.length; i++) {
-                    diffState.decisions[i] = null;
+                    diffState.decisions[i] = action;
                     updateDecisionUI(i);
                 }
                 updateDecisionProgress();

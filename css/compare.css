@@ -389,7 +389,7 @@ body {
     padding: 10px;
     border-bottom: 1px solid var(--border-color);
     background-color: var(--light-gray);
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--text-dark);
     flex-shrink: 0;
@@ -1802,44 +1802,31 @@ body[data-theme="dark"] .vd-header-btn:hover { background: rgba(255,255,255,0.08
     font-weight: 500;
 }
 
-/* 일괄 처리 버튼 */
+/* 일괄 처리 버튼 (Summary 영역 내) */
 .cp-bulk-actions {
     display: flex;
-    gap: 2px;
+    gap: var(--space-xs, 4px);
     align-items: center;
     margin-left: auto;
-    margin-right: 4px;
 }
 
-.cp-bulk-actions .btn {
-    padding: 2px 8px;
-    font-size: 11px;
-}
-
-/* ── 힌트 문구 ── */
-.cp-decision-hint {
+.cp-bulk-btn {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 4px 8px;
-    margin-bottom: 8px;
-    font-size: 11px;
-    color: var(--text-light);
-    background: var(--active-color-subtle);
-    border-radius: var(--radius-sm);
-}
-
-.cp-decision-hint-close {
-    background: none;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
     border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
     cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
     color: var(--text-light);
-    font-size: 14px;
-    padding: 0 2px;
-    line-height: 1;
+    transition: all var(--transition-fast);
 }
-
-.cp-decision-hint-close:hover {
+.cp-bulk-btn:hover {
+    background: var(--hover-bg);
     color: var(--text-dark);
 }
 
