@@ -2,7 +2,7 @@
 
 > 작성일: 2026-03-12
 > 최종 갱신: 2026-03-15
-> 상태: Phase 1~5 핵심 완료 / Phase 6 검토 예정 / Phase 7 재배치 (5-3,5-4 통합 + 우선순위 정렬)
+> 상태: Phase 1~5 핵심 완료 / Phase 6-0 프로토타이핑 완료 (6-1 구현 진행 예정) / Phase 7 재배치 완료
 
 ---
 
@@ -372,8 +372,8 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 
 ### Phase 6: AI 의미 비교
 
-> 목표: jsdiff(텍스트 diff) 위에 LLM 레이어를 얹어 **"뭐가 바뀌었는지"에서 "왜/얼마나 중요한 변경인지"**로 확장
-> Explorer RAG 파이프라인과 동일한 Ollama 백엔드 활용.
+> 목표: jsdiff(텍스트 diff) 위에 LLM 레이어를 얹어 **"뭐가 바뀌었는지"에서 "왜/얼마나 중요한 변경인지"**로 확장.
+> 핵심 사용자 가치: 변경 50건 중 EDITORIAL 30건을 한눈에 걸러내고, 실제 검토 필요한 STRICTER/MORE_LENIENT 5건에 집중 → **측정 가능한 시간 절감**.
 >
 > **시장 조사 근거 (2026-03-15)**:
 > - 업계 표준 아키텍처: 빠른 diff 즉시 표시 → AI 분류는 비동기 오버레이 (Litera+Lito, Diffchecker, BlackBoiler 등)
@@ -387,54 +387,179 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 > - 텍스트 diff는 현행 유지 (jsdiff, 즉시, 클라이언트)
 > - AI 분석은 **온디맨드** (사용자가 "AI 분석" 버튼 클릭 시)
 > - 변경 구간만 Ollama에 전송 (전체 문서 X)
-> - 분류 태그를 사이드바 배지에 **점진 추가** (Translator 페이지별 번역과 동일 패턴)
+> - 분류 태그를 사이드바 배지에 일괄 표시 (분석 완료 후)
+> - **설정은 관리자 레벨** (Grammarly/SonarQube 패턴) — 사용자는 결과만 소비
+>
+> **프롬프트 전략**:
+> - Few-shot 3~5건 내장 (zero-shot 대비 정확도 유의미 향상)
+> - Ollama 구조화 출력 (`format` 파라미터 + JSON 스키마, 제약 디코딩) — 신뢰도 ~98%
+> - `temperature: 0` (분류 일관성 최대화)
+> - 관리자가 시스템 프롬프트 커스터마이징 가능 (도메인 특화 지침 추가)
+>
+> **모델 환경**:
+> - 개발: gemma3:4b (노트북 제약)
+> - 운영: L40-48GB vGPU + 27B 모델 (Ollama 서버). 관리자 설정에서 모델 전환.
 
-#### 변경 유형 분류 체계 (fda-guidance-diff 참고, 기술문서 도메인 적응)
+#### 변경 유형 분류 체계 (6종 — NUMERIC 폐지, 6-0 검증 완료)
 
-| 태그 | 의미 | 아이콘/색상 |
-|------|------|-----------|
-| EDITORIAL | 편집상 변경 (오타, 서식, 용어 통일) | 회색 |
-| CLARIFICATION | 표현 명확화, 의미 동일 | 파랑 |
-| STRICTER | 요구사항/기준 강화 | 빨강 |
-| MORE_LENIENT | 요구사항/기준 완화 | 주황 |
-| EXPANDED | 범위/내용 확대 | 초록 |
-| RESTRUCTURED | 구조 재배치, 의미 동일 | 회색 |
-| NUMERIC | 수치/단위 변경 | 주황 |
+| 그룹 | 태그 | 의미 | 색상 | 사용자 관심도 |
+|------|------|------|------|-------------|
+| **주의 필요** | STRICTER | 요구사항/기준 강화 (수치 강화 포함) | 빨강 (`--color-error`) | 높음 — 검토 필수 |
+| | MORE_LENIENT | 요구사항/기준 완화 (수치 완화 포함) | 주황 (`--color-warning`) | 높음 — 검토 필수 |
+| **참고** | EXPANDED | 범위/내용 확대 | 초록 (`--color-success`) | 중간 |
+| | CLARIFICATION | 표현 명확화, 의미 동일 | 파랑 (`--active-color`) | 낮음 |
+| **무시 가능** | EDITORIAL | 편집상 변경 (오타, 서식, 용어 통일) | 회색 (`--medium-gray`) | 낮음 — 스킵 가능 |
+| | RESTRUCTURED | 구조 재배치, 의미 동일 | 회색 (`--medium-gray`) | 낮음 — 스킵 가능 |
 
-- ⬜ **6-1. AI 의미 분류 (비교 모드)**
-  - ⬜ 백엔드 API: `POST /api/compare/ai-classify` — diff 변경 구간 배열 → 분류 태그 배열
+> NUMERIC 폐지 근거: 수치 변경은 항상 방향성(강화/완화)이 있으며, 모델이 자연스럽게 맥락을 판단.
+> "의무 vs 허용" 기준: 시스템 의무 증가→STRICTER, 사용자 허용 확대→MORE_LENIENT.
+> 6-0 테스트에서 NUMERIC 폐지 후 정확도 67%→93%(4B), 80%→100%(12B)로 극적 개선 확인.
+>
+> 그룹화의 실용적 가치: 사이드바 필터에서 "주의 필요만 보기"로 핵심 변경에 즉시 집중.
+> 색상은 기존 tokens.css 시맨틱 변수를 재사용하여 다크모드 자동 대응.
+
+- ✅ **6-0. 프롬프트 프로토타이핑 + 모델 검증** ✅
+  > 코드 작성 전에 프롬프트 품질과 모델 적합성을 확인하는 단계.
+  - ✅ 샘플 diff 데이터 15건 준비 (SWA_PMS 기반, 6종 태그 전체 커버)
+  - ✅ 프롬프트 v1 작성 (7종 태그) + Ollama 테스트
+  - ✅ 프롬프트 v2 작성 (NUMERIC 폐지 → 6종 태그, "의무 vs 허용" 판단 기준 추가)
+  - ✅ Few-shot 예시 5건 (수치 변경 사례 포함)
+  - ✅ Ollama 구조화 출력 (`format` + JSON 스키마) 검증 — JSON 파싱 100%
+  - ✅ gemma3:4b / gemma3:12b 비교 테스트 완료
+
+  **6-0 테스트 결과 요약** (상세: `workbench/phase6-0-results.json`, `phase6-0-results-v2.json`):
+
+  | 모델 | 배치 | v1 (7태그) | v2 (6태그) | 소요시간 | JSON 파싱 |
+  |------|------|-----------|-----------|---------|----------|
+  | gemma3:4b | 5건씩 | 67% (10/15) | **93%** (14/15) | 21.4s | 100% |
+  | gemma3:12b | 5건씩 | 73% (11/15) | **100%** (15/15) | 34.9s | 100% |
+  | gemma3:12b | 15건 일괄 | 80% (12/15) | **100%** (15/15) | 21.3s | 100% |
+
+  **핵심 결정사항**:
+  - NUMERIC 태그 폐지 → 수치 변경은 STRICTER/MORE_LENIENT로 흡수
+  - "의무 vs 허용" 판단 기준 도입 (시스템 의무 증가→STRICTER, 사용자 허용 확대→MORE_LENIENT)
+  - 4B 모델은 배치 5건 최적, 12B는 일괄 처리 가능 (프로덕션 27B도 일괄 예상)
+  - 4B 유일한 오류: "테스트 커버리지 80%→70%"를 STRICTER로 오분류 — 27B에서 해결 예상
+
+- ⬜ **6-1. AI 의미 분류 (핵심 기능)**
+
+  ##### 6-1a. 관리자 설정
+  > 업계 표준: 관리자가 AI 동작을 제어, 사용자는 결과만 소비 (Grammarly/SonarQube 패턴).
+  - ⬜ `config.py`에 Compare AI 기본값 추가
+    - `COMPARE_AI_ENABLED` (bool, 기본 True)
+    - `COMPARE_AI_MODEL` (str, 빈 문자열 → `OLLAMA_MODEL` 폴백)
+    - `COMPARE_AI_TEMPERATURE` (float, 기본 0)
+    - `COMPARE_AI_BATCH_SIZE` (int, 기본 20)
+    - `COMPARE_AI_TIMEOUT` (int, 기본 60초)
+    - `COMPARE_AI_SYSTEM_PROMPT` (str, 기본 내장 프롬프트 — 6-0에서 검증된 프롬프트)
+  - ⬜ `settings_service.py`에 `compare` 그룹 추가 (DEFAULT_SETTINGS, apply_to_config, _NO_RESTART)
+  - ⬜ `admin-settings.js` SETTINGS_SCHEMA에 Compare 시스템 탭 추가
+    - "AI 분석" 탭: 활성화 토글, 모델명, 온도, 배치 크기, 타임아웃
+    - "시스템 프롬프트" 섹션: textarea (기본 프롬프트 표시, 관리자 수정 가능)
+    - 모든 설정 즉시 적용 (`_NO_RESTART`), 서버 재시작 불필요
+
+  ##### 6-1b. 백엔드 API
+  - ⬜ `POST /api/compare/ai-classify` 엔드포인트 (`compare.py`)
     - 입력: `{ changes: [{ index, type, text_a, text_b }] }`
     - 출력: `{ classifications: [{ index, tag, confidence, explanation }] }`
-    - Ollama 호출: 변경 구간을 배치로 묶어 한 번에 전송 (구간당 개별 호출 X)
-  - ⬜ 프론트엔드: 비교 모드 툴바에 "AI 분석" 버튼 (diff 존재 시 활성화)
-    - 클릭 → 버튼 스피너 → 백엔드 호출 → 완료 시 사이드바 배지 업데이트
-    - 사이드바 변경 항목에 분류 태그 배지 추가 (기존 유형 배지 옆)
-    - 태그 클릭 시 explanation 툴팁/팝오버
-  - ⬜ 분류 결과 필터링: 기존 유형 필터에 분류 태그 필터 추가
-  - ⬜ 분류 결과를 내보내기(txt)에 포함 (선택 옵션)
+    - Ollama 호출: 구조화 출력 (`format` 파라미터 + JSON 스키마)
+    - 배치 전략: N ≤ `BATCH_SIZE` → 1회 호출, 초과 시 분할 (각 배치 결과 병합)
+    - 파싱 실패 시 1회 재시도, 그래도 실패 시 해당 항목 `tag: "UNKNOWN"`
+    - 타임아웃: `COMPARE_AI_TIMEOUT`초
+    - 폴백: Ollama 미응답 → 적절한 HTTP 에러 + 메시지
+    - AI 비활성화 시 → 400 "AI 분석이 비활성화되어 있습니다"
+  - ⬜ `compare_service.py`에 분류 로직 함수 분리
+    - 프롬프트 조립: 시스템 프롬프트 + few-shot + 변경 구간 데이터
+    - `llm_provider.py` 호출 (기존 Ollama 추상화 재사용)
+    - JSON 파싱 + Pydantic 검증
 
-- ⬜ **6-2. AI 변경 요약 (비교 모드)**
-  - ⬜ 6-1 분류 완료 후, 전체 변경사항 요약문 생성
-    - "이 개정에서 요구사항 강화 3건, 수치 변경 2건, 편집 변경 15건이 감지되었습니다"
-    - 사이드바 상단 또는 별도 패널에 표시
-  - ⬜ 요약문을 리포트 내보내기에 포함
+  ##### 6-1c. 프론트엔드 UI
+  - ⬜ 툴바 "AI 분석" 버튼
+    - `.scroll-sync-btn` 패턴, 비교 모드 + diff 존재 시 표시
+    - AI 비활성화(`COMPARE_AI_ENABLED=false`) 시 버튼 숨김
+    - 클릭 → 버튼 내 스피너 + 비활성화 → 완료 시 복원
+    - 이미 분석 완료 시 재분석 확인 (diff 변경 없으면 캐시 사용)
+  - ⬜ 사이드바 AI 태그 배지
+    - 기존 유형 배지(추가/삭제/수정) 옆에 분류 태그 배지 추가
+    - 색상: 기존 tokens.css 시맨틱 변수 재사용 (다크모드 자동 대응)
+    - 배지 호버 → 기존 `tooltip-popup`으로 explanation 표시
+    - 저신뢰 항목(confidence < 0.7): 배지 테두리 점선 + "?" 표시
+  - ⬜ 분류 태그 필터링
+    - 기존 필터 드롭다운에 AI 태그 필터 섹션 추가 (구분선으로 분리)
+    - "주의 필요만 보기" 프리셋 (STRICTER + MORE_LENIENT)
+  - ⬜ 사용자 분류 수정 (HITL — Human-in-the-Loop)
+    - AI 태그 배지 클릭 → 6종 태그 드롭다운으로 재분류
+    - 수정된 항목은 연필 아이콘 표시 (사용자 수정임을 구분)
+    - `diffState.aiClassifications[index].userOverride = 'STRICTER'`
+    - 세션 내 유지 (모델 재학습 없음)
+  - ⬜ 내보내기 연동
+    - 기존 txt 내보내기에 AI 분류 태그 포함 (선택 옵션)
+    - 형식: `[STRICTER] 1.3절: "허용 온도 범위 80°C → 60°C" (기준 강화)`
+    - 사용자 수정이 있으면 수정된 태그로 출력
 
-- ⬜ **6-3. AI 기반 검증 규칙 (검증 모드)**
-  - ⬜ 자연어로 검사 기준 입력 ("수동태 사용 지양", "약어 첫 등장 시 풀네임 병기")
-  - ⬜ 백엔드 API: `POST /api/compare/ai-validate` — 단락 배열 + 자연어 규칙 → 이슈 목록
-  - ⬜ LLM이 각 단락을 검사 → 기존 규칙 엔진 이슈와 병합 표시
-  - ⬜ 규칙 모달에 "AI 규칙" 탭/섹션 추가 (자유 텍스트 입력)
+- ⬜ **6-2. 변경 요약 (프론트엔드 집계)**
+  > LLM 재호출 없이 분류 결과를 프론트엔드에서 카운팅.
+  > AI 피로감 방지: 단순 통계가 "자연어 요약"보다 더 빠르고 신뢰성 높음.
+  - ⬜ 사이드바 상단 요약 헤더
+    - 분류 완료 후 그룹별 통계 배지 표시
+    - 예: `"주의 5건 (강화 3 · 완화 2) · 참고 8건 · 편집 37건"`
+    - 그룹별 색상 배지로 시각화
+    - 요약 영역 클릭 → 해당 그룹 필터 토글
+  - ⬜ 요약을 내보내기 상단에 포함
+
+- ~~6-3. AI 기반 검증 규칙~~ → **별도 Phase로 분리** (후술)
+  > 6-1/6-2와 성격이 다름: diff 구간 분류(소량) vs. 전체 문서 단락 스캔(대량).
+  > 토큰 소모, 정확도, UX 복잡도 면에서 별도 검증 필요.
+  > 6-1/6-2 완료 후 운영 환경에서 모델 성능을 확인한 뒤 판단.
 
 #### Phase 6 기술 고려사항
 
 | 항목 | 결정 |
 |------|------|
-| LLM | Ollama 로컬 (폐쇄망 호환). 모델: Explorer RAG와 동일 |
-| 배치 전략 | 변경 구간 N개를 하나의 프롬프트에 묶어 1회 호출 (N≤20), 20건 초과 시 분할 |
-| 타임아웃 | 60초 (Translator 페이지 번역 300초보다 짧게 — diff 구간은 짧은 텍스트) |
-| 캐싱 | 동일 diff 결과에 대한 재분석 방지 (해시 기반) |
-| 폴백 | Ollama 미응답 시 "AI 분석 실패" 토스트, 기존 diff는 정상 유지 |
-| 프롬프트 | 한국어 기술문서 도메인 특화 (항공/방산 용어, 요구사항 강화/완화 판별) |
+| LLM | Ollama 로컬 (폐쇄망 호환). 개발: gemma3:4b, 운영: L40 vGPU + 27B. 관리자 설정에서 전환 |
+| 구조화 출력 | Ollama `format` 파라미터 + JSON 스키마 (제약 디코딩, 100% 파싱 성공 — 6-0 검증) |
+| 프롬프트 | Few-shot 5건 내장 + 관리자 커스텀 시스템 프롬프트 (6종 태그, "의무 vs 허용" 기준) |
+| 배치 전략 | N ≤ 20 → 1회 호출, 초과 시 분할 (관리자 설정 가능) |
+| 타임아웃 | 60초 기본 (관리자 설정 가능) |
+| 캐싱 | 동일 diff 재분석 방지 (해시 기반, 세션 내) |
+| 폴백 | Ollama 미응답 → 토스트 오류, 기존 diff 정상 유지 |
+| 온도 | 0 (결정적 출력, 분류 일관성 최대화) |
+| 사용자 수정 | HITL 태그 재분류 (세션 내 유지, 모델 재학습 없음) |
+| 설정 관리 | 관리자 전용 (Grammarly/SonarQube 패턴). `admin-settings.js` 스키마 확장 |
+| 신뢰도 표시 | 배지 색상 + 호버 explanation + 저신뢰 점선 테두리 (업계 표준 3단 표시) |
+
+#### Phase 6 변경 파일
+
+| Step | 파일 | 내용 |
+|------|------|------|
+| 6-0 | `workbench/` 하위 테스트 스크립트 | 프롬프트 프로토타이핑, 결과 기록 |
+| 6-1a | `config.py`, `settings_service.py`, `admin-settings.js` | 관리자 설정 (AI 활성화, 모델, 프롬프트) |
+| 6-1b | `compare.py`, `compare_service.py` | AI 분류 API + 서비스 로직 |
+| 6-1c | `compare.html`, `css/compare.css`, `css/tokens.css` | 버튼, 배지, 필터, HITL 드롭다운 |
+| 6-2 | `compare.html` | 사이드바 요약 헤더 (프론트엔드 집계) |
+
+#### Phase 6 사용자 흐름
+
+```
+사용자: 원본.docx + 수정본.docx 업로드
+        ↓
+시스템: jsdiff 즉시 실행 → 좌우 패널 diff 하이라이트 + 사이드바 변경 목록
+        (여기까지 현행과 동일, AI 없이 즉시 완료)
+        ↓
+사용자: 툴바 "AI 분석" 버튼 클릭 (온디맨드)
+        ↓
+시스템: 버튼 스피너 → 변경 구간만 백엔드 전송 → Ollama 분류
+        ↓
+시스템: 사이드바 각 항목에 분류 태그 배지 추가 + 상단 요약 표시
+        "주의 5건 (강화 3 · 완화 2) · 참고 8건 · 편집 37건"
+        ↓
+사용자: "주의 필요만 보기" 필터 → 핵심 5건만 남음, 나머지 숨김
+        ↓
+사용자: 수락/거절 처리 → 최종본 저장 (내보내기에 분류 태그 포함)
+```
+
+> AI 분석은 diff 결과 위에 얹는 **선택적 오버레이**. 버튼을 누르지 않으면 기존과 100% 동일하게 작동.
+> Ollama 서버가 꺼져 있어도 diff 기능에는 영향 없음 (완전한 격리).
 
 #### Phase 6 참고 시스템 조사 요약
 
@@ -443,8 +568,8 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 | **Draftable** | 전통 diff 전용 (AI 없음) | 수 초 | 900+ 법률사 |
 | **Litera Compare + Lito** | 전통 diff + AI 에이전트(요약/위험분석) | diff 즉시, AI 별도 | 법률 업계 72% 점유 |
 | **Diffchecker Pro** | 텍스트 diff + "AI로 요약" 버튼 | diff 즉시, AI 수 초 | 일반 사용자 대상 |
-| **BlackBoiler** | Word Track Changes + AI 마크업 | NDA 2분, 복잡 계약 2시간 | 계약 자동화 |
-| **Spellbook** | GPT-5/Claude 기반 계약 분석 | 실시간 Word 애드인 | 4000+ 법률팀 |
+| **BlackBoiler** | Word Track Changes + AI 마크업 (Playbook Builder) | NDA 2분, 복잡 계약 2시간 | 계약 자동화 |
+| **Spellbook** | GPT-5/Claude 기반 계약 분석 (Playbook 규칙셋) | 실시간 Word 애드인 | 4000+ 법률팀 |
 | **Luminance** | 멀티모델 AI, 1000+ 조항 자동 식별 | 40% 시간 절감 | 기업 법무 |
 | **fda-guidance-diff** ★ | 3단계 (추출→BM25→Gemini Flash 분류) | 배치 | FDA 규제문서 특화 |
 | **SemanticDiff** | reflow 내성 PDF diff + LLM 검증 | 배치 | 학술/기술 논문 |
@@ -452,6 +577,20 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 
 > ★ fda-guidance-diff의 분류 체계(8종 태그)와 3단계 파이프라인이 본 시스템에 가장 적합한 레퍼런스.
 > 차별화: 한국어 기술문서(항공/방산) 도메인 특화 + Ollama 로컬 실행(폐쇄망) — 시장 공백 영역.
+
+#### Phase 6 설정 관리 설계 근거 (업계 조사)
+
+| 도구 | 설정 패턴 | 사용자 역할 |
+|------|----------|-----------|
+| **Grammarly** | 관리자가 style rules 생성 + lock 가능 | 사용자는 view only |
+| **SonarQube** | Quality Profile은 조직 레벨, 개인 프로파일 없음 | 할당된 프로파일 사용 |
+| **Spellbook** | 관리자가 Playbook(규칙셋) 설정 | 사용자가 Playbook 선택 |
+| **BlackBoiler** | 조직별 Playbook Builder (과거 데이터 학습) | 사용자는 결과 소비 |
+| **MS Copilot Studio** | 관리자가 허용 모델 풀 설정 | 사용자는 허용 범위 내 선택 |
+
+> 결론: **관리자 설정 → 사용자 소비** 패턴이 업계 표준.
+> 이유: 분류 기준의 일관성이 중요 (같은 변경을 팀원마다 다르게 분류하면 혼란).
+> 본 시스템: `admin-settings.js`에 Compare 탭 추가, 시스템 프롬프트/모델/파라미터를 관리자가 제어.
 
 ### Phase 7: 고도화
 
@@ -561,6 +700,7 @@ POST /api/compare/upload       — 파일 업로드 → 텍스트 추출 결과 
 POST /api/compare/validate     — 단일 텍스트 규칙 검증 → 이슈 목록 반환
 GET  /api/compare/rules        — 현재 규칙 설정 조회
 PUT  /api/compare/rules        — 규칙 설정 변경 (admin 권한 필요)
+POST /api/compare/ai-classify  — diff 변경 구간 AI 분류 (Phase 6)
 ```
 
 > **참고**: diff API(`POST /api/compare/diff`)는 Phase 2에서 프론트엔드 jsdiff 전용으로 결정되어 구현하지 않음.
@@ -583,6 +723,9 @@ PUT  /api/compare/rules        — 규칙 설정 변경 (admin 권한 필요)
 | 검증 UI | **문서 전체 + 인라인 하이라이트 + 이슈 사이드바** | 업계 표준 (Grammarly 패턴) |
 | 모드 전환 | **2-버튼 토글** | Hemingway Write/Edit 패턴 |
 | 규칙 관리 | **프리셋 + 토글 + 설정 모달** | SonarQube/Grammarly 하이브리드 |
+| AI 의미 분류 | **Ollama 구조화 출력 (format + JSON 스키마)** | 제약 디코딩 ~98% 신뢰도, 4B~27B 모델 대응, 폐쇄망 호환 |
+| AI 프롬프트 전략 | **Few-shot 3~5건 + 관리자 커스텀** | Zero-shot 대비 정확도 유의미 향상 (업계 검증) |
+| AI 설정 관리 | **관리자 전용 (admin-settings.js 확장)** | Grammarly/SonarQube 패턴 — 분류 기준 일관성 보장 |
 | DOCX 레이아웃 비교 | **win32com CompareDocuments** | 이미 설치됨 (word_preprocessor.py), Word 네이티브 품질, 업계 표준 |
 | PDF 레이아웃 비교 | **PyMuPDF 좌표 추출 + 어노테이션** | 이미 설치됨, 추출+어노테이션 일체, 폐쇄망 호환 |
 | 레이아웃 뷰 렌더링 | **PDF.js (기존)** | Translator와 동일 뷰어 재사용, 추가 의존성 없음 |
@@ -642,3 +785,13 @@ PUT  /api/compare/rules        — 규칙 설정 변경 (admin 권한 필요)
 - [lexi-flow](https://github.com/bhagwat-chate/lexi-flow) — RAG 기반 문서 비교 (GPT-4o/Gemini/DeepSeek)
 - [DVCS](https://github.com/SaintFreddy/dvcs) — 문서 버전 관리 시스템, 의미 단위 diff
 - [h2o.ai LLM-Powered Document Comparison](https://h2o.ai/LLM-Powered-Document-Comparison/)
+
+#### AI 설정 관리 + 프롬프트 엔지니어링 (Phase 6 조사)
+- [Grammarly — Custom Roles & Locked Preferences](https://support.grammarly.com/hc/en-us/articles/27540336731149) — 관리자 rule lock 패턴
+- [SonarQube — Quality Profiles 이해](https://docs.sonarsource.com/sonarqube-server/quality-standards-administration/managing-quality-profiles/understanding-quality-profiles) — 조직 레벨 프로파일
+- [Spellbook — Contract Playbook](https://www.spellbook.legal/features/review) — 관리자 Playbook 규칙셋
+- [Ollama — Structured Outputs](https://ollama.com/blog/structured-outputs) — format 파라미터 JSON 스키마, 제약 디코딩
+- [Few-Shot vs Zero-Shot Prompting](https://www.vellum.ai/blog/zero-shot-vs-few-shot-prompting-a-guide-with-examples) — 분류 정확도 비교
+- [Confidence Score UI Pattern](https://www.aiuxdesign.guide/patterns/confidence-visualization) — 신뢰도 3단 표시 패턴
+- [Proofpoint — HITL in AI Classification](https://www.proofpoint.com/us/blog/engineering-insights/data-classification-review-including-humans-in-ai-learning-loop) — 사용자 수정 → 정확도 82→98%
+- [MS Copilot Studio — Model Selection](https://learn.microsoft.com/en-us/microsoft-copilot-studio/authoring-select-agent-model) — 관리자 모델 풀 제어

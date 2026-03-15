@@ -1,0 +1,402 @@
+{
+  "test_date": "2026-03-15 11:47",
+  "system_prompt_length": 1005,
+  "few_shot_examples": 3,
+  "sample_changes": 15,
+  "json_schema_used": true,
+  "reports": [
+    {
+      "model": "gemma3:4b",
+      "changes_count": 15,
+      "elapsed_seconds": 19.1,
+      "json_parse_success": true,
+      "accuracy": 0.6666666666666666,
+      "correct": 10,
+      "total": 15,
+      "details": [
+        {
+          "index": 0,
+          "expected": "CLARIFICATION",
+          "actual": "CLARIFICATION",
+          "confidence": 0.95,
+          "explanation": "PLM(Product Lifecycle Management) 약어를 병기하여 용어를 명확히 했습니다.",
+          "correct": true
+        },
+        {
+          "index": 1,
+          "expected": "EXPANDED",
+          "actual": "EDITORIAL",
+          "confidence": 0.85,
+          "explanation": "문장 표현을 다듬어 가독성을 높였습니다.",
+          "correct": false
+        },
+        {
+          "index": 2,
+          "expected": "STRICTER",
+          "actual": "STRICTER",
+          "confidence": 0.95,
+          "explanation": "응답 시간 기준이 3초에서 1초로 단축되어 요구사항이 더 엄격해졌습니다.",
+          "correct": true
+        },
+        {
+          "index": 3,
+          "expected": "MORE_LENIENT",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.9,
+          "explanation": "데이터 백업 빈도가 매일에서 매주로 변경되어 요구사항이 완화되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 4,
+          "expected": "NUMERIC",
+          "actual": "NUMERIC",
+          "confidence": 0.95,
+          "explanation": "동시 접속 사용자 수가 50명에서 100명으로 증가하여 수치 변경이 발생했습니다.",
+          "correct": true
+        },
+        {
+          "index": 5,
+          "expected": "EDITORIAL",
+          "actual": "EDITORIAL",
+          "confidence": 0.95,
+          "explanation": "‘하지만’이라는 접속사의 표현 다듬기 변경으로 의미는 동일합니다.",
+          "correct": true
+        },
+        {
+          "index": 6,
+          "expected": "RESTRUCTURED",
+          "actual": "RESTRUCTURED",
+          "confidence": 0.85,
+          "explanation": "섹션 번호가 2.3에서 2.4로 변경되어 위치/구조가 변경되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 7,
+          "expected": "EXPANDED",
+          "actual": "EXPANDED",
+          "confidence": 0.95,
+          "explanation": "보안 요구사항이 새로운 섹션으로 추가되어 기존 범위를 넘어섰습니다.",
+          "correct": true
+        },
+        {
+          "index": 8,
+          "expected": "EDITORIAL",
+          "actual": "EDITORIAL",
+          "confidence": 0.9,
+          "explanation": "참고 문구 삭제로 편집상 변경입니다.",
+          "correct": true
+        },
+        {
+          "index": 9,
+          "expected": "STRICTER",
+          "actual": "STRICTER",
+          "confidence": 0.8,
+          "explanation": "2단계 인증(MFA)의 필수 적용으로 요구사항이 더 엄격해졌습니다.",
+          "correct": true
+        },
+        {
+          "index": 10,
+          "expected": "MORE_LENIENT",
+          "actual": "STRICTER",
+          "confidence": 0.95,
+          "explanation": "테스트 커버리지 기준이 80%에서 70%로 감소하여 요구사항이 더 엄격해졌습니다.",
+          "correct": false
+        },
+        {
+          "index": 11,
+          "expected": "NUMERIC",
+          "actual": "STRICTER",
+          "confidence": 0.9,
+          "explanation": "최대 파일 업로드 크기가 10MB에서 50MB로 증가하여 허용 범위가 확대되었습니다.",
+          "correct": false
+        },
+        {
+          "index": 12,
+          "expected": "EDITORIAL",
+          "actual": "EDITORIAL",
+          "confidence": 0.85,
+          "explanation": "문장 표현을 다듬어 더 자연스럽게 수정했습니다.",
+          "correct": true
+        },
+        {
+          "index": 13,
+          "expected": "MORE_LENIENT",
+          "actual": "EXPANDED",
+          "confidence": 0.9,
+          "explanation": "시스템 배포 환경이 온프레미스에서 온프레미스 또는 클라우드 하이브리드 환경으로 확장되었습니다.",
+          "correct": false
+        },
+        {
+          "index": 14,
+          "expected": "STRICTER",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.8,
+          "explanation": "데이터 보관 기간이 5년에서 10년으로 늘어났으므로 요구사항이 완화되었습니다.",
+          "correct": false
+        }
+      ]
+    },
+    {
+      "model": "gemma3:12b",
+      "changes_count": 15,
+      "elapsed_seconds": 38.2,
+      "json_parse_success": true,
+      "accuracy": 0.7333333333333333,
+      "correct": 11,
+      "total": 15,
+      "details": [
+        {
+          "index": 0,
+          "expected": "CLARIFICATION",
+          "actual": "CLARIFICATION",
+          "confidence": 0.95,
+          "explanation": "PLM 약어에 풀네임(Product Lifecycle Management)을 병기하여 의미를 명확히 했습니다.",
+          "correct": true
+        },
+        {
+          "index": 1,
+          "expected": "EXPANDED",
+          "actual": "EXPANDED",
+          "confidence": 0.9,
+          "explanation": "외부 시스템과의 인터페이스 표준화에 대한 내용이 추가되어 데이터 연계 범위가 확대되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 2,
+          "expected": "STRICTER",
+          "actual": "STRICTER",
+          "confidence": 0.95,
+          "explanation": "시스템 응답 시간 기준이 3초에서 1초로 강화되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 3,
+          "expected": "MORE_LENIENT",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.95,
+          "explanation": "데이터 백업 주기가 매일에서 매주로 완화되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 4,
+          "expected": "NUMERIC",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.9,
+          "explanation": "동시 접속 사용자 지원 규모가 50명에서 100명으로 완화되었습니다.",
+          "correct": false
+        },
+        {
+          "index": 5,
+          "expected": "EDITORIAL",
+          "actual": "EDITORIAL",
+          "confidence": 0.9,
+          "explanation": "문장 표현이 '이를 해결하기 위해'에서 '이 문제를 해결하기 위해'로 변경되어 의미에 영향을 미치지 않습니다.",
+          "correct": true
+        },
+        {
+          "index": 6,
+          "expected": "RESTRUCTURED",
+          "actual": "RESTRUCTURED",
+          "confidence": 0.95,
+          "explanation": "섹션 번호가 2.3에서 2.4로 변경되어 구조가 재조정되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 7,
+          "expected": "EXPANDED",
+          "actual": "EXPANDED",
+          "confidence": 0.95,
+          "explanation": "API 통신 보안 및 인증 관련 새로운 요구사항이 추가되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 8,
+          "expected": "EDITORIAL",
+          "actual": "EDITORIAL",
+          "confidence": 0.9,
+          "explanation": "문서 상태에 대한 참고 문구가 삭제되어 편집상 변경입니다.",
+          "correct": true
+        },
+        {
+          "index": 9,
+          "expected": "STRICTER",
+          "actual": "STRICTER",
+          "confidence": 0.9,
+          "explanation": "사용자 인증에 2단계 인증(MFA) 적용이 필수화되어 보안 요구사항이 강화되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 10,
+          "expected": "MORE_LENIENT",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.95,
+          "explanation": "테스트 커버리지 기준이 80%에서 70%로 완화되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 11,
+          "expected": "NUMERIC",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.95,
+          "explanation": "최대 파일 업로드 크기가 10MB에서 50MB로 완화되었습니다.",
+          "correct": false
+        },
+        {
+          "index": 12,
+          "expected": "EDITORIAL",
+          "actual": "EDITORIAL",
+          "confidence": 0.85,
+          "explanation": "문장 표현을 다듬어 가독성을 높였습니다.",
+          "correct": true
+        },
+        {
+          "index": 13,
+          "expected": "MORE_LENIENT",
+          "actual": "EXPANDED",
+          "confidence": 0.9,
+          "explanation": "배포 환경이 온프레미스에서 온프레미스 또는 클라우드 하이브리드로 확장되었습니다.",
+          "correct": false
+        },
+        {
+          "index": 14,
+          "expected": "STRICTER",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.95,
+          "explanation": "데이터 보관 기간이 5년에서 10년으로 완화되었습니다.",
+          "correct": false
+        }
+      ]
+    },
+    {
+      "model": "gemma3:12b",
+      "changes_count": 15,
+      "elapsed_seconds": 20.7,
+      "json_parse_success": true,
+      "accuracy": 0.8,
+      "correct": 12,
+      "total": 15,
+      "details": [
+        {
+          "index": 0,
+          "expected": "CLARIFICATION",
+          "actual": "CLARIFICATION",
+          "confidence": 0.95,
+          "explanation": "PLM의 풀네임(Product Lifecycle Management)을 추가하여 약어의 의미를 명확히 했습니다.",
+          "correct": true
+        },
+        {
+          "index": 1,
+          "expected": "EXPANDED",
+          "actual": "EXPANDED",
+          "confidence": 0.85,
+          "explanation": "외부 시스템과의 인터페이스 표준화 및 데이터 연계 범위 확대에 대한 내용이 추가되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 2,
+          "expected": "STRICTER",
+          "actual": "STRICTER",
+          "confidence": 0.95,
+          "explanation": "시스템 응답 시간 기준이 3초에서 1초로 강화되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 3,
+          "expected": "MORE_LENIENT",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.95,
+          "explanation": "데이터 백업 주기가 매일에서 매주로 완화되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 4,
+          "expected": "NUMERIC",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.85,
+          "explanation": "동시 접속 사용자 지원 규모가 50명에서 100명으로 완화되었습니다.",
+          "correct": false
+        },
+        {
+          "index": 5,
+          "expected": "EDITORIAL",
+          "actual": "EDITORIAL",
+          "confidence": 0.9,
+          "explanation": "문장 표현을 '해결하기 위해'에서 '이 문제를 해결하기 위해'로 변경하여 가독성을 높였습니다.",
+          "correct": true
+        },
+        {
+          "index": 6,
+          "expected": "RESTRUCTURED",
+          "actual": "RESTRUCTURED",
+          "confidence": 0.95,
+          "explanation": "섹션 번호가 2.3에서 2.4로 변경되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 7,
+          "expected": "EXPANDED",
+          "actual": "EXPANDED",
+          "confidence": 0.95,
+          "explanation": "API 통신 보안 및 인증 토큰 유효기간에 대한 새로운 보안 요구사항이 추가되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 8,
+          "expected": "EDITORIAL",
+          "actual": "EDITORIAL",
+          "confidence": 0.9,
+          "explanation": "문서 상태에 대한 참고 문구가 삭제되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 9,
+          "expected": "STRICTER",
+          "actual": "STRICTER",
+          "confidence": 0.9,
+          "explanation": "사용자 인증에 2단계 인증(MFA) 적용이 필수화되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 10,
+          "expected": "MORE_LENIENT",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.9,
+          "explanation": "테스트 커버리지 기준이 80%에서 70%로 완화되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 11,
+          "expected": "NUMERIC",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.95,
+          "explanation": "최대 파일 업로드 크기가 10MB에서 50MB로 완화되었습니다.",
+          "correct": false
+        },
+        {
+          "index": 12,
+          "expected": "EDITORIAL",
+          "actual": "EDITORIAL",
+          "confidence": 0.85,
+          "explanation": "문장 표현을 다듬어 가독성을 개선했습니다.",
+          "correct": true
+        },
+        {
+          "index": 13,
+          "expected": "MORE_LENIENT",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.9,
+          "explanation": "시스템 배포 환경이 온프레미스에서 온프레미스 또는 클라우드 하이브리드로 완화되었습니다.",
+          "correct": true
+        },
+        {
+          "index": 14,
+          "expected": "STRICTER",
+          "actual": "MORE_LENIENT",
+          "confidence": 0.95,
+          "explanation": "데이터 보관 기간이 5년에서 10년으로 완화되었습니다.",
+          "correct": false
+        }
+      ]
+    }
+  ]
+}
