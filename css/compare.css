@@ -838,17 +838,17 @@ body[data-theme="dark"] .cp-paste-btn {
     margin: 2px 0;
 }
 
-/* 요약 색상 */
+/* 요약 색상 — 그룹 3색 체계: 주의(빨강) · 참고(파랑) · 편집(회색) */
 .cp-ai-color-stricter      { color: var(--color-error); }
-.cp-ai-color-lenient       { color: var(--color-warning); }
-.cp-ai-color-expanded      { color: var(--color-success); }
+.cp-ai-color-lenient       { color: var(--color-error); }
+.cp-ai-color-expanded      { color: var(--active-color); }
 .cp-ai-color-clarification { color: var(--active-color); }
 .cp-ai-color-editorial     { color: var(--medium-gray); }
 .cp-ai-color-restructured  { color: var(--medium-gray); }
 
 .cp-ai-fill-stricter      { background: var(--color-error); }
-.cp-ai-fill-lenient       { background: var(--color-warning); }
-.cp-ai-fill-expanded      { background: var(--color-success); }
+.cp-ai-fill-lenient       { background: var(--color-error); }
+.cp-ai-fill-expanded      { background: var(--active-color); }
 .cp-ai-fill-clarification { background: var(--active-color); }
 .cp-ai-fill-editorial     { background: var(--medium-gray); }
 .cp-ai-fill-restructured  { background: var(--medium-gray); }
@@ -856,8 +856,8 @@ body[data-theme="dark"] .cp-paste-btn {
 /* ── Layer 2: 거터 컬러 스트라이프 ── */
 /* AI 분류 시 기존 diff 타입 border-left를 AI 색상으로 오버라이드 */
 .cp-change-item.cp-ai-stricter      { border-left-color: var(--color-error); }
-.cp-change-item.cp-ai-lenient       { border-left-color: var(--color-warning); }
-.cp-change-item.cp-ai-expanded      { border-left-color: var(--color-success); }
+.cp-change-item.cp-ai-lenient       { border-left-color: var(--color-error); }
+.cp-change-item.cp-ai-expanded      { border-left-color: var(--active-color); }
 .cp-change-item.cp-ai-clarification { border-left-color: var(--active-color); }
 .cp-change-item.cp-ai-editorial     { border-left-color: var(--medium-gray); }
 .cp-change-item.cp-ai-restructured  { border-left-color: var(--medium-gray); }
@@ -916,8 +916,8 @@ body[data-theme="dark"] .cp-paste-btn {
 }
 /* 태그 색상 (상세 패널 + 드롭다운 공유) */
 .cp-ai-dt-stricter      { color: var(--color-error); }
-.cp-ai-dt-lenient       { color: var(--color-warning); }
-.cp-ai-dt-expanded      { color: var(--color-success); }
+.cp-ai-dt-lenient       { color: var(--color-error); }
+.cp-ai-dt-expanded      { color: var(--active-color); }
 .cp-ai-dt-clarification { color: var(--active-color); }
 .cp-ai-dt-editorial     { color: var(--medium-gray); }
 .cp-ai-dt-restructured  { color: var(--medium-gray); }
@@ -925,8 +925,8 @@ body[data-theme="dark"] .cp-paste-btn {
 
 /* 상세 패널 내 배지형 태그 */
 .cp-ai-detail-tag.cp-ai-dt-stricter      { background: color-mix(in srgb, var(--color-error) 15%, transparent); border-color: color-mix(in srgb, var(--color-error) 30%, transparent); }
-.cp-ai-detail-tag.cp-ai-dt-lenient       { background: color-mix(in srgb, var(--color-warning) 15%, transparent); border-color: color-mix(in srgb, var(--color-warning) 30%, transparent); }
-.cp-ai-detail-tag.cp-ai-dt-expanded      { background: color-mix(in srgb, var(--color-success) 15%, transparent); border-color: color-mix(in srgb, var(--color-success) 30%, transparent); }
+.cp-ai-detail-tag.cp-ai-dt-lenient       { background: color-mix(in srgb, var(--color-error) 15%, transparent); border-color: color-mix(in srgb, var(--color-error) 30%, transparent); }
+.cp-ai-detail-tag.cp-ai-dt-expanded      { background: color-mix(in srgb, var(--active-color) 12%, transparent); border-color: color-mix(in srgb, var(--active-color) 25%, transparent); }
 .cp-ai-detail-tag.cp-ai-dt-clarification { background: color-mix(in srgb, var(--active-color) 12%, transparent); border-color: color-mix(in srgb, var(--active-color) 25%, transparent); }
 .cp-ai-detail-tag.cp-ai-dt-editorial     { background: color-mix(in srgb, var(--medium-gray) 15%, transparent); border-color: color-mix(in srgb, var(--medium-gray) 25%, transparent); }
 .cp-ai-detail-tag.cp-ai-dt-restructured  { background: color-mix(in srgb, var(--medium-gray) 15%, transparent); border-color: color-mix(in srgb, var(--medium-gray) 25%, transparent); }
