@@ -2483,7 +2483,7 @@
                 var colorWarn = cs.getPropertyValue('--color-warning').trim() || '#f59e0b';
                 var colorBad = cs.getPropertyValue('--color-error').trim() || '#ef4444';
                 var scoreColor = score >= 90 ? colorGood : (score >= 70 ? colorWarn : colorBad);
-                var scoreBg = score >= 90 ? 'rgba(34,197,94,0.1)' : (score >= 70 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)');
+                var scoreBg = score >= 90 ? 'color-mix(in srgb, ' + colorGood + ' 10%, transparent)' : (score >= 70 ? 'color-mix(in srgb, ' + colorWarn + ' 10%, transparent)' : 'color-mix(in srgb, ' + colorBad + ' 10%, transparent)');
 
                 // SVG 도넛 링
                 var circumference = 2 * Math.PI * 14;
