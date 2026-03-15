@@ -49,8 +49,25 @@
                     <label><input type="checkbox" checked data-filter="modified"> 수정</label>
                     <hr>
                     <label><input type="checkbox" data-filter="ignoreWhitespace"> 공백 무시</label>
+                    <div class="cp-ai-filter-section" id="cp-ai-filter-section" style="display:none">
+                        <hr>
+                        <div class="cp-ai-filter-header">AI 분류</div>
+                        <label><input type="checkbox" checked data-ai-filter="STRICTER"> 강화</label>
+                        <label><input type="checkbox" checked data-ai-filter="MORE_LENIENT"> 완화</label>
+                        <label><input type="checkbox" checked data-ai-filter="EXPANDED"> 확대</label>
+                        <label><input type="checkbox" checked data-ai-filter="CLARIFICATION"> 명확화</label>
+                        <label><input type="checkbox" checked data-ai-filter="EDITORIAL"> 편집</label>
+                        <label><input type="checkbox" checked data-ai-filter="RESTRUCTURED"> 재구성</label>
+                        <hr>
+                        <button class="cp-ai-filter-preset" id="ai-filter-attention" title="STRICTER + MORE_LENIENT만 표시">주의 필요만 보기</button>
+                    </div>
                 </div>
             </div>
+
+            <button class="scroll-sync-btn" id="ai-classify-btn" style="display:none" title="AI 의미 분류 — 변경 유형을 자동 분석합니다">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="none"><path d="M9.937 3.243c.282-.83 1.444-.83 1.726 0l1.07 3.158a.9.9 0 0 0 .566.566l3.158 1.07c.83.282.83 1.444 0 1.726l-3.158 1.07a.9.9 0 0 0-.566.566l-1.07 3.158c-.282.83-1.444.83-1.726 0l-1.07-3.158a.9.9 0 0 0-.566-.566L5.143 9.763c-.83-.282-.83-1.444 0-1.726l3.158-1.07a.9.9 0 0 0 .566-.566l1.07-3.158zM17.5 13c.2-.59 1-.59 1.2 0l.5 1.5c.07.2.22.35.42.42l1.5.5c.59.2.59 1 0 1.2l-1.5.5a.6.6 0 0 0-.42.42l-.5 1.5c-.2.59-1 .59-1.2 0l-.5-1.5a.6.6 0 0 0-.42-.42l-1.5-.5c-.59-.2-.59-1 0-1.2l1.5-.5a.6.6 0 0 0 .42-.42l.5-1.5z"/></svg>
+                <span id="ai-classify-label">AI 분석</span>
+            </button>
 
             <!-- 검증 모드 전용 -->
             <div class="cp-nav-group" id="vd-nav-group" style="display:none">
@@ -195,7 +212,7 @@
             var currentMode = 'compare'; // 'compare' | 'verify'
             var sidebarOpen = true;
             var sidebarWidth = 280; // px, 리사이즈 가능
-            var SIDEBAR_MIN = 180;
+            var SIDEBAR_MIN = 220;
             var SIDEBAR_MAX = 700;
             var API_BASE = (window.DISPLAY_CONFIG && DISPLAY_CONFIG.API_BASE) || 'http://localhost:8000/api';
 
@@ -265,6 +282,21 @@
                     setTimeout(function() { t.remove(); }, 300);
                 }, duration || 3000);
             }
+
+            // ── 공개 설정 로드 (AI 활성화 여부) ──
+            fetch(API_BASE + '/settings/public', { credentials: 'include' })
+                .then(function(r) { return r.ok ? r.json() : {}; })
+                .then(function(data) {
+                    var pub = data.frontend || data;
+                    if (pub.compare_ai_enabled) {
+                        compareAiEnabled = true;
+                        // diff가 이미 실행된 상태면 AI 버튼 즉시 표시
+                        if (diffState.changes.length > 0 && currentMode === 'compare') {
+                            aiClassifyBtn.style.display = '';
+                        }
+                    }
+                })
+                .catch(function() { /* 무시 — AI 버튼 숨김 유지 */ });
 
             function getPanel(side) { return side === 'a' ? panelBodyA : panelBodyB; }
             function getPanelRoot(side) { return side === 'a' ? panelA : panelB; }
@@ -362,7 +394,9 @@
                 currentIndex: -1,
                 filter: { added: true, deleted: true, modified: true },
                 ignoreWhitespace: false,
-                decisions: [] // null | 'accepted' | 'rejected' (인덱스 = changes 인덱스)
+                decisions: [], // null | 'accepted' | 'rejected' (인덱스 = changes 인덱스)
+                aiClassifications: null, // null | [{tag, confidence, explanation, userOverride?}]
+                aiFilter: { STRICTER: true, MORE_LENIENT: true, EXPANDED: true, CLARIFICATION: true, EDITORIAL: true, RESTRUCTURED: true }
             };
 
             var editMode = false;
@@ -384,7 +418,11 @@
             var bulkAcceptBtn = document.getElementById('bulk-accept-btn');
             var bulkRejectBtn = document.getElementById('bulk-reject-btn');
             var bulkResetBtn = document.getElementById('bulk-reset-btn');
+            var aiClassifyBtn = document.getElementById('ai-classify-btn');
+            var aiClassifyLabel = document.getElementById('ai-classify-label');
+            var aiFilterSection = document.getElementById('cp-ai-filter-section');
             var showParagraphNumbers = false;
+            var compareAiEnabled = false; // /api/settings/public에서 로드
 
             // ── 문서 로드 완료 처리 ──
             function onDocumentLoaded(side, filename, paragraphs) {
@@ -964,6 +1002,8 @@
                 diffState.changes = computeDiff();
                 diffState.currentIndex = -1;
                 diffState.decisions = new Array(diffState.changes.length).fill(null);
+                diffState.aiClassifications = null;
+                aiFilterSection.style.display = 'none';
                 renderDiffHighlights(diffState.changes);
                 renderSidebar(diffState.changes);
                 showDiffUI(true);
@@ -974,6 +1014,16 @@
                 diffState.changes = [];
                 diffState.currentIndex = -1;
                 diffState.decisions = [];
+                diffState.aiClassifications = null;
+                aiFilterSection.style.display = 'none';
+                // AI 필터 체크박스 리셋
+                var aiCbs = filterDropdown.querySelectorAll('[data-ai-filter]');
+                for (var i = 0; i < aiCbs.length; i++) { aiCbs[i].checked = true; }
+                diffState.aiFilter = { STRICTER: true, MORE_LENIENT: true, EXPANDED: true, CLARIFICATION: true, EDITORIAL: true, RESTRUCTURED: true };
+                aiFilterAttentionOnly = false;
+                aiFilterAttentionBtn.textContent = '주의 필요만 보기';
+                aiFilterAttentionBtn.classList.remove('active');
+                dismissAiDropdown();
 
                 // 패널 원래 렌더링 복원 (양쪽 모두 파일이 있는 경우)
                 ['a', 'b'].forEach(function(side) {
@@ -994,6 +1044,7 @@
                 filterGroup.style.display = show ? '' : 'none';
                 downloadBtn.style.display = show ? '' : 'none';
                 paragraphNumBtn.style.display = show ? '' : 'none';
+                aiClassifyBtn.style.display = (show && compareAiEnabled) ? '' : 'none';
                 if (!show && editMode) toggleEditMode();
             }
 
@@ -1195,6 +1246,9 @@
                 html += '<span class="cp-stat cp-stat-progress" id="cp-decision-progress"></span>';
                 html += '</div>';
 
+                // ── Layer 1: AI 요약 대시보드 ──
+                html += renderAiSummary();
+
                 if (!localStorage.getItem('cp-hint-dismissed')) {
                     html += '<div class="cp-decision-hint" id="cp-decision-hint">'
                         + '<span>✓ 수락 = 변경 반영 &nbsp;|&nbsp; ✗ 거절 = 원본 유지</span>'
@@ -1211,13 +1265,44 @@
                     var summaryText = c.summary || '';
                     if (summaryText.length > 80) summaryText = summaryText.substring(0, 80) + '…';
 
-                    html += '<div class="cp-change-item cp-change-' + c.type + hidden + decClass + '" data-change-index="' + i + '">'
+                    // Layer 2: 거터 컬러 스트라이프 (AI 분류 시 border-left 색상 오버라이드)
+                    var aiGutterClass = '';
+                    var aiTagAttr = '';
+                    var aiDetailHtml = '';
+                    if (diffState.aiClassifications && diffState.aiClassifications[i]) {
+                        var cls = diffState.aiClassifications[i];
+                        var effectiveTag = cls.userOverride || cls.tag;
+                        var meta = AI_TAG_META[effectiveTag] || AI_TAG_META.UNKNOWN;
+                        aiGutterClass = ' cp-ai-' + meta.gutterKey;
+                        aiTagAttr = ' data-ai-tag="' + effectiveTag + '"';
+                        if (cls.confidence < 0.7 && !cls.userOverride) aiGutterClass += ' cp-ai-low-conf';
+                        if (cls.userOverride) aiGutterClass += ' cp-ai-user-override';
+
+                        // Layer 3: 확장 상세 패널 (active 시 표시)
+                        var confPct = Math.round((cls.confidence || 0) * 100);
+                        aiDetailHtml = '<div class="cp-ai-detail">'
+                            + '<div class="cp-ai-detail-header">'
+                            + '<span class="cp-ai-detail-tag cp-ai-dt-' + meta.gutterKey + '">'
+                            + (cls.userOverride ? '✎ ' : '') + meta.label + '</span>'
+                            + '<span class="cp-ai-detail-confidence">' + confPct + '%</span>'
+                            + '</div>'
+                            + (cls.explanation ? '<div class="cp-ai-detail-explanation">' + escapeHTML(cls.explanation) + '</div>' : '')
+                            + '<div class="cp-ai-detail-actions">'
+                            + '<button class="cp-ai-retag-btn" data-ai-change="' + i + '">분류 변경</button>'
+                            + '</div>'
+                            + '</div>';
+                    }
+
+                    html += '<div class="cp-change-item cp-change-' + c.type + hidden + decClass + aiGutterClass + '"'
+                        + ' data-change-index="' + i + '"' + aiTagAttr + '>'
                         + '<span class="cp-change-badge">' + badgeLabels[c.type] + '</span>'
-                        + '<span class="cp-change-text">' + escapeHTML(summaryText) + '</span>'
+                        + '<span class="cp-change-text">'
+                        + escapeHTML(summaryText) + '</span>'
                         + '<span class="cp-change-actions">'
                         + '<button class="btn-icon-sm cp-accept-btn' + (decision === 'accepted' ? ' active' : '') + '" data-decision="accept" data-idx="' + i + '" title="수락">✓</button>'
                         + '<button class="btn-icon-sm cp-reject-btn' + (decision === 'rejected' ? ' active' : '') + '" data-decision="reject" data-idx="' + i + '" title="거절">✗</button>'
                         + '</span>'
+                        + aiDetailHtml
                         + '</div>';
                 }
                 html += '</div>';
@@ -1226,11 +1311,71 @@
                 updateDecisionProgress();
             }
 
+            // ── AI 요약 대시보드 렌더링 ──
+            function renderAiSummary() {
+                if (!diffState.aiClassifications) return '';
+
+                // 카테고리별 집계
+                var counts = {};
+                var tagOrder = ['STRICTER', 'MORE_LENIENT', 'EXPANDED', 'CLARIFICATION', 'EDITORIAL', 'RESTRUCTURED'];
+                for (var t = 0; t < tagOrder.length; t++) counts[tagOrder[t]] = 0;
+                var total = 0;
+                for (var i = 0; i < diffState.aiClassifications.length; i++) {
+                    var cls = diffState.aiClassifications[i];
+                    if (!cls) continue;
+                    var tag = cls.userOverride || cls.tag;
+                    if (tag === 'UNKNOWN') continue;
+                    if (counts[tag] !== undefined) counts[tag]++;
+                    total++;
+                }
+                if (total === 0) return '';
+
+                var maxCount = 0;
+                for (var t = 0; t < tagOrder.length; t++) {
+                    if (counts[tagOrder[t]] > maxCount) maxCount = counts[tagOrder[t]];
+                }
+
+                var groups = [
+                    { label: '주의 필요', tags: ['STRICTER', 'MORE_LENIENT'] },
+                    { label: '참고', tags: ['EXPANDED', 'CLARIFICATION'] },
+                    { label: '무시 가능', tags: ['EDITORIAL', 'RESTRUCTURED'] }
+                ];
+
+                var html = '<div class="cp-ai-summary visible" id="cp-ai-summary">'
+                    + '<div class="cp-ai-summary-header">'
+                    + '<span class="cp-ai-summary-title">'
+                    + '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M9.937 3.243c.282-.83 1.444-.83 1.726 0l1.07 3.158a.9.9 0 0 0 .566.566l3.158 1.07c.83.282.83 1.444 0 1.726l-3.158 1.07a.9.9 0 0 0-.566.566l-1.07 3.158c-.282.83-1.444.83-1.726 0l-1.07-3.158a.9.9 0 0 0-.566-.566L5.143 9.763c-.83-.282-.83-1.444 0-1.726l3.158-1.07a.9.9 0 0 0 .566-.566l1.07-3.158z"/></svg>'
+                    + 'AI 분석</span>'
+                    + '<span class="cp-ai-summary-total">' + total + '건 분류</span>'
+                    + '</div>'
+                    + '<div class="cp-ai-summary-bars">';
+
+                for (var g = 0; g < groups.length; g++) {
+                    if (g > 0) html += '<div class="cp-ai-summary-divider"></div>';
+                    var grp = groups[g];
+                    for (var ti = 0; ti < grp.tags.length; ti++) {
+                        var tag = grp.tags[ti];
+                        var meta = AI_TAG_META[tag];
+                        var cnt = counts[tag];
+                        var pct = maxCount > 0 ? Math.round((cnt / maxCount) * 100) : 0;
+                        var dimmed = cnt === 0 ? ' dimmed' : '';
+                        html += '<div class="cp-ai-summary-row' + dimmed + '" data-ai-summary-tag="' + tag + '">'
+                            + '<span class="cp-ai-summary-label cp-ai-color-' + meta.gutterKey + '">' + meta.label + '</span>'
+                            + '<div class="cp-ai-summary-bar"><div class="cp-ai-summary-fill cp-ai-fill-' + meta.gutterKey + '" style="width:' + pct + '%"></div></div>'
+                            + '<span class="cp-ai-summary-count">' + cnt + '</span>'
+                            + '</div>';
+                    }
+                }
+
+                html += '</div></div>';
+                return html;
+            }
+
             // ── 2-3. 변경점 네비게이션 ──
             function getFilteredIndices() {
                 var indices = [];
                 for (var i = 0; i < diffState.changes.length; i++) {
-                    if (diffState.filter[diffState.changes[i].type]) {
+                    if (isChangeVisible(i)) {
                         indices.push(i);
                     }
                 }
@@ -1494,11 +1639,23 @@
                 }
             });
 
+            function isChangeVisible(index) {
+                var c = diffState.changes[index];
+                if (!c) return false;
+                if (!diffState.filter[c.type]) return false;
+                // AI 필터 적용 (분류 결과가 있을 때만)
+                if (diffState.aiClassifications && diffState.aiClassifications[index]) {
+                    var cls = diffState.aiClassifications[index];
+                    var effectiveTag = cls.userOverride || cls.tag;
+                    if (effectiveTag !== 'UNKNOWN' && !diffState.aiFilter[effectiveTag]) return false;
+                }
+                return true;
+            }
+
             function applyFilter() {
                 // 패널 하이라이트 토글
                 for (var i = 0; i < diffState.changes.length; i++) {
-                    var c = diffState.changes[i];
-                    var show = diffState.filter[c.type];
+                    var show = isChangeVisible(i);
                     var els = document.querySelectorAll('.cp-paragraph[data-change-index="' + i + '"]');
                     els.forEach(function(el) {
                         el.classList.toggle('diff-hidden', !show);
@@ -1509,14 +1666,18 @@
                 var items = document.querySelectorAll('.cp-change-item');
                 items.forEach(function(item) {
                     var idx = parseInt(item.getAttribute('data-change-index'), 10);
-                    var c = diffState.changes[idx];
-                    if (c) {
-                        item.classList.toggle('cp-change-hidden', !diffState.filter[c.type]);
-                    }
+                    item.classList.toggle('cp-change-hidden', !isChangeVisible(idx));
+                });
+
+                // 요약 대시보드 dimmed 동기화
+                var summaryRows = document.querySelectorAll('[data-ai-summary-tag]');
+                summaryRows.forEach(function(row) {
+                    var tag = row.getAttribute('data-ai-summary-tag');
+                    row.classList.toggle('dimmed', !diffState.aiFilter[tag]);
                 });
 
                 // 현재 인덱스가 필터 밖이면 리셋
-                if (diffState.currentIndex >= 0 && !diffState.filter[diffState.changes[diffState.currentIndex].type]) {
+                if (diffState.currentIndex >= 0 && !isChangeVisible(diffState.currentIndex)) {
                     diffState.currentIndex = -1;
                     document.querySelectorAll('.diff-active').forEach(function(el) {
                         el.classList.remove('diff-active');
@@ -1584,6 +1745,31 @@
                     if (hint) hint.remove();
                     return;
                 }
+                // AI 요약 바 클릭 → 해당 태그만 필터 토글
+                var summaryRow = e.target.closest('[data-ai-summary-tag]');
+                if (summaryRow) {
+                    e.stopPropagation();
+                    var tag = summaryRow.getAttribute('data-ai-summary-tag');
+                    // 해당 태그의 필터 체크박스 토글
+                    var cb = filterDropdown.querySelector('[data-ai-filter="' + tag + '"]');
+                    if (cb) {
+                        cb.checked = !cb.checked;
+                        diffState.aiFilter[tag] = cb.checked;
+                        applyFilter();
+                        // 요약 행 dimmed 토글
+                        summaryRow.classList.toggle('dimmed', !cb.checked);
+                    }
+                    return;
+                }
+                // AI "분류 변경" 버튼 클릭 → HITL 드롭다운
+                var retagBtn = e.target.closest('.cp-ai-retag-btn[data-ai-change]');
+                if (retagBtn) {
+                    e.stopPropagation();
+                    var aiIdx = parseInt(retagBtn.getAttribute('data-ai-change'), 10);
+                    showAiTagDropdown(aiIdx, retagBtn);
+                    return;
+                }
+
                 var decBtn = e.target.closest('[data-decision]');
                 if (decBtn) {
                     e.stopPropagation();
@@ -1686,7 +1872,26 @@
                     }
                 }
 
-                var text = result.join('\n\n');
+                // AI 분류 태그가 있으면 상단 요약 추가
+                var header = '';
+                if (diffState.aiClassifications) {
+                    header = '=== AI 의미 분류 요약 ===\n';
+                    for (var ci = 0; ci < changes.length; ci++) {
+                        var cls = diffState.aiClassifications[ci];
+                        if (!cls) continue;
+                        var effTag = cls.userOverride || cls.tag;
+                        var meta = AI_TAG_META[effTag] || AI_TAG_META.UNKNOWN;
+                        var cInfo = changes[ci];
+                        var snippet = cInfo.summary || '';
+                        if (snippet.length > 60) snippet = snippet.substring(0, 60) + '…';
+                        header += '[' + effTag + '] ' + (ci + 1) + '. ' + snippet;
+                        if (cls.userOverride) header += ' (사용자 수정)';
+                        header += '\n';
+                    }
+                    header += '\n=== 본문 ===\n\n';
+                }
+
+                var text = header + result.join('\n\n');
                 var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
                 var url = URL.createObjectURL(blob);
                 var a = document.createElement('a');
@@ -1748,6 +1953,180 @@
                     setDecision(diffState.currentIndex, 'rejected');
                 }
             });
+
+            // ══════════════════════════════════════════
+            // Phase 6: AI 의미 분류
+            // ══════════════════════════════════════════
+
+            var AI_TAG_META = {
+                STRICTER:      { label: '강화', group: 'attention', gutterKey: 'stricter' },
+                MORE_LENIENT:  { label: '완화', group: 'attention', gutterKey: 'lenient' },
+                EXPANDED:      { label: '확대', group: 'reference', gutterKey: 'expanded' },
+                CLARIFICATION: { label: '명확화', group: 'reference', gutterKey: 'clarification' },
+                EDITORIAL:     { label: '편집', group: 'ignorable', gutterKey: 'editorial' },
+                RESTRUCTURED:  { label: '재구성', group: 'ignorable', gutterKey: 'restructured' },
+                UNKNOWN:       { label: '?', group: 'ignorable', gutterKey: 'unknown' }
+            };
+
+            var aiAnalyzing = false;
+
+            aiClassifyBtn.addEventListener('click', function() {
+                if (aiAnalyzing || diffState.changes.length === 0) return;
+
+                // 이미 분류 완료 시 재분석 확인
+                if (diffState.aiClassifications) {
+                    if (!confirm('이미 분석 결과가 있습니다. 다시 분석하시겠습니까?')) return;
+                }
+
+                runAiClassification();
+            });
+
+            function runAiClassification() {
+                aiAnalyzing = true;
+                aiClassifyBtn.disabled = true;
+                aiClassifyLabel.textContent = '분석 중…';
+                aiClassifyBtn.classList.add('ai-analyzing');
+
+                // 변경 구간 데이터 구성
+                var changes = [];
+                for (var i = 0; i < diffState.changes.length; i++) {
+                    var c = diffState.changes[i];
+                    changes.push({
+                        index: i,
+                        type: c.type,
+                        text_a: c.type !== 'added' ? docState.a.paragraphs[c.indexA] || '' : '',
+                        text_b: c.type !== 'deleted' ? docState.b.paragraphs[c.indexB] || '' : ''
+                    });
+                }
+
+                fetch(API_BASE + '/compare/ai-classify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ changes: changes })
+                })
+                .then(function(r) {
+                    if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail || 'AI 분류 실패'); });
+                    return r.json();
+                })
+                .then(function(data) {
+                    // 분류 결과 매핑 (index 기반)
+                    var cls = new Array(diffState.changes.length);
+                    for (var i = 0; i < cls.length; i++) {
+                        cls[i] = { tag: 'UNKNOWN', confidence: 0, explanation: '' };
+                    }
+                    if (data.classifications) {
+                        for (var j = 0; j < data.classifications.length; j++) {
+                            var item = data.classifications[j];
+                            if (item.index >= 0 && item.index < cls.length) {
+                                cls[item.index] = {
+                                    tag: item.tag || 'UNKNOWN',
+                                    confidence: item.confidence || 0,
+                                    explanation: item.explanation || ''
+                                };
+                            }
+                        }
+                    }
+                    diffState.aiClassifications = cls;
+                    aiFilterSection.style.display = '';
+                    renderSidebar(diffState.changes);
+                    applyFilter();
+                    showToast('AI 분석 완료 — ' + diffState.changes.length + '건 분류됨', 'success');
+                })
+                .catch(function(err) {
+                    showToast('AI 분석 실패: ' + err.message, 'error');
+                })
+                .finally(function() {
+                    aiAnalyzing = false;
+                    aiClassifyBtn.disabled = false;
+                    aiClassifyLabel.textContent = 'AI 분석';
+                    aiClassifyBtn.classList.remove('ai-analyzing');
+                });
+            }
+
+            // ── AI 태그 필터 ──
+            filterDropdown.addEventListener('change', function(e) {
+                var input = e.target;
+                if (!input.dataset.aiFilter) return;
+                diffState.aiFilter[input.dataset.aiFilter] = input.checked;
+                applyFilter();
+            });
+
+            // "주의 필요만 보기" ↔ "전체 표시" 토글 프리셋
+            var aiFilterAttentionBtn = document.getElementById('ai-filter-attention');
+            var aiFilterAttentionOnly = false;
+            aiFilterAttentionBtn.addEventListener('click', function() {
+                aiFilterAttentionOnly = !aiFilterAttentionOnly;
+                var attentionTags = ['STRICTER', 'MORE_LENIENT'];
+                var cbs = filterDropdown.querySelectorAll('[data-ai-filter]');
+                for (var i = 0; i < cbs.length; i++) {
+                    var tag = cbs[i].dataset.aiFilter;
+                    cbs[i].checked = aiFilterAttentionOnly ? attentionTags.indexOf(tag) >= 0 : true;
+                    diffState.aiFilter[tag] = cbs[i].checked;
+                }
+                aiFilterAttentionBtn.textContent = aiFilterAttentionOnly ? '전체 표시' : '주의 필요만 보기';
+                aiFilterAttentionBtn.classList.toggle('active', aiFilterAttentionOnly);
+                applyFilter();
+            });
+
+            // ── AI HITL: "분류 변경" 버튼 → 태그 변경 드롭다운 ──
+            var activeAiDropdown = null;   // { el, closeFn }
+            function dismissAiDropdown() {
+                if (!activeAiDropdown) return;
+                activeAiDropdown.el.remove();
+                document.removeEventListener('click', activeAiDropdown.closeFn);
+                activeAiDropdown = null;
+            }
+
+            function showAiTagDropdown(changeIdx, anchorEl) {
+                dismissAiDropdown();
+
+                var cls = diffState.aiClassifications[changeIdx];
+                var currentTag = cls.userOverride || cls.tag;
+
+                var dd = document.createElement('div');
+                dd.className = 'cp-ai-tag-dropdown';
+                var tags = ['STRICTER', 'MORE_LENIENT', 'EXPANDED', 'CLARIFICATION', 'EDITORIAL', 'RESTRUCTURED'];
+                for (var i = 0; i < tags.length; i++) {
+                    var t = tags[i];
+                    var meta = AI_TAG_META[t];
+                    var opt = document.createElement('button');
+                    opt.className = 'cp-ai-tag-option cp-ai-dt-' + meta.gutterKey + (t === currentTag ? ' cp-ai-tag-current' : '');
+                    opt.textContent = (t === currentTag ? '● ' : '') + meta.label;
+                    opt.dataset.tag = t;
+                    dd.appendChild(opt);
+                }
+
+                dd.addEventListener('click', function(e) {
+                    var opt = e.target.closest('[data-tag]');
+                    if (!opt) return;
+                    var newTag = opt.dataset.tag;
+                    cls.userOverride = newTag;
+                    // 전체 사이드바 리렌더 (거터 + 상세 + 요약 갱신)
+                    renderSidebar(diffState.changes);
+                    applyFilter();
+                    dismissAiDropdown();
+                });
+
+                // 위치 — 앵커 아래
+                var rect = anchorEl.getBoundingClientRect();
+                dd.style.position = 'fixed';
+                dd.style.left = rect.left + 'px';
+                dd.style.top = (rect.bottom + 4) + 'px';
+                dd.style.zIndex = '3100';
+                document.body.appendChild(dd);
+
+                // 외부 클릭 닫기
+                var closeFn = function(e) {
+                    if (!dd.contains(e.target) && e.target !== anchorEl) {
+                        dismissAiDropdown();
+                    }
+                };
+                activeAiDropdown = { el: dd, closeFn: closeFn };
+                setTimeout(function() {
+                    document.addEventListener('click', closeFn);
+                }, 0);
+            }
 
             // ══════════════════════════════════════════
             // Phase 3: 검증 모드 (Validation Mode)

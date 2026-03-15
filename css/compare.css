@@ -729,6 +729,309 @@ body[data-theme="dark"] .mode-toggle-btn.active {
 
 .cp-change-item.cp-change-hidden { display: none; }
 
+/* ══ Phase 6: AI 의미 분류 ══ */
+
+/* ── Layer 1: 요약 대시보드 ── */
+.cp-ai-summary {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--light-gray);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+.cp-ai-summary.visible { display: flex; }
+
+.cp-ai-summary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-light);
+}
+.cp-ai-summary-title {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.cp-ai-summary-title svg { width: 12px; height: 12px; }
+.cp-ai-summary-total {
+    font-variant-numeric: tabular-nums;
+}
+
+/* 카테고리별 분포 바 */
+.cp-ai-summary-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.cp-ai-summary-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
+}
+.cp-ai-summary-row:hover { background: var(--hover-bg); }
+.cp-ai-summary-row.dimmed { opacity: 0.35; }
+
+.cp-ai-summary-label {
+    width: 36px;
+    text-align: right;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.cp-ai-summary-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.cp-ai-summary-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+.cp-ai-summary-count {
+    width: 20px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-light);
+}
+
+/* 그룹 구분선 */
+.cp-ai-summary-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 2px 0;
+}
+
+/* 요약 색상 */
+.cp-ai-color-stricter      { color: var(--color-error); }
+.cp-ai-color-lenient       { color: var(--color-warning); }
+.cp-ai-color-expanded      { color: var(--color-success); }
+.cp-ai-color-clarification { color: var(--active-color); }
+.cp-ai-color-editorial     { color: var(--medium-gray); }
+.cp-ai-color-restructured  { color: var(--medium-gray); }
+
+.cp-ai-fill-stricter      { background: var(--color-error); }
+.cp-ai-fill-lenient       { background: var(--color-warning); }
+.cp-ai-fill-expanded      { background: var(--color-success); }
+.cp-ai-fill-clarification { background: var(--active-color); }
+.cp-ai-fill-editorial     { background: var(--medium-gray); }
+.cp-ai-fill-restructured  { background: var(--medium-gray); }
+
+/* ── Layer 2: 거터 컬러 스트라이프 ── */
+/* AI 분류 시 기존 diff 타입 border-left를 AI 색상으로 오버라이드 */
+.cp-change-item.cp-ai-stricter      { border-left-color: var(--color-error); }
+.cp-change-item.cp-ai-lenient       { border-left-color: var(--color-warning); }
+.cp-change-item.cp-ai-expanded      { border-left-color: var(--color-success); }
+.cp-change-item.cp-ai-clarification { border-left-color: var(--active-color); }
+.cp-change-item.cp-ai-editorial     { border-left-color: var(--medium-gray); }
+.cp-change-item.cp-ai-restructured  { border-left-color: var(--medium-gray); }
+.cp-change-item.cp-ai-unknown       { border-left-style: dashed; border-left-color: var(--medium-gray); }
+
+/* AI 분류 있으면 border-left 두껍게 */
+.cp-change-item[data-ai-tag] {
+    border-left-width: 4px;
+}
+
+/* 저신뢰도 → 점선 거터 */
+.cp-change-item.cp-ai-low-conf {
+    border-left-style: dashed;
+}
+
+/* 사용자 수정 표시 — 거터 옆 작은 마커 */
+.cp-change-item.cp-ai-user-override .cp-change-badge::after {
+    content: '✎';
+    margin-left: 3px;
+    font-size: 9px;
+    opacity: 0.6;
+}
+
+/* ── Layer 3: 클릭 확장 AI 상세 ── */
+.cp-ai-detail {
+    display: none;
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: var(--light-gray);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    font-size: 11px;
+    line-height: 1.5;
+    animation: cp-ai-detail-in 0.2s ease;
+}
+.cp-change-item.active .cp-ai-detail { display: block; }
+
+@keyframes cp-ai-detail-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.cp-ai-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+.cp-ai-detail-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+}
+/* 태그 색상 (상세 패널 + 드롭다운 공유) */
+.cp-ai-dt-stricter      { color: var(--color-error); }
+.cp-ai-dt-lenient       { color: var(--color-warning); }
+.cp-ai-dt-expanded      { color: var(--color-success); }
+.cp-ai-dt-clarification { color: var(--active-color); }
+.cp-ai-dt-editorial     { color: var(--medium-gray); }
+.cp-ai-dt-restructured  { color: var(--medium-gray); }
+.cp-ai-dt-unknown       { color: var(--medium-gray); }
+
+/* 상세 패널 내 배지형 태그 */
+.cp-ai-detail-tag.cp-ai-dt-stricter      { background: color-mix(in srgb, var(--color-error) 15%, transparent); border-color: color-mix(in srgb, var(--color-error) 30%, transparent); }
+.cp-ai-detail-tag.cp-ai-dt-lenient       { background: color-mix(in srgb, var(--color-warning) 15%, transparent); border-color: color-mix(in srgb, var(--color-warning) 30%, transparent); }
+.cp-ai-detail-tag.cp-ai-dt-expanded      { background: color-mix(in srgb, var(--color-success) 15%, transparent); border-color: color-mix(in srgb, var(--color-success) 30%, transparent); }
+.cp-ai-detail-tag.cp-ai-dt-clarification { background: color-mix(in srgb, var(--active-color) 12%, transparent); border-color: color-mix(in srgb, var(--active-color) 25%, transparent); }
+.cp-ai-detail-tag.cp-ai-dt-editorial     { background: color-mix(in srgb, var(--medium-gray) 15%, transparent); border-color: color-mix(in srgb, var(--medium-gray) 25%, transparent); }
+.cp-ai-detail-tag.cp-ai-dt-restructured  { background: color-mix(in srgb, var(--medium-gray) 15%, transparent); border-color: color-mix(in srgb, var(--medium-gray) 25%, transparent); }
+.cp-ai-detail-tag.cp-ai-dt-unknown       { background: color-mix(in srgb, var(--medium-gray) 10%, transparent); border-style: dashed; }
+
+.cp-ai-detail-confidence {
+    font-size: 10px;
+    color: var(--text-light);
+    margin-left: auto;
+}
+.cp-ai-detail-explanation {
+    color: var(--text-light);
+    word-break: keep-all;
+}
+.cp-ai-detail-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+}
+.cp-ai-retag-btn {
+    font-size: 10px;
+    padding: 2px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: var(--text-light);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+.cp-ai-retag-btn:hover {
+    border-color: var(--active-color);
+    color: var(--active-color);
+}
+
+/* AI 분석 중 */
+.scroll-sync-btn.ai-analyzing {
+    pointer-events: none;
+    opacity: 0.7;
+}
+.scroll-sync-btn.ai-analyzing svg {
+    animation: ai-pulse 1.2s ease-in-out infinite;
+}
+@keyframes ai-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.9); }
+    50%      { opacity: 1;   transform: scale(1.1); }
+}
+
+/* AI 태그 드롭다운 (HITL) */
+.cp-ai-tag-dropdown {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 80px;
+}
+.cp-ai-tag-option {
+    display: block;
+    width: 100%;
+    padding: 4px 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: left;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s ease;
+}
+.cp-ai-tag-option:hover { background: var(--hover-bg); }
+.cp-ai-tag-option.cp-ai-tag-current {
+    background: var(--hover-bg);
+    font-weight: 700;
+}
+
+/* AI 필터 섹션 */
+.cp-ai-filter-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-light);
+    padding: 2px 0;
+}
+.cp-ai-filter-preset {
+    display: block;
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px solid var(--border-color);
+    background: var(--light-gray);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text-dark);
+    transition: background 0.15s ease;
+    text-align: center;
+}
+.cp-ai-filter-preset:hover { background: var(--hover-bg); }
+.cp-ai-filter-preset.active {
+    background: var(--active-color);
+    color: #fff;
+    border-color: var(--active-color);
+}
+.cp-ai-filter-preset.active:hover {
+    background: var(--active-color-hover);
+}
+
+/* 다크모드 보정 */
+body[data-theme="dark"] .cp-ai-summary {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.08);
+}
+body[data-theme="dark"] .cp-ai-detail {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.08);
+}
+body[data-theme="dark"] .cp-ai-tag-dropdown {
+    background: var(--white);
+    border-color: rgba(255,255,255,0.12);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+body[data-theme="dark"] .cp-ai-tag-option.cp-ai-tag-current {
+    background: rgba(255,255,255,0.08);
+}
+body[data-theme="dark"] .cp-ai-retag-btn {
+    background: transparent;
+    border-color: rgba(255,255,255,0.12);
+}
+
 /* ── 편집 모드 ── */
 .cp-paragraph.cp-editable {
     outline: 1px dashed var(--border-color);
