@@ -47,6 +47,7 @@ AI 챗봇 + 문서 편집기 백엔드 시스템 설계 및 배포 문서
 │                         │  GET/POST /api/menu    메뉴 관리 (admin) 🔒   │    │
 │                         │  /api/translator/*     Translator API          │    │
 │                         │  /api/translator/ai/*  AI 번역/요약 API        │    │
+│                         │  /api/compare/*        Compare API (업로드/검증/규칙/AI분류) │    │
 │                         │                              │    │
 │                         │  Services:                   │    │
 │                         │  - Auth (SQLite sessions)    │    │
@@ -65,6 +66,7 @@ AI 챗봇 + 문서 편집기 백엔드 시스템 설계 및 배포 문서
 │                         │  - DocumentSave              │    │
 │                         │  - SettingsService (settings.json)  │    │
 │                         │  - Analytics (heartbeat/dashboard)  │    │
+│                         │  - CompareService (텍스트 추출/검증/AI분류) │    │
 │                         └──────────────┬──────────────┘    │
 │                                        │                    │
 │  설치 항목:                             │                    │
@@ -158,7 +160,8 @@ smart-document-platform/
 │   │   ├── upload.py              # POST /api/upload, /api/reindex (admin)
 │   │   ├── settings.py            # 설정 API (GET/POST /api/settings, /api/settings/public)
 │   │   ├── analytics.py           # 통계 API (heartbeat, dashboard)
-│   │   └── menu.py                # 메뉴 관리 API (GET/POST /api/menu)
+│   │   ├── menu.py                # 메뉴 관리 API (GET/POST /api/menu)
+│   │   └── compare.py             # Compare API (업로드/검증/규칙/AI분류)
 │   │
 │   ├── services/                   # 비즈니스 로직
 │   │   ├── __init__.py
@@ -176,7 +179,8 @@ smart-document-platform/
 │   │   ├── llm_client.py           # LLM 응답 생성 래퍼 (동기/스트리밍)
 │   │   ├── korean_tokenizer.py     # 한국어 형태소 분석 (kiwipiepy/폴백)
 │   │   ├── settings_service.py    # settings.json CRUD, 런타임 config 적용
-│   │   └── analytics.py           # 접속 통계 서비스
+│   │   ├── analytics.py           # 접속 통계 서비스
+│   │   └── compare_service.py     # Compare 텍스트 추출, 규칙 엔진, AI 분류
 │   │
 │   └── packages/                   # 오프라인 설치용 wheel 파일
 │       └── (pip download 결과물)
@@ -207,6 +211,7 @@ smart-document-platform/
 │
 ├── index.html                     # Explorer (문서 탐색)
 ├── translator.html                # Translator (논문 번역)
+├── compare.html                   # Compare (문서 비교/검증)
 ├── launcher.html                  # 런처 (시스템 선택)
 ├── admin.html                     # 관리자 설정
 ├── login.html                     # 로그인
@@ -228,6 +233,7 @@ smart-document-platform/
 │   ├── platform-footer.css        # 공통 푸터 스타일
 │   ├── admin-settings.css         # 관리자 설정 스타일
 │   ├── translator.css             # Translator 뷰어 스타일
+│   ├── compare.css                # Compare 전용 스타일
 │   └── ...                        # (기타 스타일)
 │
 └── contents/                      # Explorer HTML 콘텐츠
@@ -452,6 +458,18 @@ Response:
 - POST 시 홈 → [클라이언트 콘텐츠] → 용어집/정보 순으로 재조립
 - 원자적 저장: tmp 파일 → rename
 
+### 4.9 Compare API
+
+```
+POST /api/compare/upload       — DOCX/PDF 텍스트 추출 (파일 저장 없음)
+POST /api/compare/validate     — 규칙 기반 검증 → 이슈 목록
+GET  /api/compare/rules        — 규칙 설정 조회
+PUT  /api/compare/rules        — 규칙 설정 저장 (admin) 🔒
+POST /api/compare/ai-classify  — AI 의미 분류 (Ollama 구조화 출력)
+```
+
+> **상세**: [11-COMPARE-SYSTEM.md](11-COMPARE-SYSTEM.md) 참조
+
 ---
 
 ## 5. 배포 절차
@@ -630,6 +648,7 @@ requestViaOllama() → Ollama /api/generate 직접 호출
 | Phase 2 | ✅ 완료 | 섹션 레벨 인덱싱, 참조 링크 이동 |
 | Phase 3 | ✅ 완료 | 하이브리드 검색, 리랭킹, 멀티턴 대화, 구조 보존 인덱싱 |
 | Phase 4 | ✅ 완료 | 질문 라우팅, 쿼리 분해, Agentic RAG, LLM 프로바이더 추상화 |
+| Phase 5-6 | ✅ 완료 | Compare 시스템 (듀얼 diff, AI 의미 분류, 규칙 검증, 검토 리포트, 미니맵) |
 
 **Phase 3 세부 항목:**
 - FAISS + bge-m3 하이브리드 검색 (RRF 병합, keyword 30% + vector 70%)
@@ -1325,4 +1344,5 @@ app.add_middleware(
 - [RAG-TECHNICAL-REPORT.md](RAG-TECHNICAL-REPORT.md): RAG 답변 품질 개선 기술 보고서
 - [02-INSTALLATION.md](02-INSTALLATION.md): Tomcat 기본 설치
 - [07-TRANSLATOR-SYSTEM.md](07-TRANSLATOR-SYSTEM.md): Translator 시스템 설계 (API, 데이터 구조, 번역 파이프라인)
+- [11-COMPARE-SYSTEM.md](11-COMPARE-SYSTEM.md): Compare 시스템 설계 (diff, AI 분류, 검증, 리포트)
 - [04-USER-GUIDE.md](04-USER-GUIDE.md): 콘텐츠 관리, 검색 인덱스 업데이트

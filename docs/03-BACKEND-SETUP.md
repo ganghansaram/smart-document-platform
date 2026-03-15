@@ -27,6 +27,7 @@
 - AI 채팅 API (`/api/chat`, `/api/search`)
 - 문서 편집 저장 API (`/api/save-document`)
 - Translator API (`/api/translator/*`) — PDF 업로드, PMT 번역, 문서 관리
+- Compare API (`/api/compare/*`) — 문서 비교, 규칙 검증, AI 의미 분류
 - 관리자 인증 API (`/api/auth/*`) — 업로드/편집/인덱싱은 admin 로그인 필요
 - 관리자 설정 API (`/api/settings`) — 런타임 설정 변경
 - 접속 통계 API (`/api/analytics/*`) — heartbeat, 대시보드
@@ -48,6 +49,7 @@
 │  - /api/upload          문서 업로드/변환 API (admin)     │
 │  - /api/reindex         검색 인덱스 재생성 API (admin)   │
 │  - /api/translator/*    Translator PDF 번역 API          │
+│  - /api/compare/*      Compare 문서 비교/검증 API        │
 └─────────────────────────────────────────────────────────┘
                           │
                           ▼ (AI 사용 시만)

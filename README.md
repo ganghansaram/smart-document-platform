@@ -14,7 +14,7 @@
 |------------|------|---------------|
 | **Explorer** | 기술문서 탐색 | 엔지니어링 지침·가이드·규격서 등을 등록하고, AI 검색·채팅으로 필요한 지식을 빠르게 찾아 활용 |
 | **Translator** | 문서 번역 | 영문 기술문서·해외 논문의 원문 레이아웃을 보존하며 번역하고, 개인별 작업공간에서 관리 |
-| **Compare** | 문서 비교 *(예정)* | 납품 문서의 버전 간 내용 차이를 식별하고, 문서 작성 규칙 준수 여부를 검증 |
+| **Compare** | 문서 비교 | DOCX/PDF 문서의 버전 간 텍스트 차이를 시각화하고, AI 의미 분류(주의/참고/편집)와 문서 규칙 검증을 수행 |
 
 필요에 따라 서브시스템을 추가하여 플랫폼을 확장할 수 있습니다.
 
@@ -49,8 +49,17 @@
 - **카드 기반 문서 관리**: 상태별 UI (pending/translating/done/error)
 - **개인 작업공간**: 사용자별 디렉토리 격리
 
+### Compare (문서 비교)
+- **듀얼 패널 diff**: 좌우 분할 + 동기 스크롤, 추가/삭제/수정 하이라이트
+- **AI 의미 분류**: Ollama 기반 변경점 자동 태깅 (주의·참고·편집 3그룹)
+- **수락/거절 판정**: 변경점별 수락/거절/미처리, 벌크 처리
+- **검증 모드**: 문서 규칙(번호 체계, 용어 통일 등) 자동 검증, 프리셋/커스텀 규칙
+- **검토 리포트 내보내기**: 판정 결과 + AI 분류를 텍스트 리포트로 저장
+- **스크롤바 미니맵**: 변경점 위치를 스크롤바에 마커로 표시 (PyCharm 스타일)
+- **텍스트 붙여넣기**: DRM 환경 대응, 파일 없이 텍스트 직접 입력/비교
+
 ### Launcher (통합 런처)
-- 각 시스템(Explorer, Translator, Settings)으로의 진입점
+- 각 시스템(Explorer, Translator, Compare, Settings)으로의 진입점
 - 시스템 스위처: SVG 아이콘, 호버 드롭다운, 미구현 시스템 뱃지 표시
 
 ### 공통 기능
@@ -82,6 +91,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 - Explorer: `http://localhost:8080/`
 - Translator: `http://localhost:8080/translator.html`
+- Compare: `http://localhost:8080/compare.html`
 - Launcher: `http://localhost:8080/launcher.html`
 
 > 콘텐츠 열람/검색/AI 채팅은 로그인 없이 가능합니다.
@@ -111,6 +121,7 @@ python tools/create-admin.py
 | [ARCHITECTURE](docs/05-ARCHITECTURE.md) | 시스템 구성도, 서버별 설치 항목, API 설계 |
 | [RAG-PIPELINE](docs/06-RAG-PIPELINE.md) | 검색/AI 파이프라인, 임베딩, 청킹 전략 |
 | [TRANSLATOR-SYSTEM](docs/07-TRANSLATOR-SYSTEM.md) | Translator PDF 번역 뷰어 기술 문서 |
+| [COMPARE-SYSTEM](docs/11-COMPARE-SYSTEM.md) | Compare 문서 비교/검증 기술 문서 |
 
 **개발/전략**
 
@@ -130,7 +141,8 @@ python tools/create-admin.py
 ```
 smart-document-platform/
 ├── index.html              # Explorer 메인 페이지 (3-패널 레이아웃)
-├── translator.html             # Translator PDF 번역 뷰어
+├── translator.html         # Translator PDF 번역 뷰어
+├── compare.html            # Compare 문서 비교/검증
 ├── launcher.html           # Launcher 통합 진입점
 ├── login.html              # 독립 로그인 페이지
 ├── css/                    # 스타일시트
@@ -147,6 +159,7 @@ smart-document-platform/
 │   ├── analytics.css      # 접속 통계 대시보드
 │   ├── admin-settings.css # 관리자 설정 페이지
 │   ├── translator.css     # Translator 뷰어 스타일
+│   ├── compare.css        # Compare 전용 스타일
 │   ├── platform-header.css # 공통 헤더 스타일
 │   ├── platform-footer.css # 공통 푸터 스타일
 │   └── images/            # UI 이미지 (로고, 배너 등)
@@ -184,12 +197,14 @@ smart-document-platform/
 │   ├── requirements.txt   # 의존성 패키지
 │   ├── api/               # API 엔드포인트
 │   │   ├── translator.py     # Translator API (업로드, 번역, PDF 서빙, AI 선택, 마킹)
+│   │   ├── compare.py       # Compare API (업로드, 검증, AI 분류, 규칙 관리)
 │   │   ├── settings.py   # 설정 API
 │   │   ├── analytics.py  # 통계 API
 │   │   └── auth.py       # 인증 API
 │   └── services/          # 비즈니스 로직
 │       ├── translator_service.py  # PMT 번역, 개인 작업공간, 메타 관리, AI 선택
 │       ├── text_translator.py    # 텍스트 모드 번역 엔진 (PyMuPDF + YOLO + Ollama)
+│       ├── compare_service.py    # 텍스트 추출, 규칙 엔진, AI 의미 분류
 │       ├── keyword_search.py  # 키워드 검색
 │       ├── vector_search.py   # FAISS 벡터 검색 + RRF 병합
 │       ├── reranker.py        # Cross-encoder 리랭킹
@@ -219,6 +234,7 @@ smart-document-platform/
     ├── 07-TRANSLATOR-SYSTEM.md
     ├── 08-GIT-GUIDE.md
     ├── 09-PLATFORM-VISION.md
+    ├── 11-COMPARE-SYSTEM.md
     └── RAG-TECHNICAL-REPORT.md
 ```
 
@@ -250,7 +266,7 @@ smart-document-platform/
 
 | 시스템 | 설명 |
 |--------|------|
-| **Compare** (문서 비교) | 납품 문서의 리비전 간 차이 식별(diff), 문서 작성 규칙·템플릿 준수 여부 자동 검증. 규격서 개정 시 변경점 추적에 활용 |
+| **Compare** (문서 비교) ✅ | 구현 완료 — DOCX/PDF 버전 간 diff, AI 의미 분류, 규칙 검증, 검토 리포트 내보내기 |
 | **Writer** (문서 작성 보조) | AI 기반 기술문서 초안 생성, 템플릿 자동 적용, 용어 일관성 검사. 반복적인 정비 보고서·시험 성적서 작성 효율화 |
 | **Archive** (문서 아카이브) | 문서 이력·버전 관리, 만료/갱신 주기 알림, 규격 개정 이력 타임라인. 품질 감사 대비 문서 추적성 확보 |
 
