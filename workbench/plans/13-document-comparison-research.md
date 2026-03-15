@@ -1,8 +1,8 @@
 # 문서 비교 시스템 (Compare) — 실행 계획서
 
 > 작성일: 2026-03-12
-> 최종 갱신: 2026-03-14
-> 상태: Phase 5-1, 5-2 완료 / 검증 하이라이트 UX 개선 완료
+> 최종 갱신: 2026-03-15
+> 상태: Phase 1~5 핵심 완료 / Phase 6 검토 예정 / Phase 7 재배치 (5-3,5-4 통합 + 우선순위 정렬)
 
 ---
 
@@ -368,13 +368,7 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
   - ✅ 스키마 불일치 시 토스트 오류 메시지
   - ✅ 팀 간 규칙 공유 시나리오 지원
 
-- ⬜ **5-3. 추가 포맷 — HWP/HWPX** (별도 판단 후 진행)
-  - ⬜ pyhwpx 라이브러리 연동
-  - ⬜ 비교 + 검증 모드 양쪽 지원
-
-- ⬜ **5-4. 추가 포맷 — Excel** (별도 판단 후 진행)
-  - ⬜ openpyxl 연동, 시트별 텍스트 추출
-  - ⬜ 셀 단위 비교 vs. 텍스트 플래튼 결정
+- ~~5-3, 5-4~~ → **Phase 7로 이동** (포맷 확장은 핵심 기능 완료 후 고도화 성격)
 
 ### Phase 6: AI 의미 비교
 
@@ -459,29 +453,63 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 > ★ fda-guidance-diff의 분류 체계(8종 태그)와 3단계 파이프라인이 본 시스템에 가장 적합한 레퍼런스.
 > 차별화: 한국어 기술문서(항공/방산) 도메인 특화 + Ollama 로컬 실행(폐쇄망) — 시장 공백 영역.
 
-### Phase 7: UX 고도화
+### Phase 7: 고도화
 
-> 목표: 전문 도구 수준의 UX — 필요에 따라 선택적 진행
+> 목표: 전문 도구 수준으로 확장 — 우선순위별 선택 진행
+> Phase 5 잔여 포맷 확장(HWP/Excel)도 고도화 성격이므로 여기에 통합.
 
-- ⬜ **7-1. 미니맵/개요 바**
+#### 높음 — 실용 가치 큰 기능
+
+- ⬜ **7-1. 레이아웃 보존 비교 (Visual Diff)**
+  > 현재 텍스트 모드와 병행하는 **레이아웃 뷰** — 원본 서식을 유지한 채 diff 하이라이트 표시.
+  > 텍스트 모드(수락/거절/편집)와 레이아웃 모드(서식/레이아웃 변경 확인)를 툴바 토글로 전환.
+  >
+  > **업계 현황**: 업계 표준 접근법. Draftable, Adobe Acrobat Compare, Workshare 등 주요 도구가 동일 방식 사용.
+  > 핵심 라이브러리(PyMuPDF, win32com)가 이미 프로젝트에 설치되어 있어 인프라 추가 비용 없음.
+  > **기술 부채 해소**: PDF 구조 평탄화 문제(다단, 표 내부 텍스트 선형화)가 레이아웃 모드에서는 원본 그대로 표시되므로 자연 해소.
+  - ⬜ **DOCX 비교**: `win32com.CompareDocuments()` → Track Changes DOCX 생성 → PDF 변환 → PDF.js 표시
+    - Word 네이티브 비교 엔진 활용 (서식, 표, 이미지 변경 감지)
+    - `word_preprocessor.py`와 동일한 COM 패턴 재사용
+  - ⬜ **PDF 비교**: PyMuPDF `get_text("words")` 좌표 추출 → difflib 비교 → `search_for()` + `add_highlight_annot()` 어노테이션
+    - 또는 백엔드에서 diff 좌표 JSON 반환 → PDF.js 위 커스텀 오버레이 레이어
+  - ⬜ **프론트엔드**: Translator PDF.js 뷰어 패턴 재사용, 좌우 PDF 렌더링 + diff 오버레이
+  - ⬜ **뷰 모드 토글**: 툴바에 "텍스트" / "레이아웃" 전환 버튼 (모드 토글 패턴 재사용)
+  - ⬜ 크로스 포맷 (DOCX↔PDF): DOCX → PDF 변환 후 PDF 비교 파이프라인 적용
+
+- ⬜ **7-2. 비교 리포트 내보내기 (PDF)**
+  - ⬜ 비교 결과를 PDF 보고서로 생성 (결재/보고용)
+  - ⬜ 스코어, 이슈 목록, 변경 요약 포함
+  - ⬜ 7-1 레이아웃 뷰가 있으면 어노테이션된 PDF를 직접 내보내기 가능
+
+- ⬜ **7-3. 추가 포맷 — HWP/HWPX** (구 5-3)
+  - ⬜ pyhwpx 라이브러리 연동 → 텍스트 추출 → 텍스트 모드 비교/검증
+  - ⬜ 레이아웃 모드: HWP → PDF 변환 후 7-1 파이프라인 적용
+  - ⬜ 비교 + 검증 모드 양쪽 지원
+
+#### 중간 — UX 품질 향상
+
+- ⬜ **7-4. 미니맵/개요 바**
   - ⬜ 스크롤바 옆 컬러 마커 (변경/이슈 위치 개요)
   - ⬜ 클릭 → 해당 위치 점프
   - ⬜ 비교/검증 모드 양쪽 지원
 
-- ⬜ **7-2. 통합 뷰 (Unified View)**
+- ⬜ **7-5. 통합 뷰 (Unified View)**
   - ⬜ 단일 패널에 inline diff 표시 (GitHub unified diff 스타일)
   - ⬜ Side-by-side ↔ Unified 토글 버튼
 
-- ⬜ **7-3. 3-way 비교**
+#### 낮음 — 복잡도 높거나 니치한 기능
+
+- ⬜ **7-6. 추가 포맷 — Excel** (구 5-4)
+  - ⬜ openpyxl 연동, 시트별 텍스트 추출
+  - ⬜ 셀 단위 비교 vs. 텍스트 플래튼 결정
+  - ⬜ 텍스트 모드 전용 (레이아웃 모드 적용 어려움)
+
+- ⬜ **7-7. 3-way 비교**
   - ⬜ 공통 조상(Base) + A + B 3패널 비교
   - ⬜ 충돌 구간 자동 감지 + 해결 UI
 
-- ⬜ **7-4. 비교 리포트 내보내기 (PDF)**
-  - ⬜ 비교 결과를 PDF 보고서로 생성 (결재/보고용)
-  - ⬜ 스코어, 이슈 목록, 변경 요약 포함
-
-- ⬜ **7-5. 비교 이력 관리**
-  - ⬜ 비교 세션 저장/불러오기
+- ⬜ **7-8. 비교 이력 관리**
+  - ⬜ 비교 세션 저장/불러오기 (영속 레이어 필요)
   - ⬜ 동일 문서 반복 비교 시 변화 추적
 
 ---
@@ -501,8 +529,8 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 
 | 항목 | 심각도 | 설명 | 처리 시점 |
 |------|--------|------|----------|
-| DOCX `page_count: null` | 낮음 | python-docx는 페이지 수 미제공 — 프론트에서 null 처리 필요 | Phase 5-3 |
-| PDF 구조 평탄화 | 참고 | 다단 PDF, 표 내부 텍스트가 선형으로 합쳐짐 — 추출 한계 | Phase 5-3 |
+| DOCX `page_count: null` | 낮음 | python-docx는 페이지 수 미제공 — 프론트에서 null 처리 필요 | Phase 7-3 |
+| PDF 구조 평탄화 | 참고 | 다단 PDF, 표 내부 텍스트가 선형으로 합쳐짐 — 추출 한계. **7-1 레이아웃 모드에서 자연 해소** | Phase 7-1 |
 | 프리셋 이름 검증 | 낮음 | validate 요청의 `preset` 파라미터 미검증 (존재 여부) | Phase 5 |
 
 #### UX 개선
@@ -555,6 +583,9 @@ PUT  /api/compare/rules        — 규칙 설정 변경 (admin 권한 필요)
 | 검증 UI | **문서 전체 + 인라인 하이라이트 + 이슈 사이드바** | 업계 표준 (Grammarly 패턴) |
 | 모드 전환 | **2-버튼 토글** | Hemingway Write/Edit 패턴 |
 | 규칙 관리 | **프리셋 + 토글 + 설정 모달** | SonarQube/Grammarly 하이브리드 |
+| DOCX 레이아웃 비교 | **win32com CompareDocuments** | 이미 설치됨 (word_preprocessor.py), Word 네이티브 품질, 업계 표준 |
+| PDF 레이아웃 비교 | **PyMuPDF 좌표 추출 + 어노테이션** | 이미 설치됨, 추출+어노테이션 일체, 폐쇄망 호환 |
+| 레이아웃 뷰 렌더링 | **PDF.js (기존)** | Translator와 동일 뷰어 재사용, 추가 의존성 없음 |
 
 ### 참고한 서비스
 
@@ -565,6 +596,15 @@ PUT  /api/compare/rules        — 규칙 설정 변경 (admin 권한 필요)
 - **SonarQube** — 규칙 관리 UI (Quality Profile, 프리셋, 토글)
 - **Acrolinx** — 문서 품질 스코어카드, 3단 규칙 계층
 - **Vale** — 규칙 유형 참고 (existence, substitution, occurrence)
+
+#### Phase 7-6 (레이아웃 보존 비교)
+- **PyMuPDF** — PDF 텍스트+좌표 추출 (`get_text("words")`), 어노테이션 (`add_highlight_annot`). 월 500만+ 다운로드, Artifex 지원
+- **win32com CompareDocuments** — Word 네이티브 비교 엔진 COM 호출. 법률/규격 문서 관리에서 수십 년간 사용된 표준 방식
+- **PDF-Diff-Viewer** (ssibb) — PyMuPDF 기반 시각적 PDF 비교 레퍼런스 구현 (Tkinter 데스크톱)
+- **diff-pdf** (vslavik) — C++ 픽셀 레벨 PDF 비교. 시맨틱 diff 아닌 이미지 비교라 보조 용도
+- **compare-pdf** (Formartha) — pdf2image + OpenCV `absdiff` 픽셀 비교. 순수 Python
+- **Adobe Acrobat Compare** — Old/New File 비대칭 UI + 색상 범례 (파랑=삽입, 보라=페이지 변경, 초록=이동/삭제)
+- **Workshare Compare** — Original/Modified 비교 → Redline 문서 생성. 법률 업계 표준
 
 #### Phase 6 (AI 의미 비교)
 - **Litera Compare + Lito** — 전통 diff 엔진 + AI 에이전트 오버레이 패턴. 법률 업계 72% 점유율
