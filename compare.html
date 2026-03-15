@@ -1248,8 +1248,19 @@
                     + '</span>';
                 html += '</div>';
 
-                // ── Layer 1: AI 요약 대시보드 ──
-                html += renderAiSummary();
+                // ── Layer 1: AI 요약 대시보드 또는 분석 중 프로그레스 ──
+                if (aiAnalyzing) {
+                    html += '<div class="cp-ai-progress" id="cp-ai-progress">'
+                        + '<div class="cp-ai-progress-header">'
+                        + '<div class="spinner spinner-sm"></div>'
+                        + '<span>AI 분석 중…</span>'
+                        + '</div>'
+                        + '<span class="cp-ai-progress-sub">' + changes.length + '건 분류 중</span>'
+                        + '<div class="cp-ai-progress-bar"><div class="cp-ai-progress-fill"></div></div>'
+                        + '</div>';
+                } else {
+                    html += renderAiSummary();
+                }
 
                 html += '<div class="cp-change-list" id="cp-change-list">';
                 for (var i = 0; i < changes.length; i++) {
@@ -1342,8 +1353,22 @@
                     + '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M9.937 3.243c.282-.83 1.444-.83 1.726 0l1.07 3.158a.9.9 0 0 0 .566.566l3.158 1.07c.83.282.83 1.444 0 1.726l-3.158 1.07a.9.9 0 0 0-.566.566l-1.07 3.158c-.282.83-1.444.83-1.726 0l-1.07-3.158a.9.9 0 0 0-.566-.566L5.143 9.763c-.83-.282-.83-1.444 0-1.726l3.158-1.07a.9.9 0 0 0 .566-.566l1.07-3.158z"/></svg>'
                     + 'AI 분석</span>'
                     + '<span class="cp-ai-summary-total">' + total + '건 분류</span>'
-                    + '</div>'
-                    + '<div class="cp-ai-summary-bars">';
+                    + '</div>';
+
+                // 그룹 배지 행
+                html += '<div class="cp-ai-group-badges">';
+                for (var g = 0; g < GROUP_META.length; g++) {
+                    var grp = GROUP_META[g];
+                    var grpCount = 0;
+                    for (var ti = 0; ti < grp.tags.length; ti++) grpCount += (counts[grp.tags[ti]] || 0);
+                    if (grpCount === 0) continue;
+                    html += '<button class="cp-ai-group-badge cp-ai-grp-' + grp.key + '"'
+                        + ' data-ai-group="' + grp.key + '">'
+                        + grp.label + ' ' + grpCount + '</button>';
+                }
+                html += '</div>';
+
+                html += '<div class="cp-ai-summary-bars">';
 
                 for (var g = 0; g < groups.length; g++) {
                     if (g > 0) html += '<div class="cp-ai-summary-divider"></div>';
@@ -1671,6 +1696,22 @@
                     row.classList.toggle('dimmed', !diffState.aiFilter[tag]);
                 });
 
+                // 그룹 배지 dimmed 동기화
+                var groupBadges = document.querySelectorAll('[data-ai-group]');
+                groupBadges.forEach(function(badge) {
+                    var groupKey = badge.getAttribute('data-ai-group');
+                    var grp = null;
+                    for (var gi = 0; gi < GROUP_META.length; gi++) {
+                        if (GROUP_META[gi].key === groupKey) { grp = GROUP_META[gi]; break; }
+                    }
+                    if (!grp) return;
+                    var allOff = true;
+                    for (var gi = 0; gi < grp.tags.length; gi++) {
+                        if (diffState.aiFilter[grp.tags[gi]]) { allOff = false; break; }
+                    }
+                    badge.classList.toggle('dimmed', allOff);
+                });
+
                 // 현재 인덱스가 필터 밖이면 리셋
                 if (diffState.currentIndex >= 0 && !isChangeVisible(diffState.currentIndex)) {
                     diffState.currentIndex = -1;
@@ -1734,6 +1775,35 @@
 
             // 사이드바 클릭 — 수락/거절 버튼 처리
             sidebarBody.addEventListener('click', function(e) {
+                // AI 그룹 배지 클릭 → 그룹 내 전체 태그 일괄 토글
+                var groupBadge = e.target.closest('[data-ai-group]');
+                if (groupBadge) {
+                    e.stopPropagation();
+                    var groupKey = groupBadge.getAttribute('data-ai-group');
+                    var grp = null;
+                    for (var gi = 0; gi < GROUP_META.length; gi++) {
+                        if (GROUP_META[gi].key === groupKey) { grp = GROUP_META[gi]; break; }
+                    }
+                    if (!grp) return;
+
+                    // 전부 꺼져 있으면 켬, 아니면 전부 끔
+                    var allOff = true;
+                    for (var gi = 0; gi < grp.tags.length; gi++) {
+                        if (diffState.aiFilter[grp.tags[gi]]) { allOff = false; break; }
+                    }
+                    var newState = allOff;
+
+                    for (var gi = 0; gi < grp.tags.length; gi++) {
+                        var tag = grp.tags[gi];
+                        diffState.aiFilter[tag] = newState;
+                        var cb = filterDropdown.querySelector('[data-ai-filter="' + tag + '"]');
+                        if (cb) cb.checked = newState;
+                    }
+
+                    applyFilter();
+                    return;
+                }
+
                 // AI 요약 바 클릭 → 해당 태그만 필터 토글
                 var summaryRow = e.target.closest('[data-ai-summary-tag]');
                 if (summaryRow) {
@@ -1853,6 +1923,30 @@
                 var header = '';
                 if (diffState.aiClassifications) {
                     header = '=== AI 의미 분류 요약 ===\n';
+
+                    // 그룹별 집계 요약 행
+                    var aiCounts = {};
+                    for (var ci = 0; ci < changes.length; ci++) {
+                        var cls = diffState.aiClassifications[ci];
+                        if (!cls) continue;
+                        var et = cls.userOverride || cls.tag;
+                        if (et === 'UNKNOWN') continue;
+                        aiCounts[et] = (aiCounts[et] || 0) + 1;
+                    }
+                    var exportGroups = [];
+                    for (var gi = 0; gi < GROUP_META.length; gi++) {
+                        var grp = GROUP_META[gi];
+                        var parts = [];
+                        var grpTotal = 0;
+                        for (var ti = 0; ti < grp.tags.length; ti++) {
+                            var tag = grp.tags[ti];
+                            var cnt = aiCounts[tag] || 0;
+                            if (cnt > 0) { parts.push(AI_TAG_META[tag].label + ' ' + cnt); grpTotal += cnt; }
+                        }
+                        if (grpTotal > 0) exportGroups.push(grp.label + ' ' + grpTotal + '건 (' + parts.join(' \u00b7 ') + ')');
+                    }
+                    if (exportGroups.length > 0) header += exportGroups.join(' | ') + '\n\n';
+
                     for (var ci = 0; ci < changes.length; ci++) {
                         var cls = diffState.aiClassifications[ci];
                         if (!cls) continue;
@@ -1945,6 +2039,12 @@
                 UNKNOWN:       { label: '?', group: 'ignorable', gutterKey: 'unknown' }
             };
 
+            var GROUP_META = [
+                { key: 'attention', label: '주의', tags: ['STRICTER', 'MORE_LENIENT'] },
+                { key: 'reference', label: '참고', tags: ['EXPANDED', 'CLARIFICATION'] },
+                { key: 'ignorable', label: '편집', tags: ['EDITORIAL', 'RESTRUCTURED'] }
+            ];
+
             var aiAnalyzing = false;
 
             aiClassifyBtn.addEventListener('click', function() {
@@ -1963,6 +2063,9 @@
                 aiClassifyBtn.disabled = true;
                 aiClassifyLabel.textContent = '분석 중…';
                 aiClassifyBtn.classList.add('ai-analyzing');
+
+                // 사이드바에 프로그레스 표시
+                renderSidebar(diffState.changes);
 
                 // 변경 구간 데이터 구성
                 var changes = [];
@@ -2005,12 +2108,15 @@
                         }
                     }
                     diffState.aiClassifications = cls;
+                    aiAnalyzing = false;
                     aiFilterSection.style.display = '';
                     renderSidebar(diffState.changes);
                     applyFilter();
                     showToast('AI 분석 완료 — ' + diffState.changes.length + '건 분류됨', 'success');
                 })
                 .catch(function(err) {
+                    aiAnalyzing = false;
+                    renderSidebar(diffState.changes);
                     showToast('AI 분석 실패: ' + err.message, 'error');
                 })
                 .finally(function() {
