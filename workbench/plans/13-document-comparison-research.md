@@ -2,7 +2,7 @@
 
 > 작성일: 2026-03-12
 > 최종 갱신: 2026-03-15
-> 상태: Phase 1~5 핵심 완료 / Phase 6-0 프로토타이핑 완료 (6-1 구현 진행 예정) / Phase 7 재배치 완료
+> 상태: Phase 1~5 핵심 완료 / Phase 6-1 완료 + 관리자 설정 UX 개선 / Phase 7 재배치 완료
 
 ---
 
@@ -441,7 +441,7 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
   - 4B 모델은 배치 5건 최적, 12B는 일괄 처리 가능 (프로덕션 27B도 일괄 예상)
   - 4B 유일한 오류: "테스트 커버리지 80%→70%"를 STRICTER로 오분류 — 27B에서 해결 예상
 
-- ✅ **6-1. AI 의미 분류 (핵심 기능)** — 6-1a, 6-1b 완료 / 6-1c 프론트엔드 미착수
+- ✅ **6-1. AI 의미 분류 (핵심 기능)** — 6-1a, 6-1b, 6-1c 완료
 
   ##### 6-1a. 관리자 설정 ✅
   > 업계 표준: 관리자가 AI 동작을 제어, 사용자는 결과만 소비 (Grammarly/SonarQube 패턴).
@@ -467,29 +467,43 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
     - Few-shot 5건 내장
     - `_validate_classifications()` — 태그 유효성·confidence 범위·누락 항목 검증
 
-  ##### 6-1c. 프론트엔드 UI
-  - ⬜ 툴바 "AI 분석" 버튼
+  ##### 6-1c. 프론트엔드 UI ✅
+  - ✅ 툴바 "AI 분석" 버튼
     - `.scroll-sync-btn` 패턴, 비교 모드 + diff 존재 시 표시
-    - AI 비활성화(`COMPARE_AI_ENABLED=false`) 시 버튼 숨김
-    - 클릭 → 버튼 내 스피너 + 비활성화 → 완료 시 복원
-    - 이미 분석 완료 시 재분석 확인 (diff 변경 없으면 캐시 사용)
-  - ⬜ 사이드바 AI 태그 배지
+    - AI 비활성화(`COMPARE_AI_ENABLED=false`) 시 버튼 숨김 (`/api/settings/public` 확인)
+    - 클릭 → 버튼 내 스피너(SVG 회전) + 비활성화 → 완료 시 복원
+    - 이미 분석 완료 시 `confirm()` 재분석 확인
+  - ✅ 사이드바 AI 태그 배지
     - 기존 유형 배지(추가/삭제/수정) 옆에 분류 태그 배지 추가
-    - 색상: 기존 tokens.css 시맨틱 변수 재사용 (다크모드 자동 대응)
-    - 배지 호버 → 기존 `tooltip-popup`으로 explanation 표시
+    - 색상: `color-mix()` + tokens.css 시맨틱 변수 (다크모드 자동 대응)
+    - 배지에 `tooltip-icon` 클래스 → 기존 `tooltip-popup`으로 explanation 표시
     - 저신뢰 항목(confidence < 0.7): 배지 테두리 점선 + "?" 표시
-  - ⬜ 분류 태그 필터링
-    - 기존 필터 드롭다운에 AI 태그 필터 섹션 추가 (구분선으로 분리)
+  - ✅ 분류 태그 필터링
+    - 기존 필터 드롭다운에 AI 태그 필터 섹션 추가 (구분선으로 분리, AI 분석 후 표시)
     - "주의 필요만 보기" 프리셋 (STRICTER + MORE_LENIENT)
-  - ⬜ 사용자 분류 수정 (HITL — Human-in-the-Loop)
+    - `isChangeVisible()` 통합 함수로 diff 유형 + AI 태그 필터 동시 적용
+  - ✅ 사용자 분류 수정 (HITL — Human-in-the-Loop)
     - AI 태그 배지 클릭 → 6종 태그 드롭다운으로 재분류
-    - 수정된 항목은 연필 아이콘 표시 (사용자 수정임을 구분)
+    - 수정된 항목은 `✎` + 이탤릭 표시 (사용자 수정임을 구분)
     - `diffState.aiClassifications[index].userOverride = 'STRICTER'`
     - 세션 내 유지 (모델 재학습 없음)
-  - ⬜ 내보내기 연동
-    - 기존 txt 내보내기에 AI 분류 태그 포함 (선택 옵션)
-    - 형식: `[STRICTER] 1.3절: "허용 온도 범위 80°C → 60°C" (기준 강화)`
+  - ✅ 내보내기 연동
+    - AI 분류 결과가 있으면 txt 내보내기 상단에 분류 요약 자동 포함
+    - 형식: `[STRICTER] 1. 허용 온도 범위 80°C → 60°C (사용자 수정)`
     - 사용자 수정이 있으면 수정된 태그로 출력
+
+#### Phase 6-1 후속: 관리자 설정 UX 개선
+
+- ✅ **placeholder 통일** — text/number 필드에 placeholder 지원 추가. "비워두면 기본값 적용" 규칙 통일
+  - Compare: 분류 모델(`Explorer LLM 모델 사용`), 배치 크기(`20`), 타임아웃(`60`)
+  - Explorer: Ollama URL(`http://localhost:11434`), LLM 모델(`gemma3:4b`), 임베딩 모델(`bge-m3`)
+  - Translator: 번역 모델(`Explorer LLM 모델 사용`), 폰트 패밀리(`sans-serif`)
+- ✅ **온도 슬라이더** — `type: 'range'` 공통 컴포넌트 신설 (`components.css`). 채움 gradient + 현재값 배지, WebKit/Firefox 대응
+- ✅ **저장 시 null/빈값 정리** — `_collectSettings()`에서 `null`, `undefined`, `''` 값은 settings.json에서 제외 → 기본값 자동 적용
+- ✅ **백엔드 None 폴백** — `compare_service.py`에서 `temperature`, `timeout`, `batch_size`가 `None`일 때 기본값 사용 (`if is None` 가드)
+- ✅ **메뉴 순서 정렬** — SETTINGS_SCHEMA 시스템 순서를 런처와 일치 (Explorer → Translator → Compare)
+- ✅ **Settings 링크 제거** — 상단 nav의 "Settings" 링크 전 페이지에서 제거. 시스템 스위처 드롭다운에서만 접근 (중복 제거)
+- ✅ **range 필드 레이아웃 수정** — `admin-settings.css`에 `.admin-field-range` 1컬럼 규칙 추가 (설명이 라벨 아래 표시)
 
 - ⬜ **6-2. 변경 요약 (프론트엔드 집계)**
   > LLM 재호출 없이 분류 결과를 프론트엔드에서 카운팅.
@@ -527,7 +541,7 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 | Step | 파일 | 내용 |
 |------|------|------|
 | 6-0 | `workbench/` 하위 테스트 스크립트 | 프롬프트 프로토타이핑, 결과 기록 |
-| 6-1a | `config.py`, `settings_service.py`, `admin-settings.js` | 관리자 설정 (AI 활성화, 모델, 프롬프트) |
+| 6-1a | `config.py`, `settings_service.py`, `admin-settings.js` | 관리자 설정 (AI 활성화, 모델, 프롬프트, placeholder 통일, 슬라이더, 메뉴 순서) |
 | 6-1b | `compare.py`, `compare_service.py` | AI 분류 API + 서비스 로직 |
 | 6-1c | `compare.html`, `css/compare.css`, `css/tokens.css` | 버튼, 배지, 필터, HITL 드롭다운 |
 | 6-2 | `compare.html` | 사이드바 요약 헤더 (프론트엔드 집계) |
@@ -681,9 +695,14 @@ Compare는 Explorer/Translator와 시각적 일체감을 유지한다.
 
 ```
 compare.html                          — 메인 페이지 (모놀리식)
+css/compare.css                       — Compare 전용 스타일
 js/lib/jsdiff/diff.min.js            — jsdiff 라이브러리
+js/admin-settings.js                 — 관리자 설정 UI (Compare 탭 포함)
+js/platform-header.js                — 공통 헤더 (시스템 스위처)
+css/components.css                   — 공통 컴포넌트 (슬라이더 등)
+css/admin-settings.css               — 관리자 설정 스타일
 backend/api/compare.py               — 비교/검증 API 라우터
-backend/services/compare_service.py   — 텍스트 추출, diff, 검증 로직
+backend/services/compare_service.py   — 텍스트 추출, diff, 검증, AI 분류 로직
 data/compare-rules.json              — 규칙 설정 (런타임 수정 가능)
 ```
 

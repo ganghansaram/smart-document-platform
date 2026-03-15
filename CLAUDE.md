@@ -57,6 +57,7 @@ python -m http.server 8080            # http://localhost:8080
 | 배지 | `.badge` | `.badge-success`, `.badge-warning`, `.badge-error`, `.badge-info` |
 | 스피너 | `.spinner` | `.spinner-sm`, `.spinner-lg` |
 | 리사이즈 | `.resize-handle` | — |
+| 슬라이더 | `.form-range-wrap` > `.form-range` | `.form-range-value` — 현재값 배지 표시 |
 | 툴팁 | `.tooltip-icon` | `.tooltip-bottom` — `data-tooltip="설명"` 속성으로 내용 지정 |
 
 ### 모달 (modal.css)

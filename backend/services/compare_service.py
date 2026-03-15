@@ -478,7 +478,11 @@ async def _call_ollama_classify(changes: list[dict]) -> list[dict]:
     system = _get_system_prompt()
     prompt = _build_prompt(changes)
     temperature = getattr(config, "COMPARE_AI_TEMPERATURE", 0)
+    if temperature is None:
+        temperature = 0
     timeout = getattr(config, "COMPARE_AI_TIMEOUT", 60)
+    if timeout is None:
+        timeout = 60
 
     payload = {
         "model": model,
@@ -539,6 +543,8 @@ async def classify_changes(changes: list[dict]) -> list[dict]:
         return []
 
     batch_size = getattr(config, "COMPARE_AI_BATCH_SIZE", 20)
+    if batch_size is None:
+        batch_size = 20
     all_results = []
 
     for i in range(0, len(changes), batch_size):

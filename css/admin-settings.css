@@ -440,6 +440,7 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
 /* 나머지 필드: label 위, 컨트롤 아래 (full width) */
 .admin-field-text,
 .admin-field-number,
+.admin-field-range,
 .admin-field-select,
 .admin-field-textarea {
     grid-template-columns: 1fr;
@@ -447,6 +448,7 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
 
 .admin-field-text .admin-field-control,
 .admin-field-number .admin-field-control,
+.admin-field-range .admin-field-control,
 .admin-field-select .admin-field-control,
 .admin-field-textarea .admin-field-control {
     grid-column: 1;

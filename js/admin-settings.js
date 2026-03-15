@@ -76,10 +76,13 @@ var SETTINGS_SCHEMA = {
                             title: '모델 연결',
                             fields: [
                                 { group: 'ai', key: 'ollama_url',      label: 'Ollama URL',   type: 'text',   restart: true,
+                                  placeholder: 'http://localhost:11434',
                                   desc: '로컬 Ollama 서버 주소 (예: http://localhost:11434)' },
                                 { group: 'ai', key: 'ollama_model',    label: 'LLM 모델',     type: 'text',   restart: true,
+                                  placeholder: 'gemma3:4b',
                                   desc: '챗봇에 사용할 Ollama 모델명 (예: gemma3:4b, llama3:8b)' },
                                 { group: 'ai', key: 'embedding_model', label: '임베딩 모델',  type: 'text',   restart: true,
+                                  placeholder: 'bge-m3',
                                   desc: '벡터 검색에 사용할 임베딩 모델 (예: bge-m3)' },
                             ]
                         },
@@ -245,46 +248,6 @@ var SETTINGS_SCHEMA = {
             ]
         },
         {
-            id: 'compare',
-            label: 'Compare',
-            group: '시스템 설정',
-            tabs: [
-                {
-                    tabId: 'tab-compare-ai',
-                    tabLabel: 'AI 분석',
-                    sections: [
-                        {
-                            title: 'AI 의미 분류',
-                            fields: [
-                                { group: 'compare', key: 'ai_enabled', label: 'AI 분석 활성화', type: 'toggle',
-                                  restart: false, desc: '비교 모드에서 "AI 분석" 버튼 표시 여부. 비활성화 시 기존 텍스트 diff만 사용' },
-                                { group: 'compare', key: 'ai_model', label: '분류 모델', type: 'text',
-                                  restart: false, desc: 'AI 분류에 사용할 Ollama 모델명. 비워두면 Explorer AI/RAG 탭의 LLM 모델 사용' },
-                                { group: 'compare', key: 'ai_temperature', label: '온도', type: 'number',
-                                  restart: false, min: 0, max: 2, step: 0.1,
-                                  desc: '0이면 결정적 출력 (분류 일관성 최대화). 높일수록 결과 다양성 증가' },
-                                { group: 'compare', key: 'ai_batch_size', label: '배치 크기', type: 'number',
-                                  restart: false, min: 1, max: 50, step: 1,
-                                  desc: '1회 LLM 호출당 최대 변경 구간 수. 4B 모델은 5, 12B 이상은 20 권장' },
-                                { group: 'compare', key: 'ai_timeout', label: '타임아웃 (초)', type: 'number',
-                                  restart: false, min: 10, max: 300, step: 10,
-                                  desc: 'LLM 호출 최대 대기 시간. 배치 크기가 클수록 늘려야 함' },
-                            ]
-                        },
-                        {
-                            title: '시스템 프롬프트',
-                            fields: [
-                                { group: 'compare', key: 'ai_system_prompt', label: '시스템 프롬프트',
-                                  type: 'textarea', restart: false, rows: 16,
-                                  placeholder: '당신은 기술문서 변경사항을 분류하는 전문가입니다.\n두 문서 버전 간의 변경 구간을 받아, 각 변경의 의미적 유형을 분류합니다.\n\n## 분류 태그 (정확히 6종 중 하나를 선택)\n\n- EDITORIAL: 편집상 변경...\n- CLARIFICATION: 기존 내용의 표현을 명확하게 보완...\n- STRICTER: 요구사항/기준/제약이 더 엄격해짐...\n- MORE_LENIENT: 요구사항/기준/제약이 완화됨...\n- EXPANDED: 기존에 없던 새 내용/범위/기능 추가...\n- RESTRUCTURED: 내용은 동일하나 위치/구조/번호 변경...',
-                                  desc: '변경 구간 분류 시 LLM에 전달되는 지침. 비워두면 회색 글씨의 기본 프롬프트가 적용됩니다. 도메인 특화 판단 기준을 추가할 수 있습니다.' },
-                            ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
             id: 'translator',
             label: 'Translator',
             group: '시스템 설정',
@@ -298,6 +261,7 @@ var SETTINGS_SCHEMA = {
                             fields: [
                                 { group: 'translator', key: 'translation_model',
                                   label: '번역 모델', type: 'text', restart: false,
+                                  placeholder: 'Explorer LLM 모델 사용',
                                   desc: '번역 전용 Ollama 모델. 비워두면 AI/RAG 탭의 LLM 모델 사용' },
                             ]
                         },
@@ -349,6 +313,7 @@ var SETTINGS_SCHEMA = {
                                           desc: '자동 축소 최소 비율. 번역이 박스에 안 맞을 때 이 비율까지 축소 허용' },
                                         { group: 'translator', key: 'text_font_family',
                                           label: '폰트 패밀리', type: 'text', restart: false,
+                                          placeholder: 'sans-serif',
                                           desc: '번역 텍스트에 적용할 CSS 폰트 패밀리 (예: sans-serif, serif, monospace)' },
                                         { group: 'translator', key: 'text_min_text_length',
                                           label: '최소 텍스트 길이', type: 'number', restart: false,
@@ -393,6 +358,47 @@ var SETTINGS_SCHEMA = {
                                   desc: 'Ollama 초당 요청 수 제한. 0이면 무제한' },
                             ]
                         },
+                    ]
+                }
+            ]
+        },
+        {
+            id: 'compare',
+            label: 'Compare',
+            group: '시스템 설정',
+            tabs: [
+                {
+                    tabId: 'tab-compare-ai',
+                    tabLabel: 'AI 분석',
+                    sections: [
+                        {
+                            title: 'AI 의미 분류',
+                            fields: [
+                                { group: 'compare', key: 'ai_enabled', label: 'AI 분석 활성화', type: 'toggle',
+                                  restart: false, desc: '비교 모드에서 "AI 분석" 버튼 표시 여부. 비활성화 시 기존 텍스트 diff만 사용' },
+                                { group: 'compare', key: 'ai_model', label: '분류 모델', type: 'text',
+                                  restart: false, placeholder: 'Explorer LLM 모델 사용',
+                                  desc: 'AI 분류에 사용할 Ollama 모델명. 비워두면 Explorer AI/RAG 탭의 LLM 모델 사용' },
+                                { group: 'compare', key: 'ai_temperature', label: '온도', type: 'range',
+                                  restart: false, min: 0, max: 2, step: 0.1,
+                                  desc: '0이면 결정적 출력 (분류 일관성 최대화). 높일수록 결과 다양성 증가' },
+                                { group: 'compare', key: 'ai_batch_size', label: '배치 크기', type: 'number',
+                                  restart: false, min: 1, max: 50, step: 1, placeholder: '20',
+                                  desc: '1회 LLM 호출당 최대 변경 구간 수. 4B 모델은 5, 12B 이상은 20 권장' },
+                                { group: 'compare', key: 'ai_timeout', label: '타임아웃 (초)', type: 'number',
+                                  restart: false, min: 10, max: 300, step: 10, placeholder: '60',
+                                  desc: 'LLM 호출 최대 대기 시간. 배치 크기가 클수록 늘려야 함' },
+                            ]
+                        },
+                        {
+                            title: '시스템 프롬프트',
+                            fields: [
+                                { group: 'compare', key: 'ai_system_prompt', label: '시스템 프롬프트',
+                                  type: 'textarea', restart: false, rows: 16,
+                                  placeholder: '당신은 기술문서 변경사항을 분류하는 전문가입니다.\n두 문서 버전 간의 변경 구간을 받아, 각 변경의 의미적 유형을 분류합니다.\n\n## 분류 태그 (정확히 6종 중 하나를 선택)\n\n- EDITORIAL: 편집상 변경...\n- CLARIFICATION: 기존 내용의 표현을 명확하게 보완...\n- STRICTER: 요구사항/기준/제약이 더 엄격해짐...\n- MORE_LENIENT: 요구사항/기준/제약이 완화됨...\n- EXPANDED: 기존에 없던 새 내용/범위/기능 추가...\n- RESTRUCTURED: 내용은 동일하나 위치/구조/번호 변경...',
+                                  desc: '변경 구간 분류 시 LLM에 전달되는 지침. 비워두면 회색 글씨의 기본 프롬프트가 적용됩니다. 도메인 특화 판단 기준을 추가할 수 있습니다.' },
+                            ]
+                        }
                     ]
                 }
             ]
@@ -548,7 +554,7 @@ function _syncCurrentFields() {
                 var val;
                 if (field.type === 'toggle') {
                     val = el.checked;
-                } else if (field.type === 'number') {
+                } else if (field.type === 'number' || field.type === 'range') {
                     var parsed = parseFloat(el.value);
                     val = isNaN(parsed) ? null : parsed;
                 } else if (field.type === 'textarea' && field.fromStr) {
@@ -677,12 +683,28 @@ function _renderControl(field, val, id) {
             return '<select class="form-select admin-select" id="' + id + '">' + opts + '</select>';
         }
 
+        case 'range': {
+            var rangeVal = (val !== undefined && val !== null) ? val : (field.min || 0);
+            var minR = field.min !== undefined ? field.min : 0;
+            var maxR = field.max !== undefined ? field.max : 100;
+            var stepR = field.step !== undefined ? field.step : 1;
+            var pct = ((rangeVal - minR) / (maxR - minR)) * 100;
+            return '<div class="form-range-wrap">' +
+                '<input type="range" class="form-range" id="' + id + '"' +
+                ' value="' + rangeVal + '" min="' + minR + '" max="' + maxR + '" step="' + stepR + '"' +
+                ' style="background:linear-gradient(to right,var(--active-color) ' + pct + '%,var(--border-color) ' + pct + '%)"' +
+                ' oninput="this.style.background=\'linear-gradient(to right,var(--active-color) \'+((this.value-' + minR + ')/' + (maxR - minR) + ')*100+\'%,var(--border-color) \'+((this.value-' + minR + ')/' + (maxR - minR) + ')*100+\'%)\';this.nextElementSibling.textContent=this.value">' +
+                '<span class="form-range-value">' + rangeVal + '</span>' +
+                '</div>';
+        }
+
         case 'number': {
             var attrs = ' value="' + (val !== undefined && val !== null ? val : '') + '"';
             if (field.min !== undefined) attrs += ' min="' + field.min + '"';
             if (field.max !== undefined) attrs += ' max="' + field.max + '"';
             if (field.step !== undefined) attrs += ' step="' + field.step + '"';
-            return '<input type="number" class="form-input admin-input admin-number" id="' + id + '"' + attrs + '>';
+            var ph = field.placeholder ? ' placeholder="' + _escHtml(field.placeholder) + '"' : '';
+            return '<input type="number" class="form-input admin-input admin-number" id="' + id + '"' + attrs + ph + '>';
         }
 
         case 'textarea': {
@@ -697,9 +719,11 @@ function _renderControl(field, val, id) {
                 '</textarea>';
         }
 
-        default: // text
+        default: { // text
+            var ph = field.placeholder ? ' placeholder="' + _escHtml(field.placeholder) + '"' : '';
             return '<input type="text" class="form-input admin-input" id="' + id + '" value="' +
-                _escHtml(val !== undefined && val !== null ? String(val) : '') + '">';
+                _escHtml(val !== undefined && val !== null ? String(val) : '') + '"' + ph + '>';
+        }
     }
 }
 
@@ -746,7 +770,10 @@ function _collectSettings() {
                     if (!result[field.group]) result[field.group] = {};
                     var groupData = _currentSettings[field.group];
                     if (groupData && field.key in groupData) {
-                        result[field.group][field.key] = groupData[field.key];
+                        var v = groupData[field.key];
+                        if (v !== null && v !== undefined && v !== '') {
+                            result[field.group][field.key] = v;
+                        }
                     }
                 });
             });

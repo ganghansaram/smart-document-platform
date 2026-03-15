@@ -348,6 +348,111 @@ body[data-theme="dark"] .tooltip-popup.arrow-bottom::before {
     border-top-color: #3d3f50;
 }
 
+/* ── 레인지 슬라이더 ── */
+.form-range-wrap {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.form-range {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-color);
+    outline: none;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+/* 채워진 영역 — JS로 background gradient 적용 */
+
+/* Thumb — WebKit */
+.form-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--active-color);
+    border: 2px solid var(--white);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-range::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+    box-shadow: var(--focus-ring), 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Thumb — Firefox */
+.form-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--active-color);
+    border: 2px solid var(--white);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-range::-moz-range-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+    box-shadow: var(--focus-ring), 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Track — Firefox */
+.form-range::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-color);
+}
+
+.form-range::-moz-range-progress {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--active-color);
+}
+
+/* 현재값 표시 */
+.form-range-value {
+    min-width: 36px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--active-color);
+    background: var(--active-color-subtle);
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Disabled */
+.form-range:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.form-range:disabled::-webkit-slider-thumb {
+    cursor: not-allowed;
+}
+
+.form-range:disabled::-moz-range-thumb {
+    cursor: not-allowed;
+}
+
 /* ── 리사이즈 핸들 ── */
 .resize-handle {
     width: 4px;
