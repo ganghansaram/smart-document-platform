@@ -9,13 +9,14 @@
 1. [개요](#개요)
 2. [백엔드가 필요한 경우](#백엔드가-필요한-경우)
 3. [Step 1: 폴더 구조 생성](#step-1-폴더-구조-생성)
-4. [Step 2: requirements.txt 생성](#step-2-requirementstxt-생성)
-5. [Step 3: 오프라인 패키지 다운로드](#step-3-오프라인-패키지-다운로드)
-6. [Step 4: 백엔드 코드 작성](#step-4-백엔드-코드-작성)
-7. [Step 5: 로컬 테스트](#step-5-로컬-테스트)
-8. [Step 6: 폐쇄망 배포](#step-6-폐쇄망-배포)
-9. [Step 7: 프론트엔드 연동](#step-7-프론트엔드-연동)
-10. [체크리스트](#체크리스트)
+4. [Step 1-1: 가상환경 설정 (권장)](#step-1-1-가상환경-설정-권장)
+5. [Step 2: requirements.txt 생성](#step-2-requirementstxt-생성)
+6. [Step 3: 오프라인 패키지 다운로드](#step-3-오프라인-패키지-다운로드)
+7. [Step 4: 백엔드 코드 작성](#step-4-백엔드-코드-작성)
+8. [Step 5: 로컬 테스트](#step-5-로컬-테스트)
+9. [Step 6: 폐쇄망 배포](#step-6-폐쇄망-배포)
+10. [Step 7: 프론트엔드 연동](#step-7-프론트엔드-연동)
+11. [체크리스트](#체크리스트)
 
 ---
 
@@ -103,6 +104,63 @@ smart-document-platform/
     ├── services/
     └── packages/
 ```
+
+---
+
+## Step 1-1: 가상환경 설정 (권장)
+
+> **Python 3.11 이상** (3.11.9 권장). 폐쇄망 배포 시 `.whl` 파일이 Python 버전에 종속되므로 개발·운영 환경의 Python 버전을 일치시키는 것이 중요합니다.
+
+가상환경을 사용하면 시스템 Python과 격리되어 패키지 충돌을 방지할 수 있습니다.
+
+### 1-1-1. 가상환경 생성
+
+```cmd
+cd C:\AHS_Proj\smart-document-platform
+
+:: Python 3.11이 기본이면
+python -m venv .venv
+
+:: Python Launcher로 버전 지정 (여러 버전 설치된 경우)
+py -3.11 -m venv .venv
+```
+
+### 1-1-2. 가상환경 활성화
+
+```cmd
+:: Windows cmd
+.venv\Scripts\activate.bat
+
+:: PowerShell
+.venv\Scripts\Activate.ps1
+
+:: Git Bash
+source .venv/Scripts/activate
+```
+
+활성화되면 프롬프트 앞에 `(.venv)`가 표시됩니다.
+
+### 1-1-3. pip 업그레이드
+
+```cmd
+python -m pip install --upgrade pip
+```
+
+### 1-1-4. 확인
+
+```cmd
+python --version
+:: → Python 3.11.9
+```
+
+### PyCharm 인터프리터 설정
+
+PyCharm은 프로젝트 루트의 `.venv` 폴더를 자동 감지하여 제안할 수 있습니다. 수동 설정:
+
+1. **File → Settings → Project → Python Interpreter**
+2. 톱니바퀴(⚙) → **Add Interpreter → Existing**
+3. 경로: `C:\AHS_Proj\smart-document-platform\.venv\Scripts\python.exe`
+4. **OK** → 인터프리터 목록에서 선택
 
 ---
 
