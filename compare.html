@@ -222,7 +222,7 @@
             var sidebarWidth = 360; // px, 리사이즈 가능
             var SIDEBAR_MIN = 280;
             var SIDEBAR_MAX = 700;
-            var API_BASE = (window.DISPLAY_CONFIG && DISPLAY_CONFIG.API_BASE) || 'http://localhost:8000/api';
+            var API_BASE = ((typeof AUTH_CONFIG !== 'undefined' && AUTH_CONFIG.backendUrl) ? AUTH_CONFIG.backendUrl : 'http://localhost:8000') + '/api';
 
             // ── 문서 상태 ──
             var docState = {
