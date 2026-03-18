@@ -1,7 +1,7 @@
 """
 Translator API — PDF 업로드, 페이지별 번역, 문서 관리
 """
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body, Request
 from fastapi.responses import FileResponse, JSONResponse
 from typing import Optional
 
@@ -19,6 +19,7 @@ from services.translator_service import (
     get_annotations, create_annotation, update_annotation, delete_annotation,
     ai_selection_query,
     search_documents,
+    get_glossary, save_glossary,
 )
 import config
 
@@ -36,6 +37,24 @@ async def api_search_documents(
     if not q.strip():
         return {"memos": [], "pages": [], "query": "", "total": 0}
     return search_documents(user["username"], q)
+
+
+# ── 용어집 ──
+
+@router.get("/glossary")
+async def api_get_glossary(user: dict = Depends(get_current_user)):
+    """유저 용어집 조회"""
+    return get_glossary(user["username"])
+
+
+@router.put("/glossary")
+async def api_save_glossary(
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """유저 용어집 저장 (전체 교체)"""
+    body = await request.json()
+    return save_glossary(user["username"], body)
 
 
 # ── 폴더 CRUD ──

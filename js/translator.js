@@ -2657,5 +2657,142 @@
             return map[color] || '#fde68a';
         }
 
+        // ── 유틸리티 ──
+
+        function escapeHtml(str) {
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ══════════════════════════════════════════════
+        // 용어집 (Glossary) 모달
+        // ══════════════════════════════════════════════
+
+        var _glossaryEntries = [];
+        var $glossaryModal = document.getElementById('glossary-modal');
+        var $glossaryTbody = document.getElementById('glossary-tbody');
+        var $glossaryEmpty = document.getElementById('glossary-empty');
+        var $glossaryCount = document.getElementById('glossary-count');
+        var $glossarySource = document.getElementById('glossary-source');
+        var $glossaryTarget = document.getElementById('glossary-target');
+
+        function openGlossaryModal() {
+            fetch(API + '/api/translator/glossary', { credentials: 'include' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    _glossaryEntries = (data && data.entries) ? data.entries : [];
+                    renderGlossaryTable();
+                    $glossaryModal.style.display = 'flex';
+                    $glossarySource.focus();
+                })
+                .catch(function() {
+                    _glossaryEntries = [];
+                    renderGlossaryTable();
+                    $glossaryModal.style.display = 'flex';
+                });
+        }
+
+        function closeGlossaryModal() {
+            $glossaryModal.style.display = 'none';
+        }
+
+        function renderGlossaryTable() {
+            $glossaryTbody.innerHTML = '';
+            $glossaryEmpty.style.display = _glossaryEntries.length ? 'none' : 'block';
+            $glossaryCount.textContent = _glossaryEntries.length + '개 용어';
+
+            for (var i = 0; i < _glossaryEntries.length; i++) {
+                var e = _glossaryEntries[i];
+                var tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid var(--border-color)';
+                tr.innerHTML =
+                    '<td style="padding:6px 8px;font-size:13px">' + escapeHtml(e.source || '') + '</td>' +
+                    '<td style="padding:6px 8px;font-size:13px">' + escapeHtml(e.target || '') + '</td>' +
+                    '<td style="padding:4px;text-align:center">' +
+                        '<button class="btn btn-ghost btn-icon-sm glossary-del-btn" data-idx="' + i + '" title="삭제">' +
+                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+                        '</button>' +
+                    '</td>';
+                $glossaryTbody.appendChild(tr);
+            }
+        }
+
+        function saveGlossary() {
+            var payload = { version: 1, entries: _glossaryEntries };
+            fetch(API + '/api/translator/glossary', {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            }).catch(function() {});
+        }
+
+        function addGlossaryEntry() {
+            var src = $glossarySource.value.trim();
+            var tgt = $glossaryTarget.value.trim();
+            if (!src || !tgt) return;
+
+            // 중복 체크 — 같은 source면 target 덮어쓰기
+            for (var i = 0; i < _glossaryEntries.length; i++) {
+                if (_glossaryEntries[i].source.toLowerCase() === src.toLowerCase()) {
+                    _glossaryEntries[i].target = tgt;
+                    renderGlossaryTable();
+                    saveGlossary();
+                    $glossarySource.value = '';
+                    $glossaryTarget.value = '';
+                    $glossarySource.focus();
+                    return;
+                }
+            }
+
+            _glossaryEntries.push({ source: src, target: tgt });
+            renderGlossaryTable();
+            saveGlossary();
+            $glossarySource.value = '';
+            $glossaryTarget.value = '';
+            $glossarySource.focus();
+        }
+
+        function deleteGlossaryEntry(idx) {
+            _glossaryEntries.splice(idx, 1);
+            renderGlossaryTable();
+            saveGlossary();
+        }
+
+        // 이벤트 바인딩
+        document.getElementById('glossary-btn').addEventListener('click', openGlossaryModal);
+        document.getElementById('glossary-modal-close').addEventListener('click', closeGlossaryModal);
+        document.getElementById('glossary-modal-cancel').addEventListener('click', closeGlossaryModal);
+        document.getElementById('glossary-add-btn').addEventListener('click', addGlossaryEntry);
+
+        $glossarySource.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); $glossaryTarget.focus(); }
+        });
+        $glossaryTarget.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); addGlossaryEntry(); }
+        });
+
+        // 삭제 버튼 — 이벤트 위임
+        $glossaryTbody.addEventListener('click', function(e) {
+            var btn = e.target.closest('.glossary-del-btn');
+            if (btn) {
+                var idx = parseInt(btn.dataset.idx, 10);
+                if (!isNaN(idx)) deleteGlossaryEntry(idx);
+            }
+        });
+
+        // 오버레이 클릭으로 닫기
+        $glossaryModal.addEventListener('click', function(e) {
+            if (e.target === $glossaryModal) closeGlossaryModal();
+        });
+
+        // Esc 키로 닫기
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && $glossaryModal.style.display !== 'none') {
+                closeGlossaryModal();
+            }
+        });
+
 
     })();

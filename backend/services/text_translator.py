@@ -293,7 +293,8 @@ def _extract_text_with_bullets(page: fitz.Page, bbox: fitz.Rect) -> str:
 
 def _translate_text_ollama(text: str, model: str,
                            lang_in: str = "English",
-                           lang_out: str = "Korean") -> str:
+                           lang_out: str = "Korean",
+                           glossary_entries: list[dict] | None = None) -> str:
     """Ollama API로 텍스트 번역"""
     system_prompt = getattr(config, "TRANSLATOR_TEXT_CUSTOM_PROMPT", "")
     if not system_prompt:
@@ -301,6 +302,18 @@ def _translate_text_ollama(text: str, model: str,
             f"You are a professional translator. "
             f"Translate {lang_in} to {lang_out} accurately."
         )
+
+    # 용어집 프롬프트 주입 (babeldoc과 동일 방식)
+    if glossary_entries:
+        glossary_lines = [
+            "\n## Glossary",
+            "Always use the glossary's Target Term for any occurrence of its Source Term.",
+            "| Source Term | Target Term |",
+            "|-------------|-------------|",
+        ]
+        for e in glossary_entries:
+            glossary_lines.append(f"| {e['source']} | {e['target']} |")
+        system_prompt += "\n".join(glossary_lines)
 
     user_prompt = (
         f"Translate the following text:\n\n{text}"
@@ -322,7 +335,8 @@ def _translate_text_ollama(text: str, model: str,
     return resp.json()["message"]["content"].strip()
 
 
-def _translate_regions(regions: list[dict], model: str) -> list[str]:
+def _translate_regions(regions: list[dict], model: str,
+                       glossary_entries: list[dict] | None = None) -> list[str]:
     """영역 그룹별로 Ollama 번역 → 개별 번역 결과 리스트 반환"""
     if not regions:
         return []
@@ -344,11 +358,13 @@ def _translate_regions(regions: list[dict], model: str) -> list[str]:
         texts = [regions[i]["text"] for i in indices]
 
         if len(texts) == 1:
-            translated = _translate_text_ollama(texts[0], model)
+            translated = _translate_text_ollama(texts[0], model,
+                                                glossary_entries=glossary_entries)
             translations[indices[0]] = translated
         else:
             combined = separator.join(texts)
-            translated = _translate_text_ollama(combined, model)
+            translated = _translate_text_ollama(combined, model,
+                                                glossary_entries=glossary_entries)
             parts = translated.split("---")
 
             # 구분자가 유지되었으면 분리, 아니면 균등 분배
@@ -363,7 +379,8 @@ def _translate_regions(regions: list[dict], model: str) -> list[str]:
                 )
                 for idx in indices:
                     translations[idx] = _translate_text_ollama(
-                        regions[idx]["text"], model
+                        regions[idx]["text"], model,
+                        glossary_entries=glossary_entries
                     )
 
     return translations
@@ -452,6 +469,7 @@ def translate_page(
     model: str,
     font_scale: Optional[float] = None,
     progress_callback=None,
+    glossary_entries: list[dict] | None = None,
 ) -> dict:
     """
     단일 페이지 텍스트 번역 실행.
@@ -512,7 +530,8 @@ def translate_page(
     if progress_callback:
         progress_callback("번역 중...")
 
-    translations = _translate_regions(translate_regions, model)
+    translations = _translate_regions(translate_regions, model,
+                                      glossary_entries=glossary_entries)
 
     # 4. PDF 재구성
     if progress_callback:

@@ -60,6 +60,72 @@ def _search_index_path(username: str) -> Path:
     return _user_dir(username) / "_search_index.json"
 
 
+def _glossary_json_path(username: str) -> Path:
+    return _user_dir(username) / "_glossary.json"
+
+
+def _glossary_csv_path(username: str) -> Path:
+    """pdf2zh --glossaries용 CSV 파일 경로"""
+    return _user_dir(username) / "_glossary.csv"
+
+
+# ── 용어집 CRUD ──
+
+def get_glossary(username: str) -> dict:
+    """유저 용어집 조회"""
+    gp = _glossary_json_path(username)
+    if gp.exists():
+        return json.loads(gp.read_text(encoding="utf-8"))
+    return {"version": 1, "entries": []}
+
+
+def save_glossary(username: str, data: dict) -> dict:
+    """유저 용어집 저장 + pdf2zh용 CSV 동기 생성"""
+    _ensure_data_dir()
+    ud = _user_dir(username)
+    ud.mkdir(parents=True, exist_ok=True)
+
+    data.setdefault("version", 1)
+    data.setdefault("entries", [])
+
+    # JSON 저장
+    gp = _glossary_json_path(username)
+    gp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # pdf2zh용 CSV 동기 생성
+    csv_path = _glossary_csv_path(username)
+    if data["entries"]:
+        import csv as csv_mod
+        import io
+        buf = io.StringIO()
+        writer = csv_mod.DictWriter(buf, fieldnames=["source", "target"], doublequote=True)
+        writer.writeheader()
+        for e in data["entries"]:
+            src = e.get("source", "").strip()
+            tgt = e.get("target", "").strip()
+            if src and tgt:
+                writer.writerow({"source": src, "target": tgt})
+        csv_path.write_text(buf.getvalue(), encoding="utf-8")
+    else:
+        # 용어 없으면 CSV 삭제
+        if csv_path.exists():
+            csv_path.unlink()
+
+    return data
+
+
+def get_glossary_entries_for_page(username: str, page_text: str) -> list[dict]:
+    """해당 페이지에 등장하는 용어만 필터링하여 반환 (텍스트 엔진용)"""
+    glossary = get_glossary(username)
+    if not glossary.get("entries"):
+        return []
+    page_lower = page_text.lower()
+    return [
+        e for e in glossary["entries"]
+        if e.get("source", "").lower() in page_lower
+    ]
+
+
 def _generate_id() -> str:
     now = datetime.now()
     rand = hashlib.md5(os.urandom(8)).hexdigest()[:6]
@@ -850,6 +916,14 @@ async def _run_pmt_pages(username: str, doc_id: str, pages_str: str, page_list: 
     if getattr(config, "TRANSLATOR_ENHANCE_COMPAT", False):
         cmd.append("--enhance-compatibility")
 
+    # 용어집 CSV (존재하면 전달 — babeldoc이 프롬프트에 자동 주입)
+    glossary_csv = _glossary_csv_path(username)
+    if glossary_csv.exists() and glossary_csv.stat().st_size > 15:
+        cmd += ["--glossaries", str(glossary_csv)]
+
+    # 자동 용어 추출 비활성화 (기본 ON → 전체 처리의 ~30% 차지하는 불필요 LLM 호출 제거)
+    cmd.append("--no-auto-extract-glossary")
+
     cmd.append(str(src_path))  # 입력 파일은 항상 마지막
 
     for pnum in page_list:
@@ -1178,6 +1252,19 @@ async def _run_text_translation(username: str, doc_id: str, page_num: int,
     def progress_cb(stage: str):
         _text_page_progress[key] = stage
 
+    # 텍스트 엔진용 용어집: 페이지 텍스트 기반 필터링
+    _glossary_entries = None
+    try:
+        import fitz as _fitz
+        _tmp_doc = _fitz.open(str(src_path))
+        _page_text = _tmp_doc[page_num - 1].get_text()
+        _tmp_doc.close()
+        _glossary_entries = get_glossary_entries_for_page(username, _page_text)
+        if not _glossary_entries:
+            _glossary_entries = None
+    except Exception:
+        pass  # 용어집 없거나 실패 시 무시
+
     try:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
@@ -1189,6 +1276,7 @@ async def _run_text_translation(username: str, doc_id: str, page_num: int,
                 model=model,
                 font_scale=font_scale,
                 progress_callback=progress_cb,
+                glossary_entries=_glossary_entries,
             ),
         )
 
