@@ -273,6 +273,12 @@ def apply_to_config(settings: dict) -> list[str]:
     _set(rdr, "ai_selection_timeout", "TRANSLATOR_AI_SELECTION_TIMEOUT", restart_needed, immediate=True)
     _set(rdr, "ai_translate_prompt",  "TRANSLATOR_AI_TRANSLATE_PROMPT",  restart_needed, immediate=True)
     _set(rdr, "ai_summarize_prompt",  "TRANSLATOR_AI_SUMMARIZE_PROMPT",  restart_needed, immediate=True)
+    _set(rdr, "web_table_mode",      "TRANSLATOR_WEB_TABLE_MODE",       restart_needed, immediate=True)
+    _set(rdr, "web_formula_mode",    "TRANSLATOR_WEB_FORMULA_MODE",     restart_needed, immediate=True)
+    _set(rdr, "web_image_dpi",       "TRANSLATOR_WEB_IMAGE_DPI",        restart_needed, immediate=True)
+    _set(rdr, "web_auto_summary",    "TRANSLATOR_WEB_AUTO_SUMMARY",     restart_needed, immediate=True)
+    _set(rdr, "web_table_strategy",  "TRANSLATOR_WEB_TABLE_STRATEGY",   restart_needed, immediate=True)
+    _set(rdr, "web_debug",           "TRANSLATOR_WEB_DEBUG",            restart_needed, immediate=True)
 
     cmp = settings.get("compare", {})
     _set(cmp, "ai_enabled",       "COMPARE_AI_ENABLED",        restart_needed, immediate=True)

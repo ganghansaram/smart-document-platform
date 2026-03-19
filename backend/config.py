@@ -107,6 +107,14 @@ TRANSLATOR_AI_SUMMARIZE_PROMPT = (
     "요약문만 출력하세요."
 )
 
+# Translator 웹 뷰 (Markdown 추출/번역)
+TRANSLATOR_WEB_TABLE_MODE = "extract"          # "extract" | "image" | "off"
+TRANSLATOR_WEB_FORMULA_MODE = "image"          # "latex" | "image" | "off"
+TRANSLATOR_WEB_IMAGE_DPI = 150                 # 추출 이미지 해상도 (72~300)
+TRANSLATOR_WEB_AUTO_SUMMARY = False            # 번역 완료 시 자동 요약 생성
+TRANSLATOR_WEB_TABLE_STRATEGY = "lines_strict" # PyMuPDF 표 감지 전략
+TRANSLATOR_WEB_DEBUG = False                   # 디버그: 추출 중간 결과 파일 저장
+
 # Compare AI 의미 분류 설정
 COMPARE_AI_ENABLED = True
 COMPARE_AI_MODEL = ""           # 빈값이면 OLLAMA_MODEL 폴백
