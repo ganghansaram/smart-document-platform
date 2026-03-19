@@ -61,6 +61,9 @@ data/*.db
 tools/heading-numberer/dist/
 tools/heading-numberer/build/
 tools/heading-numberer/*.spec
+tools/docx2html-standalone/dist/
+tools/docx2html-standalone/build/
+tools/docx2html-standalone/*.spec
 
 # Large binary/media files
 *.mp4

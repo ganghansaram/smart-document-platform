@@ -1,0 +1,65 @@
+{
+  "style_mapping": {
+    "by_style": {
+      "제목 1": "h1",
+      "제목 2": "h2",
+      "제목 3": "h3",
+      "Heading 1": "h1",
+      "Heading 2": "h2",
+      "Heading 3": "h3",
+      "Title": "h1",
+      "Normal": "p",
+      "본문": "p"
+    },
+    "by_font_size": {
+      "24": "h1",
+      "22": "h1",
+      "18": "h2",
+      "16": "h3",
+      "14": "h3",
+      "default": "p"
+    },
+    "priority": "style_first"
+  },
+  "text_formatting": {
+    "bold": "strong",
+    "italic": "em",
+    "underline": "u",
+    "strikethrough": "del",
+    "subscript": "sub",
+    "superscript": "sup"
+  },
+  "special_blocks": {
+    "note": ["NOTE", "참고", "비고"],
+    "caution": ["CAUTION", "주의"],
+    "warning": ["WARNING", "경고"]
+  },
+  "options": {
+    "remove_headers_footers": true,
+    "extract_images": true,
+    "remove_empty_paragraphs": true,
+    "convert_smart_quotes": true
+  },
+  "output": {
+    "fragment_only": true,
+    "encoding": "utf-8",
+    "indent": true
+  },
+  "pdf": {
+    "toc_keywords": ["Table of Contents", "Contents", "목차"],
+    "toc_max_search_pages": 10,
+    "non_heading_prefixes": ["Figure", "Table", "그림", "표", "List of"],
+    "heading_prefixes_as_section": ["Appendix", "부록"],
+    "matching": {
+      "fuzzy_threshold": 0.80,
+      "suggestion_threshold": 0.50,
+      "page_search_window": 2,
+      "max_suggestions": 3
+    },
+    "options": {
+      "generate_report": true,
+      "extract_images": true,
+      "extract_tables": true
+    }
+  }
+}
