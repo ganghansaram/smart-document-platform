@@ -190,30 +190,47 @@ Markdown 추출 후 번역은 **블록 단위**로 수행:
 
 ## 4. 데이터 관리 설계
 
-### 4.1 저장 구조
+### 4.1 현재 검색 구조 (유지)
+
+현재 시스템은 업로드 시 PyMuPDF `get_text()`로 원문 텍스트를 추출하여 JSON 검색 인덱스를 구축한다:
+
+```
+_search_index.json (유저별, 기존)
+{
+  "doc_id": {
+    "title": "문서 제목",
+    "pages": { "1": "페이지1 원문 텍스트", "2": "..." }
+  }
+}
+```
+
+이 구조를 **그대로 유지**하고, 웹 뷰 번역 Markdown 텍스트를 검색 인덱스에 **추가**한다.
+원문을 별도 Markdown으로 생성할 필요 없음 — 원문 검색은 기존 인덱스로 충분, 원문 열람은 PDF 뷰어로 충분.
+
+### 4.2 저장 구조
 
 ```
 data/translator/{username}/{doc_id}/
 ├── original.pdf                    ← 원본 (기존)
 ├── meta.json                       ← 문서 메타데이터 (기존)
+├── _search_index.json              ← 원문 텍스트 검색 인덱스 (기존)
 ├── pages/{N}/
 │   ├── translated.pdf              ← PDF 엔진 결과 (기존, 유지)
 │   ├── text_translated.pdf         ← 텍스트 엔진 결과 (기존, 유지)
 │   ├── text_mapping.json           ← 텍스트 엔진 매핑 (기존, 유지)
-│   ├── source.md                   ← 신규: 원문 Markdown
-│   ├── translated.md               ← 신규: 번역 Markdown
+│   ├── translated.md               ← 신규: 웹 뷰 번역 Markdown
 │   └── assets/                     ← 신규: 추출된 이미지/표
 │       ├── fig_0.png
 │       ├── table_0.png
 │       └── formula_0.png
-├── full_source.md                  ← 신규: 전체 원문 (전 페이지 병합)
-├── full_translated.md              ← 신규: 전체 번역 (번역된 페이지 병합)
-└── assets/                         ← 신규: 전체 문서 이미지 (페이지별 통합)
+└── full_translated.md              ← 신규: 전체 번역 병합 (번역된 페이지만)
 ```
 
-### 4.2 Markdown Frontmatter
+> `source.md`, `full_source.md` 제거 — 원문은 PDF 뷰어로 열람하고, 검색은 기존 JSON 인덱스가 담당.
 
-모든 `.md` 파일에 YAML frontmatter를 포함하여 메타데이터를 구조화:
+### 4.3 Markdown Frontmatter
+
+`translated.md` 파일에 YAML frontmatter를 포함하여 메타데이터 구조화:
 
 ```yaml
 ---
@@ -222,13 +239,15 @@ source: "original.pdf"
 page: 3
 total_pages: 42
 model: "gemma3:27b"
-extracted_at: "2026-03-19T15:30:00"
 translated_at: "2026-03-19T15:35:00"
-extractor: "pymupdf4llm"
 summary: ""
 keywords: []
 tags: []
 ---
+
+## 3.2 시스템 아키텍처
+
+본 시스템은 강화학습 기반 자율 회피 알고리즘을 ...
 ```
 
 **활용**:
@@ -237,9 +256,9 @@ tags: []
 - 지식 그래프 노드 속성
 - Obsidian에서 열었을 때 속성 패널 자동 표시
 
-### 4.3 전체 문서 병합
+### 4.4 전체 문서 병합
 
-페이지별 번역이 누적되면 `full_translated.md`로 자동 병합:
+페이지별 웹 뷰 번역이 누적되면 `full_translated.md`로 자동 병합:
 
 ```yaml
 ---
@@ -250,16 +269,20 @@ last_merged: "2026-03-19T16:00:00"
 ---
 ```
 
-이 파일이 **RAG 인덱싱, 챗봇, 검색, 요약의 주 입력**이 된다.
+이 파일의 활용:
+- **검색 확장**: 번역 텍스트를 기존 검색 인덱스에 추가 (원문 + 번역 동시 검색)
+- **챗봇 RAG**: 청크 분할 → 벡터 인덱스 → 문서 기반 질의응답
+- **자동 요약**: Ollama 요약 프롬프트 입력
+- **다운로드**: 전체 번역 Markdown 내보내기
 
-### 4.4 데이터 수명 관리
+### 4.5 데이터 수명 관리
 
 | 데이터 | 생성 시점 | 갱신 시점 | 삭제 시점 |
 |--------|----------|----------|----------|
-| `source.md` | 최초 웹 뷰 요청 시 | 재추출 요청 시 | 문서 삭제 시 |
-| `translated.md` | 번역 완료 시 | 재번역 또는 사용자 편집 시 | 문서 삭제 시 |
-| `assets/*.png` | 추출 시 | 재추출 시 | 문서 삭제 시 |
+| `translated.md` | 웹 뷰 번역 완료 시 | 재번역 또는 사용자 편집 시 | 문서 삭제 시 |
+| `assets/*.png` | 웹 뷰 번역 시 함께 추출 | 재번역 시 | 문서 삭제 시 |
 | `full_translated.md` | 페이지 번역 완료마다 | 추가 번역 또는 편집 시 자동 갱신 | 문서 삭제 시 |
+| 검색 인덱스 (번역) | 번역 완료 시 인덱스에 추가 | 재번역/편집 시 갱신 | 문서 삭제 시 |
 
 ---
 
@@ -400,30 +423,36 @@ Explorer의 기존 패턴을 **그대로** 재활용:
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
-| POST | `/api/translator/web-extract/{doc_id}/page/{page_num}` | Markdown 추출 시작 |
-| GET | `/api/translator/web-extract/{doc_id}/page/{page_num}/status` | 추출 상태 조회 |
-| POST | `/api/translator/web-translate/{doc_id}/page/{page_num}` | Markdown 번역 시작 |
+| POST | `/api/translator/web-translate/{doc_id}/page/{page_num}` | 웹 뷰 번역 시작 (추출+번역 일괄) |
 | GET | `/api/translator/web-translate/{doc_id}/page/{page_num}/status` | 번역 상태 조회 |
-| GET | `/api/translator/web-view/{doc_id}/page/{page_num}` | 페이지 Markdown 서빙 |
+| POST | `/api/translator/web-translate/{doc_id}/page/{page_num}/cancel` | 번역 취소 |
+| GET | `/api/translator/web-view/{doc_id}/page/{page_num}` | 페이지 번역 Markdown 서빙 |
 | GET | `/api/translator/web-view/{doc_id}/full` | 전체 병합 Markdown 서빙 |
-| GET | `/api/translator/web-view/{doc_id}/assets/{filename}` | 이미지 자산 서빙 |
+| GET | `/api/translator/web-view/{doc_id}/page/{page_num}/assets/{filename}` | 페이지 이미지 자산 서빙 |
 | PUT | `/api/translator/web-view/{doc_id}/page/{page_num}` | Markdown 편집 저장 |
+
+> 기존 PDF/텍스트 번역 API 패턴(translate → status → cancel)과 동일한 구조.
+> 추출과 번역을 분리하지 않음 — `web-translate` 한 번의 호출로 추출→번역→저장 연속 실행.
 
 ### 6.2 처리 흐름
 
 ```
 사용자: "웹 뷰" 모드 선택 → 페이지 이동
 
-1. source.md 존재?
+1. translated.md 존재?
    YES → 3으로
-   NO  → 2. PyMuPDF4LLM 추출 (source.md + assets/) → 3으로
+   NO  → 2. 번역 버튼 표시 (기존 번역 버튼과 동일 위치)
+         클릭 시:
+           a. PyMuPDF4LLM으로 해당 페이지 추출 (텍스트+표+이미지 → Markdown)
+           b. 추출된 Markdown을 블록 단위 Ollama 번역
+           c. translated.md + assets/ 저장
+           → 3으로
 
-3. translated.md 존재?
-   YES → 4으로
-   NO  → 번역 버튼 표시 → 클릭 시 Ollama 블록 번역 → translated.md 저장 → 4로
-
-4. translated.md를 API로 전달 → 프론트에서 marked.js 렌더링
+3. translated.md를 API로 전달 → 프론트에서 marked.js 렌더링 → 듀얼 패널 자동 전환
 ```
+
+> 웹 뷰 모드에서는 추출(PyMuPDF4LLM)과 번역(Ollama)이 **한 번의 번역 요청**으로 연속 실행된다.
+> 원문 Markdown은 별도 파일로 저장하지 않음 — 번역 과정의 중간 데이터일 뿐.
 
 ---
 
@@ -447,12 +476,12 @@ Explorer의 기존 패턴을 **그대로** 재활용:
 
 - [ ] `pymupdf4llm` 패키지 설치 및 폐쇄망 whl 준비
 - [ ] `services/md_extractor.py` — PDF→Markdown 추출 모듈
-  - `extract_page()`: 단일 페이지 → source.md + assets/
-  - `extract_full()`: 전체 페이지 → full_source.md
+  - `extract_page(pdf_path, page_num) → (markdown_text, assets_list)`
   - 표 추출: `table_mode` 설정에 따라 구조 추출 / 이미지 / off 분기
   - 수식 추출: `formula_mode` 설정에 따라 LaTeX / 이미지 / off 분기
   - 이미지 추출: `write_images=True`, DPI 설정 반영
-  - frontmatter 자동 생성
+  - 반환값은 번역 파이프라인(Phase 2)의 입력으로 사용
+  - 별도 파일 저장 없음 (중간 데이터, 번역 후 `translated.md`만 저장)
 - [ ] 다양한 PDF 유형으로 추출 품질 검증
   - 논문 (2단, 수식)
   - 스팩 (표 다수, 병합 셀)
@@ -580,9 +609,11 @@ Explorer에 Monaco를 번들한 것과 동일 패턴으로 `js/lib/easymde/`에 
 
 ```
 웹 뷰 모드에서 "편집" 버튼 클릭
-  → 우측 패널이 EasyMDE 에디터로 전환
+  → 모달 오버레이(.modal-overlay + .modal-box)로 EasyMDE 표시
+     (Explorer Monaco 편집기 팝업과 동일 UX 패턴)
   → 사용자가 Markdown 수정 (오역 교정, 메모 추가 등)
-  → "저장" → translated.md 갱신 + full_translated.md 재병합
+  → "저장" → translated.md 갱신 + 모달 닫기 + 우측 패널 즉시 재렌더링
+  → full_translated.md 자동 재병합
 ```
 
 ### 8.7 개인 문서 AI 챗봇
