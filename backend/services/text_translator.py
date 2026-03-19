@@ -303,20 +303,14 @@ def _translate_text_ollama(text: str, model: str,
             f"Translate {lang_in} to {lang_out} accurately."
         )
 
-    # 용어집 프롬프트 주입 (babeldoc과 동일 방식)
+    # 용어집은 user 프롬프트 끝에 배치 (시스템 프롬프트의 구분자 규칙 간섭 방지)
+    glossary_note = ""
     if glossary_entries:
-        glossary_lines = [
-            "\n## Glossary",
-            "Always use the glossary's Target Term for any occurrence of its Source Term.",
-            "| Source Term | Target Term |",
-            "|-------------|-------------|",
-        ]
-        for e in glossary_entries:
-            glossary_lines.append(f"| {e['source']} | {e['target']} |")
-        system_prompt += "\n".join(glossary_lines)
+        terms = ", ".join(f"{e['source']}={e['target']}" for e in glossary_entries)
+        glossary_note = f"\n\n[Glossary: {terms}]"
 
     user_prompt = (
-        f"Translate the following text:\n\n{text}"
+        f"Translate the following text:\n\n{text}{glossary_note}"
     )
 
     resp = requests.post(

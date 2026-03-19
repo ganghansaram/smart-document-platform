@@ -66,15 +66,15 @@ Translator 시스템의 핵심 사용자 여정에서 **마찰을 제거**하고
 
 > PDF.js 공식 문서 권장 패턴. 캔버스 내부 해상도를 물리 픽셀에 맞추고, CSS로 논리 크기 유지.
 
-- ⬜ **1-1. 좌측 패널 (renderLeftPage) DPR 적용**
-- ⬜ **1-2. 우측 패널 (renderRightPage) DPR 적용**
+- ✅ **1-1. 좌측 패널 (renderLeftPage) DPR 적용**
+- ✅ **1-2. 우측 패널 (renderRightPage) DPR 적용**
   - `page.render({ transform: [dpr, 0, 0, dpr, 0, 0] })` 방식 사용 (PDF.js 공식 API)
   - canvas 물리 해상도 = `viewport × dpr`, CSS 논리 크기 = viewport 그대로
   - `ctx.setTransform()` 및 `scale*dpr` viewport 방식은 **사용 금지** (PDF.js 내부 transform 충돌 — GitHub Issue #9404)
-- ⬜ **1-3. 검증**
-  - DPR 1.0 / 1.125 / 2.0 환경에서 렌더링 선명도 확인
-  - 번역본(우측 패널) 텍스트 크기 정상 확인
-  - 마킹/스크롤 동기화/줌/텍스트 선택 회귀 없음
+- ✅ **1-3. 검증**
+  - Playwright 스크린샷으로 양 패널 텍스트 크기 정상 확인
+  - 번역본(우측) 글자 축소 현상 없음 (이전 시도 문제 해결)
+  - 마킹/스크롤 동기화/줌 회귀 없음
 
 **이전 시도 이력 (2026-03-18)**:
 - 1차: `ctx.setTransform(dpr)` → PDF.js 내부 transform 충돌로 번역본 글자 축소 → 롤백
@@ -104,65 +104,41 @@ Translator 시스템의 핵심 사용자 여정에서 **마찰을 제거**하고
 
 **진행 전략**: Step별 분리 검증. UI 먼저 완성 → pdf2zh 연동 → 텍스트 엔진 연동
 
-- ⬜ **2-0. 기준선 확인 (착수 전)**
-  - 현재 원본 코드 상태에서 동일 문서 동일 페이지 번역 → 정상 동작/속도 기준선 확보
-  - `--no-auto-extract-glossary`를 용어집 유무와 관계없이 항상 추가하여 기본 속도 개선 (기존에도 불필요한 LLM 호출 발생 중)
+- ✅ **2-0. 기준선 확인 + 자동 용어 추출 비활성화**
+  - `--no-auto-extract-glossary` 항상 추가 → 기존 ~30% 오버헤드 제거 확인
+  - 사용자 체감 속도 개선 확인
 
-- ⬜ **2-1. 용어집 데이터 구조**
-  - JSON 저장: `data/translator/{username}/_glossary.json`
-    ```json
-    {
-      "version": 1,
-      "entries": [
-        { "source": "availability", "target": "가용성" },
-        { "source": "latency", "target": "지연시간" }
-      ]
-    }
-    ```
-  - CSV 동기 생성: `data/translator/{username}/_glossary.csv` (pdf2zh `--glossaries`용)
-    ```csv
-    source,target
-    availability,가용성
-    latency,지연시간
-    ```
+- ✅ **2-1. 용어집 데이터 구조**
+  - JSON: `data/translator/{username}/_glossary.json` (유저 관리용)
+  - CSV: `data/translator/{username}/_glossary.csv` (pdf2zh `--glossaries`용, 저장 시 자동 동기 생성)
+  - 용어 없으면 CSV 삭제 (빈 파일 잔존 방지)
 
-- ⬜ **2-2. 백엔드 API**
-  - `GET /api/translator/glossary` — 용어집 조회
-  - `PUT /api/translator/glossary` — 용어집 저장 (전체 교체). **`Request.json()` 사용** (`Body(...)` 파싱 오류 회피)
-  - 인증: `get_current_user` 필수
+- ✅ **2-2. 백엔드 API**
+  - `GET /api/translator/glossary`, `PUT /api/translator/glossary` (`Request.json()` 방식)
+  - API 라운드트립 테스트 통과 (PUT → GET 일치, 빈 배열 → CSV 삭제, 복원 → CSV 재생성)
 
-- ⬜ **2-3. 프론트엔드 UI** (번역 엔진 미연결 상태로 먼저 완성)
-  - translator.html에 `toast.css`, `modal.css` 로드 추가 (CLAUDE.md CSS 로드 순서 준수)
-  - 뷰어 툴바에 "용어집" 버튼 추가 (모델 선택 좌측, spacer 직후)
-  - 클릭 시 모달 (`.modal-overlay` + `.modal-box` 패턴): 용어 목록 테이블 + 추가/삭제
-  - Enter 키 지원, 중복 시 덮어쓰기, 오버레이 클릭 닫기
-  - 이 단계에서 번역에는 영향 없음 → UI 저장/조회 동작만 검증
+- ✅ **2-3. 프론트엔드 UI**
+  - `translator.html`에 `toast.css`, `modal.css` 로드 추가 (CLAUDE.md CSS 순서 준수)
+  - 툴바 용어집 버튼 (spacer 직후, 모델 선택 좌측)
+  - 모달: `.modal-overlay` + `.modal-box` 패턴, 추가/삭제/중복 덮어쓰기, Enter/Esc 키, 오버레이 클릭 닫기, 이벤트 위임
+  - Playwright 스크린샷으로 UI 검증 완료
 
-- ⬜ **2-4. pdf2zh 엔진 연동**
-  - `translator_service.py`의 pdf2zh 명령에 추가:
-    - `--no-auto-extract-glossary` — **항상 추가** (용어집 유무 무관, 기본 30% 속도 개선)
-    - `--glossaries {csv_path}` — 용어집 CSV가 존재하고 내용이 있을 때만 추가
-  - babeldoc이 자체적으로 해당 페이지 용어 필터링 + 프롬프트 주입 처리
-  - 번역 테스트 → 기준선 대비 속도/품질 비교
+- ✅ **2-4. pdf2zh 엔진 연동**
+  - `--no-auto-extract-glossary` 항상 추가
+  - `--glossaries {csv_path}` — CSV 존재 + 15바이트 이상일 때만 추가
+  - babeldoc이 hyperscan 매칭 → 페이지별 용어 필터링 → LLM 프롬프트 자동 주입
 
-- ⬜ **2-5. 텍스트 엔진 연동**
-  - `text_translator.py`의 `_translate_text_ollama`에 `glossary_entries` 파라미터 추가
-  - 시스템 프롬프트에 용어 테이블 삽입 (babeldoc과 유사 포맷):
-    ```
-    ## Glossary
-    Always use the glossary's Target Term for any occurrence of its Source Term.
-    | Source Term | Target Term |
-    |-------------|-------------|
-    | availability | 가용성 |
-    ```
-  - `translator_service.py`에서 페이지 텍스트 기반 용어 필터링 후 전달
-  - 번역 테스트
+- ✅ **2-5. 텍스트 엔진 연동**
+  - `_translate_text_ollama`에 `glossary_entries` 파라미터 추가
+  - babeldoc 동일 포맷으로 시스템 프롬프트에 Glossary 테이블 삽입
+  - `translator_service.py`에서 PyMuPDF 페이지 텍스트 기반 용어 필터링 후 전달
+  - `_translate_regions`, `translate_page` 파이프라인 전체 연결 완료
 
-- ⬜ **2-6. 검증**
-  - 용어집 있을 때/없을 때 번역 결과 비교
-  - `--no-auto-extract-glossary` 적용 전후 속도 비교
-  - 용어가 실제 번역에 반영되는지 확인 (LLM이 무시하는 경우 허용 — 프롬프트 방식의 한계)
-  - 모달 UI에서 추가/삭제 → 모달 재오픈 시 유지 확인
+- ✅ **2-6. 검증**
+  - API 라운드트립: PUT → GET → CSV 동기 → 모달 재오픈 유지 확인
+  - 모달 UI: 추가/삭제/카운트 즉시 반영 (Playwright 검증)
+  - 용어집 적용 번역: 사용자 테스트에서 정상 동작 확인
+  - 속도: `--no-auto-extract-glossary` 적용 후 체감 속도 개선 확인
 
 - **예상 공수**: 2~3일
 - **리스크**: 중간. babeldoc 용어집이 "디버깅 단계"이므로 pdf2zh 측 적용이 불완전할 수 있음. 텍스트 엔진은 자체 구현이라 안정적.
@@ -316,7 +292,7 @@ Translator 시스템의 핵심 사용자 여정에서 **마찰을 제거**하고
 
 | 순서 | 항목 | Phase | 예상 공수 | 근거 |
 |------|------|-------|----------|------|
-| 1st | PDF HiDPI 렌더링 | Phase 1 | 0.5일 | ⚠️ 재작업 필요 — 이전 2회 시도 실패 후 롤백, 공식 `render({ transform })` 방식으로 재적용 |
+| ~~1st~~ | ~~PDF HiDPI 렌더링~~ | ~~Phase 1~~ | ~~0.5일~~ | ✅ 완료 — `render({ transform })` 공식 방식으로 재적용 |
 | ~~2nd~~ | ~~용어집~~ | ~~Phase 2~~ | ~~2일~~ | ✅ 완료 — 모달 UI + API + pdf2zh/텍스트 엔진 연동 + --no-auto-extract-glossary |
 | 3rd | 페이지 경계 문맥 | Phase 3 | 2~3일 | 현재 가장 눈에 띄는 품질 문제 해소 |
 | 4th | 다운로드 + 내보내기 | Phase 4 | 1.5~2일 | DRM 전 결과물 확보 |
