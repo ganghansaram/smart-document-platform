@@ -93,10 +93,40 @@ Plan 16 Phase 5는 "텍스트 엔진의 HTML 출력"으로 설계되었으나, �
 | 유형 | 처리 | Markdown 표현 |
 |------|------|-------------|
 | 그림 (figure) | PyMuPDF4LLM `write_images=True` → PNG 추출 | `![Figure 3.1](assets/fig_0.png)` |
-| 수식 (formula) | 영역 캡처 → 이미지 저장 (LaTeX 변환은 향후) | `![Formula](assets/formula_0.png)` |
 | 차트/그래프 | 이미지 추출 | `![Chart](assets/chart_0.png)` |
+| 수식 (formula) | 관리자 설정에 따라 분기 (아래 참조) | `$E = mc^2$` 또는 이미지 |
 
-> 수식의 LaTeX 변환은 MinerU의 UniMERNet 모델이 필요하며, 현재 폐쇄망 설치가 복잡하므로 초기에는 이미지로 처리. 향후 모델 도입 시 `$E = mc^2$` 형태로 전환 가능.
+#### 수식 처리 전략: 관리자 설정 기반
+
+PDF의 수식은 Word(OMML→MathML)와 달리 **구조 정보 없이 렌더링된 이미지**로 존재한다.
+텍스트(LaTeX)로 복원하려면 수식 인식 AI 모델이 필요하다.
+
+**업계 오픈소스 수식 인식 모델 현황 (2025~2026):**
+
+| 모델 | 정확도 (렌더링 성공률) | 모델 크기 | 오프라인 |
+|------|:--------------------:|:---------:|:--------:|
+| UniMERNet | 97.6% | ~2GB | ✅ |
+| **Pix2Text** | **86.2%** | **~200MB** | ✅ |
+| TexTeller | ~93% | ~500MB | ✅ |
+| pix2tex | 86.2% | ~150MB | ✅ |
+| Mathpix (상용) | 99.0% | — | ❌ 클라우드 |
+
+**경량 후보: Pix2Text (~200MB)** — Mathpix 오픈소스 대안, TrOCR 기반, 80개 언어, 폐쇄망 설치 현실적.
+
+수식 처리 모드는 관리자 설정에서 제어하며, 표 처리와 동일한 이중 전략:
+
+```
+formula_mode = "latex" 일 때:
+  수식 영역 감지 → Pix2Text로 LaTeX 변환 시도
+    성공 → $E = mc^2$ (검색/복사 가능)
+    실패 → ![Formula](formula_0.png) (이미지 백업)
+
+formula_mode = "image" 일 때:
+  수식 영역 → 이미지 캡처만 (기본값, 모델 불필요)
+
+formula_mode = "off" 일 때:
+  수식 영역 무시
+```
 
 ### 3.4 번역 전략
 
@@ -525,13 +555,95 @@ Explorer의 RAG 파이프라인(FAISS + bge-m3 + 리랭커 + 멀티턴)을 재�
 | 5 | Markdown 편집기 | 중 | EasyMDE (~140KB) | — |
 | 6 | 클러스터 시각화 | 중 | D3.js (~250KB) + UMAP | bge-m3 임베딩 |
 | 7 | AI 챗봇 | 중 | 없음 (Explorer 재활용) | full_translated.md |
-| 8 | 수식 LaTeX | 고 | UniMERNet (~2GB) + KaTeX | — |
+| 8 | 수식 LaTeX | 중 | Pix2Text (~200MB) 또는 UniMERNet (~2GB) | — |
 
 > **1~4번은 새 라이브러리 없이 기존 데이터만으로 구현 가능.**
 > 5~7번은 경량 라이브러리 1개씩 추가 또는 기존 코드 재활용.
-> 8번만 대형 모델 도입이 필요하여 별도 검토.
+> 8번은 Pix2Text(200MB)로 경량 도입 가능. 관리자 설정으로 on/off 제어.
 
-## 9. 리스크
+---
+
+## 9. 관리자 설정 (Admin Settings)
+
+추출 파이프라인의 동작을 관리자 설정 GUI에서 제어한다.
+기존 `admin-settings.js`의 탭 패턴을 따르며, "Translator" 탭 내 **"웹 뷰 추출"** 섹션으로 추가.
+
+### 9.1 설정 키 및 기본값
+
+```python
+# config.py 추가 항목
+TRANSLATOR_MD_TABLE_MODE = "extract"     # "extract" | "image" | "off"
+TRANSLATOR_MD_FORMULA_MODE = "image"     # "latex" | "image" | "off"
+TRANSLATOR_MD_IMAGE_DPI = 150            # 추출 이미지 해상도
+TRANSLATOR_MD_AUTO_SUMMARY = False       # 번역 완료 시 자동 요약 생성
+TRANSLATOR_MD_TABLE_STRATEGY = "lines_strict"  # PyMuPDF 표 감지 전략
+```
+
+### 9.2 설정 UI 설계
+
+기존 관리자 설정 GUI(`admin-settings.js`)의 패턴을 따른다:
+- `components.css`의 `.form-select`, `.form-range`, `.btn` 클래스 사용
+- 각 항목에 `.tooltip-icon` (`data-tooltip="설명"`) 배치
+- `settings.json`에 저장 → 백엔드 `apply_to_config()`로 즉시 반영
+
+```
+┌─ 웹 뷰 추출 설정 ──────────────────────────────────────────┐
+│                                                            │
+│  표 추출 모드        [구조 추출 ▾]  ⓘ                       │
+│                      ├─ 구조 추출 (extract)                │
+│                      ├─ 이미지만 (image)                   │
+│                      └─ 사용 안 함 (off)                   │
+│                                                            │
+│  수식 추출 모드       [이미지만 ▾]  ⓘ                       │
+│                      ├─ LaTeX 변환 (latex) — Pix2Text 필요 │
+│                      ├─ 이미지만 (image) — 기본값           │
+│                      └─ 사용 안 함 (off)                   │
+│                                                            │
+│  이미지 해상도 (DPI)  ───●──────── 150  ⓘ                  │
+│                       72        300                        │
+│                                                            │
+│  표 감지 전략         [lines_strict ▾]  ⓘ                   │
+│                      ├─ lines_strict — 선이 있는 표 (기본값) │
+│                      ├─ lines — 일반                       │
+│                      └─ text — 선 없는 표                  │
+│                                                            │
+│  ☐ 번역 완료 시 자동 요약 생성  ⓘ                           │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
+```
+
+### 9.3 툴팁 설명문
+
+| 설정 | 툴팁 (`data-tooltip`) |
+|------|------|
+| 표 추출 모드 | "구조 추출: 표 내용을 텍스트로 변환하여 검색/복사 가능. 이미지만: 원본 캡처만 저장. 복잡한 표에서 구조 추출이 깨지면 이미지로 전환하세요." |
+| 수식 추출 모드 | "LaTeX 변환: 수식을 텍스트로 변환 (Pix2Text 모델 설치 필요). 이미지만: 수식 영역을 캡처하여 저장. 모델 미설치 시 이미지만 사용 가능합니다." |
+| 이미지 해상도 | "추출되는 이미지의 해상도. 높을수록 선명하지만 파일 크기가 증가합니다. 기본값 150 DPI 권장." |
+| 표 감지 전략 | "lines_strict: 셀 구분선이 명확한 표에 가장 정확. text: 선 없이 텍스트 정렬로 구성된 표에 사용." |
+| 자동 요약 | "번역 완료 시 AI가 자동으로 문서 요약과 키워드를 생성합니다. Ollama 추가 호출이 발생합니다." |
+
+### 9.4 설정 적용 흐름
+
+```
+관리자가 설정 변경
+  → settings.json에 저장
+  → apply_to_config()로 config.py 속성 즉시 반영
+  → 다음 추출/번역 요청부터 새 설정 적용
+  → 이미 추출된 문서에는 영향 없음 (재추출 시 적용)
+```
+
+### 9.5 공개 설정 (Public Settings)
+
+일부 설정은 프론트엔드에서도 참조해야 한다 (`/api/settings/public`):
+
+| 설정 | 프론트엔드 용도 |
+|------|---------------|
+| `TRANSLATOR_MD_FORMULA_MODE` | "latex" 모드일 때 KaTeX 렌더러 로드 여부 결정 |
+| `TRANSLATOR_MD_AUTO_SUMMARY` | 번역 완료 시 "요약 생성 중..." 상태 표시 여부 |
+
+---
+
+## 10. 리스크
 
 | 리스크 | 영향 | 대응 |
 |--------|------|------|
@@ -553,6 +665,8 @@ Explorer의 RAG 파이프라인(FAISS + bge-m3 + 리랭커 + 멀티턴)을 재�
 | [EasyMDE](https://github.com/Ionaru/easy-markdown-editor) | WYSIWYG Markdown 편집기 (Phase 8.6) | ~140KB |
 | [D3.js](https://d3js.org/) | 클러스터/그래프 시각화 (Phase 8.4) | ~250KB |
 | [DOMPurify](https://github.com/cure53/DOMPurify) | Markdown 렌더링 XSS 방어 | ~15KB |
+| [Pix2Text](https://github.com/breezedeus/Pix2Text) | 수식→LaTeX 변환 (formula_mode=latex 시) | ~200MB |
+| [KaTeX](https://katex.org/) | LaTeX 수식 브라우저 렌더링 (formula_mode=latex 시) | ~300KB |
 
 ### 벤치마크/비교 자료
 
