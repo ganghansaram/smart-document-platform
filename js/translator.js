@@ -501,24 +501,27 @@
                 var scale = baseScale * zoom;
                 var scaledViewport = page.getViewport({ scale: scale });
 
-                $leftCanvas.width = scaledViewport.width;
-                $leftCanvas.height = scaledViewport.height;
-                $leftCanvas.style.width = scaledViewport.width + 'px';
-                $leftCanvas.style.height = scaledViewport.height + 'px';
+                var outputScale = window.devicePixelRatio || 1;
 
-                $leftContainer.style.width = scaledViewport.width + 'px';
-                $leftContainer.style.height = scaledViewport.height + 'px';
+                $leftCanvas.width = Math.floor(scaledViewport.width * outputScale);
+                $leftCanvas.height = Math.floor(scaledViewport.height * outputScale);
+                $leftCanvas.style.width = Math.floor(scaledViewport.width) + 'px';
+                $leftCanvas.style.height = Math.floor(scaledViewport.height) + 'px';
+
+                $leftContainer.style.width = Math.floor(scaledViewport.width) + 'px';
+                $leftContainer.style.height = Math.floor(scaledViewport.height) + 'px';
 
                 $leftTextLayer.innerHTML = '';
-                $leftTextLayer.style.width = scaledViewport.width + 'px';
-                $leftTextLayer.style.height = scaledViewport.height + 'px';
+                $leftTextLayer.style.width = Math.floor(scaledViewport.width) + 'px';
+                $leftTextLayer.style.height = Math.floor(scaledViewport.height) + 'px';
                 $leftTextLayer.style.setProperty('--scale-factor', scale);
 
-                $leftAnnotationLayer.style.width = scaledViewport.width + 'px';
-                $leftAnnotationLayer.style.height = scaledViewport.height + 'px';
+                $leftAnnotationLayer.style.width = Math.floor(scaledViewport.width) + 'px';
+                $leftAnnotationLayer.style.height = Math.floor(scaledViewport.height) + 'px';
 
                 var ctx = $leftCanvas.getContext('2d');
-                leftRenderTask = page.render({ canvasContext: ctx, viewport: scaledViewport });
+                var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+                leftRenderTask = page.render({ canvasContext: ctx, transform: transform, viewport: scaledViewport });
                 leftRenderTask.promise.then(function() {
                     leftRenderTask = null;
                     return page.getTextContent();
@@ -728,24 +731,27 @@
                 var scale = baseScale * zoom;
                 var scaledViewport = page.getViewport({ scale: scale });
 
-                $rightCanvas.width = scaledViewport.width;
-                $rightCanvas.height = scaledViewport.height;
-                $rightCanvas.style.width = scaledViewport.width + 'px';
-                $rightCanvas.style.height = scaledViewport.height + 'px';
+                var outputScale = window.devicePixelRatio || 1;
 
-                $rightContainer.style.width = scaledViewport.width + 'px';
-                $rightContainer.style.height = scaledViewport.height + 'px';
+                $rightCanvas.width = Math.floor(scaledViewport.width * outputScale);
+                $rightCanvas.height = Math.floor(scaledViewport.height * outputScale);
+                $rightCanvas.style.width = Math.floor(scaledViewport.width) + 'px';
+                $rightCanvas.style.height = Math.floor(scaledViewport.height) + 'px';
+
+                $rightContainer.style.width = Math.floor(scaledViewport.width) + 'px';
+                $rightContainer.style.height = Math.floor(scaledViewport.height) + 'px';
 
                 $rightTextLayer.innerHTML = '';
-                $rightTextLayer.style.width = scaledViewport.width + 'px';
-                $rightTextLayer.style.height = scaledViewport.height + 'px';
+                $rightTextLayer.style.width = Math.floor(scaledViewport.width) + 'px';
+                $rightTextLayer.style.height = Math.floor(scaledViewport.height) + 'px';
                 $rightTextLayer.style.setProperty('--scale-factor', scale);
 
-                $rightAnnotationLayer.style.width = scaledViewport.width + 'px';
-                $rightAnnotationLayer.style.height = scaledViewport.height + 'px';
+                $rightAnnotationLayer.style.width = Math.floor(scaledViewport.width) + 'px';
+                $rightAnnotationLayer.style.height = Math.floor(scaledViewport.height) + 'px';
 
                 var ctx = $rightCanvas.getContext('2d');
-                rightRenderTask = page.render({ canvasContext: ctx, viewport: scaledViewport });
+                var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+                rightRenderTask = page.render({ canvasContext: ctx, transform: transform, viewport: scaledViewport });
                 rightRenderTask.promise.then(function() {
                     rightRenderTask = null;
                     return page.getTextContent();
