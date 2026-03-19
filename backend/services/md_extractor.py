@@ -96,13 +96,13 @@ def extract_page(
     page_boxes = chunk.get("page_boxes", [])
     metadata = chunk.get("metadata", {})
 
-    # 표 모드가 "image"이면 표를 이미지로 대체 — 현재 pymupdf4llm이
-    # 표를 자동으로 Markdown 테이블로 변환하므로, "image" 모드는
-    # 향후 표 영역을 pixmap으로 캡처하는 로직 추가 시 활용.
-    # 지금은 "extract"와 동일하게 동작 (표 구조 추출).
-
-    # 표 모드가 "off"이면 Markdown에서 테이블 구문 제거
-    if table_mode == "off":
+    # 표 모드별 후처리
+    if table_mode == "image":
+        # "image" 모드: Markdown 테이블 구문을 제거하고 원본 이미지만 유지
+        # (pymupdf4llm이 표 영역도 이미지로 추출하므로, 텍스트 테이블만 제거)
+        markdown_text = _remove_markdown_tables(markdown_text)
+        logger.info("table_mode=image: Markdown 테이블 구문 제거, 이미지만 유지")
+    elif table_mode == "off":
         markdown_text = _remove_markdown_tables(markdown_text)
 
     # 추출된 이미지 파일 목록 수집
@@ -133,17 +133,16 @@ def extract_page(
 
 
 def _remove_markdown_tables(text: str) -> str:
-    """Markdown 텍스트에서 테이블 구문을 제거한다."""
+    """Markdown 텍스트에서 테이블 구문을 제거한다.
+
+    테이블은 `|`로 시작하고 `|`로 끝나는 연속된 줄로 판별.
+    테이블이 아닌 줄을 만나면 테이블 영역이 끝난 것으로 간주.
+    """
     lines = text.split("\n")
     result = []
-    in_table = False
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith("|") and stripped.endswith("|"):
-            in_table = True
-            continue
-        if in_table and stripped == "":
-            in_table = False
-        if not in_table:
+        is_table_line = stripped.startswith("|") and stripped.endswith("|")
+        if not is_table_line:
             result.append(line)
     return "\n".join(result)

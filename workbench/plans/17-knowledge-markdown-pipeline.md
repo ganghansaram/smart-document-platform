@@ -617,6 +617,7 @@ TRANSLATOR_WEB_DEBUG = False                   # 디버그: 추출 중간 결과
 | Markdown 렌더링 보안 | XSS 가능성 | DOMPurify 필수 적용 |
 | Pix2Text 수식 정확도 | 86% (복잡 수식 한계) | 이미지 백업 상시 보존, 관리자 모드 전환 |
 | 검색 인덱스 크기 2배 | 대량 문서 시 성능 | 현 규모(수백 문서)에서는 문제 없음 |
+| PyMuPDF 버전 업그레이드 | pymupdf4llm이 PyMuPDF 1.27.2 요구, pdf2zh-next는 `<1.25.3` 요구 | Phase 1에서 1.27.2로 업그레이드 완료, 기존 PDF/텍스트 번역 정상 동작 확인. 문제 발생 시 `pymupdf==1.25.2` 핀 필요 |
 
 ---
 
