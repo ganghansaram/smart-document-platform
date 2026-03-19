@@ -308,6 +308,44 @@ body[data-theme="dark"] .hero-banner-img {
     max-width: 160px;
 }
 
+/* 다운로드 드롭다운 메뉴 */
+.download-wrap {
+    position: relative;
+}
+.download-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    min-width: 180px;
+    z-index: 100;
+    padding: 4px 0;
+}
+.download-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 14px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-dark);
+    font-family: inherit;
+}
+.download-menu-item:hover:not(:disabled) {
+    background: var(--hover-bg);
+}
+.download-menu-item:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 .viewer-toolbar .translate-page-btn {
     padding: 5px 14px;
     border: none;
@@ -737,7 +775,7 @@ body[data-theme="dark"] .hero-banner-img {
     resize: both;
     overflow: hidden;
     text-align: left;
-    user-select: none;
+    user-select: text;
     opacity: 0;
     transform: translateY(-4px);
     transition: opacity 0.15s ease, transform 0.15s ease;
@@ -746,10 +784,25 @@ body[data-theme="dark"] .hero-banner-img {
     opacity: 1;
     transform: translateY(0);
 }
+.marking-popover .popover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+}
+.marking-popover .popover-actions {
+    display: flex;
+    gap: 2px;
+}
+.marking-popover .popover-edit-btn:hover {
+    color: var(--active-color);
+}
+.marking-popover .popover-del-btn:hover {
+    color: var(--color-error);
+}
 .marking-popover .color-palette {
     display: flex;
     gap: 8px;
-    margin-bottom: 8px;
 }
 .marking-popover .color-dot {
     width: 20px;
@@ -792,16 +845,6 @@ body[data-theme="dark"] .hero-banner-img {
     word-break: break-word;
     max-height: 300px;
     overflow-y: auto;
-}
-.marking-popover .popover-delete-btn {
-    margin-top: 8px;
-    text-align: right;
-    font-size: 13px;
-    color: var(--medium-gray, #888);
-    cursor: pointer;
-}
-.marking-popover .popover-delete-btn:hover {
-    color: var(--color-error);
 }
 .marking-popover .delete-confirm {
     margin-top: 4px;
@@ -911,6 +954,10 @@ body[data-theme="dark"] .marking-popover {
     background: #1e1e2e;
     border-color: rgba(255,255,255,0.08);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+body[data-theme="dark"] .marking-popover .popover-edit-btn:hover,
+body[data-theme="dark"] .marking-popover .popover-del-btn:hover {
+    background: rgba(255,255,255,0.08);
 }
 body[data-theme="dark"] .marking-popover textarea {
     background: #2a2a3e;

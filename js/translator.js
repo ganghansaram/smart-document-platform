@@ -2795,10 +2795,95 @@
 
         // Esc 키로 닫기
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && $glossaryModal.style.display !== 'none') {
-                closeGlossaryModal();
+            if (e.key === 'Escape') {
+                if ($glossaryModal.style.display !== 'none') closeGlossaryModal();
+                if (_isDownloadMenuOpen()) _closeDownloadMenu();
             }
         });
+
+
+        // ══════════════════════════════════════════════
+        // PDF 다운로드
+        // ══════════════════════════════════════════════
+
+        var $downloadBtn = document.getElementById('download-btn');
+        var $downloadMenu = document.getElementById('download-menu');
+        var $dlOriginal = document.getElementById('dl-original');
+        var $dlTranslated = document.getElementById('dl-translated');
+
+        function _isDownloadMenuOpen() {
+            return $downloadMenu.style.display === 'block';
+        }
+
+        function _closeDownloadMenu() {
+            $downloadMenu.style.display = 'none';
+            $downloadBtn.setAttribute('aria-expanded', 'false');
+        }
+
+        // 메뉴 토글
+        $downloadBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (_isDownloadMenuOpen()) {
+                _closeDownloadMenu();
+            } else {
+                // 현재 페이지 번역 상태에 따라 활성화/비활성화
+                var ps = translateEngine === 'text'
+                    ? textPageStatusCache[String(currentPage)]
+                    : pageStatusCache[String(currentPage)];
+                $dlTranslated.disabled = !(ps && ps.status === 'done');
+                $downloadMenu.style.display = 'block';
+                $downloadBtn.setAttribute('aria-expanded', 'true');
+            }
+        });
+
+        // 바깥 클릭으로 닫기
+        document.addEventListener('click', function() {
+            if (_isDownloadMenuOpen()) _closeDownloadMenu();
+        });
+
+        // 원본 PDF 다운로드
+        $dlOriginal.addEventListener('click', function() {
+            $downloadMenu.style.display = 'none';
+            if (!currentDocId) return;
+            _downloadFile(
+                API + '/api/translator/pdf/' + currentDocId,
+                'original.pdf'
+            );
+        });
+
+        // 현재 페이지 번역 PDF 다운로드
+        $dlTranslated.addEventListener('click', function() {
+            $downloadMenu.style.display = 'none';
+            if (!currentDocId || $dlTranslated.disabled) return;
+            var endpoint = translateEngine === 'text'
+                ? '/api/translator/text-translated-pdf/' + currentDocId + '/page/' + currentPage
+                : '/api/translator/translated-pdf/' + currentDocId + '/page/' + currentPage;
+            _downloadFile(
+                API + endpoint,
+                'translated_p' + currentPage + '.pdf'
+            );
+        });
+
+        // blob 다운로드 헬퍼 (credentials 포함)
+        function _downloadFile(url, filename) {
+            fetch(url, { credentials: 'include' })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('다운로드 실패');
+                    return r.blob();
+                })
+                .then(function(blob) {
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(a.href);
+                })
+                .catch(function() {
+                    alert('다운로드에 실패했습니다.');
+                });
+        }
 
 
     })();
