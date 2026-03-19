@@ -1,8 +1,8 @@
 # Translator 품질 향상 + 웹 뷰 계획서
 
 > 작성일: 2026-03-17
-> 최종 갱신: 2026-03-17
-> 상태: Phase 1 완료 / Phase 2 미착수
+> 최종 갱신: 2026-03-19
+> 상태: Phase 1~2 완료 / Phase 3 미착수
 
 ---
 
@@ -66,23 +66,24 @@ Translator 시스템의 핵심 사용자 여정에서 **마찰을 제거**하고
 
 > PDF.js 공식 문서 권장 패턴. 캔버스 내부 해상도를 물리 픽셀에 맞추고, CSS로 논리 크기 유지.
 
-- ✅ **1-1. 좌측 패널 (renderLeftPage) DPR 적용**
-  - 대상: `js/translator.js:504` (`renderLeftPage` 내부)
-  - `devicePixelRatio` 기반 canvas 내부 해상도 확대 + `ctx.setTransform(dpr, 0, 0, dpr, 0, 0)`
-  - 텍스트 레이어, 어노테이션 레이어, 마킹(% 좌표)에 영향 없음 확인
+- ⬜ **1-1. 좌측 패널 (renderLeftPage) DPR 적용**
+- ⬜ **1-2. 우측 패널 (renderRightPage) DPR 적용**
+  - `page.render({ transform: [dpr, 0, 0, dpr, 0, 0] })` 방식 사용 (PDF.js 공식 API)
+  - canvas 물리 해상도 = `viewport × dpr`, CSS 논리 크기 = viewport 그대로
+  - `ctx.setTransform()` 및 `scale*dpr` viewport 방식은 **사용 금지** (PDF.js 내부 transform 충돌 — GitHub Issue #9404)
+- ⬜ **1-3. 검증**
+  - DPR 1.0 / 1.125 / 2.0 환경에서 렌더링 선명도 확인
+  - 번역본(우측 패널) 텍스트 크기 정상 확인
+  - 마킹/스크롤 동기화/줌/텍스트 선택 회귀 없음
 
-- ✅ **1-2. 우측 패널 (renderRightPage) DPR 적용**
-  - 대상: `js/translator.js:733` (`renderRightPage` 내부)
-  - 동일 패턴 적용
-
-- ✅ **1-3. 검증**
-  - DPR 1.125 환경에서 정상 렌더링 확인 (브라우저 새로고침으로 즉시 적용)
-  - DPR 1.0에서는 `Math.floor(width * 1) = width`로 기존과 동일 동작
-  - 마킹/스크롤 동기화/줌 기능 회귀 없음
+**이전 시도 이력 (2026-03-18)**:
+- 1차: `ctx.setTransform(dpr)` → PDF.js 내부 transform 충돌로 번역본 글자 축소 → 롤백
+- 2차: `getViewport({ scale: scale*dpr })` + CSS 축소 → 동일 현상 → 롤백
+- 원인: 두 방식 모두 PDF.js가 지원하지 않는 비공식 방법. `render({ transform })` 파라미터가 유일한 공식 경로
 
 - **예상 공수**: 0.5일
-- **리스크**: 매우 낮음. PDF.js 표준 패턴이며, DOM 레이어에 영향 없음
-- **안정성 근거**: Canvas HiDPI는 MDN Web Docs에서 권장하는 표준 기법. PDF.js 공식 예제에서도 동일 패턴 사용
+- **리스크**: 낮음. PDF.js 공식 `helloworld.html` 예제 패턴 그대로 적용
+- **안정성 근거**: PDF.js 공식 예제, GitHub Issue #9404/#10509 권장 방식, `render()` API의 `transform` 파라미터는 HiDPI 전용으로 설계된 공식 기능
 
 ---
 
@@ -315,8 +316,8 @@ Translator 시스템의 핵심 사용자 여정에서 **마찰을 제거**하고
 
 | 순서 | 항목 | Phase | 예상 공수 | 근거 |
 |------|------|-------|----------|------|
-| ~~1st~~ | ~~PDF HiDPI 렌더링~~ | ~~Phase 1~~ | ~~0.5일~~ | ✅ 완료 |
-| 2nd | 용어집 | Phase 2 | 2일 | 번역 품질 향상의 핵심. Phase 3의 기반 (pdf2zh 프롬프트 지원 여부 확인) |
+| 1st | PDF HiDPI 렌더링 | Phase 1 | 0.5일 | ⚠️ 재작업 필요 — 이전 2회 시도 실패 후 롤백, 공식 `render({ transform })` 방식으로 재적용 |
+| ~~2nd~~ | ~~용어집~~ | ~~Phase 2~~ | ~~2일~~ | ✅ 완료 — 모달 UI + API + pdf2zh/텍스트 엔진 연동 + --no-auto-extract-glossary |
 | 3rd | 페이지 경계 문맥 | Phase 3 | 2~3일 | 현재 가장 눈에 띄는 품질 문제 해소 |
 | 4th | 다운로드 + 내보내기 | Phase 4 | 1.5~2일 | DRM 전 결과물 확보 |
 | 5th | 웹 뷰 모드 | Phase 5 | 5~7일 | Phase 1~4 안정화 후 착수. 실사용 피드백 기반으로 범위 조정 가능 |
