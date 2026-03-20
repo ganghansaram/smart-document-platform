@@ -513,20 +513,27 @@ Explorer의 기존 패턴을 **그대로** 재활용:
 
 **퍼포먼스**: 4페이지 논문 1페이지 기준 — 21블록 파싱 → 3그룹 일괄 번역 → 22초 완료 (개별 대비 66% 감소)
 
-### Phase 3: 프론트엔드 (웹 뷰) — 5~6일
+### Phase 3: 프론트엔드 (웹 뷰) — ✅ 완료
 
-- [ ] **translator.js 모드 분기 리팩토링** (전략 객체 패턴, 섹션 5.4)
-  - 기존 PDF/텍스트 동작 변경 없이 구조만 정리
-  - `webPageStatusCache`, `webPollingTimer` 추가
-- [ ] `api/translator.py`에 웹 뷰 엔드포인트 추가
-- [ ] `marked.js` + `DOMPurify` 번들 (`js/lib/`)
-- [ ] 엔진 토글 3종 확장 (`data-engine="web"`)
-- [ ] 싱글/듀얼 적응형 레이아웃 (번역 결과 유무에 따라 자동 전환)
-- [ ] 우측 패널: 웹 뷰 모드 Markdown 렌더링
-- [ ] Markdown 스타일시트 (tokens.css 변수 활용, 다크모드)
-- [ ] 웹 뷰 전용 툴바 버튼 조건부 노출 (편집, MD 다운로드)
-- [ ] 클릭 네비게이션 (Phase 1 사전 검증 결과에 따라 포함/제외)
-- [ ] 관리자 설정 GUI 추가 (섹션 8)
+- [x] `api/translator.py`에 웹 뷰 엔드포인트 7개 추가 (translate/status/cancel/view/assets/edit)
+- [x] `marked.js` (39KB) + `DOMPurify` (22KB) 번들 (`js/lib/`)
+- [x] 엔진 토글 3종 확장 (`data-engine="web"`) ✅
+- [x] `translator.js` 웹 뷰 엔진 통합
+  - `webPageStatusCache`, `webPollingTimer` 독립 관리
+  - `updateRightPanel()` web 분기, `showRightWebView()` Markdown 렌더링
+  - 번역/취소 버튼 web 분기
+  - `goToPage()`, `showList()`에서 `stopWebPolling()` 호출
+  - 웹 뷰 모드 스크롤 동기화 자동 비활성화
+- [x] `translator.html` web-view-container + markdown-body 컨테이너 추가
+- [x] Markdown 스타일시트 (`css/translator.css`) — 제목/표/이미지/리스트/코드/details, tokens.css 변수, 다크모드 자동
+- [x] E2E 테스트 완료: 웹뷰 번역(추출→번역→Markdown 렌더링) ✅
+- [x] PDF 모드 회귀 테스트 통과 ✅
+- [x] 모드 전환 (PDF↔텍스트↔웹뷰) 정상 ✅
+- [ ] 클릭 네비게이션 → Phase 4+ 이후 (page_boxes 데이터는 저장됨)
+- [ ] 관리자 설정 GUI → Phase 4+ 이후
+- [ ] 전략 객체 리팩토링 → 기능 안정화 후 별도 리팩토링
+
+**참고**: 백엔드 실행 시 venv 활성화 필수 (`pymupdf4llm` 의존)
 
 ### Phase 4: 편집 + 다운로드 + 검색 통합 — 3일
 
