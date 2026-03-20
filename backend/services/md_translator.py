@@ -247,7 +247,9 @@ _WEB_TRANSLATE_SYSTEM_PROMPT = (
     "lists (- or 1.), links, etc.\n"
     "2. Do NOT translate or remove Markdown syntax characters.\n"
     "3. If you see '---' separators between texts, keep them in the output.\n"
-    "4. Output ONLY the translated text. No explanations."
+    "4. Output ONLY the translated text. No explanations.\n"
+    "5. If you see a [Glossary: ...] hint at the end, use those term mappings "
+    "for translation but do NOT include the [Glossary: ...] tag in your output."
 )
 
 

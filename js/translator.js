@@ -750,8 +750,12 @@
 
         function showRightWebView() {
             $rightContainer.style.display = 'none';
-            $rightPlaceholder.style.display = 'none';
-            $webViewContainer.style.display = 'block';
+            // 로딩 상태 표시 (기존 PDF 로드 패턴과 동일)
+            $rightPlaceholder.style.display = 'flex';
+            $rightPlaceholder.innerHTML =
+                '<div class="spinner page-spinner"></div>' +
+                '<div class="placeholder-text">웹 뷰 로드 중...</div>';
+            $webViewContainer.style.display = 'none';
 
             fetch(API + '/api/translator/web-view/' + currentDocId + '/page/' + currentPage, {
                 credentials: 'include',
@@ -770,10 +774,14 @@
                     '![$1](' + API + '/api/translator/web-view/' + currentDocId + '/page/' + currentPage + '/assets/$2)');
                 // marked.js → HTML → DOMPurify
                 var html = DOMPurify.sanitize(marked.parse(md));
+                $rightPlaceholder.style.display = 'none';
+                $webViewContainer.style.display = 'block';
                 $webViewContent.innerHTML = html;
             }).catch(function(err) {
                 console.error('[WebView] load error:', err);
-                $webViewContent.innerHTML = '<p style="color:var(--color-error)">웹 뷰 로드 실패</p>';
+                $rightPlaceholder.style.display = 'none';
+                $webViewContainer.style.display = 'block';
+                $webViewContent.innerHTML = '<p class="placeholder-error">웹 뷰 로드 실패</p>';
             });
         }
 
@@ -892,11 +900,14 @@
         // ── Toolbar status ──
 
         function updateToolbarForStatus(status) {
+            // 웹 뷰 모드에서는 범위 번역 항상 숨김
+            var hideRange = (translateEngine === 'text' || translateEngine === 'web');
+
             if (status === 'pending' || status === 'error') {
                 $translateBtn.style.display = '';
                 $translateBtn.disabled = false;
                 $translateBtn.textContent = status === 'error' ? '재시도' : '이 페이지 번역';
-                $rangeBtn.style.display = translateEngine === 'text' ? 'none' : '';
+                $rangeBtn.style.display = hideRange ? 'none' : '';
                 $cancelBtn.style.display = 'none';
                 $modelSelect.style.display = '';
                 $toolbarStatus.textContent = '';
@@ -916,13 +927,18 @@
                 $translateBtn.disabled = false;
                 $fontScaleDown.disabled = false;
                 $fontScaleUp.disabled = false;
-                $rangeBtn.style.display = translateEngine === 'text' ? 'none' : '';
+                $rangeBtn.style.display = hideRange ? 'none' : '';
                 $cancelBtn.style.display = 'none';
                 $modelSelect.style.display = '';
-                var ps = translateEngine === 'text'
-                    ? textPageStatusCache[String(currentPage)]
-                    : pageStatusCache[String(currentPage)];
-                var info = translateEngine === 'text' ? '[텍스트] ' : '';
+                var ps;
+                if (translateEngine === 'web') {
+                    ps = webPageStatusCache[String(currentPage)];
+                } else if (translateEngine === 'text') {
+                    ps = textPageStatusCache[String(currentPage)];
+                } else {
+                    ps = pageStatusCache[String(currentPage)];
+                }
+                var info = translateEngine === 'web' ? '[웹뷰] ' : (translateEngine === 'text' ? '[텍스트] ' : '');
                 if (ps) {
                     if (ps.model) info += ps.model;
                     if (ps.elapsed_sec) info += ', ' + ps.elapsed_sec + '초';

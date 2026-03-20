@@ -535,12 +535,26 @@ Explorer의 기존 패턴을 **그대로** 재활용:
 
 **참고**: 백엔드 실행 시 venv 활성화 필수 (`pymupdf4llm` 의존)
 
+**Phase 3 코드 리뷰 반영 (2026-03-20)**:
+- [x] Markdown 로딩 시 "웹 뷰 로드 중..." 스피너 표시 (빈 화면 방지)
+- [x] 범위 번역 버튼 웹 뷰 모드에서 숨김
+- [x] 에러 메시지 인라인 스타일 → `.placeholder-error` 클래스 사용
+- [x] 용어집 태그(`[Glossary: ...]`) 번역 결과에 포함 방지 (프롬프트 지시 추가)
+- [x] done 상태 툴바 정보: 웹 뷰 캐시에서 모델/시간 표시 (`[웹뷰]` 접두사)
+
+**Phase 4에서 처리할 항목 (Phase 3 리뷰에서 식별)**:
+- 다운로드 메뉴 웹뷰 대응 (MD 다운로드 옵션)
+- 싱글/듀얼 적응형 레이아웃
+- 웹 뷰 폰트 크기 조절 (CSS font-size)
+- 다크모드 실 테스트
+
 ### Phase 4: 편집 + 다운로드 + 검색 통합 — 3일
 
 - [ ] EasyMDE 번들 (`js/lib/easymde/`)
 - [ ] EasyMDE 다크모드 CSS 오버라이드 검증
 - [ ] 편집 모달 (glossary 모달 패턴: `.modal-overlay` + `.modal-box` + 3종 닫기)
 - [ ] 편집 저장 API + 저장 시 `marked.js` 즉시 재렌더링 + `full_translated.md` 재병합
+- [ ] 다운로드 메뉴 웹뷰 대응 (MD 다운로드 옵션 추가)
 - [ ] Markdown 다운로드 (.md 단일 파일)
 - [ ] 전체 병합 Markdown 다운로드
 - [ ] 이미지 포함 ZIP 다운로드 (Obsidian vault 호환)
