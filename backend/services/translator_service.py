@@ -354,27 +354,46 @@ def search_documents(username: str, query: str, max_results: int = 30) -> dict:
     page_results = []
     for doc_id, doc_data in si.get("documents", {}).items():
         title = doc_data.get("title", "")
+
+        # 원문 + 번역 텍스트를 함께 검색
+        all_pages = {}
         for page_num, page_text in doc_data.get("pages", {}).items():
-            text_lower = page_text.lower()
+            all_pages.setdefault(page_num, {"source": "", "translated": ""})
+            all_pages[page_num]["source"] = page_text
+        for page_num, page_text in doc_data.get("translated_pages", {}).items():
+            all_pages.setdefault(page_num, {"source": "", "translated": ""})
+            all_pages[page_num]["translated"] = page_text
+
+        for page_num, texts in all_pages.items():
+            source_lower = texts["source"].lower()
+            translated_lower = texts["translated"].lower()
             title_lower = title.lower()
 
-            # 스코어: 제목 매치 +10, 본문 매치 +1 (각 term 당)
             score = 0
+            match_source = ""
             for t in terms:
                 if t in title_lower:
                     score += 10
-                if t in text_lower:
-                    score += text_lower.count(t)
+                if t in source_lower:
+                    score += source_lower.count(t)
+                    if not match_source:
+                        match_source = "source"
+                if t in translated_lower:
+                    score += translated_lower.count(t)
+                    if not match_source:
+                        match_source = "translated"
 
             if score > 0:
-                # 스니펫: 첫 매치 주변 텍스트
-                snippet = _make_snippet(page_text, terms[0], context=60)
+                # 스니펫: 매칭된 텍스트에서 생성
+                snippet_text = texts["translated"] if match_source == "translated" else texts["source"]
+                snippet = _make_snippet(snippet_text, terms[0], context=60)
                 page_results.append({
                     "doc_id": doc_id,
                     "doc_title": doc_titles.get(doc_id, title),
                     "page": int(page_num),
                     "snippet": snippet,
                     "score": score,
+                    "match_source": match_source,
                 })
 
     # 정렬: 스코어 내림차순
@@ -1350,6 +1369,240 @@ def cancel_text_translation(username: str, doc_id: str, page_num: int) -> bool:
         meta["page_status"][str(page_num)] = ps
         _save_meta(username, doc_id, meta)
     return True
+
+
+# ══════════════════════════════════════
+# 웹 뷰 번역 (Markdown)
+# ══════════════════════════════════════
+
+_web_active_tasks: dict[str, asyncio.Task] = {}
+_web_page_progress: dict[str, str] = {}
+
+
+def start_web_translation(username: str, doc_id: str, page_num: int,
+                          model: Optional[str] = None):
+    """웹 뷰 번역 시작 (추출+번역 일괄) → asyncio.Task 생성, 즉시 반환"""
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        raise FileNotFoundError(f"문서 없음: {doc_id}")
+
+    total = meta.get("pages", 0)
+    if page_num < 1 or page_num > total:
+        raise ValueError(f"유효하지 않은 페이지 번호: {page_num} (1~{total})")
+
+    key = f"wt:{doc_id}:{page_num}"
+    if key in _web_active_tasks and not _web_active_tasks[key].done():
+        raise RuntimeError("이 페이지에서 웹 뷰 번역이 진행 중입니다")
+
+    effective_model = model or config.TRANSLATOR_TRANSLATION_MODEL or config.OLLAMA_MODEL
+
+    # meta.json에 웹 번역 상태 기록
+    page_status = meta.get("page_status", {})
+    ps = page_status.get(str(page_num), {})
+    ps["web_translate"] = {
+        "status": "translating",
+        "model": effective_model,
+        "started_at": datetime.now().isoformat(),
+    }
+    page_status[str(page_num)] = ps
+    meta["page_status"] = page_status
+    _save_meta(username, doc_id, meta)
+
+    _web_page_progress[key] = "추출 준비 중..."
+    task = asyncio.create_task(
+        _run_web_translation(username, doc_id, page_num, effective_model, key)
+    )
+    _web_active_tasks[key] = task
+
+
+async def _run_web_translation(username: str, doc_id: str, page_num: int,
+                                model: str, key: str):
+    """웹 뷰 번역 비동기 래퍼: 추출 → 번역 → 저장 일괄 실행"""
+    from services.md_extractor import extract_page
+    from services.md_translator import (
+        parse_blocks, translate_blocks, assemble_translated_md,
+        merge_full_translated,
+    )
+    import time as _time
+
+    src_path = _doc_dir(username, doc_id) / "original.pdf"
+    output_dir = _doc_dir(username, doc_id) / "pages" / str(page_num)
+    assets_dir = output_dir / "assets"
+
+    start_time = _time.monotonic()
+
+    def progress_cb(stage: str):
+        _web_page_progress[key] = stage
+
+    # 용어집 로드
+    glossary_entries = None
+    try:
+        import fitz as _fitz
+        _tmp_doc = _fitz.open(str(src_path))
+        _page_text = _tmp_doc[page_num - 1].get_text()
+        _tmp_doc.close()
+        entries = get_glossary_entries_for_page(username, _page_text)
+        if entries:
+            glossary_entries = entries
+    except Exception:
+        pass
+
+    try:
+        loop = asyncio.get_event_loop()
+
+        def _sync_pipeline():
+            # 1. 추출
+            progress_cb("PDF에서 Markdown 추출 중...")
+            result = extract_page(src_path, page_num, assets_dir=assets_dir)
+
+            # 2. 블록 파싱
+            blocks = parse_blocks(result["markdown"])
+
+            # 3. 번역
+            translate_blocks(blocks, model,
+                           glossary_entries=glossary_entries,
+                           progress_callback=progress_cb)
+
+            # 4. 조립
+            meta = _load_meta(username, doc_id)
+            title = (meta or {}).get("title", "")
+            total_pages = (meta or {}).get("pages", 0)
+
+            md_text = assemble_translated_md(
+                blocks,
+                page_num=page_num,
+                total_pages=total_pages,
+                model=model,
+                title=title,
+                assets_dir=assets_dir,
+            )
+
+            # 5. 저장
+            progress_cb("Markdown 저장 중...")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            md_path = output_dir / "web_translated.md"
+            md_path.write_text(md_text, encoding="utf-8")
+
+            # 6. page_boxes 저장 (클릭 네비게이션용)
+            import json
+            boxes_path = output_dir / "web_page_boxes.json"
+            with open(boxes_path, "w", encoding="utf-8") as f:
+                json.dump(result["page_boxes"], f, ensure_ascii=False)
+
+            # 7. 전체 병합
+            doc_dir = _doc_dir(username, doc_id)
+            merge_full_translated(doc_dir, total_pages, title)
+
+            return md_text
+
+        md_text = await loop.run_in_executor(None, _sync_pipeline)
+        elapsed = _time.monotonic() - start_time
+
+        # 성공 — meta.json 갱신
+        meta = _load_meta(username, doc_id)
+        if meta:
+            ps = meta.get("page_status", {}).get(str(page_num), {})
+            ps["web_translate"] = {
+                "status": "done",
+                "model": model,
+                "translated_at": datetime.now().isoformat(),
+                "elapsed_sec": round(elapsed, 1),
+            }
+            meta["page_status"][str(page_num)] = ps
+            _save_meta(username, doc_id, meta)
+
+        # 검색 인덱스에 번역 텍스트 추가
+        _add_translated_to_search_index(username, doc_id, page_num, md_text)
+
+        logger.info(f"웹 뷰 번역 완료: {doc_id} p{page_num} ({elapsed:.1f}s)")
+
+    except Exception as e:
+        logger.error(f"웹 뷰 번역 실패: {doc_id} p{page_num}: {e}")
+        meta = _load_meta(username, doc_id)
+        if meta:
+            ps = meta.get("page_status", {}).get(str(page_num), {})
+            ps["web_translate"] = {
+                "status": "error",
+                "error": str(e),
+            }
+            meta["page_status"][str(page_num)] = ps
+            _save_meta(username, doc_id, meta)
+    finally:
+        _web_active_tasks.pop(key, None)
+        _web_page_progress.pop(key, None)
+
+
+def get_web_translation_status(username: str, doc_id: str, page_num: int) -> Optional[dict]:
+    """웹 뷰 번역 상태"""
+    key = f"wt:{doc_id}:{page_num}"
+    if key in _web_active_tasks and not _web_active_tasks[key].done():
+        return {
+            "status": "translating",
+            "progress_stage": _web_page_progress.get(key, "준비 중..."),
+        }
+
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        return None
+
+    ps = meta.get("page_status", {}).get(str(page_num), {})
+    wt = ps.get("web_translate")
+    if not wt:
+        return {"status": "pending"}
+    return wt
+
+
+def get_web_translated_md(username: str, doc_id: str, page_num: int) -> Optional[str]:
+    """번역된 Markdown 파일 내용 반환"""
+    path = _doc_dir(username, doc_id) / "pages" / str(page_num) / "web_translated.md"
+    if not path.exists():
+        return None
+    return path.read_text(encoding="utf-8")
+
+
+def get_web_page_boxes(username: str, doc_id: str, page_num: int) -> Optional[list]:
+    """클릭 네비게이션용 page_boxes 반환"""
+    path = _doc_dir(username, doc_id) / "pages" / str(page_num) / "web_page_boxes.json"
+    if not path.exists():
+        return None
+    import json
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def cancel_web_translation(username: str, doc_id: str, page_num: int) -> bool:
+    """웹 뷰 번역 취소"""
+    key = f"wt:{doc_id}:{page_num}"
+    task = _web_active_tasks.pop(key, None)
+    if task and not task.done():
+        task.cancel()
+    _web_page_progress.pop(key, None)
+
+    meta = _load_meta(username, doc_id)
+    if meta:
+        ps = meta.get("page_status", {}).get(str(page_num), {})
+        ps.pop("web_translate", None)
+        meta["page_status"][str(page_num)] = ps
+        _save_meta(username, doc_id, meta)
+    return True
+
+
+def _add_translated_to_search_index(username: str, doc_id: str, page_num: int, md_text: str):
+    """검색 인덱스에 번역 텍스트 추가 (translated_pages 키)"""
+    from services.md_translator import _strip_frontmatter
+    body = _strip_frontmatter(md_text).strip()
+    if not body:
+        return
+
+    si = _load_search_index(username)
+    doc_entry = si.get("documents", {}).get(doc_id)
+    if not doc_entry:
+        return
+
+    if "translated_pages" not in doc_entry:
+        doc_entry["translated_pages"] = {}
+    doc_entry["translated_pages"][str(page_num)] = body
+    _save_search_index(username, si)
 
 
 # ── 헬퍼 ──
