@@ -1,8 +1,9 @@
 # Plan 17: Library — 개인 지식 저장소 구축
 
 > 작성일: 2026-03-19
-> 최종 갱신: 2026-03-19
-> 상태: 설계 완료 (검토 반영)
+> 최종 갱신: 2026-03-20
+> 상태: Phase 1 완료 / Phase 2~5 미착수
+> 브랜치: `plan17-library`
 > 선행: Plan 16 완료 (Phase 1~4)
 > 범위: Phase 1~5 확정 / Phase 6~7 피드백 후 별도 계획
 
@@ -470,21 +471,26 @@ Explorer의 기존 패턴을 **그대로** 재활용:
 
 ## 7. 실행 계획
 
-### Phase 1: 추출 파이프라인 (PyMuPDF4LLM) — 2~3일
+### Phase 1: 추출 파이프라인 (PyMuPDF4LLM) — ✅ 완료
 
-- [ ] `pymupdf4llm` 패키지 설치 및 폐쇄망 whl 준비
-- [ ] **사전 검증** (착수 전 반드시 확인)
-  - `to_markdown(pages=[N])` 페이지 지정 추출 동작 확인
-  - `page_chunks=True` JSON 출력에 bbox 좌표 포함 여부 → 클릭 네비게이션 가능 여부 결정
-  - marked.js UMD 빌드 `<script>` 로드 가능 여부
-- [ ] `services/md_extractor.py` — PDF→Markdown 추출 모듈
-  - `extract_page(pdf_path, page_num) → (markdown_text, assets_list)`
-  - 표 추출: `TRANSLATOR_WEB_TABLE_MODE` 설정 분기
-  - 수식 추출: `TRANSLATOR_WEB_FORMULA_MODE` 설정 분기
-  - 이미지 추출: `write_images=True`, DPI 설정 반영
-  - 디버그 모드: `TRANSLATOR_WEB_DEBUG=True` 시 중간 결과(추출 원문) 파일 저장
-- [ ] 다양한 PDF 유형으로 추출 품질 검증 (논문, 스팩, 매뉴얼, 스캔 PDF)
-- [ ] 관리자 설정 키 추가 (`config.py`, `settings_service.py`, `admin-settings.js` 3개 파일 동시)
+- [x] `pymupdf4llm` 1.27.2.1 설치 + 폐쇄망 whl 준비 (`backend/packages/`)
+- [x] **사전 검증** 완료
+  - `to_markdown(pages=[N])` ✅ 페이지 지정 추출 정상
+  - `page_chunks=True` ✅ `page_boxes`에 bbox + class + pos 포함 → **클릭 네비게이션 가능 확정**
+  - marked.js UMD 빌드 → Phase 3에서 확인 (Phase 1 범위 밖)
+- [x] `services/md_extractor.py` 구현 완료
+  - `extract_page(pdf_path, page_num, assets_dir)` → `{markdown, page_boxes, assets, metadata}`
+  - 표 추출: `TRANSLATOR_WEB_TABLE_MODE` (extract/image/off) 분기 구현
+  - 수식 추출: `TRANSLATOR_WEB_FORMULA_MODE` 설정 키 준비 (Pix2Text 연동은 향후)
+  - 이미지 추출: `write_images=True`, DPI 설정 반영 ✅
+  - 디버그 모드: `TRANSLATOR_WEB_DEBUG=True` 시 `debug_source.md` 저장 ✅
+- [x] 추출 품질 검증: MyPaper PDF (논문, 표 5개+, 이미지 1개+) ✅
+  - 추가 검증 필요: 스팩 문서, 매뉴얼, 스캔 PDF (사용자 테스트)
+- [x] 관리자 설정 키 추가: `config.py` ✅, `settings_service.py` ✅
+  - `admin-settings.js` SCHEMA → Phase 3 프론트엔드에서 추가 예정
+- [x] 코드 리뷰 반영: `table_mode="image"` 동작 분리, `_remove_markdown_tables` 개선
+
+**참고**: PyMuPDF 1.25.2→1.27.2 업그레이드됨. pdf2zh-next 호환성 경고 있으나 기존 기능 정상 동작 확인. (리스크 섹션 참조)
 
 ### Phase 2: 번역 파이프라인 — 3~4일
 
