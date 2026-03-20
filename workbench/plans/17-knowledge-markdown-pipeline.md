@@ -473,37 +473,37 @@ Explorer의 기존 패턴을 **그대로** 재활용:
 
 ### Phase 1: 추출 파이프라인 (PyMuPDF4LLM) — 완료
 
-- [x] `pymupdf4llm` 1.27.2.1 설치 + 폐쇄망 whl 준비
-- [x] 사전 검증 완료 (`pages=[N]`, `page_boxes` bbox, 표 구조 추출, 이미지 추출)
-- [x] `services/md_extractor.py` 구현 (표/수식/이미지 모드 분기, 디버그 모드)
-- [x] 추출 품질 검증 (MyPaper PDF)
-- [x] 관리자 설정 키 추가 (`config.py`, `settings_service.py`)
-- [x] 코드 리뷰 반영 (`table_mode` 분기, `_remove_markdown_tables` 개선)
+- ✅ `pymupdf4llm` 1.27.2.1 설치 + 폐쇄망 whl 준비
+- ✅ 사전 검증 완료 (`pages=[N]`, `page_boxes` bbox, 표 구조 추출, 이미지 추출)
+- ✅ `services/md_extractor.py` 구현 (표/수식/이미지 모드 분기, 디버그 모드)
+- ✅ 추출 품질 검증 (MyPaper PDF)
+- ✅ 관리자 설정 키 추가 (`config.py`, `settings_service.py`)
+- ✅ 코드 리뷰 반영 (`table_mode` 분기, `_remove_markdown_tables` 개선)
 
 > PyMuPDF 1.25.2→1.27.2 업그레이드됨. 기존 기능 정상. (리스크 섹션 참조)
 
 ### Phase 2: 번역 파이프라인 — 완료
 
-- [x] `services/md_translator.py` 구현 (블록 파서 6종, 일괄 번역, 표 셀 번역, 용어집, frontmatter)
-- [x] `translator_service.py` 웹 번역 서비스 통합 (start/status/cancel/get_md/get_boxes)
-- [x] `full_translated.md` 자동 병합 (페이지별 모델/일자 주석)
-- [x] 검색 인덱스 확장 (`translated_pages` 별도 키, `match_source`)
-- [x] 코드 리뷰 반영 (일괄 번역 65초→22초, Markdown 보존 프롬프트, 죽은 코드 제거)
-- [ ] 자동 요약 + 키워드 추출 → Phase 5+ 이후
+- ✅ `services/md_translator.py` 구현 (블록 파서 6종, 일괄 번역, 표 셀 번역, 용어집, frontmatter)
+- ✅ `translator_service.py` 웹 번역 서비스 통합 (start/status/cancel/get_md/get_boxes)
+- ✅ `full_translated.md` 자동 병합 (페이지별 모델/일자 주석)
+- ✅ 검색 인덱스 확장 (`translated_pages` 별도 키, `match_source`)
+- ✅ 코드 리뷰 반영 (일괄 번역 65초→22초, Markdown 보존 프롬프트, 죽은 코드 제거)
+- ⬜ 자동 요약 + 키워드 추출 → Phase 5+ 이후
 
 ### Phase 3: 프론트엔드 (웹 뷰) — 완료
 
-- [x] API 7개 엔드포인트 (translate/status/cancel/view/assets/edit)
-- [x] `marked.js` + `DOMPurify` 번들
-- [x] 엔진 토글 3종, 웹 뷰 엔진 통합, 폴링/캐시/취소
-- [x] Markdown 스타일시트 (tokens.css 변수, 다크모드)
-- [x] E2E 테스트 + PDF 회귀 테스트 통과
-- [x] 코드 리뷰 반영 (로딩 스피너, 범위 번역 숨김, 에러 클래스, 용어집 태그 방지)
-- [x] 사용자 피드백 반영: 엔진 토글 우측 끝 고정, Markdown 스타일 Explorer 패턴 적용 (max-width 900px, line-height 1.8, 좌측 정렬)
-- [ ] 클릭 네비게이션 → Phase 4+ 이후
-- [ ] 관리자 설정 GUI → Phase 4+ 이후
-- [ ] 전략 객체 리팩토링 → 별도 리팩토링
-- [ ] 번역 속도 최적화 (블록 병렬 호출) → 향후
+- ✅ API 7개 엔드포인트 (translate/status/cancel/view/assets/edit)
+- ✅ `marked.js` + `DOMPurify` 번들
+- ✅ 엔진 토글 3종, 웹 뷰 엔진 통합, 폴링/캐시/취소
+- ✅ Markdown 스타일시트 (tokens.css 변수, 다크모드)
+- ✅ E2E 테스트 + PDF 회귀 테스트 통과
+- ✅ 코드 리뷰 반영 (로딩 스피너, 범위 번역 숨김, 에러 클래스, 용어집 태그 방지)
+- ✅ 사용자 피드백 반영: 엔진 토글 우측 끝 고정, Markdown 스타일 Explorer 패턴 적용 (max-width 900px, line-height 1.8, 좌측 정렬)
+- ⬜ 클릭 네비게이션 → Phase 4+ 이후
+- ⬜ 관리자 설정 GUI → Phase 4+ 이후
+- ⬜ 전략 객체 리팩토링 → 별도 리팩토링
+- ⬜ 번역 속도 최적화 (블록 병렬 호출) → 향후
 
 > 백엔드 실행 시 venv 활성화 필수 (`pymupdf4llm` 의존)
 
@@ -515,24 +515,24 @@ Explorer의 기존 패턴을 **그대로** 재활용:
 
 ### Phase 4: 편집 + 다운로드 + 검색 통합 — 3일
 
-- [ ] EasyMDE 번들 (`js/lib/easymde/`)
-- [ ] EasyMDE 다크모드 CSS 오버라이드 검증
-- [ ] 편집 모달 (glossary 모달 패턴: `.modal-overlay` + `.modal-box` + 3종 닫기)
-- [ ] 편집 저장 API + 저장 시 `marked.js` 즉시 재렌더링 + `full_translated.md` 재병합
-- [ ] 다운로드 메뉴 웹뷰 대응 (MD 다운로드 옵션 추가)
-- [ ] Markdown 다운로드 (.md 단일 파일)
-- [ ] 전체 병합 Markdown 다운로드
-- [ ] 이미지 포함 ZIP 다운로드 (Obsidian vault 호환)
-- [ ] 검색 인덱스에 번역 텍스트 포함 (원문/번역 구분 표시)
+- ⬜ EasyMDE 번들 (`js/lib/easymde/`)
+- ⬜ EasyMDE 다크모드 CSS 오버라이드 검증
+- ⬜ 편집 모달 (glossary 모달 패턴: `.modal-overlay` + `.modal-box` + 3종 닫기)
+- ⬜ 편집 저장 API + 저장 시 `marked.js` 즉시 재렌더링 + `full_translated.md` 재병합
+- ⬜ 다운로드 메뉴 웹뷰 대응 (MD 다운로드 옵션 추가)
+- ⬜ Markdown 다운로드 (.md 단일 파일)
+- ⬜ 전체 병합 Markdown 다운로드
+- ⬜ 이미지 포함 ZIP 다운로드 (Obsidian vault 호환)
+- ⬜ 검색 인덱스에 번역 텍스트 포함 (원문/번역 구분 표시)
 
 ### Phase 5: UI 리네이밍 — 0.5일
 
 > 기능 안정화 후 마지막에 수행. 파일명은 유지, UI 텍스트만 변경.
 
-- [ ] 런처 카드 이름/설명 변경 ("Library" 또는 "개인 문서함")
-- [ ] 헤더 타이틀, HTML `<title>` 변경
-- [ ] 카드 목록 정보 확장 (웹뷰 상태, 메모 수 표시)
-- [ ] 기존 기능 회귀 테스트
+- ⬜ 런처 카드 이름/설명 변경 ("Library" 또는 "개인 문서함")
+- ⬜ 헤더 타이틀, HTML `<title>` 변경
+- ⬜ 카드 목록 정보 확장 (웹뷰 상태, 메모 수 표시)
+- ⬜ 기존 기능 회귀 테스트
 
 ---
 
