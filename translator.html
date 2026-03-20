@@ -142,6 +142,7 @@
                 <div class="mode-toggle" id="engine-toggle">
                     <button class="mode-toggle-btn active" data-engine="pdf">PDF</button>
                     <button class="mode-toggle-btn" data-engine="text">텍스트</button>
+                    <button class="mode-toggle-btn" data-engine="web">웹 뷰</button>
                 </div>
                 <span class="font-scale-controls" id="font-scale-controls" style="display:none">
                     <span class="toolbar-sep"></span>
@@ -211,6 +212,9 @@
                         <div class="text-layer" id="right-text-layer"></div>
                         <div class="annotation-layer" id="right-annotation-layer"></div>
                     </div>
+                    <div class="web-view-container" id="web-view-container" style="display:none">
+                        <div class="web-view-content markdown-body" id="web-view-content"></div>
+                    </div>
                     <div class="right-panel-placeholder" id="right-placeholder">
                         <div class="placeholder-icon">&#128221;</div>
                         <div class="placeholder-text">이 페이지는 아직 번역되지 않았습니다</div>
@@ -258,6 +262,8 @@
 
     <script src="js/config.js"></script>
     <script src="js/lib/pdfjs/pdf.min.js"></script>
+    <script src="js/lib/marked.min.js"></script>
+    <script src="js/lib/purify.min.js"></script>
     <script src="js/platform-header.js"></script>
     <script src="js/platform-footer.js"></script>
     <script>

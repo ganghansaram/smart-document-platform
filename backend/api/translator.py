@@ -16,6 +16,8 @@ from services.translator_service import (
     move_document_to_folder,
     start_text_translation, get_text_translation_status,
     get_text_translated_pdf_path, cancel_text_translation,
+    start_web_translation, get_web_translation_status,
+    get_web_translated_md, get_web_page_boxes, cancel_web_translation,
     get_annotations, create_annotation, update_annotation, delete_annotation,
     ai_selection_query,
     search_documents,
@@ -459,6 +461,119 @@ async def api_cancel_text_translation(
     """텍스트 번역 취소"""
     cancel_text_translation(user["username"], doc_id, page_num)
     return {"success": True, "status": "cancelled"}
+
+
+# ── 웹 뷰 번역 (Markdown) ──
+
+@router.post("/web-translate/{doc_id}/page/{page_num}")
+async def api_start_web_translation(
+    doc_id: str,
+    page_num: int,
+    body: dict = Body(default={}),
+    user: dict = Depends(get_current_user),
+):
+    """웹 뷰 번역 시작 (추출+번역 일괄) → 202 Accepted"""
+    model = body.get("model")
+    try:
+        start_web_translation(user["username"], doc_id, page_num, model)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return JSONResponse(
+        status_code=202,
+        content={"status": "translating", "doc_id": doc_id, "page": page_num, "mode": "web"},
+    )
+
+
+@router.get("/web-translate/{doc_id}/page/{page_num}/status")
+async def api_web_translation_status(
+    doc_id: str,
+    page_num: int,
+    user: dict = Depends(get_current_user),
+):
+    """웹 뷰 번역 상태"""
+    status = get_web_translation_status(user["username"], doc_id, page_num)
+    if status is None:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    return status
+
+
+@router.post("/web-translate/{doc_id}/page/{page_num}/cancel")
+async def api_cancel_web_translation(
+    doc_id: str,
+    page_num: int,
+    user: dict = Depends(get_current_user),
+):
+    """웹 뷰 번역 취소"""
+    cancel_web_translation(user["username"], doc_id, page_num)
+    return {"success": True, "status": "cancelled"}
+
+
+@router.get("/web-view/{doc_id}/page/{page_num}")
+async def api_serve_web_view(
+    doc_id: str,
+    page_num: int,
+    user: dict = Depends(get_current_user),
+):
+    """페이지 번역 Markdown 서빙"""
+    md = get_web_translated_md(user["username"], doc_id, page_num)
+    if md is None:
+        raise HTTPException(status_code=404, detail="웹 뷰 번역이 없습니다")
+    boxes = get_web_page_boxes(user["username"], doc_id, page_num)
+    return {"markdown": md, "page_boxes": boxes}
+
+
+@router.get("/web-view/{doc_id}/page/{page_num}/assets/{filename}")
+async def api_serve_web_asset(
+    doc_id: str,
+    page_num: int,
+    filename: str,
+    user: dict = Depends(get_current_user),
+):
+    """웹 뷰 이미지 자산 서빙"""
+    from pathlib import Path
+    assets_dir = Path(config.TRANSLATOR_DATA_DIR) / user["username"] / doc_id / "pages" / str(page_num) / "assets"
+    file_path = assets_dir / filename
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="이미지를 찾을 수 없습니다")
+    # 경로 탈출 방지
+    if not file_path.resolve().is_relative_to(assets_dir.resolve()):
+        raise HTTPException(status_code=403, detail="접근 거부")
+    media_type = "image/png" if filename.endswith(".png") else "image/jpeg"
+    return FileResponse(path=str(file_path), media_type=media_type)
+
+
+@router.put("/web-view/{doc_id}/page/{page_num}")
+async def api_save_web_view(
+    doc_id: str,
+    page_num: int,
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """Markdown 편집 저장"""
+    data = await request.json()
+    markdown = data.get("markdown", "")
+    if not markdown:
+        raise HTTPException(status_code=400, detail="markdown 내용이 비어있습니다")
+
+    from pathlib import Path
+    md_path = Path(config.TRANSLATOR_DATA_DIR) / user["username"] / doc_id / "pages" / str(page_num) / "web_translated.md"
+    if not md_path.parent.exists():
+        raise HTTPException(status_code=404, detail="문서 페이지를 찾을 수 없습니다")
+    md_path.write_text(markdown, encoding="utf-8")
+
+    # full_translated.md 재병합
+    from services.translator_service import _load_meta, _doc_dir
+    from services.md_translator import merge_full_translated
+    meta = _load_meta(user["username"], doc_id)
+    if meta:
+        doc_dir = _doc_dir(user["username"], doc_id)
+        merge_full_translated(doc_dir, meta.get("pages", 0), meta.get("title", ""))
+
+    return {"success": True}
 
 
 @router.get("/models")
