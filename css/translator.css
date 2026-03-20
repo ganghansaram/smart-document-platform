@@ -1609,17 +1609,20 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--white);
-    padding: var(--space-lg);
+    padding: var(--space-lg) var(--space-xl);
     box-sizing: border-box;
 }
 
-/* Markdown body 기본 타이포그래피 */
+/* Markdown body — Explorer content.css 패턴에 맞춤 */
 .markdown-body {
+    max-width: 900px;
+    margin: 0 auto;
     font-family: var(--font-body);
     font-size: 15px;
-    line-height: 1.7;
+    line-height: 1.8;
     color: var(--text);
     word-break: break-word;
+    text-align: left;
 }
 
 .markdown-body h1,
@@ -1632,8 +1635,8 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
     line-height: 1.3;
     color: var(--text);
 }
-.markdown-body h1 { font-size: 1.6em; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs); }
-.markdown-body h2 { font-size: 1.35em; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs); }
+.markdown-body h1 { font-size: 1.5em; border-bottom: 2px solid var(--active-color); padding-bottom: var(--space-xs); }
+.markdown-body h2 { font-size: 1.3em; border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs); }
 .markdown-body h3 { font-size: 1.15em; }
 .markdown-body h4 { font-size: 1.05em; }
 

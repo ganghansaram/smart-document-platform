@@ -139,11 +139,6 @@
                     </div>
                 </span>
                 <select class="form-select form-select-sm" id="model-select"></select>
-                <div class="mode-toggle" id="engine-toggle">
-                    <button class="mode-toggle-btn active" data-engine="pdf">PDF</button>
-                    <button class="mode-toggle-btn" data-engine="text">텍스트</button>
-                    <button class="mode-toggle-btn" data-engine="web">웹 뷰</button>
-                </div>
                 <span class="font-scale-controls" id="font-scale-controls" style="display:none">
                     <span class="toolbar-sep"></span>
                     <button class="toolbar-btn" id="font-scale-down" title="폰트 축소">
@@ -161,6 +156,14 @@
                 <button class="translate-page-btn" id="translate-page-btn">번역</button>
                 <button class="range-translate-btn" id="range-translate-btn">범위 번역</button>
                 <button class="cancel-page-btn" id="cancel-page-btn" style="display:none">취소</button>
+
+                <span class="toolbar-sep"></span>
+
+                <div class="mode-toggle" id="engine-toggle">
+                    <button class="mode-toggle-btn active" data-engine="pdf">PDF</button>
+                    <button class="mode-toggle-btn" data-engine="text">텍스트</button>
+                    <button class="mode-toggle-btn" data-engine="web">웹 뷰</button>
+                </div>
             </div>
             <!-- 범위 번역 다이얼로그 -->
             <div class="range-dialog-overlay" id="range-dialog-overlay">

@@ -471,81 +471,46 @@ Explorer의 기존 패턴을 **그대로** 재활용:
 
 ## 7. 실행 계획
 
-### Phase 1: 추출 파이프라인 (PyMuPDF4LLM) — ✅ 완료
+### Phase 1: 추출 파이프라인 (PyMuPDF4LLM) — 완료
 
-- [x] `pymupdf4llm` 1.27.2.1 설치 + 폐쇄망 whl 준비 (`backend/packages/`)
-- [x] **사전 검증** 완료
-  - `to_markdown(pages=[N])` ✅ 페이지 지정 추출 정상
-  - `page_chunks=True` ✅ `page_boxes`에 bbox + class + pos 포함 → **클릭 네비게이션 가능 확정**
-  - marked.js UMD 빌드 → Phase 3에서 확인 (Phase 1 범위 밖)
-- [x] `services/md_extractor.py` 구현 완료
-  - `extract_page(pdf_path, page_num, assets_dir)` → `{markdown, page_boxes, assets, metadata}`
-  - 표 추출: `TRANSLATOR_WEB_TABLE_MODE` (extract/image/off) 분기 구현
-  - 수식 추출: `TRANSLATOR_WEB_FORMULA_MODE` 설정 키 준비 (Pix2Text 연동은 향후)
-  - 이미지 추출: `write_images=True`, DPI 설정 반영 ✅
-  - 디버그 모드: `TRANSLATOR_WEB_DEBUG=True` 시 `debug_source.md` 저장 ✅
-- [x] 추출 품질 검증: MyPaper PDF (논문, 표 5개+, 이미지 1개+) ✅
-  - 추가 검증 필요: 스팩 문서, 매뉴얼, 스캔 PDF (사용자 테스트)
-- [x] 관리자 설정 키 추가: `config.py` ✅, `settings_service.py` ✅
-  - `admin-settings.js` SCHEMA → Phase 3 프론트엔드에서 추가 예정
-- [x] 코드 리뷰 반영: `table_mode="image"` 동작 분리, `_remove_markdown_tables` 개선
+- [x] `pymupdf4llm` 1.27.2.1 설치 + 폐쇄망 whl 준비
+- [x] 사전 검증 완료 (`pages=[N]`, `page_boxes` bbox, 표 구조 추출, 이미지 추출)
+- [x] `services/md_extractor.py` 구현 (표/수식/이미지 모드 분기, 디버그 모드)
+- [x] 추출 품질 검증 (MyPaper PDF)
+- [x] 관리자 설정 키 추가 (`config.py`, `settings_service.py`)
+- [x] 코드 리뷰 반영 (`table_mode` 분기, `_remove_markdown_tables` 개선)
 
-**참고**: PyMuPDF 1.25.2→1.27.2 업그레이드됨. pdf2zh-next 호환성 경고 있으나 기존 기능 정상 동작 확인. (리스크 섹션 참조)
+> PyMuPDF 1.25.2→1.27.2 업그레이드됨. 기존 기능 정상. (리스크 섹션 참조)
 
-### Phase 2: 번역 파이프라인 — ✅ 완료
+### Phase 2: 번역 파이프라인 — 완료
 
-- [x] `services/md_translator.py` 구현 완료
-  - 블록 파서: heading, paragraph, table, list, image, blank 6종 분리
-  - **일괄 번역**: 인접 텍스트 블록을 `---` 구분자로 묶어 Ollama 1회 호출 (21블록→3회, **65초→22초**)
-  - **표 셀 번역**: Markdown 구문 보존, 숫자 셀 스킵, 일괄→폴백 패턴
-  - 용어집 적용 ✅ (기존 `glossary.json` 재활용)
-  - frontmatter 자동 생성 ✅ (title 따옴표 이스케이프 포함)
-  - Markdown 보존 프롬프트 ✅ (`##`, `**`, `-` 등 서식 유지 지시)
-  - 이미지 절대→상대 경로 변환 ✅
-- [x] `translator_service.py` 웹 번역 서비스 통합
-  - `start_web_translation()` / `get_web_translation_status()` / `cancel_web_translation()`
-  - `get_web_translated_md()` / `get_web_page_boxes()`
-  - `meta.json` `page_status.{N}.web_translate` 갱신 (기존 `text_translate` 패턴)
-  - `_web_active_tasks` 독립 딕셔너리 (PDF/텍스트 엔진과 분리)
-- [x] `full_translated.md` 자동 병합 (페이지별 모델/일자 주석 포함)
-- [ ] 자동 요약 + 키워드 추출 (`TRANSLATOR_WEB_AUTO_SUMMARY` 설정 시) → Phase 5+ 이후
-- [x] 검색 인덱스 확장: `translated_pages` 별도 키, 원문/번역 분리 검색, `match_source` 필드
+- [x] `services/md_translator.py` 구현 (블록 파서 6종, 일괄 번역, 표 셀 번역, 용어집, frontmatter)
+- [x] `translator_service.py` 웹 번역 서비스 통합 (start/status/cancel/get_md/get_boxes)
+- [x] `full_translated.md` 자동 병합 (페이지별 모델/일자 주석)
+- [x] 검색 인덱스 확장 (`translated_pages` 별도 키, `match_source`)
+- [x] 코드 리뷰 반영 (일괄 번역 65초→22초, Markdown 보존 프롬프트, 죽은 코드 제거)
+- [ ] 자동 요약 + 키워드 추출 → Phase 5+ 이후
 
-**퍼포먼스**: 4페이지 논문 1페이지 기준 — 21블록 파싱 → 3그룹 일괄 번역 → 22초 완료 (개별 대비 66% 감소)
+### Phase 3: 프론트엔드 (웹 뷰) — 완료
 
-### Phase 3: 프론트엔드 (웹 뷰) — ✅ 완료
-
-- [x] `api/translator.py`에 웹 뷰 엔드포인트 7개 추가 (translate/status/cancel/view/assets/edit)
-- [x] `marked.js` (39KB) + `DOMPurify` (22KB) 번들 (`js/lib/`)
-- [x] 엔진 토글 3종 확장 (`data-engine="web"`) ✅
-- [x] `translator.js` 웹 뷰 엔진 통합
-  - `webPageStatusCache`, `webPollingTimer` 독립 관리
-  - `updateRightPanel()` web 분기, `showRightWebView()` Markdown 렌더링
-  - 번역/취소 버튼 web 분기
-  - `goToPage()`, `showList()`에서 `stopWebPolling()` 호출
-  - 웹 뷰 모드 스크롤 동기화 자동 비활성화
-- [x] `translator.html` web-view-container + markdown-body 컨테이너 추가
-- [x] Markdown 스타일시트 (`css/translator.css`) — 제목/표/이미지/리스트/코드/details, tokens.css 변수, 다크모드 자동
-- [x] E2E 테스트 완료: 웹뷰 번역(추출→번역→Markdown 렌더링) ✅
-- [x] PDF 모드 회귀 테스트 통과 ✅
-- [x] 모드 전환 (PDF↔텍스트↔웹뷰) 정상 ✅
-- [ ] 클릭 네비게이션 → Phase 4+ 이후 (page_boxes 데이터는 저장됨)
+- [x] API 7개 엔드포인트 (translate/status/cancel/view/assets/edit)
+- [x] `marked.js` + `DOMPurify` 번들
+- [x] 엔진 토글 3종, 웹 뷰 엔진 통합, 폴링/캐시/취소
+- [x] Markdown 스타일시트 (tokens.css 변수, 다크모드)
+- [x] E2E 테스트 + PDF 회귀 테스트 통과
+- [x] 코드 리뷰 반영 (로딩 스피너, 범위 번역 숨김, 에러 클래스, 용어집 태그 방지)
+- [x] 사용자 피드백 반영: 엔진 토글 우측 끝 고정, Markdown 스타일 Explorer 패턴 적용 (max-width 900px, line-height 1.8, 좌측 정렬)
+- [ ] 클릭 네비게이션 → Phase 4+ 이후
 - [ ] 관리자 설정 GUI → Phase 4+ 이후
-- [ ] 전략 객체 리팩토링 → 기능 안정화 후 별도 리팩토링
+- [ ] 전략 객체 리팩토링 → 별도 리팩토링
+- [ ] 번역 속도 최적화 (블록 병렬 호출) → 향후
 
-**참고**: 백엔드 실행 시 venv 활성화 필수 (`pymupdf4llm` 의존)
+> 백엔드 실행 시 venv 활성화 필수 (`pymupdf4llm` 의존)
 
-**Phase 3 코드 리뷰 반영 (2026-03-20)**:
-- [x] Markdown 로딩 시 "웹 뷰 로드 중..." 스피너 표시 (빈 화면 방지)
-- [x] 범위 번역 버튼 웹 뷰 모드에서 숨김
-- [x] 에러 메시지 인라인 스타일 → `.placeholder-error` 클래스 사용
-- [x] 용어집 태그(`[Glossary: ...]`) 번역 결과에 포함 방지 (프롬프트 지시 추가)
-- [x] done 상태 툴바 정보: 웹 뷰 캐시에서 모델/시간 표시 (`[웹뷰]` 접두사)
-
-**Phase 4에서 처리할 항목 (Phase 3 리뷰에서 식별)**:
-- 다운로드 메뉴 웹뷰 대응 (MD 다운로드 옵션)
+**Phase 4에서 처리할 항목**:
+- 다운로드 메뉴 웹뷰 대응 (MD 다운로드)
 - 싱글/듀얼 적응형 레이아웃
-- 웹 뷰 폰트 크기 조절 (CSS font-size)
+- 웹 뷰 폰트 크기 조절
 - 다크모드 실 테스트
 
 ### Phase 4: 편집 + 다운로드 + 검색 통합 — 3일
