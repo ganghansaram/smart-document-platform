@@ -39,10 +39,6 @@ BLOCK_LIST = "list"
 BLOCK_IMAGE = "image"
 BLOCK_BLANK = "blank"
 
-# 번역 스킵 대상
-_SKIP_TYPES = {BLOCK_IMAGE, BLOCK_BLANK}
-
-
 def parse_blocks(markdown_text: str) -> list[dict]:
     """Markdown 텍스트를 블록 단위로 분리한다.
 
@@ -243,15 +239,22 @@ def _translate_table(table_text: str, model: str,
 # Ollama 번역 (text_translator.py 패턴 재활용)
 # ══════════════════════════════════════
 
+_WEB_TRANSLATE_SYSTEM_PROMPT = (
+    "You are a professional translator. "
+    "Translate English to Korean accurately.\n\n"
+    "## Rules\n"
+    "1. Preserve all Markdown formatting: headings (##), bold (**), italic (*), "
+    "lists (- or 1.), links, etc.\n"
+    "2. Do NOT translate or remove Markdown syntax characters.\n"
+    "3. If you see '---' separators between texts, keep them in the output.\n"
+    "4. Output ONLY the translated text. No explanations."
+)
+
+
 def _translate_text(text: str, model: str,
                     glossary_entries: list[dict] | None = None) -> str:
-    """Ollama API로 텍스트 번역. text_translator.py의 패턴과 동일."""
-    system_prompt = getattr(config, "TRANSLATOR_TEXT_CUSTOM_PROMPT", "")
-    if not system_prompt:
-        system_prompt = (
-            "You are a professional translator. "
-            "Translate English to Korean accurately."
-        )
+    """Ollama API로 텍스트 번역. Markdown 서식 보존 지시 포함."""
+    system_prompt = _WEB_TRANSLATE_SYSTEM_PROMPT
 
     glossary_note = ""
     if glossary_entries:
@@ -283,31 +286,81 @@ def _translate_text(text: str, model: str,
 def translate_blocks(blocks: list[dict], model: str,
                      glossary_entries: list[dict] | None = None,
                      progress_callback=None) -> list[dict]:
-    """블록 리스트를 순회하며 번역. 결과를 blocks에 "translated" 키로 추가."""
-    translatable_count = sum(1 for b in blocks if b.get("translatable"))
-    done = 0
+    """블록 리스트를 순회하며 번역. 결과를 blocks에 "translated" 키로 추가.
 
+    인접한 paragraph/heading/list 블록을 --- 구분자로 묶어 일괄 번역하여
+    Ollama 호출 수를 줄인다. 표는 구조 보존이 필요하므로 개별 처리.
+    """
+    # 스킵 대상 처리
     for block in blocks:
         if not block.get("translatable"):
             block["translated"] = block["text"]
-            continue
+
+    # 번역 대상 블록을 그룹으로 묶기: 표는 개별, 나머지는 일괄
+    translatable = [(i, b) for i, b in enumerate(blocks) if b.get("translatable")]
+    if not translatable:
+        return blocks
+
+    # 그룹 분리: 표는 단독, 텍스트 블록은 연속 묶음
+    groups = []  # [(indices, "batch"|"table")]
+    current_batch = []
+
+    for idx, block in translatable:
+        if block["type"] == BLOCK_TABLE:
+            if current_batch:
+                groups.append((current_batch, "batch"))
+                current_batch = []
+            groups.append(([idx], "table"))
+        else:
+            current_batch.append(idx)
+
+    if current_batch:
+        groups.append((current_batch, "batch"))
+
+    total_groups = len(groups)
+    done = 0
+
+    for indices, group_type in groups:
+        done += 1
+        if progress_callback:
+            progress_callback(f"번역 중... ({done}/{total_groups})")
 
         try:
-            if block["type"] == BLOCK_TABLE:
+            if group_type == "table":
+                block = blocks[indices[0]]
                 block["translated"] = _translate_table(
                     block["text"], model, glossary_entries=glossary_entries
                 )
-            else:
+            elif len(indices) == 1:
+                block = blocks[indices[0]]
                 block["translated"] = _translate_text(
                     block["text"], model, glossary_entries=glossary_entries
                 )
-        except Exception as e:
-            logger.warning(f"블록 번역 실패 ({block['type']}): {e}")
-            block["translated"] = block["text"]  # 실패 시 원문 유지
+            else:
+                # 일괄 번역: --- 구분자로 결합
+                texts = [blocks[i]["text"] for i in indices]
+                combined = "\n---\n".join(texts)
+                translated = _translate_text(combined, model,
+                                             glossary_entries=glossary_entries)
+                parts = translated.split("---")
 
-        done += 1
-        if progress_callback:
-            progress_callback(f"번역 중... ({done}/{translatable_count})")
+                if len(parts) == len(indices):
+                    for i, idx in enumerate(indices):
+                        blocks[idx]["translated"] = parts[i].strip()
+                else:
+                    # 구분자 불일치 — 개별 폴백
+                    logger.warning(
+                        f"일괄 번역 구분자 불일치: {len(parts)} vs {len(indices)}. 개별 폴백"
+                    )
+                    for idx in indices:
+                        blocks[idx]["translated"] = _translate_text(
+                            blocks[idx]["text"], model,
+                            glossary_entries=glossary_entries
+                        )
+        except Exception as e:
+            logger.warning(f"블록 그룹 번역 실패: {e}")
+            for idx in indices:
+                blocks[idx]["translated"] = blocks[idx]["text"]
 
     return blocks
 
@@ -324,13 +377,15 @@ def assemble_translated_md(
 
     이미지 경로를 assets/ 상대경로로 변환.
     """
-    # frontmatter
+    # frontmatter (title/model의 따옴표 이스케이프)
+    safe_title = title.replace('"', '\\"')
+    safe_model = model.replace('"', '\\"')
     fm = (
         "---\n"
-        f"title: \"{title}\"\n"
+        f"title: \"{safe_title}\"\n"
         f"page: {page_num}\n"
         f"total_pages: {total_pages}\n"
-        f"model: \"{model}\"\n"
+        f"model: \"{safe_model}\"\n"
         f"translated_at: \"{datetime.now().isoformat()}\"\n"
         "summary: \"\"\n"
         "keywords: []\n"
@@ -355,19 +410,13 @@ def assemble_translated_md(
 
 def _convert_image_path(text: str, assets_dir: Path) -> str:
     """이미지 참조의 절대경로를 assets/ 상대경로로 변환."""
-    def replace_path(match):
-        full_path = match.group(1)
-        filename = Path(full_path).name
-        return f"![{match.group(0).split('](')[0].split('![')[1]}](assets/{filename})"
+    def replacer(match):
+        alt = match.group(1)
+        path = match.group(2)
+        filename = Path(path).name
+        return f"![{alt}](assets/{filename})"
 
-    return re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", lambda m: _replace_img(m, assets_dir), text)
-
-
-def _replace_img(match, assets_dir: Path):
-    alt = match.group(1)
-    path = match.group(2)
-    filename = Path(path).name
-    return f"![{alt}](assets/{filename})"
+    return re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", replacer, text)
 
 
 # ══════════════════════════════════════

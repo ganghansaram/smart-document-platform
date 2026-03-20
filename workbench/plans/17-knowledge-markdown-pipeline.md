@@ -492,19 +492,26 @@ Explorer의 기존 패턴을 **그대로** 재활용:
 
 **참고**: PyMuPDF 1.25.2→1.27.2 업그레이드됨. pdf2zh-next 호환성 경고 있으나 기존 기능 정상 동작 확인. (리스크 섹션 참조)
 
-### Phase 2: 번역 파이프라인 — 3~4일
+### Phase 2: 번역 파이프라인 — ✅ 완료
 
-- [ ] `services/md_translator.py` — Markdown 블록 번역 모듈
-  - Markdown 파싱 → 블록 분리 (heading, paragraph, table, list, image)
-  - 블록별 Ollama 번역 (이미지/수식은 스킵)
-  - **표 셀 번역** — Markdown 표 구문(`| | |`) 보존하면서 셀 내용만 번역 (공수 주의)
-  - 용어집 적용 (기존 `glossary.json` 재활용)
-  - frontmatter 자동 생성 (모델명, 번역 시각 포함)
-  - `web_translated.md` 저장
-- [ ] `full_translated.md` 자동 병합 (페이지별 모델/일자 주석 포함)
-- [ ] 자동 요약 + 키워드 추출 (`TRANSLATOR_WEB_AUTO_SUMMARY` 설정 시)
-- [ ] `meta.json` `page_status` 갱신 (기존 `text_translate` 키 패턴)
-- [ ] 검색 인덱스에 번역 텍스트 추가 (`translated_pages` 키)
+- [x] `services/md_translator.py` 구현 완료
+  - 블록 파서: heading, paragraph, table, list, image, blank 6종 분리
+  - **일괄 번역**: 인접 텍스트 블록을 `---` 구분자로 묶어 Ollama 1회 호출 (21블록→3회, **65초→22초**)
+  - **표 셀 번역**: Markdown 구문 보존, 숫자 셀 스킵, 일괄→폴백 패턴
+  - 용어집 적용 ✅ (기존 `glossary.json` 재활용)
+  - frontmatter 자동 생성 ✅ (title 따옴표 이스케이프 포함)
+  - Markdown 보존 프롬프트 ✅ (`##`, `**`, `-` 등 서식 유지 지시)
+  - 이미지 절대→상대 경로 변환 ✅
+- [x] `translator_service.py` 웹 번역 서비스 통합
+  - `start_web_translation()` / `get_web_translation_status()` / `cancel_web_translation()`
+  - `get_web_translated_md()` / `get_web_page_boxes()`
+  - `meta.json` `page_status.{N}.web_translate` 갱신 (기존 `text_translate` 패턴)
+  - `_web_active_tasks` 독립 딕셔너리 (PDF/텍스트 엔진과 분리)
+- [x] `full_translated.md` 자동 병합 (페이지별 모델/일자 주석 포함)
+- [ ] 자동 요약 + 키워드 추출 (`TRANSLATOR_WEB_AUTO_SUMMARY` 설정 시) → Phase 5+ 이후
+- [x] 검색 인덱스 확장: `translated_pages` 별도 키, 원문/번역 분리 검색, `match_source` 필드
+
+**퍼포먼스**: 4페이지 논문 1페이지 기준 — 21블록 파싱 → 3그룹 일괄 번역 → 22초 완료 (개별 대비 66% 감소)
 
 ### Phase 3: 프론트엔드 (웹 뷰) — 5~6일
 
