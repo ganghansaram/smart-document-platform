@@ -97,19 +97,23 @@ def extract_page(
         page_rect = page.rect
         picture_boxes = [b for b in page_boxes if b.get("class") == "picture"]
 
-        BBOX_PADDING = 3  # bbox 패딩 (잘림 방지, MinerU 방식)
+        BBOX_PADDING_RATIO = 0.05  # bbox 크기의 5% 패딩 (MinerU 비율 방식)
 
         for i, box in enumerate(picture_boxes):
             bbox = box.get("bbox")
             if not bbox:
                 continue
             try:
-                # bbox에 패딩 추가 (페이지 경계 클램프)
+                # 비율 기반 패딩 (벡터 그래픽 잘림 방지)
+                bw = bbox[2] - bbox[0]
+                bh = bbox[3] - bbox[1]
+                pad_x = max(bw * BBOX_PADDING_RATIO, 3)
+                pad_y = max(bh * BBOX_PADDING_RATIO, 3)
                 clip = fitz.Rect(
-                    max(bbox[0] - BBOX_PADDING, page_rect.x0),
-                    max(bbox[1] - BBOX_PADDING, page_rect.y0),
-                    min(bbox[2] + BBOX_PADDING, page_rect.x1),
-                    min(bbox[3] + BBOX_PADDING, page_rect.y1),
+                    max(bbox[0] - pad_x, page_rect.x0),
+                    max(bbox[1] - pad_y, page_rect.y0),
+                    min(bbox[2] + pad_x, page_rect.x1),
+                    min(bbox[3] + pad_y, page_rect.y1),
                 )
                 pix = page.get_pixmap(clip=clip, dpi=image_dpi)
                 filename = f"figure_{i}.png"
