@@ -192,10 +192,68 @@ def _replace_picture_regions(
     replacements.sort(key=lambda r: r[0], reverse=True)
 
     for start, end, filename in replacements:
-        image_ref = f"\n![Figure](assets/{filename})\n"
-        markdown_text = markdown_text[:start] + image_ref + markdown_text[end:]
+        # 이미지 바로 뒤의 캡션 텍스트 감지
+        caption = _extract_caption_after(markdown_text, end, all_boxes, picture_boxes)
+
+        if caption:
+            # <figure> + <figcaption> (HTML5 표준)
+            image_ref = (
+                f"\n<figure>\n\n"
+                f"![Figure](assets/{filename})\n\n"
+                f"<figcaption>{caption['text']}</figcaption>\n"
+                f"</figure>\n"
+            )
+            # 캡션 텍스트도 원본에서 제거
+            markdown_text = markdown_text[:start] + image_ref + markdown_text[caption['end']:]
+        else:
+            image_ref = (
+                f"\n<figure>\n\n"
+                f"![Figure](assets/{filename})\n\n"
+                f"</figure>\n"
+            )
+            markdown_text = markdown_text[:start] + image_ref + markdown_text[end:]
 
     return markdown_text
+
+
+def _extract_caption_after(
+    markdown_text: str,
+    pic_end: int,
+    all_boxes: list[dict],
+    picture_boxes: list[dict],
+) -> dict | None:
+    """이미지 바로 뒤에 캡션 블록이 있는지 감지한다.
+
+    page_boxes에서 class='caption'인 블록이 picture 바로 뒤에 있거나,
+    텍스트가 "그림", "Figure", "Fig.", "표", "Table" 등으로 시작하면 캡션으로 판정.
+    """
+    # picture 바로 뒤의 텍스트 (공백/줄바꿈 건너뛰기)
+    remaining = markdown_text[pic_end:].lstrip("\n ")
+    if not remaining:
+        return None
+
+    # page_boxes에서 caption class 확인
+    for box in all_boxes:
+        if box.get("class") == "caption":
+            pos = box.get("pos")
+            if pos and pos[0] >= pic_end and pos[0] <= pic_end + 50:
+                caption_text = markdown_text[pos[0]:pos[1]].strip()
+                if caption_text:
+                    return {"text": caption_text, "end": pos[1]}
+
+    # 텍스트 패턴으로 캡션 감지 (그림 N, Figure N, Fig. N, 표 N, Table N)
+    first_line = remaining.split("\n")[0].strip()
+    caption_patterns = [
+        r"^그림\s*\d", r"^Figure\s*\d", r"^Fig\.\s*\d",
+        r"^표\s*\d", r"^Table\s*\d", r"^Chart\s*\d",
+    ]
+    for pattern in caption_patterns:
+        if re.match(pattern, first_line, re.IGNORECASE):
+            # 캡션 텍스트의 끝 위치 계산
+            caption_end = pic_end + markdown_text[pic_end:].find(first_line) + len(first_line)
+            return {"text": first_line, "end": caption_end}
+
+    return None
 
 
 def _rects_overlap(a: tuple, b: tuple) -> bool:

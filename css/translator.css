@@ -1668,7 +1668,23 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
     background: var(--bg-secondary);
 }
 
-/* 이미지 */
+/* 이미지 + figure/figcaption (HTML5 표준) */
+.markdown-body figure {
+    text-align: center;
+    margin: var(--space-lg) 0;
+    padding: 0;
+}
+.markdown-body figure img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+}
+.markdown-body figcaption {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: var(--space-xs);
+    line-height: 1.4;
+}
 .markdown-body img {
     max-width: 100%;
     height: auto;
