@@ -769,11 +769,14 @@
                     var endIdx = md.indexOf('---', 3);
                     if (endIdx > 0) md = md.substring(endIdx + 3).trim();
                 }
-                // 이미지 경로를 API URL로 변환
-                md = md.replace(/!\[([^\]]*)\]\(assets\/([^)]+)\)/g,
-                    '![$1](' + API + '/api/translator/web-view/' + currentDocId + '/page/' + currentPage + '/assets/$2)');
-                // marked.js → HTML → DOMPurify
-                var html = DOMPurify.sanitize(marked.parse(md));
+                // 이미지 경로를 API URL로 변환 (Markdown ![alt](assets/...) + HTML <img src="assets/...">)
+                var assetBase = API + '/api/translator/web-view/' + currentDocId + '/page/' + currentPage + '/assets/';
+                md = md.replace(/!\[([^\]]*)\]\(assets\/([^)]+)\)/g, '![$1](' + assetBase + '$2)');
+                md = md.replace(/src="assets\/([^"]+)"/g, 'src="' + assetBase + '$1"');
+                // marked.js → HTML → DOMPurify (style 속성 허용 — 이미지 width 비율)
+                var html = DOMPurify.sanitize(marked.parse(md), {
+                    ADD_ATTR: ['style'],
+                });
                 $rightPlaceholder.style.display = 'none';
                 $webViewContainer.style.display = 'block';
                 $webViewContent.innerHTML = html;

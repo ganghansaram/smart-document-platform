@@ -85,33 +85,55 @@ def extract_page(
 
     # ── 이미지 영역 캡처 (업계 표준: 영역 렌더링 방식) ──
     assets = []
+    image_widths = []  # 각 이미지의 페이지 대비 폭 비율 (%)
+    page_width = 0.0
+
     if assets_dir is not None:
         assets_dir = Path(assets_dir)
         assets_dir.mkdir(parents=True, exist_ok=True)
 
         page = doc[page_index]
+        page_width = page.rect.width
+        page_rect = page.rect
         picture_boxes = [b for b in page_boxes if b.get("class") == "picture"]
+
+        BBOX_PADDING = 3  # bbox 패딩 (잘림 방지, MinerU 방식)
 
         for i, box in enumerate(picture_boxes):
             bbox = box.get("bbox")
             if not bbox:
                 continue
             try:
-                clip = fitz.Rect(bbox)
+                # bbox에 패딩 추가 (페이지 경계 클램프)
+                clip = fitz.Rect(
+                    max(bbox[0] - BBOX_PADDING, page_rect.x0),
+                    max(bbox[1] - BBOX_PADDING, page_rect.y0),
+                    min(bbox[2] + BBOX_PADDING, page_rect.x1),
+                    min(bbox[3] + BBOX_PADDING, page_rect.y1),
+                )
                 pix = page.get_pixmap(clip=clip, dpi=image_dpi)
                 filename = f"figure_{i}.png"
                 pix.save(str(assets_dir / filename))
                 assets.append(filename)
-                logger.debug(f"이미지 캡처: {filename} ({clip})")
+
+                # 원본 대비 폭 비율 (Explorer converter.py:1091 패턴)
+                img_width_pct = round((bbox[2] - bbox[0]) / page_width * 100)
+                img_width_pct = min(img_width_pct, 100)
+                image_widths.append(img_width_pct)
+
+                logger.debug(f"이미지 캡처: {filename} ({clip}), width={img_width_pct}%")
             except Exception as e:
                 logger.warning(f"이미지 캡처 실패 (box {i}): {e}")
+                image_widths.append(100)  # 실패 시 기본값
 
     doc.close()
 
     # ── 이미지 내 텍스트 제거 + Markdown에 이미지 참조 삽입 ──
     if assets:
         picture_boxes = [b for b in page_boxes if b.get("class") == "picture"]
-        markdown_text = _replace_picture_regions(markdown_text, page_boxes, picture_boxes, assets)
+        markdown_text = _replace_picture_regions(
+            markdown_text, page_boxes, picture_boxes, assets, image_widths
+        )
 
     # 표 모드별 후처리
     if table_mode == "image":
@@ -147,17 +169,21 @@ def _replace_picture_regions(
     all_boxes: list[dict],
     picture_boxes: list[dict],
     assets: list[str],
+    image_widths: list[int] = None,
 ) -> str:
     """picture 영역과 겹치는 텍스트를 제거하고, 이미지 참조로 대체한다.
 
     page_boxes의 pos (start, end) 필드를 사용하여 Markdown 텍스트 내
     picture 영역에 해당하는 구간을 이미지 참조로 교체한다.
+    image_widths: 각 이미지의 페이지 대비 폭 비율 (%)
     """
     if not picture_boxes or not assets:
         return markdown_text
+    if image_widths is None:
+        image_widths = [100] * len(assets)
 
     # picture bbox와 겹치는 텍스트 블록의 pos 범위 수집
-    replacements = []  # [(pos_start, pos_end, image_filename)]
+    replacements = []  # [(pos_start, pos_end, image_filename, width_pct)]
 
     for pic_idx, pic_box in enumerate(picture_boxes):
         pic_bbox = pic_box.get("bbox")
@@ -166,6 +192,7 @@ def _replace_picture_regions(
             continue
 
         pic_rect = (pic_bbox[0], pic_bbox[1], pic_bbox[2], pic_bbox[3])
+        width_pct = image_widths[pic_idx] if pic_idx < len(image_widths) else 100
 
         # picture 자체의 pos 범위
         affected_start = pic_pos[0]
@@ -183,7 +210,7 @@ def _replace_picture_regions(
                 affected_start = min(affected_start, box_pos[0])
                 affected_end = max(affected_end, box_pos[1])
 
-        replacements.append((affected_start, affected_end, assets[pic_idx]))
+        replacements.append((affected_start, affected_end, assets[pic_idx], width_pct))
 
     if not replacements:
         return markdown_text
@@ -191,24 +218,25 @@ def _replace_picture_regions(
     # pos 역순 정렬 (뒤에서부터 대체하면 앞쪽 위치에 영향 없음)
     replacements.sort(key=lambda r: r[0], reverse=True)
 
-    for start, end, filename in replacements:
+    for start, end, filename, width_pct in replacements:
         # 이미지 바로 뒤의 캡션 텍스트 감지
         caption = _extract_caption_after(markdown_text, end, all_boxes, picture_boxes)
 
+        # 이미지 태그 (원본 대비 폭 비율 적용 — Explorer converter.py 패턴)
+        img_tag = f'<img src="assets/{filename}" alt="Figure" style="width: {width_pct}%">'
+
         if caption:
-            # <figure> + <figcaption> (HTML5 표준)
             image_ref = (
                 f"\n<figure>\n\n"
-                f"![Figure](assets/{filename})\n\n"
+                f"{img_tag}\n\n"
                 f"<figcaption>{caption['text']}</figcaption>\n"
                 f"</figure>\n"
             )
-            # 캡션 텍스트도 원본에서 제거
             markdown_text = markdown_text[:start] + image_ref + markdown_text[caption['end']:]
         else:
             image_ref = (
                 f"\n<figure>\n\n"
-                f"![Figure](assets/{filename})\n\n"
+                f"{img_tag}\n\n"
                 f"</figure>\n"
             )
             markdown_text = markdown_text[:start] + image_ref + markdown_text[end:]
