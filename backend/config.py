@@ -108,7 +108,7 @@ TRANSLATOR_AI_SUMMARIZE_PROMPT = (
 )
 
 # Translator 웹 뷰 (Markdown 추출/번역)
-TRANSLATOR_WEB_TABLE_MODE = "extract"          # "extract" | "image" | "off"
+TRANSLATOR_WEB_TABLE_MODE = "image"            # "extract" | "image" | "off"
 TRANSLATOR_WEB_FORMULA_MODE = "image"          # "latex" | "image" | "off"
 TRANSLATOR_WEB_IMAGE_DPI = 150                 # 추출 이미지 해상도 (72~300)
 TRANSLATOR_WEB_AUTO_SUMMARY = False            # 번역 완료 시 자동 요약 생성
