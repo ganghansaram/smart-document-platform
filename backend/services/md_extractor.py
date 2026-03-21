@@ -141,6 +141,9 @@ def extract_page(
     elif table_mode == "off":
         markdown_text = _remove_markdown_tables(markdown_text)
 
+    # ── 제목 이탤릭 제거 (가독성 개선) ──
+    markdown_text = _clean_heading_styles(markdown_text)
+
     # 디버그 모드: 추출 원문을 파일로 저장
     if debug and assets_dir:
         debug_path = assets_dir.parent / "debug_source.md"
@@ -302,6 +305,38 @@ def _rects_overlap(a: tuple, b: tuple) -> bool:
 
     # 텍스트 블록의 50% 이상이 picture 안에 있으면 겹침
     return intersection / b_area > 0.5
+
+
+def _clean_heading_styles(text: str) -> str:
+    """제목 줄에서 이탤릭/볼드 서식을 제거한다.
+
+    PyMuPDF4LLM이 PDF 스타일을 그대로 가져와 ## _A. Title_ 같은 형태가 나오는데,
+    웹 뷰에서는 가독성을 위해 서식 없이 깔끔한 제목만 표시.
+    """
+    lines = text.split("\n")
+    result = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            # 제목 레벨(## ) 분리
+            hashes = ""
+            rest = stripped
+            while rest.startswith("#"):
+                hashes += "#"
+                rest = rest[1:]
+            rest = rest.lstrip()
+
+            # 이탤릭 제거: _text_ → text, *text* → text
+            rest = re.sub(r"^_(.+)_$", r"\1", rest)
+            rest = re.sub(r"^\*(.+)\*$", r"\1", rest)
+            # 볼드+이탤릭 제거: **_text_** → text
+            rest = re.sub(r"^\*\*_(.+)_\*\*$", r"\1", rest)
+            rest = re.sub(r"^\*\*\*(.+)\*\*\*$", r"\1", rest)
+
+            result.append(f"{hashes} {rest}")
+        else:
+            result.append(line)
+    return "\n".join(result)
 
 
 def _remove_markdown_tables(text: str) -> str:
