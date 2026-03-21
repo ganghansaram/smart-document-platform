@@ -5,14 +5,13 @@ Plan 17 Phase 1: PDF 페이지를 Markdown + 이미지로 추출한다.
 원문 Markdown은 번역 파이프라인(Phase 2)의 입력으로 사용되며,
 번역 완료 후 translated.md만 최종 저장된다.
 
-사용법:
-    result = extract_page(pdf_path, page_num=3, assets_dir=Path("pages/3/assets"))
-    # result["markdown"]  — 추출된 Markdown 텍스트
-    # result["page_boxes"] — 블록별 bbox 좌표 (클릭 네비게이션용)
-    # result["assets"]    — 추출된 이미지 파일 목록
+이미지 추출: PyMuPDF4LLM의 write_images 대신,
+page_boxes의 picture bbox를 page.get_pixmap(clip=bbox)으로 영역 캡처한다.
+이는 MinerU/텍스트 엔진과 동일한 업계 표준 방식이며, 잘림 문제를 방지한다.
 """
 
 import logging
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -42,6 +41,7 @@ def extract_page(
         }
     """
     import pymupdf4llm
+    import fitz
 
     pdf_path = Path(pdf_path)
     if not pdf_path.exists():
@@ -53,42 +53,29 @@ def extract_page(
     image_dpi = getattr(config, "TRANSLATOR_WEB_IMAGE_DPI", 150)
     debug = getattr(config, "TRANSLATOR_WEB_DEBUG", False)
 
-    # 페이지 번호 변환 (1-based → 0-based for pymupdf4llm)
+    # 페이지 번호 변환 (1-based → 0-based)
     page_index = page_num - 1
 
-    # 총 페이지 수 확인
-    import fitz
     doc = fitz.open(str(pdf_path))
     total_pages = len(doc)
-    doc.close()
 
     if page_index < 0 or page_index >= total_pages:
+        doc.close()
         raise ValueError(f"유효하지 않은 페이지 번호: {page_num} (1~{total_pages})")
 
-    # 이미지 추출 설정
-    write_images = assets_dir is not None
-    if write_images:
-        assets_dir = Path(assets_dir)
-        assets_dir.mkdir(parents=True, exist_ok=True)
-
-    # PyMuPDF4LLM 추출
+    # PyMuPDF4LLM 추출 (이미지는 write_images 사용하지 않음 — 영역 캡처로 대체)
     kwargs = {
         "pages": [page_index],
         "page_chunks": True,
         "table_strategy": table_strategy if table_mode == "extract" else "text",
     }
 
-    if write_images:
-        kwargs["write_images"] = True
-        kwargs["image_path"] = str(assets_dir)
-        kwargs["image_format"] = "png"
-        kwargs["dpi"] = image_dpi
-
     logger.info(f"PDF→Markdown 추출 시작: p{page_num}, table_mode={table_mode}")
 
     chunks = pymupdf4llm.to_markdown(str(pdf_path), **kwargs)
 
     if not chunks:
+        doc.close()
         raise ValueError(f"페이지 {page_num} 추출 결과가 비어있습니다")
 
     chunk = chunks[0]
@@ -96,19 +83,42 @@ def extract_page(
     page_boxes = chunk.get("page_boxes", [])
     metadata = chunk.get("metadata", {})
 
+    # ── 이미지 영역 캡처 (업계 표준: 영역 렌더링 방식) ──
+    assets = []
+    if assets_dir is not None:
+        assets_dir = Path(assets_dir)
+        assets_dir.mkdir(parents=True, exist_ok=True)
+
+        page = doc[page_index]
+        picture_boxes = [b for b in page_boxes if b.get("class") == "picture"]
+
+        for i, box in enumerate(picture_boxes):
+            bbox = box.get("bbox")
+            if not bbox:
+                continue
+            try:
+                clip = fitz.Rect(bbox)
+                pix = page.get_pixmap(clip=clip, dpi=image_dpi)
+                filename = f"figure_{i}.png"
+                pix.save(str(assets_dir / filename))
+                assets.append(filename)
+                logger.debug(f"이미지 캡처: {filename} ({clip})")
+            except Exception as e:
+                logger.warning(f"이미지 캡처 실패 (box {i}): {e}")
+
+    doc.close()
+
+    # ── 이미지 내 텍스트 제거 + Markdown에 이미지 참조 삽입 ──
+    if assets:
+        picture_boxes = [b for b in page_boxes if b.get("class") == "picture"]
+        markdown_text = _replace_picture_regions(markdown_text, page_boxes, picture_boxes, assets)
+
     # 표 모드별 후처리
     if table_mode == "image":
-        # "image" 모드: Markdown 테이블 구문을 제거하고 원본 이미지만 유지
-        # (pymupdf4llm이 표 영역도 이미지로 추출하므로, 텍스트 테이블만 제거)
         markdown_text = _remove_markdown_tables(markdown_text)
-        logger.info("table_mode=image: Markdown 테이블 구문 제거, 이미지만 유지")
+        logger.info("table_mode=image: Markdown 테이블 구문 제거")
     elif table_mode == "off":
         markdown_text = _remove_markdown_tables(markdown_text)
-
-    # 추출된 이미지 파일 목록 수집
-    assets = []
-    if write_images and assets_dir.exists():
-        assets = sorted([f.name for f in assets_dir.iterdir() if f.is_file()])
 
     # 디버그 모드: 추출 원문을 파일로 저장
     if debug and assets_dir:
@@ -132,12 +142,85 @@ def extract_page(
     }
 
 
-def _remove_markdown_tables(text: str) -> str:
-    """Markdown 텍스트에서 테이블 구문을 제거한다.
+def _replace_picture_regions(
+    markdown_text: str,
+    all_boxes: list[dict],
+    picture_boxes: list[dict],
+    assets: list[str],
+) -> str:
+    """picture 영역과 겹치는 텍스트를 제거하고, 이미지 참조로 대체한다.
 
-    테이블은 `|`로 시작하고 `|`로 끝나는 연속된 줄로 판별.
-    테이블이 아닌 줄을 만나면 테이블 영역이 끝난 것으로 간주.
+    page_boxes의 pos (start, end) 필드를 사용하여 Markdown 텍스트 내
+    picture 영역에 해당하는 구간을 이미지 참조로 교체한다.
     """
+    if not picture_boxes or not assets:
+        return markdown_text
+
+    # picture bbox와 겹치는 텍스트 블록의 pos 범위 수집
+    replacements = []  # [(pos_start, pos_end, image_filename)]
+
+    for pic_idx, pic_box in enumerate(picture_boxes):
+        pic_bbox = pic_box.get("bbox")
+        pic_pos = pic_box.get("pos")
+        if not pic_bbox or not pic_pos or pic_idx >= len(assets):
+            continue
+
+        pic_rect = (pic_bbox[0], pic_bbox[1], pic_bbox[2], pic_bbox[3])
+
+        # picture 자체의 pos 범위
+        affected_start = pic_pos[0]
+        affected_end = pic_pos[1]
+
+        # picture bbox와 겹치는 다른 텍스트 블록도 범위에 포함
+        for box in all_boxes:
+            if box.get("class") == "picture":
+                continue
+            box_bbox = box.get("bbox")
+            box_pos = box.get("pos")
+            if not box_bbox or not box_pos:
+                continue
+            if _rects_overlap(pic_rect, (box_bbox[0], box_bbox[1], box_bbox[2], box_bbox[3])):
+                affected_start = min(affected_start, box_pos[0])
+                affected_end = max(affected_end, box_pos[1])
+
+        replacements.append((affected_start, affected_end, assets[pic_idx]))
+
+    if not replacements:
+        return markdown_text
+
+    # pos 역순 정렬 (뒤에서부터 대체하면 앞쪽 위치에 영향 없음)
+    replacements.sort(key=lambda r: r[0], reverse=True)
+
+    for start, end, filename in replacements:
+        image_ref = f"\n![Figure](assets/{filename})\n"
+        markdown_text = markdown_text[:start] + image_ref + markdown_text[end:]
+
+    return markdown_text
+
+
+def _rects_overlap(a: tuple, b: tuple) -> bool:
+    """두 사각형 (x0, y0, x1, y1)이 겹치는지 판정. 50% 이상 포함 시 겹침."""
+    # 교집합 계산
+    ix0 = max(a[0], b[0])
+    iy0 = max(a[1], b[1])
+    ix1 = min(a[2], b[2])
+    iy1 = min(a[3], b[3])
+
+    if ix0 >= ix1 or iy0 >= iy1:
+        return False
+
+    intersection = (ix1 - ix0) * (iy1 - iy0)
+    b_area = (b[2] - b[0]) * (b[3] - b[1])
+
+    if b_area <= 0:
+        return False
+
+    # 텍스트 블록의 50% 이상이 picture 안에 있으면 겹침
+    return intersection / b_area > 0.5
+
+
+def _remove_markdown_tables(text: str) -> str:
+    """Markdown 텍스트에서 테이블 구문을 제거한다."""
     lines = text.split("\n")
     result = []
     for line in lines:
