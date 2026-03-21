@@ -172,10 +172,14 @@ def extract_page(
     # ── 제목 이탤릭 제거 (가독성 개선) ──
     markdown_text = _clean_heading_styles(markdown_text)
 
-    # ── PyMuPDF4LLM 생략 placeholder 제거 ──
+    # ── PyMuPDF4LLM 아티팩트 제거 ──
+    # omitted placeholder 줄 전체 제거
     markdown_text = re.sub(
-        r"==>.*?intentionally omitted.*?<==", "", markdown_text
+        r"^.*==>.*?intentionally omitted.*?<==.*$", "", markdown_text, flags=re.MULTILINE
     )
+    # 빈 서식 (****, **, __ 등 내용 없는 볼드/이탤릭) 제거 — 수평선으로 오인 방지
+    markdown_text = re.sub(r"^\*{2,}$", "", markdown_text, flags=re.MULTILINE)
+    markdown_text = re.sub(r"^_{2,}$", "", markdown_text, flags=re.MULTILINE)
 
     # 디버그 모드: 추출 원문을 파일로 저장
     if debug and assets_dir:
@@ -307,8 +311,8 @@ def _extract_caption_after(
     # 텍스트 패턴으로 캡션 감지 (그림 N, Figure N, Fig. N, 표 N, Table N)
     first_line = remaining.split("\n")[0].strip()
     caption_patterns = [
-        r"^그림\s*\d", r"^Figure\s*\d", r"^Fig\.\s*\d",
-        r"^표\s*\d", r"^Table\s*\d", r"^Chart\s*\d",
+        r"^그림\s*[\dIVXLCDM]", r"^Figure\s*[\dIVXLCDM]", r"^Fig\.\s*[\dIVXLCDM]",
+        r"^표\s*[\dIVXLCDM]", r"^Table\s*[\dIVXLCDM]", r"^Chart\s*[\dIVXLCDM]",
     ]
     for pattern in caption_patterns:
         if re.match(pattern, first_line, re.IGNORECASE):
@@ -381,10 +385,10 @@ def _replace_tables_with_images(text: str, table_assets: list[str], table_widths
     if not table_assets:
         return _remove_markdown_tables(text)
 
-    # 캡션 패턴
+    # 캡션 패턴 (아라비아 숫자 + 로마 숫자)
     caption_patterns = [
-        r"^표\s*\d", r"^Table\s*\d", r"^TABLE\s*\d",
-        r"^그림\s*\d", r"^Figure\s*\d", r"^Fig\.\s*\d",
+        r"^표\s*[\dIVXLCDM]", r"^Table\s*[\dIVXLCDM]", r"^TABLE\s*[\dIVXLCDM]",
+        r"^그림\s*[\dIVXLCDM]", r"^Figure\s*[\dIVXLCDM]", r"^Fig\.\s*[\dIVXLCDM]",
     ]
 
     lines = text.split("\n")
@@ -432,13 +436,40 @@ def _replace_tables_with_images(text: str, table_assets: list[str], table_widths
                 filename = table_assets[table_idx]
                 width = table_widths[table_idx] if table_idx < len(table_widths) else 100
                 img_tag = f'<img src="assets/{filename}" alt="Table" style="width: {width}%">'
-                result.append("")
-                result.append("<figure>")
-                result.append("")
-                result.append(img_tag)
-                result.append("")
+
+                # 표 위쪽 캡션 감지: 직전 비어있지 않은 줄이 캡션 패턴인지 확인
+                above_caption = None
+                for k in range(len(result) - 1, -1, -1):
+                    prev = result[k].strip()
+                    if not prev:
+                        continue
+                    # 제목 서식 제거 후 패턴 매칭
+                    prev_clean = prev.lstrip("#").strip()
+                    prev_clean = re.sub(r"^_(.+)_$", r"\1", prev_clean)
+                    for pat in caption_patterns:
+                        if re.match(pat, prev_clean, re.IGNORECASE):
+                            above_caption = (k, prev_clean)
+                            break
+                    break  # 첫 비어있지 않은 줄만 확인
+
+                if above_caption:
+                    cap_idx, cap_text = above_caption
+                    result[cap_idx] = ""  # 원래 캡션 줄 제거
+                    result.append("")
+                    result.append("<figure>")
+                    result.append(f"<figcaption>{cap_text}</figcaption>")
+                    result.append("")
+                    result.append(img_tag)
+                    result.append("")
+                else:
+                    result.append("")
+                    result.append("<figure>")
+                    result.append("")
+                    result.append(img_tag)
+                    result.append("")
+
                 table_idx += 1
-                pending_figure_close = True  # 다음 줄에서 캡션 확인 후 닫기
+                pending_figure_close = True
         elif is_table_line and in_table:
             continue
         else:
