@@ -226,17 +226,17 @@ def _replace_picture_regions(
 
         if caption:
             image_ref = (
-                f"\n<figure>\n\n"
+                f"\n\n<figure>\n\n"
                 f"{img_tag}\n\n"
                 f"<figcaption>{caption['text']}</figcaption>\n"
-                f"</figure>\n"
+                f"</figure>\n\n"
             )
             markdown_text = markdown_text[:start] + image_ref + markdown_text[caption['end']:]
         else:
             image_ref = (
-                f"\n<figure>\n\n"
+                f"\n\n<figure>\n\n"
                 f"{img_tag}\n\n"
-                f"</figure>\n"
+                f"</figure>\n\n"
             )
             markdown_text = markdown_text[:start] + image_ref + markdown_text[end:]
 
