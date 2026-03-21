@@ -83,10 +83,12 @@ def extract_page(
     page_boxes = chunk.get("page_boxes", [])
     metadata = chunk.get("metadata", {})
 
-    # ── 이미지 영역 캡처 (업계 표준: 영역 렌더링 방식) ──
-    assets = []
-    image_widths = []  # 각 이미지의 페이지 대비 폭 비율 (%)
-    table_assets = []  # table_mode="image" 시 표 캡처 이미지
+    # ── 비텍스트 영역 일괄 이미지 캡처 ──
+    # "본문 텍스트만 추출, 나머지(picture/table/formula 등)는 전부 이미지"
+    TEXT_CLASSES = {"text", "section-header", "list-item", "caption", "page-header", "page-footer"}
+    assets = []        # picture/formula 등 비텍스트 이미지
+    image_widths = []
+    table_assets = []  # table 전용 (table_mode="image" 시)
     table_widths = []
     page_width = 0.0
 
@@ -98,11 +100,14 @@ def extract_page(
         page_width = page.rect.width
         page_rect = page.rect
 
-        BBOX_PADDING = 3  # 고정 패딩
+        BBOX_PADDING = 3
 
-        # picture 영역 캡처
-        picture_boxes = [b for b in page_boxes if b.get("class") == "picture"]
-        for i, box in enumerate(picture_boxes):
+        # 비텍스트 블록 캡처 (picture, formula 등 — table 제외, table은 별도 처리)
+        non_text_boxes = [
+            b for b in page_boxes
+            if b.get("class") not in TEXT_CLASSES and b.get("class") != "table"
+        ]
+        for i, box in enumerate(non_text_boxes):
             bbox = box.get("bbox")
             if not bbox:
                 continue
@@ -114,19 +119,20 @@ def extract_page(
                     min(bbox[3] + BBOX_PADDING, page_rect.y1),
                 )
                 pix = page.get_pixmap(clip=clip, dpi=image_dpi)
-                filename = f"figure_{i}.png"
+                cls = box.get("class", "figure")
+                filename = f"{cls}_{i}.png"
                 pix.save(str(assets_dir / filename))
                 assets.append(filename)
 
                 img_width_pct = round((bbox[2] - bbox[0]) / page_width * 100)
                 img_width_pct = min(img_width_pct, 100)
                 image_widths.append(img_width_pct)
-                logger.debug(f"이미지 캡처: {filename} ({clip}), width={img_width_pct}%")
+                logger.debug(f"캡처: {filename} ({cls}, {clip}), width={img_width_pct}%")
             except Exception as e:
-                logger.warning(f"이미지 캡처 실패 (box {i}): {e}")
+                logger.warning(f"캡처 실패 ({box.get('class')} {i}): {e}")
                 image_widths.append(100)
 
-        # table_mode="image" 시 표 영역도 이미지로 캡처 (MinerU 패턴)
+        # table: table_mode에 따라 처리
         if table_mode == "image":
             table_boxes = [b for b in page_boxes if b.get("class") == "table"]
             for i, box in enumerate(table_boxes):
@@ -148,22 +154,23 @@ def extract_page(
                     tbl_width_pct = round((bbox[2] - bbox[0]) / page_width * 100)
                     tbl_width_pct = min(tbl_width_pct, 100)
                     table_widths.append(tbl_width_pct)
-                    logger.debug(f"표 캡처: {filename} ({clip}), width={tbl_width_pct}%")
                 except Exception as e:
                     logger.warning(f"표 캡처 실패 (box {i}): {e}")
 
     doc.close()
 
-    # ── 이미지 내 텍스트 제거 + Markdown에 이미지 참조 삽입 ──
+    # ── 비텍스트 영역의 텍스트 제거 + 이미지 참조 삽입 ──
     if assets:
-        picture_boxes = [b for b in page_boxes if b.get("class") == "picture"]
+        non_text_boxes = [
+            b for b in page_boxes
+            if b.get("class") not in TEXT_CLASSES and b.get("class") != "table"
+        ]
         markdown_text = _replace_picture_regions(
-            markdown_text, page_boxes, picture_boxes, assets, image_widths
+            markdown_text, page_boxes, non_text_boxes, assets, image_widths
         )
 
     # 표 모드별 후처리
     if table_mode == "image":
-        # Markdown 테이블 구문 제거 후, 표 이미지로 대체
         markdown_text = _replace_tables_with_images(markdown_text, table_assets, table_widths)
         logger.info(f"table_mode=image: 표 {len(table_assets)}개를 이미지로 대체")
     elif table_mode == "off":
