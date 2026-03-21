@@ -172,6 +172,11 @@ def extract_page(
     # ── 제목 이탤릭 제거 (가독성 개선) ──
     markdown_text = _clean_heading_styles(markdown_text)
 
+    # ── PyMuPDF4LLM 생략 placeholder 제거 ──
+    markdown_text = re.sub(
+        r"==>.*?intentionally omitted.*?<==", "", markdown_text
+    )
+
     # 디버그 모드: 추출 원문을 파일로 저장
     if debug and assets_dir:
         debug_path = assets_dir.parent / "debug_source.md"
@@ -371,41 +376,80 @@ def _replace_tables_with_images(text: str, table_assets: list[str], table_widths
     """Markdown 테이블 구문을 이미지 참조로 대체한다.
 
     table_mode="image" 시 사용. 표 텍스트를 제거하고 캡처된 이미지로 교체.
+    표 바로 다음 줄이 캡션 패턴이면 <figcaption>으로 래핑.
     """
     if not table_assets:
         return _remove_markdown_tables(text)
+
+    # 캡션 패턴
+    caption_patterns = [
+        r"^표\s*\d", r"^Table\s*\d", r"^TABLE\s*\d",
+        r"^그림\s*\d", r"^Figure\s*\d", r"^Fig\.\s*\d",
+    ]
 
     lines = text.split("\n")
     result = []
     table_idx = 0
     in_table = False
+    pending_figure_close = False  # </figure> 삽입 대기
 
     for line in lines:
         stripped = line.strip()
         is_table_line = stripped.startswith("|") and stripped.endswith("|")
 
+        # 표 이미지 삽입 직후 — 캡션 감지
+        if pending_figure_close:
+            is_caption = False
+            if stripped:
+                for pat in caption_patterns:
+                    if re.match(pat, stripped, re.IGNORECASE):
+                        is_caption = True
+                        break
+                # 제목 서식(##)이 붙은 캡션도 감지
+                caption_text = stripped.lstrip("#").strip()
+                caption_text = re.sub(r"^_(.+)_$", r"\1", caption_text)
+                for pat in caption_patterns:
+                    if re.match(pat, caption_text, re.IGNORECASE):
+                        is_caption = True
+                        stripped = caption_text
+                        break
+
+            if is_caption:
+                result.append(f"<figcaption>{stripped}</figcaption>")
+                result.append("</figure>")
+                result.append("")
+                pending_figure_close = False
+                continue
+            else:
+                result.append("</figure>")
+                result.append("")
+                pending_figure_close = False
+                # 현재 줄은 아래에서 처리
+
         if is_table_line and not in_table:
-            # 표 시작 — 이미지로 대체
             in_table = True
             if table_idx < len(table_assets):
                 filename = table_assets[table_idx]
                 width = table_widths[table_idx] if table_idx < len(table_widths) else 100
                 img_tag = f'<img src="assets/{filename}" alt="Table" style="width: {width}%">'
                 result.append("")
-                result.append(f"<figure>")
+                result.append("<figure>")
                 result.append("")
                 result.append(img_tag)
                 result.append("")
-                result.append(f"</figure>")
-                result.append("")
                 table_idx += 1
+                pending_figure_close = True  # 다음 줄에서 캡션 확인 후 닫기
         elif is_table_line and in_table:
-            # 표 계속 — 건너뜀
             continue
         else:
             if in_table:
                 in_table = False
             result.append(line)
+
+    # 마지막 표 뒤에 figure 닫기가 남아있으면
+    if pending_figure_close:
+        result.append("</figure>")
+        result.append("")
 
     return "\n".join(result)
 
