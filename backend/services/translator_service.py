@@ -1451,6 +1451,11 @@ async def _run_web_translation(username: str, doc_id: str, page_num: int,
         loop = asyncio.get_event_loop()
 
         def _sync_pipeline():
+            # 0. 기존 assets 정리 (재번역 시 고아 파일 방지)
+            if assets_dir.exists():
+                import shutil
+                shutil.rmtree(assets_dir, ignore_errors=True)
+
             # 1. 추출
             progress_cb("PDF에서 Markdown 추출 중...")
             result = extract_page(src_path, page_num, assets_dir=assets_dir)
