@@ -86,6 +86,8 @@ def extract_page(
     # ── 이미지 영역 캡처 (업계 표준: 영역 렌더링 방식) ──
     assets = []
     image_widths = []  # 각 이미지의 페이지 대비 폭 비율 (%)
+    table_assets = []  # table_mode="image" 시 표 캡처 이미지
+    table_widths = []
     page_width = 0.0
 
     if assets_dir is not None:
@@ -95,10 +97,11 @@ def extract_page(
         page = doc[page_index]
         page_width = page.rect.width
         page_rect = page.rect
+
+        BBOX_PADDING = 3  # 고정 패딩
+
+        # picture 영역 캡처
         picture_boxes = [b for b in page_boxes if b.get("class") == "picture"]
-
-        BBOX_PADDING = 3  # 고정 패딩 (텍스트 침범 방지, 최소한의 잘림 보정)
-
         for i, box in enumerate(picture_boxes):
             bbox = box.get("bbox")
             if not bbox:
@@ -115,15 +118,39 @@ def extract_page(
                 pix.save(str(assets_dir / filename))
                 assets.append(filename)
 
-                # 원본 대비 폭 비율 (Explorer converter.py:1091 패턴)
                 img_width_pct = round((bbox[2] - bbox[0]) / page_width * 100)
                 img_width_pct = min(img_width_pct, 100)
                 image_widths.append(img_width_pct)
-
                 logger.debug(f"이미지 캡처: {filename} ({clip}), width={img_width_pct}%")
             except Exception as e:
                 logger.warning(f"이미지 캡처 실패 (box {i}): {e}")
-                image_widths.append(100)  # 실패 시 기본값
+                image_widths.append(100)
+
+        # table_mode="image" 시 표 영역도 이미지로 캡처 (MinerU 패턴)
+        if table_mode == "image":
+            table_boxes = [b for b in page_boxes if b.get("class") == "table"]
+            for i, box in enumerate(table_boxes):
+                bbox = box.get("bbox")
+                if not bbox:
+                    continue
+                try:
+                    clip = fitz.Rect(
+                        max(bbox[0] - BBOX_PADDING, page_rect.x0),
+                        max(bbox[1] - BBOX_PADDING, page_rect.y0),
+                        min(bbox[2] + BBOX_PADDING, page_rect.x1),
+                        min(bbox[3] + BBOX_PADDING, page_rect.y1),
+                    )
+                    pix = page.get_pixmap(clip=clip, dpi=image_dpi)
+                    filename = f"table_{i}.png"
+                    pix.save(str(assets_dir / filename))
+                    table_assets.append(filename)
+
+                    tbl_width_pct = round((bbox[2] - bbox[0]) / page_width * 100)
+                    tbl_width_pct = min(tbl_width_pct, 100)
+                    table_widths.append(tbl_width_pct)
+                    logger.debug(f"표 캡처: {filename} ({clip}), width={tbl_width_pct}%")
+                except Exception as e:
+                    logger.warning(f"표 캡처 실패 (box {i}): {e}")
 
     doc.close()
 
@@ -136,8 +163,9 @@ def extract_page(
 
     # 표 모드별 후처리
     if table_mode == "image":
-        markdown_text = _remove_markdown_tables(markdown_text)
-        logger.info("table_mode=image: Markdown 테이블 구문 제거")
+        # Markdown 테이블 구문 제거 후, 표 이미지로 대체
+        markdown_text = _replace_tables_with_images(markdown_text, table_assets, table_widths)
+        logger.info(f"table_mode=image: 표 {len(table_assets)}개를 이미지로 대체")
     elif table_mode == "off":
         markdown_text = _remove_markdown_tables(markdown_text)
 
@@ -336,6 +364,49 @@ def _clean_heading_styles(text: str) -> str:
             result.append(f"{hashes} {rest}")
         else:
             result.append(line)
+    return "\n".join(result)
+
+
+def _replace_tables_with_images(text: str, table_assets: list[str], table_widths: list[int]) -> str:
+    """Markdown 테이블 구문을 이미지 참조로 대체한다.
+
+    table_mode="image" 시 사용. 표 텍스트를 제거하고 캡처된 이미지로 교체.
+    """
+    if not table_assets:
+        return _remove_markdown_tables(text)
+
+    lines = text.split("\n")
+    result = []
+    table_idx = 0
+    in_table = False
+
+    for line in lines:
+        stripped = line.strip()
+        is_table_line = stripped.startswith("|") and stripped.endswith("|")
+
+        if is_table_line and not in_table:
+            # 표 시작 — 이미지로 대체
+            in_table = True
+            if table_idx < len(table_assets):
+                filename = table_assets[table_idx]
+                width = table_widths[table_idx] if table_idx < len(table_widths) else 100
+                img_tag = f'<img src="assets/{filename}" alt="Table" style="width: {width}%">'
+                result.append("")
+                result.append(f"<figure>")
+                result.append("")
+                result.append(img_tag)
+                result.append("")
+                result.append(f"</figure>")
+                result.append("")
+                table_idx += 1
+        elif is_table_line and in_table:
+            # 표 계속 — 건너뜀
+            continue
+        else:
+            if in_table:
+                in_table = False
+            result.append(line)
+
     return "\n".join(result)
 
 
