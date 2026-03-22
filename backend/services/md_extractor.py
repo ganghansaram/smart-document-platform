@@ -16,12 +16,262 @@ from pathlib import Path
 from typing import Optional
 
 import fitz as _fitz
+import numpy as _np
 import config
 
 logger = logging.getLogger(__name__)
 
 
-# ── DocLayout-YOLO 컬럼 감지 폴백 ──
+# ══════════════════════════════════════
+# DocLayout-YOLO 레이아웃 감지 (텍스트 엔진에서 이관)
+# ══════════════════════════════════════
+
+_layout_model = None
+_layout_model_available = False
+
+_YOLO_TRANSLATE_CLASSES = {"title", "plain text"}
+_YOLO_CAPTURE_CLASSES = {"figure", "table", "isolate_formula"}
+_YOLO_SKIP_CLASSES = {"abandon", "figure_caption", "table_caption",
+                      "table_footnote", "formula_caption"}
+
+# 불릿 기호로 사용되는 심볼 폰트 패밀리 (소문자 비교)
+_SYMBOL_FONTS = {"symbolmt", "symbol", "wingdings", "zapfdingbats", "webdings"}
+
+
+def _get_yolo_model():
+    """BabelDOC DocLayout-YOLO ONNX 모델 로드 (싱글턴)"""
+    global _layout_model, _layout_model_available
+    if _layout_model is not None:
+        return _layout_model
+    try:
+        from babeldoc.docvision.doclayout import OnnxModel
+        _layout_model = OnnxModel.from_pretrained()
+        _layout_model_available = True
+        logger.info("DocLayout-YOLO 모델 로드 완료")
+        return _layout_model
+    except Exception as e:
+        _layout_model_available = False
+        logger.warning(f"DocLayout-YOLO 로드 실패 (X-gap 폴백 사용): {e}")
+        return None
+
+
+def _yolo_iou(a: _fitz.Rect, b: _fitz.Rect) -> float:
+    """두 Rect의 IoU 계산"""
+    inter = a & b
+    if inter.is_empty:
+        return 0.0
+    inter_area = inter.width * inter.height
+    union_area = a.width * a.height + b.width * b.height - inter_area
+    return inter_area / union_area if union_area > 0 else 0.0
+
+
+def _yolo_suppress_overlaps(regions: list[dict], iou_thresh: float = 0.3) -> list[dict]:
+    """IoU > threshold인 영역 중 낮은 conf 쪽 제거 (NMS)"""
+    if len(regions) <= 1:
+        return regions
+    sorted_r = sorted(regions, key=lambda r: r.get("conf", 1.0), reverse=True)
+    keep = []
+    for r in sorted_r:
+        overlap = False
+        for kept in keep:
+            if _yolo_iou(r["bbox"], kept["bbox"]) > iou_thresh:
+                overlap = True
+                break
+        if not overlap:
+            keep.append(r)
+    return keep
+
+
+def _yolo_clip_against_captures(
+    translate_regions: list[dict],
+    capture_regions: list[dict],
+) -> list[dict]:
+    """translate bbox가 capture 영역과 겹치면 겹치지 않도록 클리핑.
+    겹침이 50% 이상이면 해당 translate 영역 자체를 제거."""
+    if not capture_regions:
+        return translate_regions
+
+    result = []
+    for tr in translate_regions:
+        bbox = _fitz.Rect(tr["bbox"])
+        tr_area = bbox.width * bbox.height
+        if tr_area <= 0:
+            continue
+
+        clipped = _fitz.Rect(bbox)
+        drop = False
+        for cap in capture_regions:
+            inter = clipped & cap["bbox"]
+            if inter.is_empty:
+                continue
+            overlap_ratio = (inter.width * inter.height) / tr_area
+            if overlap_ratio > 0.5:
+                drop = True
+                break
+            cap_bbox = cap["bbox"]
+            if inter.height < inter.width:
+                if cap_bbox.y0 > clipped.y0:
+                    clipped.y1 = min(clipped.y1, cap_bbox.y0)
+                else:
+                    clipped.y0 = max(clipped.y0, cap_bbox.y1)
+
+        if drop or clipped.is_empty or clipped.height < 5:
+            continue
+
+        tr_copy = dict(tr)
+        tr_copy["bbox"] = clipped
+        result.append(tr_copy)
+    return result
+
+
+def _yolo_get_dominant_font_size(page: _fitz.Page, bbox: _fitz.Rect) -> float:
+    """영역 내 가장 많이 사용된 폰트 크기 반환 (pt)"""
+    blocks = page.get_text("dict", clip=bbox)
+    size_counts: dict[float, int] = {}
+
+    for block in blocks.get("blocks", []):
+        for line in block.get("lines", []):
+            for span in line.get("spans", []):
+                sz = round(span.get("size", 10), 1)
+                text_len = len(span.get("text", "").strip())
+                if text_len > 0:
+                    size_counts[sz] = size_counts.get(sz, 0) + text_len
+
+    if not size_counts:
+        return 10.0
+    return max(size_counts, key=size_counts.get)
+
+
+def _yolo_extract_text_with_bullets(page: _fitz.Page, bbox: _fitz.Rect) -> str:
+    """get_text("dict")로 텍스트를 추출하되,
+    심볼 폰트의 단독 문자(불릿)를 "•"로 치환."""
+    dict_data = page.get_text("dict", clip=bbox)
+    lines = []
+
+    for block in dict_data.get("blocks", []):
+        if block.get("type") != 0:
+            continue
+        for line in block.get("lines", []):
+            parts = []
+            for span in line.get("spans", []):
+                text = span.get("text", "")
+                font = span.get("font", "").lower()
+                if font in _SYMBOL_FONTS and len(text.strip()) <= 2:
+                    parts.append("\u2022")  # •
+                else:
+                    parts.append(text)
+            joined = "".join(parts).strip()
+            if joined:
+                lines.append(joined)
+
+    return "\n".join(lines)
+
+
+def _detect_layout_yolo(page: _fitz.Page) -> tuple[list[dict], list[dict]]:
+    """DocLayout-YOLO로 레이아웃 감지 → (번역 영역, 캡처 영역)"""
+    model = _get_yolo_model()
+    if model is None:
+        return _detect_layout_fallback(page)
+
+    pix = page.get_pixmap(dpi=72)
+    image = _np.frombuffer(pix.samples, _np.uint8).reshape(
+        pix.height, pix.width, 3
+    )[:, :, ::-1]  # RGB → BGR
+
+    results = model.predict(image)[0]
+    page_center = page.rect.width / 2
+
+    translate_regions = []
+    capture_regions = []
+
+    for box in results.boxes:
+        cls_name = results.names[int(box.cls)]
+        bbox = _fitz.Rect(box.xyxy.tolist())
+        conf = float(box.conf)
+
+        if cls_name in _YOLO_TRANSLATE_CLASSES:
+            text = _yolo_extract_text_with_bullets(page, bbox)
+            if not text:
+                text = page.get_text("text", clip=bbox).strip()
+            if not text:
+                continue
+
+            mid_x = bbox.x0 + bbox.width / 2
+            if bbox.width / page.rect.width > 0.6:
+                column = "full"
+            elif mid_x < page_center:
+                column = "left"
+            else:
+                column = "right"
+
+            font_size = _yolo_get_dominant_font_size(page, bbox)
+
+            translate_regions.append({
+                "bbox": bbox,
+                "text": text,
+                "cls": cls_name,
+                "column": column,
+                "font_size": font_size,
+                "conf": conf,
+            })
+
+        elif cls_name in _YOLO_CAPTURE_CLASSES:
+            capture_regions.append({
+                "bbox": bbox,
+                "cls": cls_name,
+                "conf": conf,
+            })
+
+    translate_regions = _yolo_suppress_overlaps(translate_regions, iou_thresh=0.3)
+    capture_regions = _yolo_suppress_overlaps(capture_regions, iou_thresh=0.3)
+    translate_regions = _yolo_clip_against_captures(translate_regions, capture_regions)
+    translate_regions.sort(key=lambda r: (r["column"] != "full", r["column"], r["bbox"].y0))
+
+    return translate_regions, capture_regions
+
+
+def _detect_layout_fallback(page: _fitz.Page) -> tuple[list[dict], list[dict]]:
+    """YOLO 불가 시 PyMuPDF get_text("dict") 기반 폴백"""
+    page_dict = page.get_text("dict")
+    page_center = page.rect.width / 2
+
+    translate_regions = []
+
+    for block in page_dict.get("blocks", []):
+        if block.get("type") != 0:
+            continue
+        bbox = _fitz.Rect(block["bbox"])
+
+        text = _yolo_extract_text_with_bullets(page, bbox)
+        if not text:
+            continue
+
+        mid_x = bbox.x0 + bbox.width / 2
+        if bbox.width / page.rect.width > 0.6:
+            column = "full"
+        elif mid_x < page_center:
+            column = "left"
+        else:
+            column = "right"
+
+        font_size = _yolo_get_dominant_font_size(page, bbox)
+
+        translate_regions.append({
+            "bbox": bbox,
+            "text": text,
+            "cls": "plain text",
+            "column": column,
+            "font_size": font_size,
+            "conf": 1.0,
+        })
+
+    translate_regions = _yolo_suppress_overlaps(translate_regions, iou_thresh=0.3)
+    translate_regions.sort(key=lambda r: (r["column"] != "full", r["column"], r["bbox"].y0))
+
+    return translate_regions, []
+
+
+# ── column_boxes 실패 감지 ──
 
 def _needs_yolo_fallback(page: _fitz.Page) -> bool:
     """column_boxes()가 컬럼을 감지하지 못하면 True 반환 (특수 PDF 감지)"""
@@ -39,8 +289,6 @@ def _extract_page_yolo_fallback(
     image_dpi: int,
 ) -> dict:
     """DocLayout-YOLO로 레이아웃 감지 후 Markdown 조립 (column_boxes 실패 시 폴백)"""
-    from services.text_translator import _detect_layout_yolo
-
     translate_regions, capture_regions = _detect_layout_yolo(page)
 
     if not translate_regions and not capture_regions:

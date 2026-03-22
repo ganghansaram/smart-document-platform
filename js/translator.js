@@ -9,7 +9,7 @@
 
         // ── Platform Header ──
         var header = initPlatformHeader({
-            title: 'Smart Translator',
+            title: 'Notebook',
             currentSystem: 'translator',
             navItems: [
                 { id: 'back-list', label: 'Home', hidden: true },
@@ -127,10 +127,8 @@
         var $fontScaleUp    = document.getElementById('font-scale-up');
         var $fontScaleValue = document.getElementById('font-scale-value');
 
-        var translateEngine = 'pdf'; // 'pdf' | 'text' | 'web'
-        var textFontScale   = parseFloat(localStorage.getItem('tt-font-scale') || '1.0');
+        var translateEngine = 'pdf'; // 'pdf' | 'web'
         var webFontSize     = parseInt(localStorage.getItem('tt-web-font-size') || '15', 10);
-        var textPageStatusCache = {}; // 텍스트 번역 상태 캐시 (pdf 캐시와 독립)
         var webPageStatusCache = {};  // 웹 뷰 번역 상태 캐시
         var webPollingTimer = null;
         var webFullViewMode = false; // 전체 문서 연속 스크롤 모드
@@ -611,51 +609,6 @@
                 return;
             }
 
-            if (translateEngine === 'text') {
-                // 텍스트 번역 모드
-                var tps = textPageStatusCache[String(currentPage)];
-                var tStatus = tps ? tps.status : 'pending';
-
-                if (tStatus === 'done') {
-                    showRightTextTranslatedPage();
-                    updateToolbarForStatus('done');
-                } else if (tStatus === 'translating') {
-                    showRightTranslating(tps);
-                    updateToolbarForStatus('translating');
-                    startTextPolling();
-                } else if (tStatus === 'error') {
-                    showRightError(tps);
-                    updateToolbarForStatus('error');
-                } else {
-                    // 서버에서 기존 텍스트 번역 결과 확인
-                    fetch(API + '/api/translator/text-translate/' + currentDocId + '/page/' + currentPage + '/status', {
-                        credentials: 'include',
-                    }).then(function(r) {
-                        if (!r.ok) throw new Error('not found');
-                        return r.json();
-                    }).then(function(st) {
-                        if (st.status === 'done' || st.status === 'translating' || st.status === 'error') {
-                            textPageStatusCache[String(currentPage)] = st;
-                        }
-                        if (st.status === 'done') {
-                            showRightTextTranslatedPage();
-                            updateToolbarForStatus('done');
-                        } else if (st.status === 'translating') {
-                            showRightTranslating(st);
-                            updateToolbarForStatus('translating');
-                            startTextPolling();
-                        } else {
-                            showRightPending();
-                            updateToolbarForStatus('pending');
-                        }
-                    }).catch(function() {
-                        showRightPending();
-                        updateToolbarForStatus('pending');
-                    });
-                }
-                return;
-            }
-
             // PDF 번역 모드 (기존)
             var ps = pageStatusCache[String(currentPage)];
             var status = ps ? ps.status : 'pending';
@@ -753,32 +706,6 @@
                 renderRightPage(1); // 1페이지짜리 PDF의 첫 페이지
             }).catch(function(err) {
                 console.error('[PDF.js] right page load error:', err);
-                showRightError({ error: 'PDF 로드 실패' });
-            });
-        }
-
-        function showRightTextTranslatedPage() {
-            _showDualPanel();
-            // 로딩 상태 표시 (placeholder 유지)
-            var textEl = $rightPlaceholder.querySelector('.placeholder-text');
-            var hintEl = $rightPlaceholder.querySelector('.placeholder-hint');
-            if (textEl) textEl.textContent = '번역 PDF 로드 중...';
-            if (hintEl) hintEl.textContent = '';
-            $rightPlaceholder.style.display = 'flex';
-            $rightContainer.style.display = 'none';
-            $webViewContainer.style.display = 'none';
-
-            // 텍스트 번역 PDF 로드
-            if (rightPdfDoc && rightPdfDoc !== legacyPdfDoc) { rightPdfDoc.destroy(); }
-            rightPdfDoc = null;
-            var url = API + '/api/translator/text-translated-pdf/' + currentDocId + '/page/' + currentPage;
-            pdfjsLib.getDocument({ url: url, withCredentials: true }).promise.then(function(pdf) {
-                rightPdfDoc = pdf;
-                $rightPlaceholder.style.display = 'none';
-                $rightContainer.style.display = 'inline-block';
-                renderRightPage(1);
-            }).catch(function(err) {
-                console.error('[PDF.js] text-translated page load error:', err);
                 showRightError({ error: 'PDF 로드 실패' });
             });
         }
@@ -1152,7 +1079,7 @@
 
         function updateToolbarForStatus(status) {
             // 웹 뷰 모드에서는 범위 번역 항상 숨김
-            var hideRange = (translateEngine === 'text' || translateEngine === 'web');
+            var hideRange = (translateEngine === 'web');
 
             if (status === 'pending' || status === 'error') {
                 $translateBtn.style.display = '';
@@ -1184,19 +1111,16 @@
                 var ps;
                 if (translateEngine === 'web') {
                     ps = webPageStatusCache[String(currentPage)];
-                } else if (translateEngine === 'text') {
-                    ps = textPageStatusCache[String(currentPage)];
                 } else {
                     ps = pageStatusCache[String(currentPage)];
                 }
-                var info = translateEngine === 'web' ? '[웹뷰] ' : (translateEngine === 'text' ? '[텍스트] ' : '');
+                var info = translateEngine === 'web' ? '[웹뷰] ' : '';
                 if (ps) {
                     if (ps.model) info += ps.model;
                     if (ps.elapsed_sec) info += ', ' + ps.elapsed_sec + '초';
                     if (ps.batch) info += ' (' + ps.batch + 'p 일괄)';
                 }
                 $toolbarStatus.textContent = info;
-                if (translateEngine === 'text') updateFontScaleDisplay();
             } else if (status === 'legacy') {
                 $translateBtn.style.display = '';
                 $translateBtn.textContent = '페이지 번역';
@@ -1217,7 +1141,7 @@
             for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
             btn.classList.add('active');
             translateEngine = btn.getAttribute('data-engine');
-            $fontControls.style.display = (translateEngine === 'text' || translateEngine === 'web') ? '' : 'none';
+            $fontControls.style.display = (translateEngine === 'web') ? '' : 'none';
             updateFontScaleDisplay();
 
             // 웹 뷰 모드에서는 스크롤 동기화 비활성화
@@ -1255,49 +1179,21 @@
         }
 
         function updateFontScaleDisplay() {
-            if (translateEngine === 'web') {
-                $fontScaleValue.textContent = webFontSize + 'px';
-                return;
-            }
-            var pct = Math.round(textFontScale * 100) + '%';
-            // 번역 완료 상태에서 현재 스케일과 baked 스케일이 다르면 표시
-            var tps = textPageStatusCache[String(currentPage)];
-            if (tps && tps.status === 'done' && tps.font_scale) {
-                var bakedMultiplier = Math.round((tps.font_scale / 0.75) * 100) / 100;
-                if (Math.abs(bakedMultiplier - textFontScale) > 0.01) {
-                    pct += '*';
-                    $translateBtn.textContent = '이 크기로 재번역';
-                } else if ($translateBtn.textContent === '이 크기로 재번역') {
-                    $translateBtn.textContent = '재번역';
-                }
-            }
-            $fontScaleValue.textContent = pct;
+            $fontScaleValue.textContent = webFontSize + 'px';
         }
         updateFontScaleDisplay();
 
         $fontScaleDown.addEventListener('click', function() {
-            if (translateEngine === 'web') {
-                webFontSize = Math.max(12, webFontSize - 1);
-                localStorage.setItem('tt-web-font-size', String(webFontSize));
-                _applyWebFontSize();
-                updateFontScaleDisplay();
-                return;
-            }
-            textFontScale = Math.max(0.5, Math.round((textFontScale - 0.1) * 10) / 10);
-            localStorage.setItem('tt-font-scale', String(textFontScale));
+            webFontSize = Math.max(12, webFontSize - 1);
+            localStorage.setItem('tt-web-font-size', String(webFontSize));
+            _applyWebFontSize();
             updateFontScaleDisplay();
         });
 
         $fontScaleUp.addEventListener('click', function() {
-            if (translateEngine === 'web') {
-                webFontSize = Math.min(22, webFontSize + 1);
-                localStorage.setItem('tt-web-font-size', String(webFontSize));
-                _applyWebFontSize();
-                updateFontScaleDisplay();
-                return;
-            }
-            textFontScale = Math.min(1.5, Math.round((textFontScale + 0.1) * 10) / 10);
-            localStorage.setItem('tt-font-scale', String(textFontScale));
+            webFontSize = Math.min(22, webFontSize + 1);
+            localStorage.setItem('tt-web-font-size', String(webFontSize));
+            _applyWebFontSize();
             updateFontScaleDisplay();
         });
 
@@ -1325,27 +1221,6 @@
                     updateRightPanel();
                 }).catch(function(err) {
                     alert('웹 뷰 번역 시작 실패: ' + err.message);
-                    $translateBtn.disabled = false;
-                });
-            } else if (translateEngine === 'text') {
-                // 텍스트 번역 모드
-                var baseFontScale = 0.75; // config 기본값
-                var effectiveScale = baseFontScale * textFontScale;
-                fetch(API + '/api/translator/text-translate/' + currentDocId + '/page/' + currentPage, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ model: model, font_scale: effectiveScale }),
-                    credentials: 'include',
-                }).then(function(resp) {
-                    if (!resp.ok) return resp.json().then(function(e) { throw new Error(e.detail); });
-                    textPageStatusCache[String(currentPage)] = {
-                        status: 'translating',
-                        progress_stage: '번역 준비 중...',
-                        model: model,
-                    };
-                    updateRightPanel();
-                }).catch(function(err) {
-                    alert('텍스트 번역 시작 실패: ' + err.message);
                     $translateBtn.disabled = false;
                 });
             } else {
@@ -1377,8 +1252,6 @@
             var cancelUrl;
             if (translateEngine === 'web') {
                 cancelUrl = API + '/api/translator/web-translate/' + currentDocId + '/page/' + currentPage + '/cancel';
-            } else if (translateEngine === 'text') {
-                cancelUrl = API + '/api/translator/text-translate/' + currentDocId + '/page/' + currentPage + '/cancel';
             } else {
                 cancelUrl = API + '/api/translator/translate/' + currentDocId + '/page/' + currentPage + '/cancel';
             }
@@ -1388,8 +1261,6 @@
                 if (translateEngine === 'web') {
                     delete webPageStatusCache[String(currentPage)];
                     stopWebPolling();
-                } else if (translateEngine === 'text') {
-                    delete textPageStatusCache[String(currentPage)];
                 } else {
                     delete pageStatusCache[String(currentPage)];
                 }
@@ -1498,42 +1369,6 @@
             }
         }
 
-        // ── Text translation polling ──
-
-        var textPollingTimer = null;
-
-        function startTextPolling() {
-            stopTextPolling();
-            textPollingTimer = setInterval(function() {
-                if (!currentDocId) { stopTextPolling(); return; }
-
-                fetch(API + '/api/translator/text-translate/' + currentDocId + '/page/' + currentPage + '/status', {
-                    credentials: 'include',
-                }).then(function(r) { return r.json(); })
-                  .then(function(st) {
-                    textPageStatusCache[String(currentPage)] = st;
-                    if (st.status === 'translating') {
-                        var stage = st.progress_stage || '번역 중...';
-                        var textEl = $rightPlaceholder.querySelector('.placeholder-text');
-                        if (textEl) textEl.textContent = stage;
-                        $toolbarStatus.textContent = stage;
-                    } else {
-                        stopTextPolling();
-                        updateRightPanel();
-                    }
-                }).catch(function() {
-                    stopTextPolling();
-                });
-            }, 3000);
-        }
-
-        function stopTextPolling() {
-            if (textPollingTimer) {
-                clearInterval(textPollingTimer);
-                textPollingTimer = null;
-            }
-        }
-
         // ── Page navigation ──
 
         function updatePageNav() {
@@ -1554,7 +1389,6 @@
             hidePopover(true);
             hideActionBar(); hideAiPopover();
             stopPolling();
-            stopTextPolling();
             stopWebPolling();
             currentPage = page;
             updatePageNav();
@@ -1568,8 +1402,8 @@
                 _scrollFullViewToPage(currentPage);
                 return;
             }
-            if (translateEngine === 'web' || translateEngine === 'text') {
-                // 텍스트/웹뷰 모드: updateRightPanel()이 자체적으로 서버 fetch
+            if (translateEngine === 'web') {
+                // 웹뷰 모드: updateRightPanel()이 자체적으로 서버 fetch
                 updateRightPanel();
             } else if (rightPdfDoc && hasLegacyTranslation && !pageStatusCache[String(currentPage)]) {
                 // 레거시 PDF 유지, 해당 페이지 렌더링
@@ -3299,9 +3133,7 @@
                 // PDF 번역 다운로드 (PDF/텍스트 모드)
                 $dlTranslated.style.display = isWeb ? 'none' : '';
                 if (!isWeb) {
-                    var ps = translateEngine === 'text'
-                        ? textPageStatusCache[String(currentPage)]
-                        : pageStatusCache[String(currentPage)];
+                    var ps = pageStatusCache[String(currentPage)];
                     $dlTranslated.disabled = !(ps && ps.status === 'done');
                 }
                 // MD 다운로드 (웹 뷰 모드)
@@ -3336,9 +3168,7 @@
         $dlTranslated.addEventListener('click', function() {
             $downloadMenu.style.display = 'none';
             if (!currentDocId || $dlTranslated.disabled) return;
-            var endpoint = translateEngine === 'text'
-                ? '/api/translator/text-translated-pdf/' + currentDocId + '/page/' + currentPage
-                : '/api/translator/translated-pdf/' + currentDocId + '/page/' + currentPage;
+            var endpoint = '/api/translator/translated-pdf/' + currentDocId + '/page/' + currentPage;
             _downloadFile(
                 API + endpoint,
                 'translated_p' + currentPage + '.pdf'

@@ -296,32 +296,6 @@ var SETTINGS_SCHEMA = {
                                     ]
                                 },
                                 {
-                                    subtabId: 'quality-text',
-                                    subtabLabel: '텍스트',
-                                    fields: [
-                                        { group: 'translator', key: 'text_custom_prompt',
-                                          label: '시스템 프롬프트', type: 'textarea', restart: false,
-                                          rows: 8,
-                                          desc: '텍스트 번역 시 Ollama에 전달되는 system 프롬프트' },
-                                        { group: 'translator', key: 'text_font_scale',
-                                          label: '폰트 스케일', type: 'number', restart: false,
-                                          min: 0.3, max: 1.5, step: 0.05,
-                                          desc: '원문 대비 번역 폰트 크기 비율. EN→KR은 0.75 권장 (한글이 영문보다 넓음)' },
-                                        { group: 'translator', key: 'text_min_scale',
-                                          label: '최소 축소 한도', type: 'number', restart: false,
-                                          min: 0.1, max: 1.0, step: 0.05,
-                                          desc: '자동 축소 최소 비율. 번역이 박스에 안 맞을 때 이 비율까지 축소 허용' },
-                                        { group: 'translator', key: 'text_font_family',
-                                          label: '폰트 패밀리', type: 'text', restart: false,
-                                          placeholder: 'sans-serif',
-                                          desc: '번역 텍스트에 적용할 CSS 폰트 패밀리 (예: sans-serif, serif, monospace)' },
-                                        { group: 'translator', key: 'text_min_text_length',
-                                          label: '최소 텍스트 길이', type: 'number', restart: false,
-                                          min: 0, max: 100, step: 1,
-                                          desc: '이 글자 수 미만의 텍스트 블록은 번역 건너뜀' },
-                                    ]
-                                },
-                                {
                                     subtabId: 'quality-ai-selection',
                                     subtabLabel: 'AI 선택',
                                     fields: [
