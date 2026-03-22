@@ -564,6 +564,9 @@
                     showRightError(wps);
                     updateToolbarForStatus('error');
                 } else {
+                    // fetch 응답 전까지 즉시 pending 표시 (이전 엔진 상태 잔류 방지)
+                    showRightPending();
+                    updateToolbarForStatus('pending');
                     // 서버에서 기존 웹 뷰 번역 결과 확인
                     fetch(API + '/api/translator/web-translate/' + currentDocId + '/page/' + currentPage + '/status', {
                         credentials: 'include',
