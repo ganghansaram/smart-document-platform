@@ -18,6 +18,7 @@ from services.translator_service import (
     get_text_translated_pdf_path, cancel_text_translation,
     start_web_translation, get_web_translation_status,
     get_web_translated_md, get_web_page_boxes, cancel_web_translation,
+    get_web_full_md,
     get_annotations, create_annotation, update_annotation, delete_annotation,
     ai_selection_query,
     search_documents,
@@ -510,6 +511,18 @@ async def api_cancel_web_translation(
     """웹 뷰 번역 취소"""
     cancel_web_translation(user["username"], doc_id, page_num)
     return {"success": True, "status": "cancelled"}
+
+
+@router.get("/web-view/{doc_id}/full")
+async def api_serve_web_view_full(
+    doc_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """전체 문서 병합 Markdown 서빙"""
+    result = get_web_full_md(user["username"], doc_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    return result
 
 
 @router.get("/web-view/{doc_id}/page/{page_num}")

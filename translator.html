@@ -136,6 +136,8 @@
                     <div class="download-menu" id="download-menu" role="menu">
                         <button class="download-menu-item" id="dl-original" role="menuitem">원본 PDF</button>
                         <button class="download-menu-item" id="dl-translated" role="menuitem" disabled>현재 페이지 번역 PDF</button>
+                        <button class="download-menu-item" id="dl-web-page" role="menuitem" disabled style="display:none">현재 페이지 MD</button>
+                        <button class="download-menu-item" id="dl-web-full" role="menuitem" disabled style="display:none">전체 문서 MD</button>
                     </div>
                 </span>
                 <select class="form-select form-select-sm" id="model-select"></select>
@@ -164,6 +166,9 @@
                     <button class="mode-toggle-btn" data-engine="text">텍스트</button>
                     <button class="mode-toggle-btn" data-engine="web">웹 뷰</button>
                 </div>
+                <button class="toolbar-btn" id="web-full-toggle" title="전체 문서 보기" style="display:none">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+                </button>
             </div>
             <!-- 범위 번역 다이얼로그 -->
             <div class="range-dialog-overlay" id="range-dialog-overlay">

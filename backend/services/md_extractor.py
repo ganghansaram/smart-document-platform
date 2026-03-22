@@ -15,9 +15,116 @@ import re
 from pathlib import Path
 from typing import Optional
 
+import fitz as _fitz
 import config
 
 logger = logging.getLogger(__name__)
+
+
+# ── DocLayout-YOLO 컬럼 감지 폴백 ──
+
+def _needs_yolo_fallback(page: _fitz.Page) -> bool:
+    """column_boxes()가 컬럼을 감지하지 못하면 True 반환 (특수 PDF 감지)"""
+    try:
+        from pymupdf4llm.helpers.multi_column import column_boxes
+        bboxes = column_boxes(page, footer_margin=50, header_margin=50)
+        return len(bboxes) == 0
+    except Exception:
+        return False
+
+
+def _extract_page_yolo_fallback(
+    page: _fitz.Page,
+    assets_dir: Optional[Path],
+    image_dpi: int,
+) -> dict:
+    """DocLayout-YOLO로 레이아웃 감지 후 Markdown 조립 (column_boxes 실패 시 폴백)"""
+    from services.text_translator import _detect_layout_yolo
+
+    translate_regions, capture_regions = _detect_layout_yolo(page)
+
+    if not translate_regions and not capture_regions:
+        return None  # YOLO도 실패 → 기존 경로로 계속
+
+    page_rect = page.rect
+    BBOX_PADDING = 3
+
+    # 번역 영역 → Markdown 텍스트 조립
+    md_parts = []
+    for region in translate_regions:
+        text = region.get("text", "").strip()
+        if not text:
+            continue
+        cls = region.get("cls", "plain text")
+        if cls == "title":
+            md_parts.append(f"## {text}")
+        else:
+            md_parts.append(text)
+        md_parts.append("")  # 빈 줄 (단락 구분)
+
+    markdown_text = "\n".join(md_parts)
+
+    # 캡처 영역 → 이미지 저장
+    assets = []
+    if assets_dir is not None:
+        assets_dir = Path(assets_dir)
+        assets_dir.mkdir(parents=True, exist_ok=True)
+        for i, region in enumerate(capture_regions):
+            bbox = region.get("bbox")
+            if not bbox:
+                continue
+            try:
+                clip = _fitz.Rect(
+                    max(bbox.x0 - BBOX_PADDING, page_rect.x0),
+                    max(bbox.y0 - BBOX_PADDING, page_rect.y0),
+                    min(bbox.x1 + BBOX_PADDING, page_rect.x1),
+                    min(bbox.y1 + BBOX_PADDING, page_rect.y1),
+                )
+                pix = page.get_pixmap(clip=clip, dpi=image_dpi)
+                cls = region.get("cls", "figure")
+                fname = f"{cls}_{i}.png"
+                pix.save(str(assets_dir / fname))
+                assets.append(fname)
+
+                # 이미지 폭 비율 계산
+                width_pct = round(clip.width / page_rect.width * 100)
+                width_pct = min(width_pct, 100)
+
+                # Markdown에 figure 삽입
+                fig_html = (
+                    f'\n<figure style="max-width:{width_pct}%">'
+                    f'<img src="assets/{fname}" alt="{cls}" style="width:100%">'
+                    f'</figure>\n'
+                )
+                markdown_text += fig_html
+            except Exception as e:
+                logger.warning(f"YOLO 캡처 영역 이미지 저장 실패: {e}")
+
+    # page_boxes 구성 (클릭 네비게이션용)
+    page_boxes = []
+    for idx, region in enumerate(translate_regions):
+        bbox = region.get("bbox")
+        page_boxes.append({
+            "index": idx,
+            "class": "section-header" if region.get("cls") == "title" else "text",
+            "bbox": (int(bbox.x0), int(bbox.y0), int(bbox.x1), int(bbox.y1)),
+        })
+    for idx, region in enumerate(capture_regions):
+        bbox = region.get("bbox")
+        page_boxes.append({
+            "index": len(translate_regions) + idx,
+            "class": region.get("cls", "picture"),
+            "bbox": (int(bbox.x0), int(bbox.y0), int(bbox.x1), int(bbox.y1)),
+        })
+
+    logger.info(f"YOLO 폴백 추출 완료: {len(translate_regions)}개 텍스트 + {len(capture_regions)}개 캡처")
+
+    return {
+        "markdown": markdown_text,
+        "page_boxes": page_boxes,
+        "assets": assets,
+        "metadata": {},
+    }
 
 
 def extract_page(
@@ -41,7 +148,7 @@ def extract_page(
         }
     """
     import pymupdf4llm
-    import fitz
+    fitz = _fitz
 
     pdf_path = Path(pdf_path)
     if not pdf_path.exists():
@@ -62,6 +169,17 @@ def extract_page(
     if page_index < 0 or page_index >= total_pages:
         doc.close()
         raise ValueError(f"유효하지 않은 페이지 번호: {page_num} (1~{total_pages})")
+
+    # ── DocLayout-YOLO 컬럼 감지 폴백 체크 ──
+    # column_boxes()가 0개 반환 시 (특수 PDF) → YOLO로 레이아웃 감지
+    page = doc[page_index]
+    if _needs_yolo_fallback(page):
+        logger.info(f"column_boxes() 실패 → DocLayout-YOLO 폴백: p{page_num}")
+        yolo_result = _extract_page_yolo_fallback(page, assets_dir, image_dpi)
+        if yolo_result is not None:
+            doc.close()
+            return yolo_result
+        logger.warning("YOLO 폴백도 실패 → 기본 PyMuPDF4LLM 경로로 계속")
 
     # PyMuPDF4LLM 추출 (이미지는 write_images 사용하지 않음 — 영역 캡처로 대체)
     kwargs = {

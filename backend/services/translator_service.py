@@ -733,6 +733,12 @@ def get_documents(username: str) -> list[dict]:
             total = meta.get("pages", 0)
             entry["translated_pages"] = done_count
             entry["total_pages"] = total
+            # 웹뷰 번역 통계
+            web_done = sum(
+                1 for ps in page_status.values()
+                if ps.get("web_translate", {}).get("status") == "done"
+            )
+            entry["web_translated_pages"] = web_done
             # 레거시 통번역 존재 여부
             translated_path = _doc_dir(username, entry["id"]) / "translated.pdf"
             if translated_path.exists():
@@ -1563,6 +1569,37 @@ def get_web_translated_md(username: str, doc_id: str, page_num: int) -> Optional
     if not path.exists():
         return None
     return path.read_text(encoding="utf-8")
+
+
+def get_web_full_md(username: str, doc_id: str) -> Optional[dict]:
+    """전체 문서 병합 Markdown + 번역된 페이지 목록 반환"""
+    doc_dir = _doc_dir(username, doc_id)
+    full_path = doc_dir / "full_translated.md"
+
+    meta = _load_meta(username, doc_id)
+    if not meta:
+        return None
+
+    total_pages = meta.get("pages", 0)
+    page_status = meta.get("page_status", {})
+
+    # 웹뷰 번역 완료된 페이지 목록
+    translated_pages = []
+    for p, ps in page_status.items():
+        wt = ps.get("web_translate", {})
+        if wt.get("status") == "done":
+            translated_pages.append(int(p))
+    translated_pages.sort()
+
+    markdown = ""
+    if full_path.exists():
+        markdown = full_path.read_text(encoding="utf-8")
+
+    return {
+        "markdown": markdown,
+        "total_pages": total_pages,
+        "translated_pages": translated_pages,
+    }
 
 
 def get_web_page_boxes(username: str, doc_id: str, page_num: int) -> Optional[list]:
