@@ -68,6 +68,12 @@
     --transition-normal: 0.2s ease;
     --transition-slow: 0.3s ease;
 
+    /* 패널 레이아웃 (라운드 카드 기반) */
+    --panel-radius: 16px;
+    --panel-gap: 8px;
+    --canvas-bg: #eef1f6;
+    --panel-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06);
+
     /* Diff 색상 */
     --diff-added: #e6ffec;
     --diff-deleted: #fce4e4;
@@ -115,6 +121,10 @@ body[data-theme="dark"] {
 
     /* 포커스 링 */
     --focus-ring: 0 0 0 2px rgba(99,160,224,0.2);
+
+    /* 패널 레이아웃 */
+    --canvas-bg: #0e0e18;
+    --panel-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.3);
 
     /* Diff 색상 */
     --diff-added: rgba(46,160,67,0.15);

@@ -47,7 +47,14 @@ body {
     padding: 32px 32px 0;
 }
 
-.view-viewer { display: none; height: 100%; flex-direction: column; }
+.view-viewer {
+    display: none;
+    height: 100%;
+    flex-direction: column;
+    background: var(--canvas-bg);
+    padding: var(--panel-gap);
+    gap: var(--panel-gap);
+}
 
 /* ── Hero 배너 ── */
 .hero-banner {
@@ -295,9 +302,10 @@ body[data-theme="dark"] .hero-banner-img {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 16px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 7px 16px;
     background: var(--white);
+    border-radius: var(--panel-radius);
+    box-shadow: var(--panel-shadow);
     flex-shrink: 0;
 }
 
@@ -510,6 +518,7 @@ body[data-theme="dark"] .hero-banner-img {
 .viewer-panels {
     flex: 1;
     display: flex;
+    gap: var(--panel-gap);
     overflow: hidden;
 }
 
@@ -517,13 +526,11 @@ body[data-theme="dark"] .hero-banner-img {
     flex: 1;
     overflow: auto;
     padding: 16px;
-    text-align: center;  /* 작을 때 중앙 정렬, 클 때 자연 스크롤 */
-    background: var(--light-gray);
+    text-align: center;
+    background: var(--white);
+    border-radius: var(--panel-radius);
+    box-shadow: var(--panel-shadow);
     position: relative;
-}
-
-.viewer-panel + .viewer-panel {
-    border-left: 2px solid var(--border-color);
 }
 
 .viewer-panel .panel-label {
@@ -532,7 +539,7 @@ body[data-theme="dark"] .hero-banner-img {
     left: 12px;
     font-size: 11px;
     color: var(--text-light);
-    background: rgba(255,255,255,0.8);
+    background: color-mix(in srgb, var(--white) 85%, transparent);
     padding: 2px 8px;
     border-radius: var(--radius-sm);
     z-index: 1;
@@ -940,15 +947,15 @@ body[data-theme="dark"] .card-btn { background: rgba(255,255,255,0.06); border-c
 body[data-theme="dark"] .card-btn:hover { background: var(--active-color-subtle); border-color: color-mix(in srgb, var(--active-color) 40%, transparent); color: var(--active-color); }
 body[data-theme="dark"] .card-btn.primary { background: var(--active-color); border-color: var(--active-color); color: #fff; }
 
-body[data-theme="dark"] .viewer-toolbar { background: #1e1e2e; border-bottom-color: rgba(255,255,255,0.08); }
+body[data-theme="dark"] .viewer-toolbar { background: var(--white); }
 body[data-theme="dark"] .viewer-toolbar select { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: #e0e0e0; }
 /* .toolbar-btn, .mode-toggle 다크 모드 → components.css / compare.css 에서 처리 */
 body[data-theme="dark"] .viewer-toolbar .font-scale-value { color: rgba(255,255,255,0.6); }
 body[data-theme="dark"] .translator-page-info { color: rgba(255,255,255,0.6); }
 body[data-theme="dark"] .zoom-level { color: rgba(255,255,255,0.6); }
 
-body[data-theme="dark"] .viewer-panel { background: var(--light-gray); }
-body[data-theme="dark"] .viewer-panel .panel-label { background: rgba(30,30,46,0.8); color: rgba(255,255,255,0.55); }
+body[data-theme="dark"] .viewer-panel { background: var(--white); }
+body[data-theme="dark"] .viewer-panel .panel-label { background: color-mix(in srgb, var(--white) 85%, transparent); color: rgba(255,255,255,0.55); }
 
 body[data-theme="dark"] .marking-popover {
     background: #1e1e2e;
