@@ -16,6 +16,9 @@
 사용자가 필요한 도구를 직접 열고 닫는 **문서 워크벤치** 패턴으로 전환하여,
 번역 여부와 무관하게 일관된 읽기 경험을 제공한다.
 
+동시에 **라운드 패널 + 갭 기반 디자인 언어**를 도입한다.
+Notebook에서 파일럿 적용 후, 플랫폼 전체(Explorer, Compare, Launcher, Login)로 확산한다.
+
 ## 2. 배경
 
 ### 2.1 현재 구조의 문제
@@ -35,7 +38,31 @@
 | **PyCharm / VS Code** | 에디터 중앙 + 좌/우 Tool Window (아이콘 레일 + 슬라이드 패널) |
 | **Notion** | 메인 콘텐츠 + 우측 사이드바 (댓글, 속성) |
 
-### 2.3 핵심 전환
+### 2.3 라운드 패널 디자인 언어 (2026-03-24 결정)
+
+업계 트렌드 조사 결과, 패널 간 border line 대신 **라운드 카드 + 갭 + 명도 차이**로
+계층을 표현하는 패턴이 2024~2026 주류:
+
+| 앱 | gap | radius | 특징 |
+|----|:---:|:------:|------|
+| NotebookLM | 8~12px | 16~24px | M3 surface-container 계층, shadow 최소 |
+| Notion | ~6px | 8~12px | 배경색 차이로 구분 |
+| Linear | ~8px | 12~16px | 짙은 배경 위 밝은 패널 |
+| Arc Browser | ~8px | 16~20px | 명확한 명도 대비 |
+
+**본 프로젝트 적용 값** (tokens.css 확장):
+
+| 토큰 | Light | Dark | 근거 |
+|------|-------|------|------|
+| `--panel-radius` | `16px` | 동일 | MD3 Large (16dp) |
+| `--panel-gap` | `8px` | 동일 | Notion/Linear/Arc 공통 |
+| `--canvas-bg` | `#eef1f6` | `#0e0e18` | 패널 배경보다 한 단계 어둡게 (3~5% 차이) |
+| `--panel-shadow` | `0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06)` | shadow 강화 | 미세 elevation |
+
+> 목업 검증 완료: `workbench/mockups/notebook-viewer-rounded.html`
+> 아이콘 레일은 배경 없이 캔버스 위에 플로팅, hover 시에만 카드 느낌.
+
+### 2.4 핵심 전환
 
 **"번역기 뷰어" → "문서 워크벤치"**
 
@@ -43,6 +70,7 @@
 - 번역/메모/용어집 등은 우측 패널의 **도구(tool)**
 - 사용자가 도구를 열면 중앙이 축소되며 패널이 슬라이드
 - 도구를 닫으면 원문이 다시 전체 너비로 복귀
+- 모든 패널과 툴바는 **라운드 카드**로 캔버스 배경 위에 떠 있는 구조
 
 ---
 
@@ -301,67 +329,118 @@
 </div>
 ```
 
-### 6.2 CSS 핵심
+### 6.2 CSS 핵심 (라운드 패널 기반)
 
 ```css
+/* tokens.css에 추가할 패널 토큰 */
+:root {
+    --panel-radius: 16px;
+    --panel-gap: 8px;
+    --canvas-bg: #eef1f6;
+    --panel-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06);
+}
+body[data-theme="dark"] {
+    --canvas-bg: #0e0e18;
+    --panel-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* 뷰어 래퍼: 캔버스 배경 + 갭 */
+.viewer-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--panel-gap);
+    gap: var(--panel-gap);
+    background: var(--canvas-bg);
+}
+
+/* 툴바: 라운드 카드 */
+.viewer-toolbar {
+    border-radius: var(--panel-radius);
+    background: var(--white);
+    box-shadow: var(--panel-shadow);
+}
+
+/* 패널 영역: 갭으로 분리 */
 .viewer-panels {
     flex: 1;
     display: flex;
+    gap: var(--panel-gap);
     overflow: hidden;
 }
 
+/* 메인 패널: 라운드 카드 */
 .viewer-main {
     flex: 1;
     overflow: auto;
-    transition: flex var(--transition-normal);
+    background: var(--white);
+    border-radius: var(--panel-radius);
+    box-shadow: var(--panel-shadow);
+    transition: flex var(--transition-slow), opacity var(--transition-slow);
 }
+.viewer-main.collapsed { flex: 0; opacity: 0; overflow: hidden; }
 
+/* 사이드 패널: 라운드 카드 */
 .viewer-side-panel {
     width: 0;
+    min-width: 0;
     overflow: hidden;
-    transition: width var(--transition-normal);
-    border-left: 2px solid var(--border-color);
+    background: var(--white);
+    border-radius: var(--panel-radius);
+    box-shadow: var(--panel-shadow);
+    transition: width var(--transition-slow), min-width var(--transition-slow);
+    /* border-left 제거 — 갭 + 라운드로 구분 */
 }
+.viewer-side-panel.open { width: 50%; min-width: 420px; }
+.viewer-side-panel.expand { width: 100%; min-width: 100%; }
 
-.viewer-side-panel.open {
-    width: 50%;   /* 기본값, 리사이즈 핸들로 조절 */
-}
-
+/* 아이콘 레일: 배경 없이 캔버스 위 플로팅 */
 .icon-rail {
-    width: 40px;
+    width: 42px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 8px 0;
-    border-left: 1px solid var(--border-color);
-    background: var(--bg-secondary);
+    gap: 2px;
+    padding: 6px 0;
+    /* border, background 없음 — 캔버스 배경과 일체 */
 }
 
 .rail-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-sm);
-    /* tokens.css 변수 사용 */
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-md);
+    color: var(--text-light);
 }
-
+.rail-btn:hover {
+    background: var(--white);
+    box-shadow: var(--panel-shadow);
+}
 .rail-btn.active {
     background: var(--active-color);
     color: #fff;
+    box-shadow: 0 2px 8px rgba(44,82,130,0.3);
 }
 ```
+
+> 목업 참조: `workbench/mockups/notebook-viewer-rounded.html`
 
 ---
 
 ## 7. 실행 계획
 
-### Phase 1: 아이콘 레일 + 패널 프레임 — 2일
+### Phase 1: 디자인 토큰 + 아이콘 레일 + 패널 프레임 — 2일
 
+- ⬜ **tokens.css 확장**: `--panel-radius`, `--panel-gap`, `--canvas-bg`, `--panel-shadow` 추가 (Light + Dark)
 - ⬜ DOM 구조 변경 (panel-left → panel-main, panel-right → side-panel + icon-rail)
+- ⬜ 라운드 패널 + 갭 + 캔버스 배경 적용 (목업 기준)
+- ⬜ 툴바를 라운드 카드로 변경
 - ⬜ 아이콘 레일 UI (7개 버튼 + 구분선, SVG 아이콘, 5~7번은 disabled)
+- ⬜ 아이콘 레일: 배경 없이 캔버스 위 플로팅 (hover 시 카드 shadow)
 - ⬜ 패널 열기/닫기 애니메이션 (CSS transition)
-- ⬜ 두 가지 패널 모드 지원 (일반 50% / 확장 100%)
+- ⬜ 두 가지 패널 모드 지원 (일반 50% / 확장 100% — 패널 헤더 ↔ 토글)
 - ⬜ 패널 토글 로직 (한 번에 하나만, 같은 아이콘 재클릭 시 닫기)
 - ⬜ 패널 상태 localStorage 저장/복원
 - ⬜ 툴바 정리 (공통 항목만 남기기)
@@ -411,22 +490,46 @@
 - ⬜ 확장 모드 패널 렌더링 (원문 완전 밀어냄 + "원문으로 돌아가기" 버튼)
 - ⬜ 노드 클릭 → 패널 닫기 + PDF 해당 위치로 스크롤
 
+### Phase 8: 플랫폼 디자인 언어 확산 — Notebook 안정화 후
+
+> Phase 1~5에서 확정된 패널 토큰을 다른 서브시스템에 점진 적용.
+> 기능 변경 없이 CSS만 교체하는 작업이라 리스크 낮음.
+> Notebook 안정화 후 순차 진행.
+
+**적용 대상 및 순서:**
+
+| 순서 | 화면 | 변경 범위 | 예상 공수 |
+|:----:|------|----------|:--------:|
+| 1 | **Explorer** (index.html) | 좌측 TOC + 중앙 콘텐츠 + AI 채팅 패널 → 라운드 카드 + 캔버스 배경 | 반나절 |
+| 2 | **Compare** (compare.html) | 좌/우 문서 듀얼 패널 + diff 오버레이 → 라운드 카드 + 갭 | 반나절 |
+| 3 | **Launcher** (launcher.html) | 캔버스 배경 + 카드 shadow 조정 (카드는 이미 라운드) | 2시간 |
+| 4 | **Login** (login.html) | 로그인 카드 radius/shadow 통일 | 1시간 |
+
+**적용 원칙:**
+- `tokens.css`에 추가된 `--panel-radius`, `--panel-gap`, `--canvas-bg`, `--panel-shadow` 사용
+- 각 화면의 기존 `border-left`, `border-right` → 제거, 갭으로 대체
+- `body` 또는 래퍼 `background` → `var(--canvas-bg)`
+- 패널 `background` → `var(--white)`, `border-radius` → `var(--panel-radius)`
+- 각 화면 전용 CSS에서 하드코딩된 radius/shadow → 토큰 변수로 교체
+
 ---
 
 ## 8. 착수 순서 및 예상 공수
 
 | Phase | 내용 | 예상 공수 | 상태 |
 |:-----:|------|:--------:|:----:|
-| 1 | 아이콘 레일 + 패널 프레임 + 툴바 정리 | 2일 | ⬜ |
+| 1 | **디자인 토큰 추가** + 아이콘 레일 + 패널 프레임 + 툴바 정리 | 2일 | ⬜ |
 | 2 | PDF 번역 패널 이관 | 1.5일 | ⬜ |
 | 3 | 웹뷰 번역 패널 이관 | 1.5일 | ⬜ |
 | 4 | 메모 패널 + 용어집 패널 | 1.5일 | ⬜ |
 | 5 | 리사이즈 + 다크모드 + 회귀 테스트 | 1일 | ⬜ |
 | 6 | AI 요약·Q&A 패널 | 미정 | 향후 |
 | 7 | 마인드맵 패널 | 미정 | 향후 |
+| 8 | **플랫폼 디자인 언어 확산** (Explorer → Compare → Launcher → Login) | 2일 | 향후 |
 
-**Phase 1~5 합계**: ~7.5일 (레이아웃 재설계 핵심)
-**Phase 6~7**: 향후 — 핵심 레이아웃 안정화 후 순차 진행
+**Phase 1~5 합계**: ~7.5일 (Notebook 레이아웃 재설계 핵심)
+**Phase 6~7**: 향후 — AI/분석 기능
+**Phase 8**: 향후 (~2일) — Notebook 안정화 확인 후 플랫폼 전체 확산
 
 ---
 
@@ -450,7 +553,10 @@ Plan 17의 미완료 항목은 본 계획 완료 후 새 레이아웃 위에서 
 | DOM 구조 대폭 변경 | 마킹/메모 텍스트 레이어 깨짐 | Phase 1에서 panel-main에 기존 구조 그대로 유지 |
 | PDF.js 재렌더 타이밍 | 패널 열림/닫힘 시 캔버스 크기 불일치 | `rerenderBothPanels()` 패턴 재활용, transition 종료 후 렌더 |
 | 기존 translator.js 3200줄 리팩토링 범위 | 전체 재작성 유혹 | 기존 함수를 최대한 재사용, 패널 래퍼만 추가하는 방식 |
-| 좁은 화면에서 아이콘 레일 + 패널 | 콘텐츠 영역 부족 | 최소 너비 설정, 모바일은 오버레이 방식 검토 |
+| 좁은 화면에서 아이콘 레일 + 패널 | 콘텐츠 영역 부족 | 사이드 패널 min-width 420px 확보, 모바일은 오버레이 방식 검토 |
+| border-radius + overflow | PDF 캔버스 모서리 클리핑 | `overflow: hidden`이 이미 적용, panel-main 내부 구조 유지로 해결 |
+| 플랫폼 확산 시 기존 CSS 충돌 | 각 화면 전용 CSS에 하드코딩된 값 | Phase 8에서 토큰 변수로 교체, 화면별 개별 검증 |
+| tokens.css 토큰 추가 | 기존 화면에 의도치 않은 영향 | 신규 토큰(`--panel-*`, `--canvas-bg`)은 기존 변수와 이름 충돌 없음. 기존 화면은 사용하지 않으므로 영향 없음 |
 
 ---
 
@@ -462,7 +568,15 @@ Plan 17의 미완료 항목은 본 계획 완료 후 새 레이아웃 위에서 
 |------|------|:-----:|
 | `translator.html` | DOM 구조 | 285 |
 | `css/translator.css` | 레이아웃 스타일 | ~960 |
+| `css/tokens.css` | 디자인 토큰 (패널 토큰 추가 대상) | ~130 |
 | `js/translator.js` | 뷰어 로직 전체 | 3222 |
+
+### 목업
+
+| 파일 | 설명 |
+|------|------|
+| `workbench/mockups/notebook-viewer-layout.html` | 초기 목업 (border line 방식) |
+| `workbench/mockups/notebook-viewer-rounded.html` | **확정 목업** (라운드 패널 + 갭 + 캔버스 배경) |
 
 ### 현재 레이아웃 전환 진입점
 
