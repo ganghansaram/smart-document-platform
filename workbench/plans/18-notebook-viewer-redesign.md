@@ -431,32 +431,30 @@ body[data-theme="dark"] {
 
 ## 7. 실행 계획
 
-### Phase 1a: 디자인 토큰 + 라운드 패널 외형 — 1일
+### Phase 1a: 디자인 토큰 + 라운드 패널 외형 — 완료
 
 > 기존 기능을 유지한 채 외형만 변경. 기존 듀얼 뷰어 동작은 그대로.
-> 이 단계 완료 후 중간 검증 — 기존 PDF 번역/웹뷰가 라운드 패널에서 정상 동작하는지 확인.
 
-- ⬜ **tokens.css 확장**: `--panel-radius`, `--panel-gap`, `--canvas-bg`, `--panel-shadow` 추가 (Light + Dark)
-- ⬜ `translator.css` 뷰어 영역: 캔버스 배경 (`--canvas-bg`) 적용
-- ⬜ 기존 좌/우 패널에 `--panel-radius`, `--panel-shadow` 적용
-- ⬜ 패널 간 `border-left` → 제거, `gap: var(--panel-gap)` 으로 대체
-- ⬜ 툴바를 라운드 카드로 변경 (`--panel-radius`, `--panel-shadow`)
-- ⬜ 다크모드 검증 (캔버스↔패널 명도 차이)
-- ⬜ 기존 기능 회귀 확인 (PDF 번역, 웹뷰 번역, 마킹, 메모 정상 동작)
+- ✅ **tokens.css 확장**: `--panel-radius`, `--panel-gap`, `--canvas-bg`, `--panel-shadow` 추가 (Light + Dark)
+- ✅ `translator.css` 뷰어 영역: 캔버스 배경 (`--canvas-bg`) 적용
+- ✅ 기존 좌/우 패널에 `--panel-radius`, `--panel-shadow` 적용
+- ✅ 패널 간 `border-left` → 제거, `gap: var(--panel-gap)` 으로 대체
+- ✅ 툴바를 라운드 카드로 변경 (`--panel-radius`, `--panel-shadow`)
+- ✅ 다크모드 검증 (캔버스↔패널 명도 차이) + 하드코딩 #1e1e2e → var(--white) 토큰화
+- ✅ 기존 기능 회귀 확인 (PDF 번역, 웹뷰 번역, 마킹, 메모 정상 동작)
 
-### Phase 1b: 아이콘 레일 + 패널 프레임 + 툴바 재배치 — 1.5일
+### Phase 1b: 아이콘 레일 + 패널 프레임 + 툴바 재배치 — 완료
 
 > Phase 1a의 라운드 패널 위에서 레이아웃 구조 전환.
-> 기존 panel-right를 side-panel + icon-rail로 교체.
 
-- ⬜ DOM 구조 변경 (panel-left → panel-main, panel-right → side-panel + icon-rail)
-- ⬜ 아이콘 레일 UI (7개 버튼 + 구분선, SVG 아이콘, 5~7번은 disabled)
-- ⬜ 아이콘 레일: 배경 없이 캔버스 위 플로팅 (hover 시 카드 shadow)
-- ⬜ 패널 열기/닫기 애니메이션 (CSS transition)
-- ⬜ 두 가지 패널 모드 지원 (일반 50% / 확장 100% — 패널 헤더 ↔ 토글)
-- ⬜ 패널 토글 로직 (한 번에 하나만, 같은 아이콘 재클릭 시 닫기)
-- ⬜ 패널 상태 localStorage 저장/복원
-- ⬜ 툴바 정리 (공통 항목만 남기기 — 모드별 버튼은 Phase 2~3에서 패널 내부로 이관)
+- ✅ DOM 구조 변경 (panel-right → side-panel 래퍼 + icon-rail 추가)
+- ✅ 아이콘 레일 UI (7개 버튼 + 구분선, SVG 아이콘, 5~7번은 disabled)
+- ✅ 아이콘 레일: 배경 없이 캔버스 위 플로팅 (hover 시 카드 shadow)
+- ✅ 패널 열기/닫기 애니메이션 (CSS transition + transitionend 재렌더)
+- ✅ 두 가지 패널 모드 지원 (일반 50% / 확장 100% — 패널 헤더 ↔ 토글)
+- ✅ 패널 토글 로직 (한 번에 하나만, 같은 아이콘 재클릭 시 닫기)
+- ✅ 패널 상태 localStorage 저장/복원
+- ✅ 엔진 토글(PDF/웹뷰) → 아이콘 레일로 대체 (기존 토글 display:none)
 
 ### Phase 2: PDF 번역 패널 이관 — 1.5일
 
@@ -531,8 +529,8 @@ body[data-theme="dark"] {
 
 | Phase | 내용 | 예상 공수 | 상태 |
 |:-----:|------|:--------:|:----:|
-| **1a** | **디자인 토큰 + 라운드 패널 외형** (기존 기능 유지) | 1일 | ⬜ |
-| **1b** | **아이콘 레일 + 패널 프레임 + 툴바 재배치** | 1.5일 | ⬜ |
+| **1a** | **디자인 토큰 + 라운드 패널 외형** (기존 기능 유지) | 1일 | ✅ |
+| **1b** | **아이콘 레일 + 패널 프레임 + 툴바 재배치** | 1.5일 | ✅ |
 | 2 | PDF 번역 패널 이관 | 1.5일 | ⬜ |
 | 3 | 웹뷰 번역 패널 이관 | 1.5일 | ⬜ |
 | 4 | 메모 패널 + 용어집 패널 | 1.5일 | ⬜ |
