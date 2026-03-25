@@ -578,9 +578,14 @@ body[data-theme="dark"] .hero-banner-img {
     pointer-events: none;
 }
 
+/* ── Panel flex transition (양쪽 동시에 크기 변경 — 업계 표준) ── */
+#panel-left {
+    transition: flex var(--transition-slow), opacity var(--transition-slow);
+}
+
 /* ── Side Panel (wraps panel-right) ── */
 .side-panel {
-    width: 0;
+    flex: 0;
     min-width: 0;
     overflow: hidden;
     background: var(--white);
@@ -588,23 +593,28 @@ body[data-theme="dark"] .hero-banner-img {
     box-shadow: var(--panel-shadow);
     display: flex;
     flex-direction: column;
-    transition: width var(--transition-slow), min-width var(--transition-slow), opacity var(--transition-slow);
+    transition: flex var(--transition-slow), opacity var(--transition-slow);
     opacity: 0;
 }
 .side-panel.open {
-    width: 50%;
-    min-width: 420px;
+    flex: 1;
     opacity: 1;
 }
 .side-panel.expand {
-    width: 100%;
-    min-width: 100%;
+    flex: 3;
     opacity: 1;
 }
 .side-panel .viewer-panel {
     border-radius: 0;
     box-shadow: none;
     flex: 1;
+    /* PDF 등장 fade-in — transition 동안 깜빡임 방지 */
+    opacity: 0;
+    transition: opacity 0.2s ease 0.15s; /* side-panel transition 중반에 fade-in 시작 */
+}
+.side-panel.open .viewer-panel,
+.side-panel.expand .viewer-panel {
+    opacity: 1;
 }
 
 /* Side Panel header */
@@ -638,10 +648,9 @@ body[data-theme="dark"] .hero-banner-img {
 
 /* Main panel collapsed (expand mode) */
 #panel-left.collapsed {
-    flex: 0;
+    flex: 0 !important;
     opacity: 0;
     overflow: hidden;
-    padding: 0;
     min-width: 0;
 }
 
