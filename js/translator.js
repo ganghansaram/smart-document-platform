@@ -127,6 +127,15 @@
         var $fontScaleUp    = document.getElementById('font-scale-up');
         var $fontScaleValue = document.getElementById('font-scale-value');
 
+        // Side panel + Icon rail (Phase 1b)
+        var $sidePanel      = document.getElementById('side-panel');
+        var $spTitle        = document.getElementById('sp-title');
+        var $spExpandBtn    = document.getElementById('sp-expand-btn');
+        var $spCloseBtn     = document.getElementById('sp-close-btn');
+        var $iconRail       = document.getElementById('icon-rail');
+        var sidePanelExpanded = false;
+        var activeRailPanel = localStorage.getItem('nb-active-panel') || 'pdf-translate';
+
         var translateEngine = 'pdf'; // 'pdf' | 'web'
         var webFontSize     = parseInt(localStorage.getItem('tt-web-font-size') || '15', 10);
         var webPageStatusCache = {};  // 웹 뷰 번역 상태 캐시
@@ -433,6 +442,9 @@
             zoom = 1.0;
             $zoomLevel.textContent = '100%';
 
+            // 아이콘 레일 초기 상태 복원
+            _initRailState();
+
             showViewer();
             annotationsCache = null;
 
@@ -636,29 +648,148 @@
             }
         }
 
-        // ── 싱글/듀얼 적응형 레이아웃 ──
-        function _showDualPanel() {
-            if ($panelRight.style.display !== 'none') return; // 이미 표시 중
-            $panelRight.style.display = '';
-            // reflow 후 재렌더링 (clientWidth가 갱신된 뒤)
-            requestAnimationFrame(function() {
+        // ── 사이드 패널 레이아웃 (Phase 1b) ──
+        function _rerenderAfterTransition() {
+            // CSS transition 완료 후 PDF 캔버스 재렌더
+            function onEnd() {
+                $sidePanel.removeEventListener('transitionend', onEnd);
                 if (typeof rerenderBothPanels === 'function') rerenderBothPanels();
-            });
+            }
+            $sidePanel.addEventListener('transitionend', onEnd);
+            // fallback: transition이 발생하지 않는 경우 (이미 열린 상태 등)
+            setTimeout(onEnd, 400);
+        }
+
+        function _showDualPanel() {
+            if ($sidePanel.classList.contains('open') || $sidePanel.classList.contains('expand')) return;
+            $panelRight.style.display = '';
+            $sidePanel.classList.add('open');
+            $panelLeft.classList.remove('collapsed');
+            sidePanelExpanded = false;
+            _rerenderAfterTransition();
         }
         function _hideDualPanel() {
-            if ($panelRight.style.display === 'none') return; // 이미 숨김
+            if (!$sidePanel.classList.contains('open') && !$sidePanel.classList.contains('expand')) return;
+            $sidePanel.classList.remove('open', 'expand');
+            $panelLeft.classList.remove('collapsed');
             $panelRight.style.display = 'none';
-            // reflow 후 좌측 PDF 전체 너비로 리렌더링
-            requestAnimationFrame(function() {
+            sidePanelExpanded = false;
+            function onEnd() {
+                $sidePanel.removeEventListener('transitionend', onEnd);
                 if (typeof renderLeftPage === 'function') renderLeftPage(currentPage);
-            });
+            }
+            $sidePanel.addEventListener('transitionend', onEnd);
+            setTimeout(onEnd, 400);
+        }
+
+        // Side panel expand/collapse
+        $spExpandBtn.addEventListener('click', function() {
+            sidePanelExpanded = !sidePanelExpanded;
+            $sidePanel.classList.toggle('expand', sidePanelExpanded);
+            $sidePanel.classList.toggle('open', !sidePanelExpanded);
+            $panelLeft.classList.toggle('collapsed', sidePanelExpanded);
+            _rerenderAfterTransition();
+        });
+
+        // Side panel close
+        $spCloseBtn.addEventListener('click', function() {
+            _hideDualPanel();
+            // 아이콘 레일 active 해제
+            var railBtns = $iconRail.querySelectorAll('.rail-btn');
+            for (var i = 0; i < railBtns.length; i++) railBtns[i].classList.remove('active');
+        });
+
+        // Icon rail click handler
+        $iconRail.addEventListener('click', function(e) {
+            var btn = e.target.closest('.rail-btn');
+            if (!btn || btn.disabled) return;
+            var panelId = btn.getAttribute('data-panel');
+            if (!panelId) return;
+
+            // 같은 아이콘 재클릭 → 닫기
+            if (btn.classList.contains('active')) {
+                _hideDualPanel();
+                btn.classList.remove('active');
+                return;
+            }
+
+            // 모든 rail-btn active 해제
+            var railBtns = $iconRail.querySelectorAll('.rail-btn');
+            for (var i = 0; i < railBtns.length; i++) railBtns[i].classList.remove('active');
+            btn.classList.add('active');
+
+            // 패널 ID에 따라 엔진 전환 + 패널 열기
+            if (panelId === 'pdf-translate') {
+                translateEngine = 'pdf';
+                $spTitle.textContent = 'PDF 번역';
+                $fontControls.style.display = 'none';
+            } else if (panelId === 'web-translate') {
+                translateEngine = 'web';
+                $spTitle.textContent = '웹 뷰 번역';
+                $fontControls.style.display = '';
+                scrollSyncEnabled = false;
+                if ($scrollSyncBtn) $scrollSyncBtn.classList.remove('active');
+            } else if (panelId === 'memo') {
+                $spTitle.textContent = '메모';
+                // 메모 패널 — Phase 4에서 구현, 현재는 기존 번역 표시 유지
+            } else if (panelId === 'glossary') {
+                $spTitle.textContent = '용어집';
+                // 용어집 패널 — Phase 4에서 구현, 현재는 기존 번역 표시 유지
+            }
+
+            // 웹 뷰 전체 보기 토글 표시/숨김
+            var $webFullToggle = document.getElementById('web-full-toggle');
+            $webFullToggle.style.display = (translateEngine === 'web') ? '' : 'none';
+            if (translateEngine !== 'web') {
+                webFullViewMode = false;
+                if ($webFullToggle) $webFullToggle.classList.remove('active');
+                if (webFullViewObserver) { webFullViewObserver.disconnect(); webFullViewObserver = null; }
+            }
+
+            // localStorage 저장
+            localStorage.setItem('nb-active-panel', panelId);
+            activeRailPanel = panelId;
+
+            updateRightPanel();
+        });
+
+        // 아이콘 레일 초기 상태 설정
+        function _initRailState() {
+            var saved = activeRailPanel || 'pdf-translate';
+            translateEngine = (saved === 'web-translate') ? 'web' : 'pdf';
+
+            // 레일 버튼 active 설정
+            var railBtns = $iconRail.querySelectorAll('.rail-btn');
+            for (var i = 0; i < railBtns.length; i++) {
+                var pid = railBtns[i].getAttribute('data-panel');
+                railBtns[i].classList.toggle('active', pid === saved);
+            }
+
+            // 사이드 패널 타이틀
+            if (saved === 'web-translate') {
+                $spTitle.textContent = '웹 뷰 번역';
+                $fontControls.style.display = '';
+            } else {
+                $spTitle.textContent = 'PDF 번역';
+                $fontControls.style.display = 'none';
+            }
         }
 
         function showRightPending() {
             $rightContainer.style.display = 'none';
             $webViewContainer.style.display = 'none';
-            $rightPlaceholder.style.display = 'none';
-            _hideDualPanel();
+            // 사이드 패널이 아이콘 레일로 열려있으면 placeholder 표시, 아닌 경우에만 숨김
+            if ($sidePanel.classList.contains('open') || $sidePanel.classList.contains('expand')) {
+                $panelRight.style.display = '';
+                $rightPlaceholder.style.display = 'flex';
+                $rightPlaceholder.innerHTML =
+                    '<div class="placeholder-icon">&#128221;</div>' +
+                    '<div class="placeholder-text">이 페이지는 아직 번역되지 않았습니다</div>' +
+                    '<div class="placeholder-hint">"이 페이지 번역" 버튼을 눌러 시작하세요 (~30초)</div>';
+            } else {
+                $rightPlaceholder.style.display = 'none';
+                _hideDualPanel();
+            }
         }
 
         function showRightTranslating(ps) {

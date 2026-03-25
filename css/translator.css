@@ -546,6 +546,129 @@ body[data-theme="dark"] .hero-banner-img {
     pointer-events: none;
 }
 
+/* ── Side Panel (wraps panel-right) ── */
+.side-panel {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    background: var(--white);
+    border-radius: var(--panel-radius);
+    box-shadow: var(--panel-shadow);
+    display: flex;
+    flex-direction: column;
+    transition: width var(--transition-slow), min-width var(--transition-slow), opacity var(--transition-slow);
+    opacity: 0;
+}
+.side-panel.open {
+    width: 50%;
+    min-width: 420px;
+    opacity: 1;
+}
+.side-panel.expand {
+    width: 100%;
+    min-width: 100%;
+    opacity: 1;
+}
+.side-panel .viewer-panel {
+    border-radius: 0;
+    box-shadow: none;
+    flex: 1;
+}
+
+/* Side Panel header */
+.sp-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 6px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.sp-title {
+    font-weight: 600;
+    font-size: 13px;
+    flex: 1;
+}
+.sp-btn {
+    width: 26px; height: 26px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light);
+    transition: all var(--transition-fast);
+}
+.sp-btn:hover { background: var(--hover-bg); color: var(--text-dark); }
+.sp-btn svg { width: 14px; height: 14px; }
+
+/* Main panel collapsed (expand mode) */
+#panel-left.collapsed {
+    flex: 0;
+    opacity: 0;
+    overflow: hidden;
+    padding: 0;
+    min-width: 0;
+}
+
+/* ── Icon Rail ── */
+.icon-rail {
+    width: 42px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 0;
+    gap: 2px;
+}
+.rail-btn {
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light);
+    transition: all var(--transition-fast);
+}
+.rail-btn svg { width: 18px; height: 18px; }
+.rail-btn:hover {
+    background: var(--white);
+    color: var(--text-dark);
+    box-shadow: var(--panel-shadow);
+}
+.rail-btn.active {
+    background: var(--active-color);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(44,82,130,0.3);
+}
+.rail-btn[disabled] {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+.rail-btn[disabled]:hover {
+    background: transparent;
+    color: var(--text-light);
+    box-shadow: none;
+}
+.rail-separator {
+    width: 20px;
+    height: 1px;
+    background: var(--border-color);
+    margin: 5px 0;
+    opacity: 0.5;
+}
+
+body[data-theme="dark"] .rail-btn.active {
+    box-shadow: 0 2px 8px rgba(99,160,224,0.3);
+}
+body[data-theme="dark"] .side-panel { background: var(--white); }
+
 .viewer-panel .pdf-page-container {
     position: relative;
     display: inline-block;
