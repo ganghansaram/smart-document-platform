@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notebook Viewer V4 — No Toolbar</title>
+    <link rel="stylesheet" href="../../css/tokens.css">
+    <style>
+        :root {
+            --panel-radius: 16px;
+            --panel-gap: 8px;
+            --canvas-bg: #eef1f6;
+            --panel-bg: #f8f9fa;
+            --content-bg: #ffffff;
+            --panel-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06);
+            /* 폰트 3단계 */
+            --font-title: 15px;
+            --font-body: 13px;
+            --font-caption: 11px;
+        }
+        body[data-theme="dark"] {
+            --canvas-bg: #0e0e18;
+            --panel-bg: #1a1a2e;
+            --content-bg: #22223a;
+            --panel-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+            background: var(--canvas-bg); color: var(--text-dark); font-size: var(--font-body);
+        }
+
+        /* Header */
+        .mock-header {
+            height: 48px; background: var(--primary-navy); color: #fff;
+            display: flex; align-items: center; padding: 0 var(--space-md); gap: 12px; flex-shrink: 0;
+        }
+        .mock-header .brand { font-size: var(--font-title); font-weight: 700; }
+        .mock-header .subtitle { opacity: 0.5; font-size: var(--font-body); }
+        .spacer { flex: 1; }
+        .header-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+            color: #fff; padding: 5px 12px; border-radius: var(--radius-md); cursor: pointer; font-size: var(--font-caption);
+        }
+
+        /* Viewer wrapper — 툴바 제거, 패널만 */
+        .viewer-wrap {
+            flex: 1; display: flex; padding: var(--panel-gap); gap: 0; overflow: hidden;
+        }
+
+        /* Panel card */
+        .panel-card {
+            border-radius: var(--panel-radius); box-shadow: var(--panel-shadow);
+            background: var(--panel-bg); display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* ── Panel header (통합 한 줄) ── */
+        .panel-header {
+            display: flex; align-items: center; padding: 0 12px; height: 38px;
+            flex-shrink: 0; background: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color); gap: 6px;
+        }
+        .panel-title { font-weight: 600; font-size: var(--font-body); color: var(--text-dark); white-space: nowrap; }
+        .panel-status { font-size: var(--font-caption); color: var(--text-light); white-space: nowrap; }
+        .ph-sep { width: 1px; height: 16px; background: var(--border-color); margin: 0 2px; opacity: 0.5; flex-shrink: 0; }
+        .ph-btn {
+            width: 24px; height: 24px; border: none; background: transparent;
+            border-radius: var(--radius-sm); cursor: pointer; display: flex;
+            align-items: center; justify-content: center; color: var(--text-light);
+            transition: all var(--transition-fast); flex-shrink: 0;
+        }
+        .ph-btn:hover { background: var(--hover-bg); color: var(--text-dark); }
+        .ph-btn svg { width: 14px; height: 14px; }
+        .ph-select {
+            padding: 2px 4px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);
+            font-size: var(--font-caption); background: var(--content-bg); color: var(--text-dark); max-width: 130px;
+        }
+        .ph-btn-accent {
+            padding: 3px 10px; background: var(--active-color); color: #fff; border: none;
+            border-radius: var(--radius-sm); font-size: var(--font-caption); font-weight: 500;
+            cursor: pointer; white-space: nowrap; flex-shrink: 0;
+        }
+        .ph-btn-accent:hover { background: var(--active-color-hover); }
+        .ph-btn-ghost {
+            padding: 2px 6px; background: transparent; border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm); font-size: var(--font-caption); cursor: pointer;
+            color: var(--text-light); white-space: nowrap; flex-shrink: 0;
+        }
+        .ph-btn-ghost:hover { background: var(--hover-bg); color: var(--text-dark); }
+        .ph-btn-ghost.active { background: var(--active-color-subtle); border-color: var(--active-color); color: var(--active-color); }
+        .ph-input {
+            width: 100px; padding: 2px 8px; border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm); font-size: var(--font-caption);
+            background: var(--content-bg); color: var(--text-dark);
+        }
+        .page-info { font-size: var(--font-body); font-weight: 600; min-width: 44px; text-align: center; }
+        .zoom-level { font-size: var(--font-caption); color: var(--text-light); min-width: 32px; text-align: center; cursor: pointer; }
+        .zoom-level:hover { color: var(--active-color); }
+
+        /* Panel content */
+        .panel-content { flex: 1; overflow: auto; padding: var(--space-md); }
+
+        /* PDF paper */
+        .pdf-paper {
+            background: var(--content-bg); border-radius: var(--radius-md);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 28px 32px;
+            max-width: 640px; margin: 0 auto; line-height: 1.8;
+        }
+        .pdf-paper h2 { font-size: var(--font-title); margin-bottom: 12px; line-height: 1.4; font-weight: 700; }
+        .pdf-paper p { font-size: var(--font-body); color: var(--text-light); margin-bottom: 10px; line-height: 1.75; }
+        .pdf-paper .st { font-weight: 700; color: var(--text-dark); margin-top: 16px; }
+
+        /* MD content */
+        .md-content {
+            background: var(--content-bg); border-radius: var(--radius-md);
+            padding: 24px 28px; max-width: 640px; margin: 0 auto; line-height: 1.8;
+        }
+        .md-content h3 { font-size: var(--font-title); margin-bottom: 10px; font-weight: 700; }
+        .md-content h4 { font-size: var(--font-body); font-weight: 700; margin: 14px 0 8px; }
+        .md-content p { font-size: var(--font-body); margin-bottom: 10px; }
+
+        /* Placeholder */
+        .panel-placeholder {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; gap: 8px; color: var(--text-light);
+        }
+        .panel-placeholder .ph-icon { font-size: 32px; opacity: 0.3; }
+
+        /* Main panel */
+        .panel-main { flex: 1; min-width: 0; transition: flex var(--transition-slow); margin-right: var(--panel-gap); }
+        .panel-main.collapsed { flex: 0; overflow: hidden; opacity: 0; min-width: 0; margin-right: 0; }
+        .panel-main:not(.has-side) { margin-right: 0; }
+
+        /* Resize handle */
+        .resize-handle {
+            width: 8px; flex-shrink: 0; cursor: col-resize; display: none;
+            align-items: center; justify-content: center; margin: 0 -4px; z-index: 2;
+        }
+        .resize-handle::after {
+            content: ''; width: 3px; height: 32px; border-radius: 2px;
+            background: var(--border-color); opacity: 0; transition: opacity var(--transition-fast);
+        }
+        .resize-handle:hover::after { opacity: 1; }
+        .resize-handle:active::after { opacity: 1; background: var(--active-color); }
+
+        /* Side panel */
+        .side-panel {
+            width: 0; min-width: 0; overflow: hidden;
+            transition: width var(--transition-slow), min-width var(--transition-slow), opacity var(--transition-slow);
+            opacity: 0; margin-right: var(--panel-gap);
+        }
+        .side-panel.open { width: 50%; min-width: 420px; opacity: 1; }
+        .side-panel.expand { width: 100%; min-width: 100%; opacity: 1; }
+
+        /* Icon Rail */
+        .icon-rail {
+            width: 42px; flex-shrink: 0; display: flex;
+            flex-direction: column; align-items: center; padding: 6px 0; gap: 2px;
+        }
+        .rail-btn {
+            width: 34px; height: 34px; border: none; background: transparent;
+            border-radius: var(--radius-md); cursor: pointer; display: flex;
+            align-items: center; justify-content: center; color: var(--text-light);
+            transition: all var(--transition-fast); position: relative;
+        }
+        .rail-btn svg { width: 18px; height: 18px; }
+        .rail-btn:hover { background: var(--content-bg); color: var(--text-dark); box-shadow: var(--panel-shadow); }
+        .rail-btn.active { background: var(--active-color); color: #fff; box-shadow: 0 2px 8px rgba(44,82,130,0.3); }
+        .rail-btn[disabled] { opacity: 0.25; cursor: not-allowed; }
+        .rail-btn[disabled]:hover { background: transparent; color: var(--text-light); box-shadow: none; }
+        .rail-sep { width: 20px; height: 1px; background: var(--border-color); margin: 5px 0; opacity: 0.5; }
+        .rail-tip {
+            display: none; position: absolute; right: 44px; white-space: nowrap;
+            background: var(--primary-navy); color: #fff; padding: 4px 10px;
+            border-radius: var(--radius-sm); font-size: var(--font-caption); pointer-events: none;
+        }
+        .rail-btn:hover .rail-tip { display: block; }
+        body[data-theme="dark"] .rail-btn.active { box-shadow: 0 2px 8px rgba(99,160,224,0.3); }
+
+        /* Memo */
+        .memo-item {
+            padding: 10px; border: 1px solid var(--border-color); border-radius: var(--radius-md);
+            margin-bottom: 6px; cursor: pointer; background: var(--content-bg);
+        }
+        .memo-item:hover { border-color: var(--active-color); }
+        .memo-page { font-size: var(--font-caption); color: var(--active-color); font-weight: 700; text-transform: uppercase; }
+        .memo-highlight { font-size: var(--font-caption); color: var(--text-light); margin-top: 4px; padding: 4px 8px; background: var(--active-color-subtle); border-radius: var(--radius-sm); font-style: italic; }
+        .memo-text { font-size: var(--font-body); margin-top: 6px; }
+
+        /* Glossary */
+        .gl-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color); font-size: var(--font-body); }
+        .gl-item:last-child { border-bottom: none; }
+        .gl-src { font-weight: 600; } .gl-arrow { color: var(--text-light); font-size: var(--font-caption); margin: 0 8px; } .gl-tgt { color: var(--active-color); }
+    </style>
+</head>
+<body>
+    <div class="mock-header">
+        <span class="brand">Notebook</span>
+        <span class="subtitle">V4 — No Toolbar</span>
+        <div class="spacer"></div>
+        <button class="header-btn" onclick="toggleTheme()">Theme</button>
+    </div>
+
+    <div class="viewer-wrap">
+        <!-- Left: Original -->
+        <div class="panel-card panel-main" id="panelMain">
+            <!-- 좌측 헤더: 원문 컨트롤 통합 -->
+            <div class="panel-header" id="hdrLeft">
+                <span class="panel-title">원문</span>
+                <div class="spacer"></div>
+                <button class="ph-btn" title="이전"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+                <span class="page-info">1 / 4</span>
+                <button class="ph-btn" title="다음"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+                <div class="ph-sep"></div>
+                <button class="ph-btn" title="축소"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+                <span class="zoom-level">100%</span>
+                <button class="ph-btn" title="확대"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+                <div class="ph-sep"></div>
+                <button class="ph-btn" title="다운로드"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+            </div>
+            <div class="panel-content">
+                <div class="pdf-paper">
+                    <h2>A Study on Graph-based Classification for Important Technical Documents</h2>
+                    <p>1st Yuna Han, dept. Security Convergence, Chung-Ang University, Seoul, South Korea</p>
+                    <p><strong>Abstract</strong> — In an era of technological hegemony, protecting innovative technologies worldwide has become an important issue. In particular, technical documents, including national core technologies, need to be protected separately from other general technical documents to maintain national technological competitiveness.</p>
+                    <p>Many studies on the classification of technical documents have been developed to analyze technological trends and classify the documents according to their types.</p>
+                    <p class="st">I. INTRODUCTION</p>
+                    <p>With the recent development of the Internet, it has emerged as a crucial issue to classify and safely store sensitive technical documents.</p>
+                    <p class="st">II. RELATED WORK</p>
+                    <p>Keyword extraction is one of the most used methods as a preliminary step to classify documents.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resize Handle -->
+        <div class="resize-handle" id="resizeHandle"></div>
+
+        <!-- Side Panel -->
+        <div class="panel-card side-panel" id="sidePanel">
+            <!-- PDF 번역 헤더 -->
+            <div class="panel-header" id="hdrPdf" style="display:none">
+                <span class="panel-title">PDF 번역</span>
+                <span class="panel-status">translategemma:4b · 34.4초</span>
+                <div class="spacer"></div>
+                <button class="ph-btn-ghost">범위</button>
+                <button class="ph-btn-ghost active">동기화</button>
+                <div class="ph-sep"></div>
+                <select class="ph-select"><option>translategemma:4b</option><option>gemma3:12b</option><option>gemma3:27b</option></select>
+                <button class="ph-btn-accent">번역</button>
+                <div class="ph-sep"></div>
+                <button class="ph-btn" onclick="toggleExpand()" title="확장"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+                <button class="ph-btn" onclick="closePanel()" title="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <!-- 웹뷰 번역 헤더 -->
+            <div class="panel-header" id="hdrWeb" style="display:none">
+                <span class="panel-title">웹 뷰 번역</span>
+                <span class="panel-status">[웹뷰] 86.7초</span>
+                <div class="spacer"></div>
+                <button class="ph-btn-ghost">A-</button>
+                <span style="font-size:var(--font-caption);font-weight:500">15px</span>
+                <button class="ph-btn-ghost">A+</button>
+                <button class="ph-btn-ghost">전체</button>
+                <div class="ph-sep"></div>
+                <select class="ph-select"><option>translategemma:4b</option><option>gemma3:12b</option></select>
+                <button class="ph-btn-accent">번역</button>
+                <div class="ph-sep"></div>
+                <button class="ph-btn" onclick="toggleExpand()" title="확장"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+                <button class="ph-btn" onclick="closePanel()" title="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <!-- 메모 헤더 -->
+            <div class="panel-header" id="hdrMemo" style="display:none">
+                <span class="panel-title">메모</span>
+                <div class="spacer"></div>
+                <input type="text" class="ph-input" placeholder="검색...">
+                <div class="ph-sep"></div>
+                <button class="ph-btn" onclick="toggleExpand()" title="확장"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+                <button class="ph-btn" onclick="closePanel()" title="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <!-- 용어집 헤더 -->
+            <div class="panel-header" id="hdrGlossary" style="display:none">
+                <span class="panel-title">용어집</span>
+                <div class="spacer"></div>
+                <input type="text" class="ph-input" placeholder="검색...">
+                <button class="ph-btn-accent">+ 추가</button>
+                <div class="ph-sep"></div>
+                <button class="ph-btn" onclick="toggleExpand()" title="확장"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+                <button class="ph-btn" onclick="closePanel()" title="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+
+            <div class="panel-content" id="spContent">
+                <div id="cPdf"><div class="pdf-paper"><h2>A Study on 그래프 기반 분류를 위한 중요한 기술 문서</h2><p><strong>초록</strong> — 기술적 지배 시대에, 전 세계의 혁신적인 기술을 보호하는 것은 중요한 문제로 부상했습니다.</p><p class="st">I. 서론</p><p>최근 인터넷의 발달로, 민감한 기술 문서를 분류하고 안전하게 보관하여 국가 및 기업에 대한 심각한 피해를 방지하는 것이 중요한 문제로 부상했습니다.</p></div></div>
+                <div id="cWeb" style="display:none"><div class="md-content"><h3>중요한 기술 문서를 위한 그래프 기반 분류에 대한 연구</h3><p style="font-size:var(--font-caption);color:var(--text-light)">[용어: 분류 = 분류]</p><p><strong>초록</strong> — 기술적 지배 시대에, 전 세계의 혁신적인 기술을 보호하는 것은 중요한 문제로 부상했습니다.</p><h4>I. 서론</h4><p>최근 인터넷의 발달로, 민감한 기술 문서를 분류하고 안전하게 보관하여 국가 및 기업에 대한 심각한 피해를 방지하는 것이 중요한 문제로 부상했습니다.</p></div></div>
+                <div id="cMemo" style="display:none"><div class="memo-item"><div class="memo-page">Page 1</div><div class="memo-highlight">graph-based methodology</div><div class="memo-text">핵심 방법론 — 이진 분류 접근법 주목</div></div><div class="memo-item"><div class="memo-page">Page 1</div><div class="memo-highlight">PageRank and betweenness centrality</div><div class="memo-text">두 가지 지표 비교 실험</div></div><div class="memo-item"><div class="memo-page">Page 2</div><div class="memo-highlight">TF-IDF</div><div class="memo-text">기존 기법과의 차이점 정리</div></div></div>
+                <div id="cGlossary" style="display:none"><div class="gl-item"><span class="gl-src">classification</span><span class="gl-arrow">→</span><span class="gl-tgt">분류</span></div><div class="gl-item"><span class="gl-src">betweenness centrality</span><span class="gl-arrow">→</span><span class="gl-tgt">매개 중심성</span></div><div class="gl-item"><span class="gl-src">graph representation</span><span class="gl-arrow">→</span><span class="gl-tgt">그래프 표현</span></div><div class="gl-item"><span class="gl-src">keyword extraction</span><span class="gl-arrow">→</span><span class="gl-tgt">키워드 추출</span></div></div>
+                <div id="cPending" style="display:none"><div class="panel-placeholder"><div class="ph-icon">📝</div><div style="font-size:var(--font-body)">이 페이지는 아직 번역되지 않았습니다</div><div style="font-size:var(--font-caption);opacity:0.6">상단 번역 버튼을 눌러 시작하세요</div></div></div>
+            </div>
+        </div>
+
+        <!-- Icon Rail -->
+        <div class="icon-rail">
+            <button class="rail-btn" data-panel="pdf" data-hdr="hdrPdf" data-content="cPdf" onclick="toggle(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg><span class="rail-tip">PDF 번역</span></button>
+            <button class="rail-btn" data-panel="web" data-hdr="hdrWeb" data-content="cWeb" onclick="toggle(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span class="rail-tip">웹 뷰 번역</span></button>
+            <button class="rail-btn" data-panel="memo" data-hdr="hdrMemo" data-content="cMemo" onclick="toggle(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="rail-tip">메모</span></button>
+            <button class="rail-btn" data-panel="glossary" data-hdr="hdrGlossary" data-content="cGlossary" onclick="toggle(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="rail-tip">용어집</span></button>
+            <div class="rail-sep"></div>
+            <button class="rail-btn" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span class="rail-tip">AI 요약</span></button>
+            <button class="rail-btn" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg><span class="rail-tip">문서 요약</span></button>
+            <button class="rail-btn" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/><line x1="10" y1="10" x2="6" y2="7"/><line x1="14" y1="10" x2="18" y2="7"/><line x1="10" y1="14" x2="6" y2="17"/><line x1="14" y1="14" x2="18" y2="17"/></svg><span class="rail-tip">마인드맵</span></button>
+        </div>
+    </div>
+
+    <script>
+    var panelMain = document.getElementById('panelMain');
+    var sidePanel = document.getElementById('sidePanel');
+    var resizeHandle = document.getElementById('resizeHandle');
+    var hdrLeft = document.getElementById('hdrLeft');
+    var active = null, expanded = false;
+
+    var allHdrs = ['hdrPdf','hdrWeb','hdrMemo','hdrGlossary'];
+    var allContents = ['cPdf','cWeb','cMemo','cGlossary','cPending'];
+
+    function toggle(btn) {
+        if (btn.disabled) return;
+        var id = btn.getAttribute('data-panel');
+        var hdr = btn.getAttribute('data-hdr');
+        var content = btn.getAttribute('data-content');
+        if (active === id) { closePanel(); return; }
+
+        document.querySelectorAll('.rail-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+
+        allHdrs.forEach(function(h) { document.getElementById(h).style.display = 'none'; });
+        document.getElementById(hdr).style.display = '';
+
+        allContents.forEach(function(c) { document.getElementById(c).style.display = 'none'; });
+        document.getElementById(content).style.display = '';
+
+        expanded = false;
+        sidePanel.classList.remove('expand');
+        sidePanel.classList.add('open');
+        panelMain.classList.remove('collapsed');
+        panelMain.classList.add('has-side');
+        panelMain.style.flex = ''; // reset resize
+        sidePanel.style.width = ''; sidePanel.style.minWidth = '';
+        resizeHandle.style.display = 'flex';
+        active = id;
+    }
+
+    var expandIcon = '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>';
+    var shrinkIcon = '<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>';
+
+    function toggleExpand() {
+        expanded = !expanded;
+        sidePanel.classList.toggle('expand', expanded);
+        sidePanel.classList.toggle('open', !expanded);
+        panelMain.classList.toggle('collapsed', expanded);
+        resizeHandle.style.display = expanded ? 'none' : 'flex';
+        // 모든 확장 버튼 아이콘 업데이트
+        document.querySelectorAll('.ph-btn[title="확장"], .ph-btn[title="축소"]').forEach(function(btn) {
+            btn.title = expanded ? '축소' : '확장';
+            btn.querySelector('svg').innerHTML = expanded ? shrinkIcon : expandIcon;
+        });
+    }
+
+    function closePanel() {
+        sidePanel.classList.remove('open', 'expand');
+        panelMain.classList.remove('collapsed', 'has-side');
+        panelMain.style.flex = '';
+        sidePanel.style.width = ''; sidePanel.style.minWidth = '';
+        resizeHandle.style.display = 'none';
+        document.querySelectorAll('.rail-btn').forEach(function(b) { b.classList.remove('active'); });
+        active = null; expanded = false;
+    }
+
+    function toggleTheme() {
+        var b = document.body;
+        b.setAttribute('data-theme', b.getAttribute('data-theme') === 'dark' ? '' : 'dark');
+    }
+
+    // Resize drag
+    (function() {
+        var handle = resizeHandle, dragging = false;
+        handle.addEventListener('mousedown', function(e) {
+            e.preventDefault(); dragging = true;
+            document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
+        });
+        document.addEventListener('mousemove', function(e) {
+            if (!dragging) return;
+            var wrap = document.querySelector('.viewer-wrap');
+            var rect = wrap.getBoundingClientRect();
+            var railW = 50;
+            var x = e.clientX - rect.left;
+            var total = rect.width - railW;
+            var leftPct = Math.max(25, Math.min(75, (x / total) * 100));
+            panelMain.style.flex = '0 0 ' + leftPct + '%';
+            sidePanel.style.width = (100 - leftPct) + '%';
+            sidePanel.style.minWidth = '0';
+        });
+        document.addEventListener('mouseup', function() {
+            if (!dragging) return; dragging = false;
+            document.body.style.cursor = ''; document.body.style.userSelect = '';
+        });
+    })();
+    </script>
+</body>
+</html>
