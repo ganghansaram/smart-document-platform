@@ -95,79 +95,6 @@
 
         <!-- State 2: Dual Panel Viewer -->
         <div class="view-viewer" id="view-viewer">
-            <div class="viewer-toolbar" id="viewer-toolbar">
-                <!-- 좌측: 뷰 그룹 (줌 + 동기화) -->
-                <span class="zoom-controls">
-                    <button class="toolbar-btn" id="zoom-out" title="축소">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                    </button>
-                    <span class="zoom-level" id="zoom-level" title="클릭하면 100%로 초기화" style="cursor:pointer;">100%</span>
-                    <button class="toolbar-btn" id="zoom-in" title="확대">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                    </button>
-                </span>
-                <button class="toolbar-btn active" id="scroll-sync-btn" title="스크롤 동기화">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h-4v10h4"/><path d="M16 7h4v10h-4"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                </button>
-
-                <span class="toolbar-sep"></span>
-
-                <!-- 좌측 뷰 그룹: 페이지 네비 -->
-                <div class="translator-page-nav" id="page-nav">
-                    <button class="toolbar-btn" id="page-prev" title="이전 페이지">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                    </button>
-                    <span class="translator-page-info" id="page-info">1 / 1</span>
-                    <button class="toolbar-btn" id="page-next" title="다음 페이지">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
-                </div>
-
-                <span class="spacer"></span>
-
-                <!-- 우측: 번역 설정 + CTA -->
-                <button class="toolbar-btn" id="glossary-btn" title="용어집">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                </button>
-                <span class="download-wrap" id="download-wrap">
-                    <button class="toolbar-btn" id="download-btn" title="다운로드" aria-label="다운로드" aria-haspopup="true" aria-expanded="false">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    </button>
-                    <div class="download-menu" id="download-menu" role="menu">
-                        <button class="download-menu-item" id="dl-original" role="menuitem">원본 PDF</button>
-                        <button class="download-menu-item" id="dl-translated" role="menuitem" disabled>현재 페이지 번역 PDF</button>
-                        <button class="download-menu-item" id="dl-web-page" role="menuitem" disabled style="display:none">현재 페이지 MD</button>
-                        <button class="download-menu-item" id="dl-web-full" role="menuitem" disabled style="display:none">전체 문서 MD</button>
-                    </div>
-                </span>
-                <select class="form-select form-select-sm" id="model-select"></select>
-                <span class="font-scale-controls" id="font-scale-controls" style="display:none">
-                    <span class="toolbar-sep"></span>
-                    <button class="toolbar-btn" id="font-scale-down" title="폰트 축소">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="none"><text x="1" y="20" font-size="18" font-weight="700" font-family="Arial,sans-serif" fill="currentColor">A</text><text x="15" y="16" font-size="9" font-weight="600" font-family="Arial,sans-serif" fill="currentColor">A</text></svg>
-                    </button>
-                    <span class="font-scale-value" id="font-scale-value">100%</span>
-                    <button class="toolbar-btn" id="font-scale-up" title="폰트 확대">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="none"><text x="1" y="16" font-size="9" font-weight="600" font-family="Arial,sans-serif" fill="currentColor">A</text><text x="9" y="20" font-size="18" font-weight="700" font-family="Arial,sans-serif" fill="currentColor">A</text></svg>
-                    </button>
-                </span>
-
-                <span class="toolbar-sep"></span>
-
-                <span class="page-status-text" id="toolbar-page-status"></span>
-                <button class="translate-page-btn" id="translate-page-btn">번역</button>
-                <button class="range-translate-btn" id="range-translate-btn">범위 번역</button>
-                <button class="cancel-page-btn" id="cancel-page-btn" style="display:none">취소</button>
-
-                <!-- 엔진 토글 → 아이콘 레일로 대체 (Phase 1b) -->
-                <div class="mode-toggle" id="engine-toggle" style="display:none">
-                    <button class="mode-toggle-btn active" data-engine="pdf">PDF</button>
-                    <button class="mode-toggle-btn" data-engine="web">웹 뷰</button>
-                </div>
-                <button class="toolbar-btn" id="web-full-toggle" title="전체 문서 보기" style="display:none">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
-                </button>
-            </div>
             <!-- 범위 번역 다이얼로그 -->
             <div class="range-dialog-overlay" id="range-dialog-overlay">
                 <div class="range-dialog" id="range-dialog">
@@ -189,7 +116,37 @@
             <div class="viewer-panels" id="viewer-panels">
                 <!-- Main: Original PDF -->
                 <div class="viewer-panel" id="panel-left">
-                    <span class="panel-label">원문</span>
+                    <div class="panel-header" id="left-header">
+                        <span class="panel-title">원문</span>
+                        <span class="spacer"></span>
+                        <button class="toolbar-btn" id="page-prev" title="이전 페이지">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <span class="translator-page-info" id="page-info">1 / 1</span>
+                        <button class="toolbar-btn" id="page-next" title="다음 페이지">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                        <span class="ph-sep"></span>
+                        <button class="toolbar-btn" id="zoom-out" title="축소">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                        </button>
+                        <span class="zoom-level" id="zoom-level" title="클릭하면 100%로 초기화" style="cursor:pointer;">100%</span>
+                        <button class="toolbar-btn" id="zoom-in" title="확대">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                        </button>
+                        <span class="ph-sep"></span>
+                        <span class="download-wrap" id="download-wrap">
+                            <button class="toolbar-btn" id="download-btn" title="다운로드" aria-label="다운로드" aria-haspopup="true" aria-expanded="false">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            </button>
+                            <div class="download-menu" id="download-menu" role="menu">
+                                <button class="download-menu-item" id="dl-original" role="menuitem">원본 PDF</button>
+                                <button class="download-menu-item" id="dl-translated" role="menuitem" disabled>현재 페이지 번역 PDF</button>
+                                <button class="download-menu-item" id="dl-web-page" role="menuitem" disabled style="display:none">현재 페이지 MD</button>
+                                <button class="download-menu-item" id="dl-web-full" role="menuitem" disabled style="display:none">전체 문서 MD</button>
+                            </div>
+                        </span>
+                    </div>
                     <div class="pdf-page-container" id="left-page-container">
                         <canvas id="left-canvas"></canvas>
                         <div class="text-layer" id="left-text-layer"></div>
@@ -198,15 +155,87 @@
                 </div>
                 <!-- Side Panel (wraps existing panel-right) -->
                 <div class="side-panel" id="side-panel">
-                    <div class="sp-header" id="sp-header">
-                        <span class="sp-title" id="sp-title">번역</span>
-                        <button class="sp-btn" id="sp-expand-btn" title="확장/축소">
+                    <!-- PDF 번역 헤더 -->
+                    <div class="panel-header sp-hdr" id="hdr-pdf" style="display:none">
+                        <span class="panel-title">PDF 번역</span>
+                        <span class="panel-status" id="toolbar-page-status"></span>
+                        <span class="spacer"></span>
+                        <button class="toolbar-btn" id="range-translate-btn">범위</button>
+                        <button class="toolbar-btn active" id="scroll-sync-btn" title="동기화">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h-4v10h4"/><path d="M16 7h4v10h-4"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                        </button>
+                        <span class="ph-sep"></span>
+                        <span class="shared-slot" id="shared-slot-pdf"></span>
+                        <span class="ph-sep"></span>
+                        <button class="sp-btn sp-expand-btn" title="확장">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
                         </button>
-                        <button class="sp-btn" id="sp-close-btn" title="닫기">
+                        <button class="sp-btn sp-close-btn" title="닫기">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
                     </div>
+                    <!-- 웹뷰 번역 헤더 -->
+                    <div class="panel-header sp-hdr" id="hdr-web" style="display:none">
+                        <span class="panel-title">웹 뷰 번역</span>
+                        <span class="panel-status" id="web-status"></span>
+                        <span class="spacer"></span>
+                        <span class="font-scale-controls" id="font-scale-controls">
+                            <button class="toolbar-btn" id="font-scale-down" title="폰트 축소">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="none"><text x="1" y="20" font-size="18" font-weight="700" font-family="Arial,sans-serif" fill="currentColor">A</text><text x="15" y="16" font-size="9" font-weight="600" font-family="Arial,sans-serif" fill="currentColor">A</text></svg>
+                            </button>
+                            <span class="font-scale-value" id="font-scale-value">15px</span>
+                            <button class="toolbar-btn" id="font-scale-up" title="폰트 확대">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="none"><text x="1" y="16" font-size="9" font-weight="600" font-family="Arial,sans-serif" fill="currentColor">A</text><text x="9" y="20" font-size="18" font-weight="700" font-family="Arial,sans-serif" fill="currentColor">A</text></svg>
+                            </button>
+                        </span>
+                        <button class="toolbar-btn" id="web-full-toggle" title="전체 문서 보기">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+                        </button>
+                        <span class="ph-sep"></span>
+                        <span class="shared-slot" id="shared-slot-web"></span>
+                        <span class="ph-sep"></span>
+                        <button class="sp-btn sp-expand-btn" title="확장">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                        </button>
+                        <button class="sp-btn sp-close-btn" title="닫기">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <!-- 메모 헤더 -->
+                    <div class="panel-header sp-hdr" id="hdr-memo" style="display:none">
+                        <span class="panel-title">메모</span>
+                        <span class="spacer"></span>
+                        <span class="ph-sep"></span>
+                        <button class="sp-btn sp-expand-btn" title="확장">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                        </button>
+                        <button class="sp-btn sp-close-btn" title="닫기">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <!-- 용어집 헤더 -->
+                    <div class="panel-header sp-hdr" id="hdr-glossary" style="display:none">
+                        <span class="panel-title">용어집</span>
+                        <span class="spacer"></span>
+                        <button class="toolbar-btn" id="glossary-btn" title="용어집 편집">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                        </button>
+                        <span class="ph-sep"></span>
+                        <button class="sp-btn sp-expand-btn" title="확장">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                        </button>
+                        <button class="sp-btn sp-close-btn" title="닫기">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <!-- 공유 요소 (model, translate, cancel) — 활성 헤더의 shared-slot에 이동됨 -->
+                    <div id="shared-controls-home" style="display:none">
+                        <select class="form-select form-select-sm" id="model-select"></select>
+                        <button class="translate-page-btn" id="translate-page-btn">번역</button>
+                        <button class="cancel-page-btn" id="cancel-page-btn" style="display:none">취소</button>
+                    </div>
+                    <!-- 엔진 토글 (hidden, JS 참조용) -->
+                    <div id="engine-toggle" style="display:none"></div>
                     <div class="viewer-panel" id="panel-right">
                         <!-- 마킹 플로팅 위젯 -->
                         <div class="marking-float" id="marking-float">

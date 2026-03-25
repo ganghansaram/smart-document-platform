@@ -127,14 +127,24 @@
         var $fontScaleUp    = document.getElementById('font-scale-up');
         var $fontScaleValue = document.getElementById('font-scale-value');
 
-        // Side panel + Icon rail (Phase 1b)
+        // Side panel + Icon rail (Phase 1b + Phase 2 V4)
         var $sidePanel      = document.getElementById('side-panel');
-        var $spTitle        = document.getElementById('sp-title');
-        var $spExpandBtn    = document.getElementById('sp-expand-btn');
-        var $spCloseBtn     = document.getElementById('sp-close-btn');
         var $iconRail       = document.getElementById('icon-rail');
+        var $sharedHome     = document.getElementById('shared-controls-home');
         var sidePanelExpanded = false;
-        var activeRailPanel = localStorage.getItem('nb-active-panel') || 'pdf-translate';
+        var activeRailPanel = null; // 초기 상태: 패널 없음 (싱글 뷰)
+
+        // 패널 헤더 매핑
+        var panelHdrMap = {
+            'pdf-translate': 'hdr-pdf',
+            'web-translate': 'hdr-web',
+            'memo':          'hdr-memo',
+            'glossary':      'hdr-glossary',
+        };
+        var sharedSlotMap = {
+            'pdf-translate': 'shared-slot-pdf',
+            'web-translate': 'shared-slot-web',
+        };
 
         var translateEngine = 'pdf'; // 'pdf' | 'web'
         var webFontSize     = parseInt(localStorage.getItem('tt-web-font-size') || '15', 10);
@@ -648,15 +658,13 @@
             }
         }
 
-        // ── 사이드 패널 레이아웃 (Phase 1b) ──
+        // ── 사이드 패널 레이아웃 (Phase 2 V4) ──
         function _rerenderAfterTransition() {
-            // CSS transition 완료 후 PDF 캔버스 재렌더
             function onEnd() {
                 $sidePanel.removeEventListener('transitionend', onEnd);
                 if (typeof rerenderBothPanels === 'function') rerenderBothPanels();
             }
             $sidePanel.addEventListener('transitionend', onEnd);
-            // fallback: transition이 발생하지 않는 경우 (이미 열린 상태 등)
             setTimeout(onEnd, 400);
         }
 
@@ -674,6 +682,8 @@
             $panelLeft.classList.remove('collapsed');
             $panelRight.style.display = 'none';
             sidePanelExpanded = false;
+            // 공유 요소를 home으로 복원
+            _moveSharedToHome();
             function onEnd() {
                 $sidePanel.removeEventListener('transitionend', onEnd);
                 if (typeof renderLeftPage === 'function') renderLeftPage(currentPage);
@@ -682,21 +692,59 @@
             setTimeout(onEnd, 400);
         }
 
-        // Side panel expand/collapse
-        $spExpandBtn.addEventListener('click', function() {
-            sidePanelExpanded = !sidePanelExpanded;
-            $sidePanel.classList.toggle('expand', sidePanelExpanded);
-            $sidePanel.classList.toggle('open', !sidePanelExpanded);
-            $panelLeft.classList.toggle('collapsed', sidePanelExpanded);
-            _rerenderAfterTransition();
-        });
+        // 패널 헤더 전환
+        function _showPanelHeader(panelId) {
+            // 모든 헤더 숨기기
+            var hdrs = document.querySelectorAll('.sp-hdr');
+            for (var i = 0; i < hdrs.length; i++) hdrs[i].style.display = 'none';
+            // 해당 헤더 표시
+            var hdrId = panelHdrMap[panelId];
+            if (hdrId) document.getElementById(hdrId).style.display = '';
+        }
 
-        // Side panel close
-        $spCloseBtn.addEventListener('click', function() {
-            _hideDualPanel();
-            // 아이콘 레일 active 해제
-            var railBtns = $iconRail.querySelectorAll('.rail-btn');
-            for (var i = 0; i < railBtns.length; i++) railBtns[i].classList.remove('active');
+        // 공유 요소(model, translate, cancel)를 활성 헤더의 shared-slot으로 이동
+        function _moveSharedToSlot(panelId) {
+            var slotId = sharedSlotMap[panelId];
+            if (!slotId) return; // 메모/용어집은 공유 요소 불필요
+            var slot = document.getElementById(slotId);
+            if (!slot) return;
+            slot.appendChild($modelSelect);
+            slot.appendChild($translateBtn);
+            slot.appendChild($cancelBtn);
+        }
+        function _moveSharedToHome() {
+            $sharedHome.appendChild($modelSelect);
+            $sharedHome.appendChild($translateBtn);
+            $sharedHome.appendChild($cancelBtn);
+        }
+
+        // 확장/축소 (이벤트 위임 — 모든 .sp-expand-btn)
+        $sidePanel.addEventListener('click', function(e) {
+            var expandBtn = e.target.closest('.sp-expand-btn');
+            var closeBtn = e.target.closest('.sp-close-btn');
+
+            if (expandBtn) {
+                sidePanelExpanded = !sidePanelExpanded;
+                $sidePanel.classList.toggle('expand', sidePanelExpanded);
+                $sidePanel.classList.toggle('open', !sidePanelExpanded);
+                $panelLeft.classList.toggle('collapsed', sidePanelExpanded);
+                // 아이콘 변경 (확장↔축소)
+                var svgs = $sidePanel.querySelectorAll('.sp-expand-btn svg');
+                var expandPath = '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>';
+                var shrinkPath = '<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>';
+                for (var i = 0; i < svgs.length; i++) {
+                    svgs[i].innerHTML = sidePanelExpanded ? shrinkPath : expandPath;
+                    svgs[i].parentElement.title = sidePanelExpanded ? '축소' : '확장';
+                }
+                _rerenderAfterTransition();
+            }
+
+            if (closeBtn) {
+                _hideDualPanel();
+                var railBtns = $iconRail.querySelectorAll('.rail-btn');
+                for (var i = 0; i < railBtns.length; i++) railBtns[i].classList.remove('active');
+                activeRailPanel = null;
+            }
         });
 
         // Icon rail click handler
@@ -710,6 +758,7 @@
             if (btn.classList.contains('active')) {
                 _hideDualPanel();
                 btn.classList.remove('active');
+                activeRailPanel = null;
                 return;
             }
 
@@ -718,81 +767,57 @@
             for (var i = 0; i < railBtns.length; i++) railBtns[i].classList.remove('active');
             btn.classList.add('active');
 
-            // 패널 ID에 따라 엔진 전환 + 패널 열기
+            // 엔진 전환
             if (panelId === 'pdf-translate') {
                 translateEngine = 'pdf';
-                $spTitle.textContent = 'PDF 번역';
-                $fontControls.style.display = 'none';
             } else if (panelId === 'web-translate') {
                 translateEngine = 'web';
-                $spTitle.textContent = '웹 뷰 번역';
-                $fontControls.style.display = '';
                 scrollSyncEnabled = false;
                 if ($scrollSyncBtn) $scrollSyncBtn.classList.remove('active');
-            } else if (panelId === 'memo') {
-                $spTitle.textContent = '메모';
-                // 메모 패널 — Phase 4에서 구현, 현재는 기존 번역 표시 유지
-            } else if (panelId === 'glossary') {
-                $spTitle.textContent = '용어집';
-                // 용어집 패널 — Phase 4에서 구현, 현재는 기존 번역 표시 유지
             }
 
-            // 웹 뷰 전체 보기 토글 표시/숨김
-            var $webFullToggle = document.getElementById('web-full-toggle');
-            $webFullToggle.style.display = (translateEngine === 'web') ? '' : 'none';
-            if (translateEngine !== 'web') {
-                webFullViewMode = false;
-                if ($webFullToggle) $webFullToggle.classList.remove('active');
-                if (webFullViewObserver) { webFullViewObserver.disconnect(); webFullViewObserver = null; }
-            }
+            // 패널 헤더 전환 + 공유 요소 이동
+            _showPanelHeader(panelId);
+            _moveSharedToSlot(panelId);
+
+            // 패널 열기 (항상 — 미번역 페이지에서도)
+            _showDualPanel();
 
             // localStorage 저장
             localStorage.setItem('nb-active-panel', panelId);
             activeRailPanel = panelId;
 
+            // 콘텐츠 갱신
             updateRightPanel();
         });
 
-        // 아이콘 레일 초기 상태 설정
+        // 아이콘 레일 초기 상태 — 싱글 뷰 (패널 없음)
         function _initRailState() {
-            var saved = activeRailPanel || 'pdf-translate';
-            translateEngine = (saved === 'web-translate') ? 'web' : 'pdf';
-
-            // 레일 버튼 active 설정
+            // 아이콘 active 없음, 패널 닫힘
             var railBtns = $iconRail.querySelectorAll('.rail-btn');
-            for (var i = 0; i < railBtns.length; i++) {
-                var pid = railBtns[i].getAttribute('data-panel');
-                railBtns[i].classList.toggle('active', pid === saved);
-            }
-
-            // 사이드 패널 타이틀
-            if (saved === 'web-translate') {
-                $spTitle.textContent = '웹 뷰 번역';
-                $fontControls.style.display = '';
-            } else {
-                $spTitle.textContent = 'PDF 번역';
-                $fontControls.style.display = 'none';
-            }
+            for (var i = 0; i < railBtns.length; i++) railBtns[i].classList.remove('active');
+            activeRailPanel = null;
+            translateEngine = 'pdf'; // 기본값
         }
 
         function showRightPending() {
             $rightContainer.style.display = 'none';
             $webViewContainer.style.display = 'none';
-            // 사이드 패널이 아이콘 레일로 열려있으면 placeholder 표시, 아닌 경우에만 숨김
+            // 사이드 패널이 열려있으면 placeholder 표시
             if ($sidePanel.classList.contains('open') || $sidePanel.classList.contains('expand')) {
                 $panelRight.style.display = '';
                 $rightPlaceholder.style.display = 'flex';
                 $rightPlaceholder.innerHTML =
                     '<div class="placeholder-icon">&#128221;</div>' +
                     '<div class="placeholder-text">이 페이지는 아직 번역되지 않았습니다</div>' +
-                    '<div class="placeholder-hint">"이 페이지 번역" 버튼을 눌러 시작하세요 (~30초)</div>';
+                    '<div class="placeholder-hint">상단 번역 버튼을 눌러 시작하세요 (~30초)</div>';
             } else {
                 $rightPlaceholder.style.display = 'none';
-                _hideDualPanel();
             }
         }
 
         function showRightTranslating(ps) {
+            if (!activeRailPanel) return; // 아이콘 레일에서 열지 않았으면 무시
             _showDualPanel();
             $rightContainer.style.display = 'none';
             $webViewContainer.style.display = 'none';
@@ -804,6 +829,7 @@
         }
 
         function showRightError(ps) {
+            if (!activeRailPanel) return;
             _showDualPanel();
             $rightContainer.style.display = 'none';
             $webViewContainer.style.display = 'none';
@@ -816,6 +842,7 @@
         }
 
         function showRightTranslatedPage() {
+            if (!activeRailPanel) return;
             _showDualPanel();
             // 로딩 상태 표시 (placeholder 유지)
             var textEl = $rightPlaceholder.querySelector('.placeholder-text');
@@ -844,6 +871,7 @@
         // ── 웹 뷰 렌더링 ──
 
         function showRightWebView() {
+            if (!activeRailPanel) return;
             _showDualPanel();
             $rightContainer.style.display = 'none';
             // 로딩 상태 표시 (기존 PDF 로드 패턴과 동일)
@@ -888,6 +916,7 @@
         // ── 웹 뷰 전체 문서 연속 스크롤 ──
 
         function showRightWebViewFull() {
+            if (!activeRailPanel) return;
             _showDualPanel();
             $rightContainer.style.display = 'none';
             $rightPlaceholder.style.display = 'flex';
@@ -1126,6 +1155,7 @@
         }
 
         function showRightLegacy() {
+            if (!activeRailPanel) return;
             _showDualPanel();
             $rightPlaceholder.style.display = 'none';
             $webViewContainer.style.display = 'none';

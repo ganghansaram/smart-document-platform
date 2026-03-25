@@ -53,7 +53,6 @@ body {
     flex-direction: column;
     background: var(--canvas-bg);
     padding: var(--panel-gap);
-    gap: var(--panel-gap);
 }
 
 /* ── Hero 배너 ── */
@@ -298,16 +297,23 @@ body[data-theme="dark"] .hero-banner-img {
 
 /* ══ State: Viewer (Dual Panel) ══ */
 
-.viewer-toolbar {
+/* Panel header (좌/우 공통 — V4 패턴) */
+.panel-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 7px 16px;
-    background: var(--white);
-    border-radius: var(--panel-radius);
-    box-shadow: var(--panel-shadow);
+    padding: 0 12px;
+    height: 38px;
     flex-shrink: 0;
+    background: var(--panel-bg);
+    border-bottom: 1px solid var(--border-color);
+    gap: 6px;
+    font-size: var(--font-body);
+    border-radius: var(--panel-radius) var(--panel-radius) 0 0;
 }
+.panel-title { font-weight: 600; font-size: var(--font-body); color: var(--text-dark); white-space: nowrap; }
+.panel-status { font-size: var(--font-caption); color: var(--text-light); white-space: nowrap; }
+.ph-sep { width: 1px; height: 16px; background: var(--border-color); margin: 0 2px; opacity: 0.5; flex-shrink: 0; }
+.shared-slot { display: contents; }
 
 .viewer-toolbar .spacer { flex: 1; }
 
@@ -527,10 +533,16 @@ body[data-theme="dark"] .hero-banner-img {
     overflow: auto;
     padding: 16px;
     text-align: center;
-    background: var(--white);
+    background: var(--panel-bg);
     border-radius: var(--panel-radius);
     box-shadow: var(--panel-shadow);
     position: relative;
+    font-size: var(--font-body);
+}
+
+/* PDF 종이 배경 (content-bg로 depth 형성) */
+.viewer-panel .pdf-page-container {
+    background: var(--content-bg);
 }
 
 .viewer-panel .panel-label {
@@ -1070,8 +1082,8 @@ body[data-theme="dark"] .card-btn { background: rgba(255,255,255,0.06); border-c
 body[data-theme="dark"] .card-btn:hover { background: var(--active-color-subtle); border-color: color-mix(in srgb, var(--active-color) 40%, transparent); color: var(--active-color); }
 body[data-theme="dark"] .card-btn.primary { background: var(--active-color); border-color: var(--active-color); color: #fff; }
 
-body[data-theme="dark"] .viewer-toolbar { background: var(--white); }
-body[data-theme="dark"] .viewer-toolbar select { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: #e0e0e0; }
+body[data-theme="dark"] .panel-header { background: var(--panel-bg); }
+body[data-theme="dark"] .panel-header select { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: #e0e0e0; }
 /* .toolbar-btn, .mode-toggle 다크 모드 → components.css / compare.css 에서 처리 */
 body[data-theme="dark"] .viewer-toolbar .font-scale-value { color: rgba(255,255,255,0.6); }
 body[data-theme="dark"] .translator-page-info { color: rgba(255,255,255,0.6); }
