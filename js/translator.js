@@ -562,9 +562,12 @@
 
                 var ctx = $leftCanvas.getContext('2d');
                 var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+                $leftContainer.style.opacity = '0';
                 leftRenderTask = page.render({ canvasContext: ctx, transform: transform, viewport: scaledViewport });
                 leftRenderTask.promise.then(function() {
                     leftRenderTask = null;
+                    $leftContainer.style.transition = 'opacity 0.15s ease';
+                    $leftContainer.style.opacity = '1';
                     return page.getTextContent();
                 }).then(function(textContent) {
                     if (textContent) {
@@ -1226,9 +1229,12 @@
 
                 var ctx = $rightCanvas.getContext('2d');
                 var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+                $rightContainer.style.opacity = '0';
                 rightRenderTask = page.render({ canvasContext: ctx, transform: transform, viewport: scaledViewport });
                 rightRenderTask.promise.then(function() {
                     rightRenderTask = null;
+                    $rightContainer.style.transition = 'opacity 0.15s ease';
+                    $rightContainer.style.opacity = '1';
                     return page.getTextContent();
                 }).then(function(textContent) {
                     if (textContent) {
