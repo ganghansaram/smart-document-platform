@@ -604,18 +604,6 @@ body[data-theme="dark"] .hero-banner-img {
 .sp-btn:hover { background: var(--hover-bg); color: var(--text-dark); }
 .sp-btn svg { width: 14px; height: 14px; }
 
-/* Side Panel controls bar */
-.sp-controls {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border-color);
-    flex-wrap: nowrap;
-    overflow-x: auto;
-}
-
 /* Main panel collapsed (expand mode) */
 #panel-left.collapsed {
     flex: 0;

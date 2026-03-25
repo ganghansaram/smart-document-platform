@@ -135,52 +135,6 @@
         var $iconRail       = document.getElementById('icon-rail');
         var sidePanelExpanded = false;
         var activeRailPanel = localStorage.getItem('nb-active-panel') || 'pdf-translate';
-        var $spControls     = document.getElementById('sp-controls');
-
-        // 툴바↔패널 컨트롤 이동 대상 (Phase 2)
-        var _toolbarControlIds = ['scroll-sync-btn', 'model-select', 'toolbar-page-status',
-                                  'translate-page-btn', 'range-translate-btn', 'cancel-page-btn'];
-        // 웹뷰 전용 추가 컨트롤 (Phase 3)
-        var _webControlIds = ['font-scale-controls', 'web-full-toggle'];
-
-        // 툴바에서 원래 위치 저장 (복원용)
-        var _toolbarAnchor = document.getElementById('glossary-btn'); // 용어집 버튼 앞에 복원
-
-        function _moveControlsToPanel() {
-            _toolbarControlIds.forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) $spControls.appendChild(el);
-            });
-            // 웹뷰 전용 컨트롤도 이동 (웹뷰 패널일 때만 표시)
-            _webControlIds.forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) $spControls.appendChild(el);
-            });
-        }
-
-        function _restoreControlsToToolbar() {
-            var toolbar = document.getElementById('viewer-toolbar');
-            // glossary-btn 뒤에 복원 (원래 순서)
-            var anchor = _toolbarAnchor;
-            var refNode = anchor ? anchor.nextSibling : null;
-
-            // 다운로드 wrap 뒤에 삽입
-            var downloadWrap = document.getElementById('download-wrap');
-            if (downloadWrap) refNode = downloadWrap.nextSibling;
-
-            _toolbarControlIds.forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el && el.parentNode === $spControls) {
-                    toolbar.insertBefore(el, refNode);
-                }
-            });
-            _webControlIds.forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el && el.parentNode === $spControls) {
-                    toolbar.insertBefore(el, refNode);
-                }
-            });
-        }
 
         var translateEngine = 'pdf'; // 'pdf' | 'web'
         var webFontSize     = parseInt(localStorage.getItem('tt-web-font-size') || '15', 10);
@@ -739,7 +693,6 @@
 
         // Side panel close
         $spCloseBtn.addEventListener('click', function() {
-            _restoreControlsToToolbar();
             _hideDualPanel();
             // 아이콘 레일 active 해제
             var railBtns = $iconRail.querySelectorAll('.rail-btn');
@@ -755,7 +708,6 @@
 
             // 같은 아이콘 재클릭 → 닫기
             if (btn.classList.contains('active')) {
-                _restoreControlsToToolbar();
                 _hideDualPanel();
                 btn.classList.remove('active');
                 return;
@@ -766,39 +718,23 @@
             for (var i = 0; i < railBtns.length; i++) railBtns[i].classList.remove('active');
             btn.classList.add('active');
 
-            // 컨트롤을 패널로 이동
-            _moveControlsToPanel();
-
             // 패널 ID에 따라 엔진 전환 + 패널 열기
             if (panelId === 'pdf-translate') {
                 translateEngine = 'pdf';
                 $spTitle.textContent = 'PDF 번역';
                 $fontControls.style.display = 'none';
-                // PDF 전용: 범위 번역, 스크롤 동기화 표시
-                $rangeBtn.style.display = '';
-                $scrollSyncBtn.style.display = '';
             } else if (panelId === 'web-translate') {
                 translateEngine = 'web';
                 $spTitle.textContent = '웹 뷰 번역';
                 $fontControls.style.display = '';
                 scrollSyncEnabled = false;
                 if ($scrollSyncBtn) $scrollSyncBtn.classList.remove('active');
-                // 웹뷰: 범위 번역 숨김, 스크롤 동기화 숨김
-                $rangeBtn.style.display = 'none';
-                $scrollSyncBtn.style.display = 'none';
             } else if (panelId === 'memo') {
                 $spTitle.textContent = '메모';
-                // 메모 패널: 번역 컨트롤 숨김 (Phase 4에서 메모 전용 UI 추가)
-                $spControls.style.display = 'none';
+                // 메모 패널 — Phase 4에서 구현, 현재는 기존 번역 표시 유지
             } else if (panelId === 'glossary') {
                 $spTitle.textContent = '용어집';
-                // 용어집 패널: 번역 컨트롤 숨김 (Phase 4에서 용어집 전용 UI 추가)
-                $spControls.style.display = 'none';
-            }
-
-            // 번역 패널이면 컨트롤 바 표시
-            if (panelId === 'pdf-translate' || panelId === 'web-translate') {
-                $spControls.style.display = '';
+                // 용어집 패널 — Phase 4에서 구현, 현재는 기존 번역 표시 유지
             }
 
             // 웹 뷰 전체 보기 토글 표시/숨김
@@ -829,27 +765,13 @@
                 railBtns[i].classList.toggle('active', pid === saved);
             }
 
-            // 컨트롤을 패널로 이동
-            _moveControlsToPanel();
-
-            // 사이드 패널 타이틀 + 컨트롤 표시
+            // 사이드 패널 타이틀
             if (saved === 'web-translate') {
                 $spTitle.textContent = '웹 뷰 번역';
                 $fontControls.style.display = '';
-                $rangeBtn.style.display = 'none';
-                $scrollSyncBtn.style.display = 'none';
-            } else if (saved === 'pdf-translate') {
+            } else {
                 $spTitle.textContent = 'PDF 번역';
                 $fontControls.style.display = 'none';
-                $rangeBtn.style.display = '';
-                $scrollSyncBtn.style.display = '';
-            } else {
-                // 메모/용어집 등 — 컨트롤 숨김
-                $spControls.style.display = 'none';
-            }
-
-            if (saved === 'pdf-translate' || saved === 'web-translate') {
-                $spControls.style.display = '';
             }
         }
 
