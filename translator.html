@@ -147,10 +147,12 @@
                             </div>
                         </span>
                     </div>
-                    <div class="pdf-page-container" id="left-page-container">
-                        <canvas id="left-canvas"></canvas>
-                        <div class="text-layer" id="left-text-layer"></div>
-                        <div class="annotation-layer" id="left-annotation-layer"></div>
+                    <div class="panel-scroll" id="left-scroll">
+                        <div class="pdf-page-container" id="left-page-container">
+                            <canvas id="left-canvas"></canvas>
+                            <div class="text-layer" id="left-text-layer"></div>
+                            <div class="annotation-layer" id="left-annotation-layer"></div>
+                        </div>
                     </div>
                 </div>
                 <!-- Side Panel (wraps existing panel-right) -->
@@ -237,6 +239,7 @@
                     <!-- 엔진 토글 (hidden, JS 참조용) -->
                     <div id="engine-toggle" style="display:none"></div>
                     <div class="viewer-panel" id="panel-right">
+                      <div class="panel-scroll" id="right-scroll">
                         <!-- 마킹 플로팅 위젯 -->
                         <div class="marking-float" id="marking-float">
                             <div class="mf-trigger" id="mf-trigger">
@@ -264,6 +267,7 @@
                             <div class="placeholder-text">이 페이지는 아직 번역되지 않았습니다</div>
                             <div class="placeholder-hint">아래 "이 페이지 번역" 버튼을 눌러 시작하세요 (~30초)</div>
                         </div>
+                      </div><!-- /panel-scroll -->
                     </div>
                 </div>
                 <!-- Icon Rail -->

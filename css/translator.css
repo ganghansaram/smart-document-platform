@@ -315,11 +315,12 @@ body[data-theme="dark"] .hero-banner-img {
 .ph-sep { width: 1px; height: 16px; background: var(--border-color); margin: 0 2px; opacity: 0.5; flex-shrink: 0; }
 .shared-slot { display: contents; }
 
-.viewer-toolbar .spacer { flex: 1; }
+.panel-header .spacer { flex: 1; }
 
-/* model-select — .form-select .form-select-sm 기반, max-width만 유지 */
-.viewer-toolbar select {
-    max-width: 160px;
+/* model-select — panel-header 내부 */
+.panel-header select {
+    max-width: 130px;
+    font-size: var(--font-caption);
 }
 
 /* 다운로드 드롭다운 메뉴 */
@@ -360,29 +361,31 @@ body[data-theme="dark"] .hero-banner-img {
     cursor: not-allowed;
 }
 
-.viewer-toolbar .translate-page-btn {
-    padding: 5px 14px;
+.panel-header .translate-page-btn {
+    padding: 3px 10px;
     border: none;
-    border-radius: var(--radius-md);
-    font-size: 13px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+    font-weight: 500;
     font-family: inherit;
     cursor: pointer;
     background: var(--active-color);
     color: #fff;
-    transition: background 0.15s;
+    transition: background var(--transition-fast);
+    white-space: nowrap;
 }
-.viewer-toolbar .translate-page-btn:hover { background: var(--active-color-hover); }
-.viewer-toolbar .translate-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.panel-header .translate-page-btn:hover { background: var(--active-color-hover); }
+.panel-header .translate-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* .engine-radio → .mode-toggle (compare.css / components.css) */
 
-.viewer-toolbar .font-scale-controls {
+.panel-header .font-scale-controls {
     display: inline-flex;
     align-items: center;
     gap: 2px;
 }
 /* .font-scale-btn → .toolbar-btn (components.css) */
-.viewer-toolbar .font-scale-value {
+.panel-header .font-scale-value {
     font-size: 12px;
     min-width: 32px;
     text-align: center;
@@ -390,7 +393,7 @@ body[data-theme="dark"] .hero-banner-img {
     font-variant-numeric: tabular-nums;
 }
 
-.viewer-toolbar .cancel-page-btn {
+.panel-header .cancel-page-btn {
     padding: 5px 14px;
     border: 1px solid var(--color-error);
     border-radius: var(--radius-md);
@@ -401,20 +404,21 @@ body[data-theme="dark"] .hero-banner-img {
     color: var(--color-error);
     transition: background 0.15s;
 }
-.viewer-toolbar .cancel-page-btn:hover { background: rgba(248,81,73,0.1); }
+.panel-header .cancel-page-btn:hover { background: rgba(248,81,73,0.1); }
 
-.viewer-toolbar .range-translate-btn {
-    padding: 5px 14px;
-    border: 1px solid var(--active-color);
-    border-radius: var(--radius-md);
-    font-size: 13px;
+.panel-header .range-translate-btn {
+    padding: 2px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
     font-family: inherit;
     cursor: pointer;
     background: transparent;
-    color: var(--active-color);
-    transition: background 0.15s, color 0.15s;
+    color: var(--text-light);
+    transition: all var(--transition-fast);
+    white-space: nowrap;
 }
-.viewer-toolbar .range-translate-btn:hover { background: var(--active-color); color: #fff; }
+.panel-header .range-translate-btn:hover { background: var(--active-color); color: #fff; }
 
 /* 범위 번역 다이얼로그 */
 .range-dialog-overlay {
@@ -499,7 +503,7 @@ body[data-theme="dark"] .hero-banner-img {
 [data-theme="dark"] .range-dialog .range-inputs input { background: #2d2d2d; border-color: #444; color: #e0e0e0; }
 [data-theme="dark"] .range-dialog .btn-range-cancel { background: #333; color: #ccc; }
 
-.viewer-toolbar .page-status-text {
+.panel-header .page-status-text {
     font-size: 13px;
     color: var(--text-light);
 }
@@ -530,8 +534,9 @@ body[data-theme="dark"] .hero-banner-img {
 
 .viewer-panel {
     flex: 1;
-    overflow: auto;
-    padding: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     text-align: center;
     background: var(--panel-bg);
     border-radius: var(--panel-radius);
@@ -540,9 +545,18 @@ body[data-theme="dark"] .hero-banner-img {
     font-size: var(--font-body);
 }
 
+/* 패널 콘텐츠 스크롤 영역 — 헤더 아래에서만 스크롤 */
+.panel-scroll {
+    flex: 1;
+    overflow: auto;
+    padding: var(--space-md);
+    position: relative;
+}
+
 /* PDF 종이 배경 (content-bg로 depth 형성) */
 .viewer-panel .pdf-page-container {
     background: var(--content-bg);
+    border-radius: var(--radius-md);
 }
 
 .viewer-panel .panel-label {
@@ -1085,7 +1099,7 @@ body[data-theme="dark"] .card-btn.primary { background: var(--active-color); bor
 body[data-theme="dark"] .panel-header { background: var(--panel-bg); }
 body[data-theme="dark"] .panel-header select { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: #e0e0e0; }
 /* .toolbar-btn, .mode-toggle 다크 모드 → components.css / compare.css 에서 처리 */
-body[data-theme="dark"] .viewer-toolbar .font-scale-value { color: rgba(255,255,255,0.6); }
+body[data-theme="dark"] .panel-header .font-scale-value { color: rgba(255,255,255,0.6); }
 body[data-theme="dark"] .translator-page-info { color: rgba(255,255,255,0.6); }
 body[data-theme="dark"] .zoom-level { color: rgba(255,255,255,0.6); }
 

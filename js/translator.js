@@ -1556,7 +1556,8 @@
 
             // Left: 원문 렌더링
             renderLeftPage(currentPage);
-            $panelLeft.scrollTop = 0;
+            var leftScroll = document.getElementById('left-scroll');
+            if (leftScroll) leftScroll.scrollTop = 0;
 
             if (translateEngine === 'web' && webFullViewMode) {
                 // 전체 보기 모드: 우측 스크롤만 이동 (재로드 안 함)
