@@ -113,11 +113,18 @@
         var $mfBadge = document.getElementById('mf-badge');
         var $mfCount = document.getElementById('mf-count');
 
-        // Toolbar
+        // Toolbar / Panel status
         var $toolbarStatus  = document.getElementById('toolbar-page-status');
+        var $webStatus      = document.getElementById('web-status');
         var $modelSelect    = document.getElementById('model-select');
         var $translateBtn   = document.getElementById('translate-page-btn');
         var $rangeBtn       = document.getElementById('range-translate-btn');
+
+        // 상태 텍스트를 양쪽 헤더에 동기화
+        function _setStatus(text) {
+            if ($toolbarStatus) $toolbarStatus.textContent = text;
+            if ($webStatus) $webStatus.textContent = text;
+        }
         var $cancelBtn      = document.getElementById('cancel-page-btn');
 
         // Engine toggle + font scale
@@ -527,7 +534,8 @@
             if (leftRenderTask) { leftRenderTask.cancel(); leftRenderTask = null; }
 
             leftPdfDoc.getPage(pageNum).then(function(page) {
-                var wrapWidth = $panelLeft.clientWidth - 32;
+                var leftScroll = document.getElementById('left-scroll');
+                var wrapWidth = (leftScroll || $panelLeft).clientWidth - 32;
                 var viewport = page.getViewport({ scale: 1 });
                 var fitScale = wrapWidth / viewport.width;
                 var baseScale = Math.min(fitScale, 1.5);
@@ -1190,7 +1198,8 @@
             if (rightRenderTask) { rightRenderTask.cancel(); rightRenderTask = null; }
 
             rightPdfDoc.getPage(pageNum).then(function(page) {
-                var wrapWidth = $panelRight.clientWidth - 32;
+                var rightScroll = document.getElementById('right-scroll');
+                var wrapWidth = (rightScroll || $panelRight).clientWidth - 32;
                 var viewport = page.getViewport({ scale: 1 });
                 var fitScale = wrapWidth / viewport.width;
                 var baseScale = Math.min(fitScale, 1.5);
@@ -1249,7 +1258,7 @@
                 $rangeBtn.style.display = hideRange ? 'none' : '';
                 $cancelBtn.style.display = 'none';
                 $modelSelect.style.display = '';
-                $toolbarStatus.textContent = '';
+                _setStatus('');
                 $fontScaleDown.disabled = false;
                 $fontScaleUp.disabled = false;
             } else if (status === 'translating') {
@@ -1257,7 +1266,7 @@
                 $rangeBtn.style.display = 'none';
                 $cancelBtn.style.display = '';
                 $modelSelect.style.display = 'none';
-                $toolbarStatus.textContent = '번역 중...';
+                _setStatus('번역 중...');
                 $fontScaleDown.disabled = true;
                 $fontScaleUp.disabled = true;
             } else if (status === 'done') {
@@ -1281,7 +1290,7 @@
                     if (ps.elapsed_sec) info += ', ' + ps.elapsed_sec + '초';
                     if (ps.batch) info += ' (' + ps.batch + 'p 일괄)';
                 }
-                $toolbarStatus.textContent = info;
+                _setStatus(info);
             } else if (status === 'legacy') {
                 $translateBtn.style.display = '';
                 $translateBtn.textContent = '페이지 번역';
@@ -1289,7 +1298,7 @@
                 $rangeBtn.style.display = '';
                 $cancelBtn.style.display = 'none';
                 $modelSelect.style.display = '';
-                $toolbarStatus.textContent = '통번역 (레거시)';
+                _setStatus('통번역 (레거시)');
             }
         }
 
@@ -1511,7 +1520,7 @@
                         var stage = ps.progress_stage || '번역 중...';
                         var textEl = $rightPlaceholder.querySelector('.placeholder-text');
                         if (textEl) textEl.textContent = stage;
-                        $toolbarStatus.textContent = stage;
+                        _setStatus(stage);
                     } else {
                         // 완료/에러
                         stopPolling();
@@ -1586,7 +1595,8 @@
                 });
             }
 
-            $panelRight.scrollTop = 0;
+            var rightScroll2 = document.getElementById('right-scroll');
+            if (rightScroll2) rightScroll2.scrollTop = 0;
         }
 
         // ── Keyboard shortcuts ──
@@ -1655,11 +1665,14 @@
             scrollSyncing = false;
         }
 
-        $panelLeft.addEventListener('scroll', function() {
-            syncScroll($panelLeft, $panelRight);
+        // 스크롤 동기화: panel-scroll 요소에 부착 (panel 자체는 overflow:hidden)
+        var $leftScroll = document.getElementById('left-scroll');
+        var $rightScroll = document.getElementById('right-scroll');
+        $leftScroll.addEventListener('scroll', function() {
+            syncScroll($leftScroll, $rightScroll);
         });
-        $panelRight.addEventListener('scroll', function() {
-            syncScroll($panelRight, $panelLeft);
+        $rightScroll.addEventListener('scroll', function() {
+            syncScroll($rightScroll, $leftScroll);
         });
 
         // ══════════════════════════════════════
@@ -1888,7 +1901,8 @@
         /** 팝오버가 뷰포트(스크롤 영역) 밖으로 넘치면 안쪽으로 당김 */
         function clampPopoverToViewport(el) {
             var elRect = el.getBoundingClientRect();
-            var vpRect = $panelLeft.getBoundingClientRect();
+            var vpEl = document.getElementById('left-scroll') || $panelLeft;
+            var vpRect = vpEl.getBoundingClientRect();
             var parentRect = $leftAnnotationLayer.getBoundingClientRect();
             var margin = 8;
             var dx = 0, dy = 0;

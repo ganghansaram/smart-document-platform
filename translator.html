@@ -239,8 +239,7 @@
                     <!-- 엔진 토글 (hidden, JS 참조용) -->
                     <div id="engine-toggle" style="display:none"></div>
                     <div class="viewer-panel" id="panel-right">
-                      <div class="panel-scroll" id="right-scroll">
-                        <!-- 마킹 플로팅 위젯 -->
+                        <!-- 마킹 플로팅 위젯 (panel-scroll 밖 — 스크롤 추종 방지) -->
                         <div class="marking-float" id="marking-float">
                             <div class="mf-trigger" id="mf-trigger">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
@@ -254,6 +253,7 @@
                                 <div class="mf-body" id="mf-body"></div>
                             </div>
                         </div>
+                      <div class="panel-scroll" id="right-scroll">
                         <div class="pdf-page-container" id="right-page-container" style="display:none">
                             <canvas id="right-canvas"></canvas>
                             <div class="text-layer" id="right-text-layer"></div>
