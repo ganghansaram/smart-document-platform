@@ -72,7 +72,14 @@
     --panel-radius: 16px;
     --panel-gap: 8px;
     --canvas-bg: #eef1f6;
+    --panel-bg: #f8f9fa;
+    --content-bg: #ffffff;
     --panel-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06);
+
+    /* 폰트 사이즈 3단계 */
+    --font-title: 15px;
+    --font-body: 13px;
+    --font-caption: 11px;
 
     /* Diff 색상 */
     --diff-added: #e6ffec;
@@ -124,6 +131,8 @@ body[data-theme="dark"] {
 
     /* 패널 레이아웃 */
     --canvas-bg: #0e0e18;
+    --panel-bg: #1a1a2e;
+    --content-bg: #22223a;
     --panel-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.3);
 
     /* Diff 색상 */
