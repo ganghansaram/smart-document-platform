@@ -1,8 +1,8 @@
 # Plan 18: Notebook 뷰어 레이아웃 재설계
 
 > 작성일: 2026-03-23
-> 상태: 설계 중
-> 브랜치: `plan18-viewer`
+> 상태: Phase 1a~5 완료 (핵심 레이아웃 재설계 완료), Phase 6~8 향후
+> 브랜치: `plan17-library`
 > 선행: Plan 17 Phase 5 완료 (텍스트 모드 제거 + Notebook 리네이밍)
 > 관련: Plan 17 Phase 4b/4c/4d — 본 계획 완료 후 새 레이아웃 위에서 진행
 
@@ -504,6 +504,8 @@ body[data-theme="dark"] {
 - ✅ 기존 기능 회귀 테스트 (10항목 Light/Dark 통과)
 - ✅ 아이콘 레일 간격 통일 (gap→margin, 4px 밀착)
 
+> 추가 수정: 마킹 삭제/생성 시 메모 패널 실시간 동기화 (renderAnnotations 훅 통일)
+> 추가 수정: .popover-delete-btn CSS 추가 (우측 정렬, 에러 색상, 포인터 커서)
 > 보류: PDF 캔버스 등장 깜빡임 (최적화 한계로 판단, 현재 코드 유지)
 > 제외: 용어집 하이라이트 연동 / 자동 추천 / 번역 적용 표시 → Phase 6 이후
 

@@ -1939,10 +1939,18 @@
         // ── 현재 페이지 마킹 렌더 (좌측) ──
 
         function renderAnnotations() {
-            // popover 보존: render 전 분리, render 후 재부착
+            // popover/actionBar/aiPopover 보존: render 전 분리, render 후 재부착
             var savedPopover = $popover;
+            var savedActionBar = $actionBar;
+            var savedAiPopover = $aiPopover;
             if (savedPopover && savedPopover.parentNode) {
                 savedPopover.parentNode.removeChild(savedPopover);
+            }
+            if (savedActionBar && savedActionBar.parentNode) {
+                savedActionBar.parentNode.removeChild(savedActionBar);
+            }
+            if (savedAiPopover && savedAiPopover.parentNode) {
+                savedAiPopover.parentNode.removeChild(savedAiPopover);
             }
             $leftAnnotationLayer.innerHTML = '';
             if (!annotationsCache || !annotationsCache.highlights) return;
@@ -1953,9 +1961,15 @@
                     $leftAnnotationLayer.appendChild(createHighlightDiv(highlights[i]));
                 }
             }
-            // popover 재부착
+            // 보존 요소 재부착
             if (savedPopover) {
                 $leftAnnotationLayer.appendChild(savedPopover);
+            }
+            if (savedActionBar) {
+                $leftAnnotationLayer.appendChild(savedActionBar);
+            }
+            if (savedAiPopover) {
+                $leftAnnotationLayer.appendChild(savedAiPopover);
             }
         }
 
@@ -2147,7 +2161,7 @@
 
         function hideActionBar() {
             if ($actionBar) {
-                $actionBar.parentNode.removeChild($actionBar);
+                if ($actionBar.parentNode) $actionBar.parentNode.removeChild($actionBar);
                 $actionBar = null;
             }
         }
@@ -2158,7 +2172,7 @@
                 _aiAbortController = null;
             }
             if ($aiPopover) {
-                $aiPopover.parentNode.removeChild($aiPopover);
+                if ($aiPopover.parentNode) $aiPopover.parentNode.removeChild($aiPopover);
                 $aiPopover = null;
             }
         }
