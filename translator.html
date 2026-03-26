@@ -21,6 +21,11 @@
         <div class="ts-search-container">
             <input type="text" class="ts-search-input" id="ts-search-input" placeholder="문서 본문, 메모 검색..." autocomplete="off">
             <button class="ts-search-close" id="ts-search-close">&times;</button>
+            <div class="ts-search-filter" id="ts-search-filter">
+                <button class="ts-filter-btn active" data-filter="">전체</button>
+                <button class="ts-filter-btn" data-filter="source">원문</button>
+                <button class="ts-filter-btn" data-filter="translated">번역</button>
+            </div>
             <div class="ts-search-results" id="ts-search-results"></div>
         </div>
     </div>
@@ -144,6 +149,7 @@
                                 <button class="download-menu-item" id="dl-translated" role="menuitem" disabled>현재 페이지 번역 PDF</button>
                                 <button class="download-menu-item" id="dl-web-page" role="menuitem" disabled style="display:none">현재 페이지 MD</button>
                                 <button class="download-menu-item" id="dl-web-full" role="menuitem" disabled style="display:none">전체 문서 MD</button>
+                                <button class="download-menu-item" id="dl-zip" role="menuitem" disabled style="display:none">ZIP (MD + 이미지)</button>
                             </div>
                         </span>
                     </div>

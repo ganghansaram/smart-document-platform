@@ -298,7 +298,7 @@ def _build_search_index_for_user(username: str) -> dict:
     return si
 
 
-def search_documents(username: str, query: str, max_results: int = 30) -> dict:
+def search_documents(username: str, query: str, max_results: int = 30, source_filter: str = None) -> dict:
     """유저 문서 검색 — 본문(페이지) + 메모, 키워드 매칭
 
     Returns: {"memos": [...], "pages": [...], "query": str, "total": int}
@@ -384,6 +384,9 @@ def search_documents(username: str, query: str, max_results: int = 30) -> dict:
                         match_source = "translated"
 
             if score > 0:
+                # 소스 필터 적용
+                if source_filter and match_source and match_source != source_filter:
+                    continue
                 # 스니펫: 매칭된 텍스트에서 생성
                 snippet_text = texts["translated"] if match_source == "translated" else texts["source"]
                 snippet = _make_snippet(snippet_text, terms[0], context=60)
@@ -620,6 +623,47 @@ def delete_annotation(username: str, doc_id: str, ann_id: str) -> bool:
         raise FileNotFoundError(f"마킹을 찾을 수 없습니다: {ann_id}")
     _save_annotations(username, doc_id, data)
     return True
+
+
+# ══════════════════════════════════════
+# ZIP 다운로드
+# ══════════════════════════════════════
+
+def create_document_zip(username: str, doc_id: str) -> Optional[Path]:
+    """문서의 MD + assets를 ZIP으로 묶어 임시 파일 반환"""
+    import zipfile, tempfile
+
+    doc_path = _doc_dir(username, doc_id)
+    if not doc_path.exists():
+        return None
+
+    meta = _load_meta(username, doc_id)
+    title = (meta or {}).get("title", doc_id)
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zf:
+        # full_translated.md
+        full_md = doc_path / "full_translated.md"
+        if full_md.exists():
+            zf.write(full_md, "full_translated.md")
+
+        # 페이지별 MD + assets
+        pages_dir = doc_path / "pages"
+        if pages_dir.exists():
+            for page_dir in sorted(pages_dir.iterdir()):
+                if not page_dir.is_dir():
+                    continue
+                page_num = page_dir.name
+                md_file = page_dir / "web_translated.md"
+                if md_file.exists():
+                    zf.write(md_file, f"pages/{page_num}/web_translated.md")
+                assets_dir = page_dir / "assets"
+                if assets_dir.exists():
+                    for asset in assets_dir.iterdir():
+                        if asset.is_file():
+                            zf.write(asset, f"pages/{page_num}/assets/{asset.name}")
+
+    return Path(tmp.name)
 
 
 # ══════════════════════════════════════

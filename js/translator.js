@@ -3242,6 +3242,21 @@
             }
         });
 
+        // 검색 필터
+        var _searchSourceFilter = '';
+        var $searchFilter = document.getElementById('ts-search-filter');
+        if ($searchFilter) {
+            $searchFilter.addEventListener('click', function(e) {
+                var btn = e.target.closest('.ts-filter-btn');
+                if (!btn) return;
+                $searchFilter.querySelectorAll('.ts-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                _searchSourceFilter = btn.dataset.filter || '';
+                var q = $searchInput.value.trim();
+                if (q) performSearch(q);
+            });
+        }
+
         // 입력 디바운스
         $searchInput.addEventListener('input', function() {
             clearTimeout(_searchTimeout);
@@ -3255,9 +3270,9 @@
 
         function performSearch(query) {
             $searchResults.innerHTML = '<div class="ts-search-empty">검색 중...</div>';
-            fetch(API + '/api/translator/search?q=' + encodeURIComponent(query), {
-                credentials: 'include',
-            })
+            var url = API + '/api/translator/search?q=' + encodeURIComponent(query);
+            if (_searchSourceFilter) url += '&source=' + _searchSourceFilter;
+            fetch(url, { credentials: 'include' })
             .then(function(r) { return r.json(); })
             .then(function(data) { renderSearchResults(data, query); })
             .catch(function(err) {
@@ -3296,6 +3311,11 @@
                     html += '<button class="ts-search-item" data-action="open" data-doc="' + escAttr(p.doc_id) + '" data-page="' + p.page + '">';
                     html += '<span class="ts-search-item-title">' + escHtml(p.doc_title) + '</span>';
                     html += '<span class="ts-search-item-page">p.' + p.page + '</span>';
+                    if (p.match_source === 'translated') {
+                        html += '<span class="badge badge-success ts-search-source-badge">번역</span>';
+                    } else if (p.match_source === 'source') {
+                        html += '<span class="badge badge-info ts-search-source-badge">원문</span>';
+                    }
                     html += '<span class="ts-search-item-snippet">' + highlightSnippet(p.snippet, query) + '</span>';
                     html += '</button>';
                 });
@@ -3509,6 +3529,7 @@
         var $dlTranslated = document.getElementById('dl-translated');
         var $dlWebPage = document.getElementById('dl-web-page');
         var $dlWebFull = document.getElementById('dl-web-full');
+        var $dlZip = document.getElementById('dl-zip');
 
         function _isDownloadMenuOpen() {
             return $downloadMenu.style.display === 'block';
@@ -3526,20 +3547,24 @@
                 _closeDownloadMenu();
             } else {
                 var isWeb = translateEngine === 'web';
-                // PDF 번역 다운로드 (PDF/텍스트 모드)
+                // PDF 번역 다운로드
+                var ps = pageStatusCache[String(currentPage)];
                 $dlTranslated.style.display = isWeb ? 'none' : '';
                 if (!isWeb) {
-                    var ps = pageStatusCache[String(currentPage)];
                     $dlTranslated.disabled = !(ps && ps.status === 'done');
                 }
-                // MD 다운로드 (웹 뷰 모드)
-                $dlWebPage.style.display = isWeb ? '' : 'none';
-                $dlWebFull.style.display = isWeb ? '' : 'none';
-                if (isWeb) {
-                    var wps = webPageStatusCache[String(currentPage)];
-                    $dlWebPage.disabled = !(wps && wps.status === 'done');
-                    $dlWebFull.disabled = false;  // full은 항상 시도 가능
-                }
+                // MD 다운로드 — 웹뷰 번역 있으면 엔진 무관 노출
+                var wps = webPageStatusCache[String(currentPage)];
+                var hasAnyWebTranslation = Object.keys(webPageStatusCache).some(function(k) {
+                    return webPageStatusCache[k] && webPageStatusCache[k].status === 'done';
+                });
+                $dlWebPage.style.display = (isWeb || wps) ? '' : 'none';
+                $dlWebFull.style.display = (isWeb || hasAnyWebTranslation) ? '' : 'none';
+                $dlWebPage.disabled = !(wps && wps.status === 'done');
+                $dlWebFull.disabled = false;
+                // ZIP 다운로드 — 웹뷰 번역 있으면 노출
+                $dlZip.style.display = (isWeb || hasAnyWebTranslation) ? '' : 'none';
+                $dlZip.disabled = false;
                 $downloadMenu.style.display = 'block';
                 $downloadBtn.setAttribute('aria-expanded', 'true');
             }
@@ -3590,6 +3615,16 @@
                 API + '/api/translator/web-view/' + currentDocId + '/full',
                 'full_translated.md',
                 function(r) { return r.json().then(function(d) { return new Blob([d.markdown], {type: 'text/markdown'}); }); }
+            );
+        });
+
+        // ZIP 다운로드
+        $dlZip.addEventListener('click', function() {
+            _closeDownloadMenu();
+            if (!currentDocId) return;
+            _downloadFile(
+                API + '/api/translator/document/' + currentDocId + '/download/zip',
+                currentDocId + '.zip'
             );
         });
 

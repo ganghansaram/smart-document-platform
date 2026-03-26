@@ -1827,6 +1827,27 @@ body[data-theme="dark"] .doc-grid.drag-over { outline-color: var(--active-color)
 }
 .ts-search-close:hover { color: var(--text-dark); }
 
+.ts-search-filter {
+    display: flex;
+    gap: 4px;
+    padding: 8px 0 4px;
+}
+.ts-filter-btn {
+    padding: 4px 12px;
+    font-size: var(--font-caption);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.ts-filter-btn:hover { background: var(--hover-bg); color: var(--text-dark); }
+.ts-filter-btn.active {
+    background: var(--active-color);
+    color: #fff;
+    border-color: var(--active-color);
+}
 .ts-search-results {
     margin-top: 18px;
     max-height: 60vh;
@@ -1871,6 +1892,12 @@ body[data-theme="dark"] .doc-grid.drag-over { outline-color: var(--active-color)
     font-size: 11px;
     color: var(--text-light);
     margin-right: 8px;
+}
+.ts-search-source-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    vertical-align: middle;
+    margin-right: 4px;
 }
 .ts-search-item-snippet {
     color: var(--medium-gray);

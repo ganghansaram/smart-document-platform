@@ -1,7 +1,7 @@
 """
 Translator API — PDF 업로드, 페이지별 번역, 문서 관리
 """
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body, Request
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body, Request, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 from typing import Optional
 
@@ -21,6 +21,7 @@ from services.translator_service import (
     ai_selection_query,
     search_documents,
     get_glossary, save_glossary,
+    create_document_zip,
 )
 import config
 
@@ -32,12 +33,13 @@ router = APIRouter(prefix="/translator", tags=["translator"])
 @router.get("/search")
 async def api_search_documents(
     q: str = "",
+    source: str = "",
     user: dict = Depends(get_current_user),
 ):
-    """유저 문서 검색 (본문 + 메모)"""
+    """유저 문서 검색 (본문 + 메모). source: "" (전체) | "source" (원문만) | "translated" (번역만)"""
     if not q.strip():
         return {"memos": [], "pages": [], "query": "", "total": 0}
-    return search_documents(user["username"], q)
+    return search_documents(user["username"], q, source_filter=source or None)
 
 
 # ── 용어집 ──
@@ -397,6 +399,33 @@ async def api_serve_dual_pdf(doc_id: str, user: dict = Depends(get_current_user)
     if not path:
         raise HTTPException(status_code=404, detail="이중언어 PDF가 없습니다")
     return FileResponse(path=str(path), media_type="application/pdf")
+
+
+# ── ZIP 다운로드 ──
+
+@router.get("/document/{doc_id}/download/zip")
+async def api_download_zip(
+    doc_id: str,
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(get_current_user),
+):
+    """문서의 MD + assets를 ZIP으로 다운로드"""
+    import os
+    zip_path = create_document_zip(user["username"], doc_id)
+    if not zip_path:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+
+    meta = get_document(user["username"], doc_id)
+    title = (meta or {}).get("title", doc_id)
+    filename = f"{title}.zip"
+
+    # 응답 후 임시 파일 삭제
+    background_tasks.add_task(os.unlink, str(zip_path))
+    return FileResponse(
+        path=str(zip_path),
+        media_type="application/zip",
+        filename=filename,
+    )
 
 
 # ── 웹 뷰 번역 (Markdown) ──
