@@ -705,7 +705,7 @@ body[data-theme="dark"] .hero-banner-img {
 /* ── Panel flex transition (양쪽 동시에 크기 변경 — 업계 표준) ── */
 #panel-left {
     transition: flex var(--transition-slow), opacity var(--transition-slow);
-    margin-right: var(--panel-gap); /* 레일과의 고정 간격 */
+    margin-right: var(--space-xs); /* 레일과의 간격 (4px — 레일은 밀착 패턴) */
 }
 
 /* ── Side Panel (wraps panel-right) ── */
@@ -724,12 +724,12 @@ body[data-theme="dark"] .hero-banner-img {
 .side-panel.open {
     flex: 1;
     opacity: 1;
-    margin-right: var(--panel-gap); /* 레일과의 간격 */
+    margin-right: var(--space-xs); /* 레일과의 간격 (4px) */
 }
 .side-panel.expand {
     flex: 3;
     opacity: 1;
-    margin-right: var(--panel-gap);
+    margin-right: var(--space-xs);
 }
 .side-panel .viewer-panel {
     border-radius: 0;
