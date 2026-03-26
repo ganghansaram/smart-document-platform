@@ -3213,6 +3213,7 @@
         var $searchResults = document.getElementById('ts-search-results');
         var $searchClose = document.getElementById('ts-search-close');
         var _searchTimeout = null;
+        var _lastSearchQuery = '';
 
         function openSearchOverlay() {
             $searchOverlay.classList.add('active');
@@ -3254,6 +3255,7 @@
         });
 
         function performSearch(query) {
+            _lastSearchQuery = query;
             $searchResults.innerHTML = '<div class="ts-search-empty">검색 중...</div>';
             fetch(API + '/api/translator/search?q=' + encodeURIComponent(query), { credentials: 'include' })
             .then(function(r) { return r.json(); })
@@ -3330,20 +3332,24 @@
             closeSearchOverlay();
 
             if (docId === currentDocId) {
-                // 같은 문서: 페이지 이동 + 번역 매칭이면 웹뷰 패널 열기
+                // 같은 문서: 페이지 이동 + 패널 열기 + 하이라이트
                 goToPage(page);
                 _openPanelForSearchSource(source);
+                if (source === 'translated' || source === 'memo') {
+                    setTimeout(function() { _highlightSearchTermsInPanel(_lastSearchQuery); }, 600);
+                }
             } else {
                 // 다른 문서: 메타 fetch → 뷰어 열기 → 페이지 이동
                 fetch(API + '/api/translator/document/' + encodeURIComponent(docId), { credentials: 'include' })
                     .then(function(r) { return r.json(); })
                     .then(function(meta) {
                         openViewer(docId, meta.pages || 1);
-                        // openViewer가 fetchPageSummary 콜백 후 page 1을 렌더하므로,
-                        // 약간의 딜레이 후 원하는 페이지로 이동 + 웹뷰 패널 열기
                         setTimeout(function() {
                             if (page > 1) goToPage(page);
                             _openPanelForSearchSource(source);
+                            if (source === 'translated' || source === 'memo') {
+                                setTimeout(function() { _highlightSearchTermsInPanel(_lastSearchQuery); }, 600);
+                            }
                         }, 500);
                     })
                     .catch(function(err) {
@@ -3376,6 +3382,63 @@
         function memoColor(color) {
             var map = { yellow: '#fde68a', green: '#86efac', blue: '#93c5fd', pink: '#f9a8d4' };
             return map[color] || '#fde68a';
+        }
+
+        // ── 검색어 하이라이트 (웹뷰/메모 패널 내) ──
+
+        function _highlightSearchTermsInPanel(query) {
+            if (!query) return;
+            // 기존 하이라이트 제거
+            _removeSearchHighlights();
+            var regex = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            // 웹뷰 컨테이너
+            var webContainer = document.getElementById('right-container');
+            if (webContainer && webContainer.style.display !== 'none') {
+                _highlightTextNodes(webContainer, regex);
+            }
+            // 웹뷰 전체 문서 컨테이너
+            var webViewContainer = document.getElementById('web-view-container');
+            if (webViewContainer && webViewContainer.style.display !== 'none') {
+                _highlightTextNodes(webViewContainer, regex);
+            }
+            // 메모 패널
+            var memoList = document.getElementById('memo-list');
+            if (memoList && memoList.offsetParent !== null) {
+                _highlightTextNodes(memoList, regex);
+            }
+            // 첫 번째 하이라이트로 스크롤
+            var first = document.querySelector('.search-term-highlight');
+            if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // 5초 후 페이드아웃
+            setTimeout(function() {
+                var marks = document.querySelectorAll('.search-term-highlight');
+                marks.forEach(function(el) { el.classList.add('fade-out'); });
+                setTimeout(_removeSearchHighlights, 500);
+            }, 5000);
+        }
+
+        function _highlightTextNodes(element, regex) {
+            var walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+            var nodes = [];
+            while (walker.nextNode()) {
+                if (regex.test(walker.currentNode.nodeValue)) {
+                    nodes.push(walker.currentNode);
+                }
+                regex.lastIndex = 0;
+            }
+            nodes.forEach(function(textNode) {
+                var span = document.createElement('span');
+                span.innerHTML = textNode.nodeValue.replace(regex, '<mark class="search-term-highlight">$1</mark>');
+                textNode.parentNode.replaceChild(span, textNode);
+            });
+        }
+
+        function _removeSearchHighlights() {
+            document.querySelectorAll('.search-term-highlight').forEach(function(el) {
+                var parent = el.parentNode;
+                parent.replaceChild(document.createTextNode(el.textContent), el);
+                parent.normalize();
+            });
         }
 
         // ── 유틸리티 ──

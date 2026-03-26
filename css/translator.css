@@ -1909,6 +1909,24 @@ body[data-theme="dark"] .doc-grid.drag-over { outline-color: var(--active-color)
 }
 
 /* 다크모드 */
+/* 검색어 하이라이트 (웹뷰/메모 패널 내) */
+.search-term-highlight {
+    background-color: #ffe066;
+    padding: 1px 2px;
+    border-radius: 2px;
+    animation: ts-highlight-in 0.3s ease;
+}
+.search-term-highlight.fade-out {
+    animation: ts-highlight-out 0.5s ease forwards;
+}
+@keyframes ts-highlight-in { from { background-color: transparent; } to { background-color: #ffe066; } }
+@keyframes ts-highlight-out { from { background-color: #ffe066; } to { background-color: transparent; } }
+
+body[data-theme="dark"] .search-term-highlight {
+    background-color: #665500;
+    color: #ffe066;
+}
+
 body[data-theme="dark"] .ts-search-overlay { background-color: rgba(0, 0, 0, 0.7); }
 body[data-theme="dark"] .ts-search-container { box-shadow: var(--shadow-xl); }
 body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; color: #ffe066; }
