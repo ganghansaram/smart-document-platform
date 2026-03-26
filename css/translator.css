@@ -562,6 +562,7 @@ body[data-theme="dark"] .hero-banner-img {
 /* ── 도구 패널 콘텐츠 (메모/용어집) ── */
 .tool-panel-content {
     padding: 0;
+    text-align: left;
 }
 
 /* 메모 목록 */

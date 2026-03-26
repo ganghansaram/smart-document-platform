@@ -587,6 +587,9 @@
         // ── Right Panel: Translation PDF or Placeholder ──
 
         function updateRightPanel() {
+            // 도구 패널(메모/용어집)이 활성이면 번역 콘텐츠 갱신 스킵
+            if (activeRailPanel === 'memo' || activeRailPanel === 'glossary') return;
+
             // 웹 뷰 모드
             if (translateEngine === 'web') {
                 // 전체 문서 모드
@@ -914,6 +917,9 @@
             if (!$glTbody) return;
             $glTbody.innerHTML = '';
             $glEmpty.style.display = _glossaryEntries.length ? 'none' : '';
+            // 헤더 카운트 업데이트
+            var $glCount = document.getElementById('glossary-count');
+            if ($glCount) $glCount.textContent = _glossaryEntries.length + '개 용어';
 
             for (var i = 0; i < _glossaryEntries.length; i++) {
                 var e = _glossaryEntries[i];
