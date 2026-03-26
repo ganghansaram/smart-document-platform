@@ -3451,8 +3451,9 @@
             saveGlossary();
         }
 
-        // 이벤트 바인딩
-        document.getElementById('glossary-btn').addEventListener('click', openGlossaryModal);
+        // 이벤트 바인딩 (glossary-btn은 Phase 4에서 제거됨 — null 체크)
+        var _glossaryBtnEl = document.getElementById('glossary-btn');
+        if (_glossaryBtnEl) _glossaryBtnEl.addEventListener('click', openGlossaryModal);
         document.getElementById('glossary-modal-close').addEventListener('click', closeGlossaryModal);
         document.getElementById('glossary-modal-cancel').addEventListener('click', closeGlossaryModal);
         document.getElementById('glossary-add-btn').addEventListener('click', addGlossaryEntry);
