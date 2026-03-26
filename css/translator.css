@@ -1784,12 +1784,12 @@ body[data-theme="dark"] .doc-grid.drag-over { outline-color: var(--active-color)
 
 .ts-search-container {
     position: relative;
-    max-width: 720px;
-    margin: 40px auto;
+    max-width: 780px;
+    margin: 50px auto;
     background-color: var(--white);
     border-radius: var(--radius-lg);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    padding: 28px 30px;
+    box-shadow: var(--shadow-xl);
+    padding: 30px;
     opacity: 0;
     transform: translateY(-20px);
     transition: opacity 0.25s ease, transform 0.25s ease;
@@ -1931,7 +1931,7 @@ body[data-theme="dark"] .doc-grid.drag-over { outline-color: var(--active-color)
 
 /* 다크모드 */
 body[data-theme="dark"] .ts-search-overlay { background-color: rgba(0, 0, 0, 0.7); }
-body[data-theme="dark"] .ts-search-container { box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
+body[data-theme="dark"] .ts-search-container { box-shadow: var(--shadow-xl); }
 body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; color: #ffe066; }
 
 /* ===================================

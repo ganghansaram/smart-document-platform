@@ -693,7 +693,7 @@ body[data-theme="dark"] .section-nav a.active {
 .search-result-title {
     font-size: 16px;
     font-weight: 600;
-    color: var(--primary-navy);
+    color: var(--active-color);
     margin-bottom: 6px;
 }
 
@@ -710,7 +710,7 @@ body[data-theme="dark"] .section-nav a.active {
 }
 
 .search-result-snippet mark {
-    background-color: #fff59d;
+    background-color: #ffe066;
     padding: 2px 4px;
     border-radius: 2px;
     font-weight: 500;
@@ -1060,10 +1060,7 @@ body[data-theme="dark"] .main-content h2 {
     color: #7db8f0; /* secondary-navy 계열, 고유 색상 유지 */
 }
 
-/* 검색 결과 제목 */
-body[data-theme="dark"] .search-result-title {
-    color: var(--active-color);
-}
+/* 검색 결과 제목 — 라이트/다크 모두 var(--active-color) 사용, 별도 오버라이드 불필요 */
 
 /* 통계 스트립 */
 body[data-theme="dark"] .home-stats {
