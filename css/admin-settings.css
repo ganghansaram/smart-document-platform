@@ -40,7 +40,7 @@ body[data-theme="dark"] .admin-settings-page {
 body:has(.admin-settings-page) {
     margin: 0;
     padding: 0;
-    background-color: var(--bg-gray);
+    background-color: var(--canvas-bg);
 }
 
 /* ── 페이지 레이아웃 ────────────────────────────────────────────────────────── */
@@ -159,7 +159,7 @@ body[data-theme="dark"] .admin-settings-page .page-header h1.ph-icon-settings::b
     color: var(--as-text-sub);
     background: transparent;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
 }
@@ -172,7 +172,7 @@ body[data-theme="dark"] .admin-settings-page .page-header h1.ph-icon-settings::b
     background: var(--as-bg-card);
     color: var(--as-primary);
     font-weight: 600;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-sm);
 }
 
 body[data-theme="dark"] .admin-sidebar-btn:hover:not(.active) {
@@ -223,7 +223,7 @@ body[data-theme="dark"] .admin-sidebar-btn:hover:not(.active) {
 /* ── 알림 배너 ──────────────────────────────────────────────────────────────── */
 .admin-settings-notice {
     padding: 12px 16px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     font-size: 13px;
     margin-bottom: 16px;
     line-height: 1.5;
@@ -275,7 +275,7 @@ body[data-theme="dark"] .notice-error {
     display: flex;
     gap: 2px;
     background: var(--as-border-light);
-    border-radius: 10px;
+    border-radius: var(--radius-lg);
     padding: 4px;
     margin-bottom: 24px;
     overflow-x: auto;
@@ -289,7 +289,7 @@ body[data-theme="dark"] .notice-error {
     color: var(--as-text-sub);
     background: transparent;
     border: none;
-    border-radius: 7px;
+    border-radius: var(--radius-md);
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.15s, color 0.15s;
@@ -308,7 +308,7 @@ body[data-theme="dark"] .admin-tab-btn:hover:not(.active) {
     background: var(--as-bg-card);
     color: var(--as-primary);
     font-weight: 600;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 /* ── 탭 패널 ────────────────────────────────────────────────────────────────── */
@@ -325,7 +325,7 @@ body[data-theme="dark"] .admin-tab-btn:hover:not(.active) {
     display: flex;
     gap: 2px;
     background: var(--as-border-light);
-    border-radius: 7px;
+    border-radius: var(--radius-md);
     padding: 3px;
     margin-bottom: 16px;
 }
@@ -338,7 +338,7 @@ body[data-theme="dark"] .admin-tab-btn:hover:not(.active) {
     color: var(--as-text-sub);
     background: transparent;
     border: none;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.15s, color 0.15s;
@@ -357,7 +357,7 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
     background: var(--as-bg-card);
     color: var(--as-primary);
     font-weight: 600;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-sm);
 }
 
 .admin-subtab-panel {
@@ -372,7 +372,8 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
 .admin-section {
     background: var(--as-bg-card);
     border: 1px solid var(--as-border);
-    border-radius: 10px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--panel-shadow);
     padding: 20px 24px;
     margin-bottom: 16px;
 }
@@ -838,14 +839,14 @@ body[data-theme="dark"] .admin-modal-overlay {
 }
 
 .admin-modal {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
     padding: 24px 28px;
     min-width: 360px;
     max-width: 480px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
-    color: #1a1a2e;
+    box-shadow: var(--shadow-lg);
+    color: var(--text-dark);
 }
 
 body[data-theme="dark"] .admin-modal {
