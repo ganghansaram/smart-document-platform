@@ -3639,8 +3639,9 @@
                 var available = rect.width - railW - handleW;
                 var x = e.clientX - rect.left;
                 var leftW = Math.max(available * 0.25, Math.min(available * 0.75, x));
+                // panelLeft만 고정, sidePanel은 flex:1(나머지)로 유지 → 레일 고정
                 $panelLeft.style.flex = '0 0 ' + leftW + 'px';
-                $sidePanel.style.flex = '0 0 ' + (available - leftW) + 'px';
+                $sidePanel.style.flex = '1';
             });
 
             document.addEventListener('mouseup', function() {
