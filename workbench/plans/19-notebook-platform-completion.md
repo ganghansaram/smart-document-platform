@@ -140,6 +140,16 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 - ⬜ 리사이즈 드래그 동작 검증 (3-패널 모두)
 - ⬜ 검증: Light + Dark, TOC 접기/펼치기, AI 채팅 열기/닫기, 검색, 패널 리사이즈 정상
 
+#### Phase 1d: Settings (관리자 설정) — ~2시간
+
+> 관리자 설정 화면도 플랫폼 화면이므로 디자인 통일 대상.
+> 구조 변경 없이 배경 + 카드 radius/shadow 토큰 교체.
+
+- ⬜ `body:has(.admin-settings-page)` 배경: `var(--bg-gray)` → `var(--canvas-bg)`
+- ⬜ 설정 카드(`.as-card`) `border-radius`, `box-shadow` → 토큰 교체 (있으면)
+- ⬜ 하드코딩 색상/shadow → 토큰 교체
+- ⬜ 검증: Light + Dark, 설정 저장/리셋 정상
+
 ### Phase 2: 검색 구분 UI + ZIP 다운로드 — ~1.5일
 
 > 출처: Plan-17 Phase 4b
@@ -280,6 +290,7 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 | 1a | **디자인 확산: Launcher + Login** (토큰 교체) | ~2시간 | Plan-18 Ph.8 | ✅ |
 | 1b | **디자인 확산: Compare** (border→gap 전환 + 리사이즈 핸들) | ~반나절 | Plan-18 Ph.8 | ✅ |
 | 1c | **디자인 확산: Explorer** (3-패널 grid 재구성) | ~1일 | Plan-18 Ph.8 | ⬜ |
+| 1d | **디자인 확산: Settings** (배경 + 토큰 교체) | ~2시간 | Plan-18 Ph.8 | ⬜ |
 | 2 | **검색 구분 UI + ZIP 다운로드** | ~1.5일 | Plan-17 Ph.4b | ⬜ |
 | 3 | **관리자 설정 GUI** (웹 뷰 추출 설정) | ~반나절 | Plan-17 Ph.4d | ⬜ |
 | 4 | **AI 요약·Q&A 패널** (요약 탭 + 챗봇 탭) | ~4일 | Plan-18 Ph.6 + Plan-17 Ph.6 | ⬜ |
