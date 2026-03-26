@@ -10,7 +10,7 @@ body {
     display: flex;
     flex-direction: column;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
-    background: var(--bg-gray);
+    background: var(--canvas-bg);
     color: var(--text-dark);
     visibility: hidden;
     overflow: hidden;
@@ -21,6 +21,8 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    padding: var(--panel-gap) var(--panel-gap) 0;
+    gap: var(--panel-gap);
 }
 
 /* ── 모드 토글: components.css 로 이동 ── */
@@ -32,7 +34,8 @@ body {
     gap: 8px;
     padding: 6px 16px;
     background: var(--white);
-    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--panel-radius);
+    box-shadow: var(--panel-shadow);
     flex-shrink: 0;
 }
 
@@ -54,11 +57,13 @@ body {
     grid-template-columns: 1fr 4px 360px;
     overflow: hidden;
     position: relative;
+    margin-bottom: var(--panel-gap);
 }
 
 /* ── 패널 컨테이너 (Translator viewer-panels 패턴) ── */
 .cp-panels {
     display: flex;
+    gap: var(--panel-gap);
     overflow: hidden;
     min-height: 0; /* grid 자식이 셀 높이를 초과하지 않도록 */
 }
@@ -69,12 +74,10 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--light-gray);
+    background: var(--white);
+    border-radius: var(--panel-radius);
+    box-shadow: var(--panel-shadow);
     min-width: 0;
-}
-
-.compare-panel + .compare-panel {
-    border-left: 2px solid var(--border-color);
 }
 
 /* ── 패널 헤더 (고정, 스크롤 안 됨) ── */
@@ -371,7 +374,8 @@ body[data-theme="dark"] .cp-minimap-mark.active {
 /* ── 사이드바 ── */
 .cp-sidebar {
     background: var(--white);
-    border-left: 1px solid var(--border-color);
+    border-radius: var(--panel-radius);
+    box-shadow: var(--panel-shadow);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -385,6 +389,7 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     padding: 10px;
     border-bottom: 1px solid var(--border-color);
     background-color: var(--light-gray);
+    border-radius: var(--panel-radius) var(--panel-radius) 0 0;
     font-size: 16px;
     font-weight: 600;
     color: var(--text-dark);
@@ -443,7 +448,7 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     display: none;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    box-shadow: var(--shadow-sm);
     opacity: 0.5;
     font-size: 14px;
     color: var(--medium-gray);
@@ -488,17 +493,12 @@ body.cp-resizing {
 /* ── 다크 모드 ── */
 body[data-theme="dark"] .compare-toolbar {
     background: var(--white);
-    border-bottom-color: rgba(255,255,255,0.08);
 }
 
 /* 다크 모드 .toolbar-btn / .toolbar-sep → components.css 에서 처리 */
 
 body[data-theme="dark"] .compare-panel {
-    background: var(--light-gray);
-}
-
-body[data-theme="dark"] .compare-panel + .compare-panel {
-    border-left-color: rgba(255,255,255,0.08);
+    background: var(--white);
 }
 
 body[data-theme="dark"] .cp-panel-label {
@@ -512,12 +512,10 @@ body[data-theme="dark"] .cp-file-remove:hover {
 
 body[data-theme="dark"] .cp-sidebar {
     background: var(--white);
-    border-left-color: rgba(255,255,255,0.08);
 }
 
 body[data-theme="dark"] .cp-sidebar-header {
     background: var(--secondary-navy);
-    border-bottom-color: rgba(255,255,255,0.08);
 }
 
 body[data-theme="dark"] .cp-sidebar-collapse:hover {
@@ -525,7 +523,7 @@ body[data-theme="dark"] .cp-sidebar-collapse:hover {
 }
 
 body[data-theme="dark"] .cp-sidebar-restore {
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-sm);
 }
 
 body[data-theme="dark"] .cp-sidebar-restore:hover {
@@ -625,7 +623,7 @@ body[data-theme="dark"] .cp-paste-btn {
     background: var(--white);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    box-shadow: var(--shadow-lg);
     padding: 8px 12px;
     z-index: 1000;
     min-width: 140px;
