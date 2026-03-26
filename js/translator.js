@@ -2322,12 +2322,8 @@
                       .then(function(h) {
                         if (!annotationsCache) annotationsCache = { highlights: [] };
                         annotationsCache.highlights.push(h);
-                        $leftAnnotationLayer.appendChild(createHighlightDiv(h));
-                        if ($rightContainer.style.display !== 'none') {
-                            $rightAnnotationLayer.appendChild(createMarginMarkerDiv(h));
-                        }
-                        updateMarkingBadge();
-                        renderMarkingList();
+                        renderAnnotations();
+                        renderAnnotationsRight();
                         hideAiPopover();
                     });
                 });
@@ -2356,12 +2352,8 @@
               .then(function(h) {
                 if (!annotationsCache) annotationsCache = { highlights: [] };
                 annotationsCache.highlights.push(h);
-                $leftAnnotationLayer.appendChild(createHighlightDiv(h));
-                if ($rightContainer.style.display !== 'none') {
-                    $rightAnnotationLayer.appendChild(createMarginMarkerDiv(h));
-                }
-                updateMarkingBadge();
-                renderMarkingList();
+                renderAnnotations();
+                renderAnnotationsRight();
             }).catch(function(err) {
                 console.error('[Annotations] create error:', err);
             });

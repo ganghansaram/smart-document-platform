@@ -1155,6 +1155,16 @@ body[data-theme="dark"] .side-panel { background: var(--white); }
     margin-left: 8px;
     text-decoration: underline;
 }
+.marking-popover .popover-delete-btn {
+    margin-top: var(--space-xs);
+    text-align: right;
+    font-size: var(--font-caption);
+    color: var(--color-error);
+    cursor: pointer;
+}
+.marking-popover .popover-delete-btn:hover {
+    text-decoration: underline;
+}
 
 /* 메모 표시점 */
 .annotation-layer .highlight.has-memo::after {
