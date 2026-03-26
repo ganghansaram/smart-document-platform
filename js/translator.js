@@ -3295,7 +3295,7 @@
             if (memos.length > 0) {
                 html += '<div class="ts-search-group-label">메모 (' + memos.length + '건)</div>';
                 memos.forEach(function(m) {
-                    html += '<button class="ts-search-item" data-action="open" data-doc="' + escAttr(m.doc_id) + '" data-page="' + m.page + '">';
+                    html += '<button class="ts-search-item" data-action="open" data-doc="' + escAttr(m.doc_id) + '" data-page="' + m.page + '" data-source="memo">';
                     html += '<span class="ts-search-item-memo-badge" style="background:' + memoColor(m.color) + '"></span>';
                     html += '<span class="ts-search-item-title">' + escHtml(m.doc_title) + '</span>';
                     html += '<span class="ts-search-item-page">p.' + m.page + '</span>';
@@ -3324,12 +3324,17 @@
             $searchResults.innerHTML = html;
         }
 
-        // 번역 매칭 결과 클릭 시 웹뷰 패널 자동 열기
-        function _openWebPanelIfNeeded(source) {
-            if (source !== 'translated') return;
-            if (activeRailPanel === 'web-translate') return; // 이미 열림
-            var webBtn = $iconRail.querySelector('[data-panel="web-translate"]');
-            if (webBtn && !webBtn.disabled) webBtn.click();
+        // 검색 결과 소스에 따라 적절한 패널 자동 열기
+        function _openPanelForSearchSource(source) {
+            if (source === 'translated') {
+                if (activeRailPanel === 'web-translate') return;
+                var webBtn = $iconRail.querySelector('[data-panel="web-translate"]');
+                if (webBtn && !webBtn.disabled) webBtn.click();
+            } else if (source === 'memo') {
+                if (activeRailPanel === 'memo') return;
+                var memoBtn = $iconRail.querySelector('[data-panel="memo"]');
+                if (memoBtn && !memoBtn.disabled) memoBtn.click();
+            }
         }
 
         // 이벤트 위임: 검색 결과 클릭
@@ -3344,7 +3349,7 @@
             if (docId === currentDocId) {
                 // 같은 문서: 페이지 이동 + 번역 매칭이면 웹뷰 패널 열기
                 goToPage(page);
-                _openWebPanelIfNeeded(source);
+                _openPanelForSearchSource(source);
             } else {
                 // 다른 문서: 메타 fetch → 뷰어 열기 → 페이지 이동
                 fetch(API + '/api/translator/document/' + encodeURIComponent(docId), { credentials: 'include' })
@@ -3355,7 +3360,7 @@
                         // 약간의 딜레이 후 원하는 페이지로 이동 + 웹뷰 패널 열기
                         setTimeout(function() {
                             if (page > 1) goToPage(page);
-                            _openWebPanelIfNeeded(source);
+                            _openPanelForSearchSource(source);
                         }, 500);
                     })
                     .catch(function(err) {
