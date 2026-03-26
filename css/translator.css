@@ -549,8 +549,8 @@ body[data-theme="dark"] .hero-banner-img {
 .viewer-panels {
     flex: 1;
     display: flex;
-    gap: var(--panel-gap);
     overflow: hidden;
+    /* gap 대신 개별 margin으로 간격 제어 — side-panel 닫힘 시 불필요 gap 방지 */
 }
 
 .viewer-panel {
@@ -705,6 +705,7 @@ body[data-theme="dark"] .hero-banner-img {
 /* ── Panel flex transition (양쪽 동시에 크기 변경 — 업계 표준) ── */
 #panel-left {
     transition: flex var(--transition-slow), opacity var(--transition-slow);
+    margin-right: var(--panel-gap); /* 레일과의 고정 간격 */
 }
 
 /* ── Side Panel (wraps panel-right) ── */
@@ -723,10 +724,12 @@ body[data-theme="dark"] .hero-banner-img {
 .side-panel.open {
     flex: 1;
     opacity: 1;
+    margin-right: var(--panel-gap); /* 레일과의 간격 */
 }
 .side-panel.expand {
     flex: 3;
     opacity: 1;
+    margin-right: var(--panel-gap);
 }
 .side-panel .viewer-panel {
     border-radius: 0;
