@@ -675,12 +675,16 @@
 
         // ── 사이드 패널 레이아웃 (Phase 2 V4) ──
         function _rerenderAfterTransition() {
+            var called = false;
             function onEnd() {
+                if (called) return;
+                called = true;
                 $sidePanel.removeEventListener('transitionend', onEnd);
                 if (typeof rerenderBothPanels === 'function') rerenderBothPanels();
             }
             $sidePanel.addEventListener('transitionend', onEnd);
-            setTimeout(onEnd, 400);
+            // fallback — transition이 발생하지 않거나 빠르게 완료된 경우
+            setTimeout(onEnd, 350);
         }
 
         function _showDualPanel() {
@@ -821,6 +825,11 @@
             if (panelId === 'pdf-translate' || panelId === 'web-translate') {
                 updateRightPanel();
             }
+
+            // 패널 크기 변경 후 좌측 PDF 재렌더 보장
+            setTimeout(function() {
+                if (typeof renderLeftPage === 'function') renderLeftPage(currentPage);
+            }, 400);
         });
 
         // 도구 패널 콘텐츠 전환 (메모/용어집 vs 번역)
@@ -950,7 +959,8 @@
             $glAddBtn.addEventListener('click', function() {
                 var src = $glSourceInput.value.trim();
                 var tgt = $glTargetInput.value.trim();
-                if (!src || !tgt) return;
+                if (!src) { $glSourceInput.focus(); return; }
+                if (!tgt) { $glTargetInput.focus(); return; }
 
                 // 중복 체크 — 있으면 덮어쓰기
                 var found = false;
@@ -3623,12 +3633,14 @@
                 var panels = document.getElementById('viewer-panels');
                 if (!panels) return;
                 var rect = panels.getBoundingClientRect();
-                var railWidth = 50;
+                var rail = document.getElementById('icon-rail');
+                var handleW = handle.offsetWidth || 4;
+                var railW = rail ? rail.offsetWidth : 42;
+                var available = rect.width - railW - handleW;
                 var x = e.clientX - rect.left;
-                var total = rect.width - railWidth;
-                var leftPct = Math.max(25, Math.min(75, (x / total) * 100));
-                $panelLeft.style.flex = '0 0 ' + leftPct + '%';
-                $sidePanel.style.flex = '0 0 ' + (100 - leftPct) + '%';
+                var leftW = Math.max(available * 0.25, Math.min(available * 0.75, x));
+                $panelLeft.style.flex = '0 0 ' + leftW + 'px';
+                $sidePanel.style.flex = '0 0 ' + (available - leftW) + 'px';
             });
 
             document.addEventListener('mouseup', function() {

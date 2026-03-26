@@ -576,6 +576,10 @@ body[data-theme="dark"] .hero-banner-img {
 /* Notebook 뷰어 스크롤바: 화살표 버튼 제거 (슬림 스크롤바) */
 .panel-scroll::-webkit-scrollbar-button { display: none; height: 0; }
 
+/* 리사이즈 핸들 — 하이라이트 제거 (커서 변경만, NotebookLM 패턴) */
+.view-viewer .resize-handle:hover,
+.view-viewer .resize-handle.dragging { background-color: transparent; }
+
 /* 다운로드 메뉴 overflow 클리핑 방지 */
 .panel-header { overflow: visible; }
 .panel-header .download-wrap { position: relative; z-index: 200; }
