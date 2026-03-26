@@ -1020,6 +1020,7 @@
             for (var i = 0; i < railBtns.length; i++) railBtns[i].classList.remove('active');
             activeRailPanel = null;
             translateEngine = 'pdf'; // 기본값
+            _hideDualPanel(); // 이전 문서의 사이드 패널 잔류 방지
         }
 
         function showRightPending() {
