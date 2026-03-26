@@ -65,28 +65,74 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 
 ## 3. 실행 계획
 
-### Phase 1: 플랫폼 디자인 언어 확산 — ~2일
+### Phase 1: 플랫폼 디자인 언어 확산 — ~2.5일
 
 > 출처: Plan-18 Phase 8
 > Notebook만 라운드 패널이고 나머지 4개 화면은 구형 → 시각적 불일치 해소.
 > 기능 변경 없이 CSS만 교체. 리스크 최저.
+> 3단계로 분할하여 단계별 검증 후 다음 진행.
 
-**적용 순서:**
-
-| 순서 | 화면 | 변경 범위 | 예상 공수 |
-|:----:|------|----------|:--------:|
-| 1 | **Explorer** (index.html) | 좌측 TOC + 중앙 콘텐츠 + AI 채팅 패널 → 라운드 카드 + 캔버스 배경 | 반나절 |
-| 2 | **Compare** (compare.html) | 좌/우 문서 듀얼 패널 + diff 오버레이 → 라운드 카드 + 갭 | 반나절 |
-| 3 | **Launcher** (launcher.html) | 캔버스 배경 + 카드 shadow 조정 (카드는 이미 라운드) | 2시간 |
-| 4 | **Login** (login.html) | 로그인 카드 radius/shadow 통일 | 1시간 |
-
-**적용 원칙:**
+**공통 원칙:**
+- Notebook(translator.html)을 기준 디자인으로 삼아 통일감 부여
 - `tokens.css`의 `--panel-radius`, `--panel-gap`, `--canvas-bg`, `--panel-shadow` 사용
 - 각 화면의 기존 `border-left`, `border-right` → 제거, 갭으로 대체
-- `body` 또는 래퍼 `background` → `var(--canvas-bg)`
-- 패널 `background` → `var(--white)`, `border-radius` → `var(--panel-radius)`
-- 각 화면 전용 CSS에서 하드코딩된 radius/shadow → 토큰 변수로 교체
-- 화면별 개별 검증 (Light + Dark)
+- 작업 공간(workspace) 화면: `body` 배경 → `var(--canvas-bg)`, 패널 → `var(--panel-radius)` + `var(--panel-shadow)`
+- 진입 화면(Launcher/Login): 시네마틱 배경(`#0a1628`) 유지 — 작업 공간과 다른 성격이므로 예외 허용
+- 각 화면 전용 CSS에서 하드코딩된 radius/shadow/color → 토큰 변수로 교체
+- 화면별 Light + Dark 검증
+
+**사전 결정 사항 (2026-03-26):**
+
+| 항목 | 결정 | 근거 |
+|------|------|------|
+| Login 다크 모드 | **추가 안 함** | 진입 화면은 고정 테마 (어두운 배경 이미지 위 밝은 카드). 카드 내부 하드코딩만 토큰 교체 |
+| Launcher/Login `#0a1628` | **예외 허용** | 시네마틱 진입 경험 ≠ 작업 공간. `--canvas-bg` 적용 대상 아님 |
+| Explorer 리사이즈 핸들 | **`.resize-handle` 전환** | Notebook과 동일 패턴 (components.css), 플랫폼 일관성 |
+
+#### Phase 1a: Launcher + Login — ~2시간
+
+> 구조 변경 없이 토큰 교체 위주. 가장 가벼운 작업으로 패턴 확립.
+
+**Launcher** (launcher.html, 인라인 CSS):
+- ⬜ `.system-card` `border-radius: 12px` → `var(--radius-lg)`
+- ⬜ 하드코딩 색상 토큰 교체 (배지 hover 등)
+- ⬜ 구조/레이아웃 변경 없음 (비디오 배경 유지)
+
+**Login** (login.html, 인라인 CSS):
+- ⬜ `.login-card` `border-radius: 10px` → `var(--radius-lg)`, `box-shadow` → `var(--panel-shadow)` 또는 적절한 토큰
+- ⬜ `.login-btn` `background: #1e3a6e` → `var(--active-color)`, `border-radius: 6px` → `var(--radius-md)`
+- ⬜ input focus `border-color: #2c5282` → `var(--active-color)`
+- ⬜ `.error-msg` `#c53030` / `#fff5f5` / `#fed7d7` → `var(--color-error)` 기반
+- ⬜ 다크 모드 추가 안 함 (배경 이미지가 항상 어두우므로)
+- ⬜ 검증: 로그인 동작 + 에러 표시 정상 확인
+
+#### Phase 1b: Compare — ~반나절
+
+> border-line → gap 전환 첫 적용. diff 의미적 border-left는 보존.
+
+- ⬜ `body` 배경: `var(--bg-gray)` → `var(--canvas-bg)`
+- ⬜ `.compare-main` grid: `gap: 0` + border 구분 → `gap: var(--panel-gap)`, 패널 간 `border-left: 2px` 제거
+- ⬜ `.compare-panel` → `border-radius: var(--panel-radius)`, `box-shadow: var(--panel-shadow)`
+- ⬜ `.compare-toolbar` → 라운드 카드 처리 (상단 radius)
+- ⬜ `.cp-sidebar` → `border-left` 제거, `border-radius: var(--panel-radius)`, `box-shadow: var(--panel-shadow)`
+- ⬜ diff 의미적 `border-left: 3px solid var(--diff-*-border)` — **변경 금지** (시각적 의미 표현)
+- ⬜ 하드코딩 `box-shadow`, `border-radius: 9px` 등 토큰 교체
+- ⬜ 검증: Light + Dark, diff 하이라이트, 규칙 모달, 사이드바 정상
+
+#### Phase 1c: Explorer — ~1일
+
+> 3-패널 grid + 리사이즈 핸들 전체 재구성. 가장 큰 공수.
+
+- ⬜ `body` 배경: `var(--bg-gray)` → `var(--canvas-bg)`
+- ⬜ `.container` grid: `gap: 0` + 4px 리사이즈 column → `gap: var(--panel-gap)`, 리사이즈 핸들 `.resize-handle` 패턴 전환
+- ⬜ `.left-panel` → `border-right` 제거, `border-radius: var(--panel-radius)`, `box-shadow: var(--panel-shadow)`, 배경 `var(--panel-bg)` 또는 `var(--content-bg)`
+- ⬜ `.content-panel` → `border-radius: var(--panel-radius)`, `box-shadow: var(--panel-shadow)`
+- ⬜ `.right-panel` (AI 채팅) → `border-left` 제거, `border-radius: var(--panel-radius)`, `box-shadow: var(--panel-shadow)`
+- ⬜ `.panel-header` 배경/테두리 → 토큰 교체
+- ⬜ 하드코딩 `box-shadow`, `border-radius: 6px`, hover 색상 등 토큰 교체
+- ⬜ 검색 오버레이 shadow → 토큰 교체
+- ⬜ 리사이즈 드래그 동작 검증 (3-패널 모두)
+- ⬜ 검증: Light + Dark, TOC 접기/펼치기, AI 채팅 열기/닫기, 검색, 패널 리사이즈 정상
 
 ### Phase 2: 검색 구분 UI + ZIP 다운로드 — ~1.5일
 
@@ -225,7 +271,9 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 
 | Phase | 내용 | 예상 공수 | 출처 | 상태 |
 |:-----:|------|:--------:|:----:|:----:|
-| 1 | **플랫폼 디자인 언어 확산** (Explorer→Compare→Launcher→Login) | ~2일 | Plan-18 Ph.8 | ⬜ |
+| 1a | **디자인 확산: Launcher + Login** (토큰 교체) | ~2시간 | Plan-18 Ph.8 | ⬜ |
+| 1b | **디자인 확산: Compare** (border→gap 전환) | ~반나절 | Plan-18 Ph.8 | ⬜ |
+| 1c | **디자인 확산: Explorer** (3-패널 grid 재구성) | ~1일 | Plan-18 Ph.8 | ⬜ |
 | 2 | **검색 구분 UI + ZIP 다운로드** | ~1.5일 | Plan-17 Ph.4b | ⬜ |
 | 3 | **관리자 설정 GUI** (웹 뷰 추출 설정) | ~반나절 | Plan-17 Ph.4d | ⬜ |
 | 4 | **AI 요약·Q&A 패널** (요약 탭 + 챗봇 탭) | ~4일 | Plan-18 Ph.6 + Plan-17 Ph.6 | ⬜ |
@@ -233,8 +281,8 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 | 6 | **클릭 네비게이션** (원문↔번역 블록 매핑) | ~2일 | Plan-17 Ph.4d | ⬜ |
 | 7 | **마인드맵 패널** (확장 모드, 라이브러리 번들) | ~3일 | Plan-18 Ph.7 | ⬜ |
 
-**전체 합계**: ~15일
-**Tier 1 (Phase 1~3)**: ~4일 — 즉시 체감되는 완성도 향상
+**전체 합계**: ~15.5일
+**Tier 1 (Phase 1a~3)**: ~4.5일 — 즉시 체감되는 완성도 향상
 **Tier 2 (Phase 4~5)**: ~6일 — 핵심 기능 보강
 **Tier 3 (Phase 6~7)**: ~5일 — 경험 강화
 
