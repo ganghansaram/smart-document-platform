@@ -798,9 +798,191 @@
             localStorage.setItem('nb-active-panel', panelId);
             activeRailPanel = panelId;
 
-            // 콘텐츠 갱신
-            updateRightPanel();
+            // 도구 패널 콘텐츠 전환
+            _showToolContent(panelId);
+
+            // 콘텐츠 갱신 (번역 패널만)
+            if (panelId === 'pdf-translate' || panelId === 'web-translate') {
+                updateRightPanel();
+            }
         });
+
+        // 도구 패널 콘텐츠 전환 (메모/용어집 vs 번역)
+        var $memoPanel = document.getElementById('memo-panel');
+        var $glossaryPanel = document.getElementById('glossary-panel');
+        var $memoList = document.getElementById('memo-list');
+
+        function _showToolContent(panelId) {
+            var isTool = (panelId === 'memo' || panelId === 'glossary');
+
+            // 도구 패널일 때 번역 콘텐츠 숨김
+            if (isTool) {
+                $rightContainer.style.display = 'none';
+                $webViewContainer.style.display = 'none';
+                $rightPlaceholder.style.display = 'none';
+            }
+
+            // 도구 패널 콘텐츠 전환
+            $memoPanel.style.display = (panelId === 'memo') ? '' : 'none';
+            $glossaryPanel.style.display = (panelId === 'glossary') ? '' : 'none';
+
+            // 메모 패널: 목록 렌더
+            if (panelId === 'memo') {
+                _renderMemoPanel();
+            }
+            // 용어집 패널: 데이터 로드
+            if (panelId === 'glossary') {
+                _renderGlossaryPanel();
+            }
+        }
+
+        // 메모 패널 렌더 (기존 renderMarkingList 데이터 재사용)
+        function _renderMemoPanel() {
+            if (!$memoList) return;
+            $memoList.innerHTML = '';
+
+            if (!annotationsCache || !annotationsCache.highlights || annotationsCache.highlights.length === 0) {
+                $memoList.innerHTML = '<div class="memo-empty">마킹된 메모가 없습니다.<br>원문 PDF에서 텍스트를 선택하여 마킹하세요.</div>';
+                return;
+            }
+
+            // 페이지별 그룹
+            var byPage = {};
+            annotationsCache.highlights.forEach(function(h) {
+                var pg = h.page || 1;
+                if (!byPage[pg]) byPage[pg] = [];
+                byPage[pg].push(h);
+            });
+
+            var pages = Object.keys(byPage).sort(function(a, b) { return a - b; });
+            pages.forEach(function(pg) {
+                byPage[pg].forEach(function(h) {
+                    var card = document.createElement('div');
+                    card.className = 'memo-card';
+                    card.setAttribute('data-ann-id', h.id);
+                    card.setAttribute('data-page', pg);
+
+                    var color = (h.color || 'yellow');
+                    var colorMap = { yellow: '#fde047', green: '#86efac', red: '#fca5a5', blue: '#93c5fd' };
+                    var dotColor = colorMap[color] || colorMap.yellow;
+
+                    var header = '<div class="memo-card-header">' +
+                        '<span class="memo-card-dot" style="background:' + dotColor + '"></span>' +
+                        '<span class="memo-card-page">Page ' + pg + '</span>' +
+                        '</div>';
+
+                    var highlight = h.text ? '<div class="memo-card-highlight">' + escHtml(h.text.substring(0, 100)) + (h.text.length > 100 ? '...' : '') + '</div>' : '';
+                    var memo = h.memo ? '<div class="memo-card-text">' + escHtml(h.memo) + '</div>' : '';
+
+                    card.innerHTML = header + highlight + memo;
+                    card.addEventListener('click', function() {
+                        var targetPage = parseInt(pg);
+                        if (currentPage !== targetPage) {
+                            goToPage(targetPage);
+                        }
+                        setTimeout(function() {
+                            if (typeof flashHighlight === 'function') flashHighlight(h.id);
+                        }, 300);
+                    });
+                    $memoList.appendChild(card);
+                });
+            });
+        }
+
+        // 용어집 패널 렌더
+        var $glTbody = document.getElementById('gl-tbody');
+        var $glEmpty = document.getElementById('gl-empty');
+        var $glSourceInput = document.getElementById('gl-source-input');
+        var $glTargetInput = document.getElementById('gl-target-input');
+        var $glAddBtn = document.getElementById('gl-add-btn');
+
+        function _renderGlossaryPanel() {
+            // 데이터 로드
+            fetch(API + '/api/translator/glossary', { credentials: 'include' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    _glossaryEntries = (data && data.entries) ? data.entries : [];
+                    _renderGlossaryTable();
+                })
+                .catch(function() {
+                    _glossaryEntries = [];
+                    _renderGlossaryTable();
+                });
+        }
+
+        function _renderGlossaryTable() {
+            if (!$glTbody) return;
+            $glTbody.innerHTML = '';
+            $glEmpty.style.display = _glossaryEntries.length ? 'none' : '';
+
+            for (var i = 0; i < _glossaryEntries.length; i++) {
+                var e = _glossaryEntries[i];
+                var tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td>' + escHtml(e.source || '') + '</td>' +
+                    '<td style="color:var(--active-color)">' + escHtml(e.target || '') + '</td>' +
+                    '<td><button class="gl-del-btn" data-idx="' + i + '">삭제</button></td>';
+                $glTbody.appendChild(tr);
+            }
+        }
+
+        // 용어집 패널 이벤트
+        if ($glAddBtn) {
+            $glAddBtn.addEventListener('click', function() {
+                var src = $glSourceInput.value.trim();
+                var tgt = $glTargetInput.value.trim();
+                if (!src || !tgt) return;
+
+                // 중복 체크 — 있으면 덮어쓰기
+                var found = false;
+                for (var i = 0; i < _glossaryEntries.length; i++) {
+                    if (_glossaryEntries[i].source === src) {
+                        _glossaryEntries[i].target = tgt;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) _glossaryEntries.push({ source: src, target: tgt });
+
+                _renderGlossaryTable();
+                _saveGlossaryInline();
+                $glSourceInput.value = '';
+                $glTargetInput.value = '';
+                $glSourceInput.focus();
+            });
+        }
+
+        if ($glSourceInput) {
+            $glSourceInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab' || e.key === 'Enter') { e.preventDefault(); $glTargetInput.focus(); }
+            });
+            $glTargetInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); $glAddBtn.click(); }
+            });
+        }
+
+        // 용어집 테이블 삭제 이벤트 위임
+        if ($glTbody) {
+            $glTbody.addEventListener('click', function(e) {
+                var btn = e.target.closest('.gl-del-btn');
+                if (!btn) return;
+                var idx = parseInt(btn.getAttribute('data-idx'));
+                if (!isNaN(idx) && idx >= 0 && idx < _glossaryEntries.length) {
+                    _glossaryEntries.splice(idx, 1);
+                    _renderGlossaryTable();
+                    _saveGlossaryInline();
+                }
+            });
+        }
+
+        function _saveGlossaryInline() {
+            fetch(API + '/api/translator/glossary', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ version: 1, entries: _glossaryEntries }),
+            });
+        }
 
         // 아이콘 레일 초기 상태 — 싱글 뷰 (패널 없음)
         function _initRailState() {
@@ -2983,6 +3165,7 @@
             _origRenderAnnotations();
             updateMarkingBadge();
             renderMarkingList();
+            if (activeRailPanel === 'memo') _renderMemoPanel();
         };
 
         var _origRenderAnnotationsRight = renderAnnotationsRight;

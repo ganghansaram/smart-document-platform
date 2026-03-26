@@ -559,6 +559,104 @@ body[data-theme="dark"] .hero-banner-img {
 .panel-header { overflow: visible; }
 .panel-header .download-wrap { position: relative; z-index: 200; }
 
+/* ── 도구 패널 콘텐츠 (메모/용어집) ── */
+.tool-panel-content {
+    padding: 0;
+}
+
+/* 메모 목록 */
+.memo-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+.memo-card {
+    background: var(--content-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color var(--transition-fast);
+}
+.memo-card:hover { border-color: var(--active-color); }
+.memo-card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    font-size: var(--font-caption);
+}
+.memo-card-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.memo-card-page {
+    color: var(--active-color);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.memo-card-highlight {
+    font-size: var(--font-caption);
+    color: var(--text-light);
+    padding: 4px 8px;
+    background: var(--active-color-subtle);
+    border-radius: var(--radius-sm);
+    font-style: italic;
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+.memo-card-text {
+    font-size: var(--font-body);
+    line-height: 1.5;
+}
+.memo-empty {
+    text-align: center;
+    color: var(--text-light);
+    font-size: var(--font-body);
+    padding: var(--space-xl) 0;
+}
+
+/* 용어집 인라인 */
+.glossary-add-row {
+    display: flex;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-md);
+}
+.glossary-add-row input {
+    flex: 1;
+    font-size: var(--font-body);
+}
+.glossary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-body);
+}
+.glossary-table th {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 2px solid var(--border-color);
+    font-size: var(--font-caption);
+    color: var(--text-light);
+    font-weight: 600;
+}
+.glossary-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+.glossary-table .gl-del-btn {
+    border: none;
+    background: none;
+    color: var(--color-error);
+    cursor: pointer;
+    font-size: var(--font-caption);
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+}
+.glossary-table .gl-del-btn:hover { background: rgba(239,68,68,0.1); }
+.glossary-empty {
+    text-align: center;
+    color: var(--text-light);
+    font-size: var(--font-body);
+    padding: var(--space-xl) 0;
+}
+
 /* PDF 종이 배경 (content-bg로 depth 형성) */
 .viewer-panel .pdf-page-container {
     background: var(--content-bg);

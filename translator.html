@@ -239,8 +239,8 @@
                     <!-- 엔진 토글 (hidden, JS 참조용) -->
                     <div id="engine-toggle" style="display:none"></div>
                     <div class="viewer-panel" id="panel-right">
-                        <!-- 마킹 플로팅 위젯 (panel-scroll 밖 — 스크롤 추종 방지) -->
-                        <div class="marking-float" id="marking-float">
+                        <!-- 마킹 플로팅 위젯 (숨김 — 메모 패널로 대체) -->
+                        <div class="marking-float" id="marking-float" style="display:none">
                             <div class="mf-trigger" id="mf-trigger">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l-6 6v3h9l3-3"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
                                 <span class="mf-count" id="mf-count" style="display:none">0</span>
@@ -266,6 +266,25 @@
                             <div class="placeholder-icon">&#128221;</div>
                             <div class="placeholder-text">이 페이지는 아직 번역되지 않았습니다</div>
                             <div class="placeholder-hint">아래 "이 페이지 번역" 버튼을 눌러 시작하세요 (~30초)</div>
+                        </div>
+                        <!-- 메모 패널 콘텐츠 -->
+                        <div class="tool-panel-content" id="memo-panel" style="display:none">
+                            <div class="memo-list" id="memo-list"></div>
+                        </div>
+                        <!-- 용어집 패널 콘텐츠 -->
+                        <div class="tool-panel-content" id="glossary-panel" style="display:none">
+                            <div class="glossary-inline" id="glossary-inline">
+                                <div class="glossary-add-row">
+                                    <input type="text" class="form-input-sm" id="gl-source-input" placeholder="원문 용어">
+                                    <input type="text" class="form-input-sm" id="gl-target-input" placeholder="번역 용어">
+                                    <button class="btn btn-primary btn-sm" id="gl-add-btn">추가</button>
+                                </div>
+                                <table class="glossary-table">
+                                    <thead><tr><th>원문</th><th>번역</th><th></th></tr></thead>
+                                    <tbody id="gl-tbody"></tbody>
+                                </table>
+                                <div class="glossary-empty" id="gl-empty" style="display:none">등록된 용어가 없습니다</div>
+                            </div>
                         </div>
                       </div><!-- /panel-scroll -->
                     </div>
