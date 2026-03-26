@@ -314,6 +314,26 @@ body[data-theme="dark"] .hero-banner-img {
 .panel-status { font-size: var(--font-caption); color: var(--text-light); white-space: nowrap; }
 .ph-sep { width: 1px; height: 16px; background: var(--border-color); margin: 0 2px; opacity: 0.5; flex-shrink: 0; }
 .shared-slot { display: contents; }
+.ph-input {
+    padding: 2px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+    background: var(--content-bg);
+    color: var(--text-dark);
+}
+.ph-btn-accent {
+    padding: 2px 8px;
+    background: var(--active-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.ph-btn-accent:hover { background: var(--active-color-hover); }
 
 .panel-header .spacer { flex: 1; }
 
@@ -394,15 +414,16 @@ body[data-theme="dark"] .hero-banner-img {
 }
 
 .panel-header .cancel-page-btn {
-    padding: 5px 14px;
+    padding: 3px 10px;
     border: 1px solid var(--color-error);
-    border-radius: var(--radius-md);
-    font-size: 13px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
     font-family: inherit;
     cursor: pointer;
     background: transparent;
     color: var(--color-error);
-    transition: background 0.15s;
+    transition: background var(--transition-fast);
+    white-space: nowrap;
 }
 .panel-header .cancel-page-btn:hover { background: rgba(248,81,73,0.1); }
 
@@ -499,7 +520,7 @@ body[data-theme="dark"] .hero-banner-img {
 }
 .range-dialog .btn-range-submit:hover { background: var(--active-color-hover); }
 
-[data-theme="dark"] .range-dialog { background: #1e1e1e; color: #e0e0e0; }
+[data-theme="dark"] .range-dialog { background: var(--panel-bg); color: var(--text-dark); }
 [data-theme="dark"] .range-dialog .range-inputs input { background: #2d2d2d; border-color: #444; color: #e0e0e0; }
 [data-theme="dark"] .range-dialog .btn-range-cancel { background: #333; color: #ccc; }
 

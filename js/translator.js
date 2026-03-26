@@ -138,6 +138,7 @@
         var $sidePanel      = document.getElementById('side-panel');
         var $iconRail       = document.getElementById('icon-rail');
         var $sharedHome     = document.getElementById('shared-controls-home');
+        var $panelResize    = document.getElementById('panel-resize');
         var sidePanelExpanded = false;
         var activeRailPanel = null; // 초기 상태: 패널 없음 (싱글 뷰)
 
@@ -688,6 +689,10 @@
             $sidePanel.classList.add('open');
             $panelLeft.classList.remove('collapsed');
             sidePanelExpanded = false;
+            $panelResize.style.display = '';
+            // 리사이즈로 변경된 flex 초기화
+            $panelLeft.style.flex = '';
+            $sidePanel.style.flex = '';
             _rerenderAfterTransition();
         }
         function _hideDualPanel() {
@@ -696,6 +701,10 @@
             $panelLeft.classList.remove('collapsed');
             $panelRight.style.display = 'none';
             sidePanelExpanded = false;
+            $panelResize.style.display = 'none';
+            // 리사이즈로 변경된 flex 초기화
+            $panelLeft.style.flex = '';
+            $sidePanel.style.flex = '';
             // 공유 요소를 home으로 복원
             _moveSharedToHome();
             function onEnd() {
@@ -742,6 +751,10 @@
                 $sidePanel.classList.toggle('expand', sidePanelExpanded);
                 $sidePanel.classList.toggle('open', !sidePanelExpanded);
                 $panelLeft.classList.toggle('collapsed', sidePanelExpanded);
+                $panelResize.style.display = sidePanelExpanded ? 'none' : '';
+                // 리사이즈 flex 초기화
+                $panelLeft.style.flex = '';
+                $sidePanel.style.flex = '';
                 // 아이콘 변경 (확장↔축소)
                 var svgs = $sidePanel.querySelectorAll('.sp-expand-btn svg');
                 var expandPath = '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>';
@@ -3589,5 +3602,43 @@
                 });
         }
 
+
+        // ── 패널 리사이즈 드래그 ──
+        (function() {
+            var handle = $panelResize;
+            if (!handle) return;
+            var dragging = false;
+
+            handle.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                dragging = true;
+                handle.classList.add('dragging');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!dragging) return;
+                var panels = document.getElementById('viewer-panels');
+                if (!panels) return;
+                var rect = panels.getBoundingClientRect();
+                var railWidth = 50;
+                var x = e.clientX - rect.left;
+                var total = rect.width - railWidth;
+                var leftPct = Math.max(25, Math.min(75, (x / total) * 100));
+                $panelLeft.style.flex = '0 0 ' + leftPct + '%';
+                $sidePanel.style.flex = '0 0 ' + (100 - leftPct) + '%';
+            });
+
+            document.addEventListener('mouseup', function() {
+                if (!dragging) return;
+                dragging = false;
+                handle.classList.remove('dragging');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                // 리사이즈 후 PDF 재렌더
+                if (typeof rerenderBothPanels === 'function') rerenderBothPanels();
+            });
+        })();
 
     })();

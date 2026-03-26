@@ -155,6 +155,8 @@
                         </div>
                     </div>
                 </div>
+                <!-- Resize Handle -->
+                <div class="resize-handle" id="panel-resize" style="display:none"></div>
                 <!-- Side Panel (wraps existing panel-right) -->
                 <div class="side-panel" id="side-panel">
                     <!-- PDF 번역 헤더 -->
@@ -215,11 +217,15 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
                     </div>
-                    <!-- 용어집 헤더 -->
+                    <!-- 용어집 헤더 (입력란 통합) -->
                     <div class="panel-header sp-hdr" id="hdr-glossary" style="display:none">
                         <span class="panel-title">용어집</span>
                         <span class="panel-status" id="glossary-count"></span>
                         <span class="spacer"></span>
+                        <input type="text" class="ph-input" id="gl-source-input" placeholder="원문" style="width:80px">
+                        <input type="text" class="ph-input" id="gl-target-input" placeholder="번역" style="width:80px">
+                        <button class="ph-btn-accent" id="gl-add-btn">+</button>
+                        <span class="ph-sep"></span>
                         <button class="sp-btn sp-expand-btn" title="확장">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
                         </button>
@@ -271,11 +277,6 @@
                         <!-- 용어집 패널 콘텐츠 -->
                         <div class="tool-panel-content" id="glossary-panel" style="display:none">
                             <div class="glossary-inline" id="glossary-inline">
-                                <div class="glossary-add-row">
-                                    <input type="text" class="form-input-sm" id="gl-source-input" placeholder="원문 용어">
-                                    <input type="text" class="form-input-sm" id="gl-target-input" placeholder="번역 용어">
-                                    <button class="btn btn-primary btn-sm" id="gl-add-btn">추가</button>
-                                </div>
                                 <table class="glossary-table">
                                     <thead><tr><th>원문</th><th>번역</th><th></th></tr></thead>
                                     <tbody id="gl-tbody"></tbody>
