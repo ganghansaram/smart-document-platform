@@ -89,35 +89,41 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 | Launcher/Login `#0a1628` | **예외 허용** | 시네마틱 진입 경험 ≠ 작업 공간. `--canvas-bg` 적용 대상 아님 |
 | Explorer 리사이즈 핸들 | **`.resize-handle` 전환** | Notebook과 동일 패턴 (components.css), 플랫폼 일관성 |
 
-#### Phase 1a: Launcher + Login — ~2시간
+#### Phase 1a: Launcher + Login — 완료
 
 > 구조 변경 없이 토큰 교체 위주. 가장 가벼운 작업으로 패턴 확립.
 
 **Launcher** (launcher.html, 인라인 CSS):
-- ⬜ `.system-card` `border-radius: 12px` → `var(--radius-lg)`
-- ⬜ 하드코딩 색상 토큰 교체 (배지 hover 등)
-- ⬜ 구조/레이아웃 변경 없음 (비디오 배경 유지)
+- ✅ `.system-card` `border-radius: 12px` → `var(--radius-lg)`
+- ✅ 구조/레이아웃 변경 없음 (비디오 배경 유지)
 
 **Login** (login.html, 인라인 CSS):
-- ⬜ `.login-card` `border-radius: 10px` → `var(--radius-lg)`, `box-shadow` → `var(--panel-shadow)` 또는 적절한 토큰
-- ⬜ `.login-btn` `background: #1e3a6e` → `var(--active-color)`, `border-radius: 6px` → `var(--radius-md)`
-- ⬜ input focus `border-color: #2c5282` → `var(--active-color)`
-- ⬜ `.error-msg` `#c53030` / `#fff5f5` / `#fed7d7` → `var(--color-error)` 기반
-- ⬜ 다크 모드 추가 안 함 (배경 이미지가 항상 어두우므로)
-- ⬜ 검증: 로그인 동작 + 에러 표시 정상 확인
+- ✅ `.login-card` `border-radius: 10px` → `var(--radius-xl)`, `box-shadow` → `var(--shadow-xl), var(--shadow-sm)`
+- ✅ `.login-btn` `background: #1e3a6e` → `var(--active-color)`, `border-radius: 6px` → `var(--radius-md)`
+- ✅ `.login-btn.success` → `var(--color-success-btn)`
+- ✅ input focus `border-color: #2c5282` → `var(--active-color)`
+- ✅ `.error-msg` `#c53030` → `var(--color-error)`, `border-radius: 5px` → `var(--radius-sm)`
+- ✅ label `#666` → `var(--text-light)`, title `#1a1a2e` → `var(--text-dark)`
+- ✅ 공지 `border-radius: 7px` → `var(--radius-md)`
+- ✅ 다크 모드 추가 안 함 (결정대로)
+- ✅ 검증: 로그인 동작 정상 확인
 
-#### Phase 1b: Compare — ~반나절
+#### Phase 1b: Compare — 완료
 
-> border-line → gap 전환 첫 적용. diff 의미적 border-left는 보존.
+> border-line → gap 전환 적용. diff 의미적 border-left 보존.
 
-- ⬜ `body` 배경: `var(--bg-gray)` → `var(--canvas-bg)`
-- ⬜ `.compare-main` grid: `gap: 0` + border 구분 → `gap: var(--panel-gap)`, 패널 간 `border-left: 2px` 제거
-- ⬜ `.compare-panel` → `border-radius: var(--panel-radius)`, `box-shadow: var(--panel-shadow)`
-- ⬜ `.compare-toolbar` → 라운드 카드 처리 (상단 radius)
-- ⬜ `.cp-sidebar` → `border-left` 제거, `border-radius: var(--panel-radius)`, `box-shadow: var(--panel-shadow)`
-- ⬜ diff 의미적 `border-left: 3px solid var(--diff-*-border)` — **변경 금지** (시각적 의미 표현)
-- ⬜ 하드코딩 `box-shadow`, `border-radius: 9px` 등 토큰 교체
-- ⬜ 검증: Light + Dark, diff 하이라이트, 규칙 모달, 사이드바 정상
+- ✅ `body` 배경: `var(--bg-gray)` → `var(--canvas-bg)`
+- ✅ `.compare-body` 패딩 + gap 추가 (캔버스 여백)
+- ✅ `.compare-toolbar` → `border-bottom` 제거, `border-radius: var(--panel-radius)` + `box-shadow: var(--panel-shadow)`
+- ✅ `.cp-panels` → `gap: var(--panel-gap)` (패널 간 gap 분리)
+- ✅ `.compare-panel` → `border-left` 제거, `background: var(--white)`, `border-radius: var(--panel-radius)` + `box-shadow: var(--panel-shadow)`
+- ✅ `.cp-sidebar` → `border-left` 제거, `border-radius: var(--panel-radius)` + `box-shadow: var(--panel-shadow)`
+- ✅ `.cp-sidebar-header` → 상단 radius 추가
+- ✅ diff 의미적 `border-left: 3px solid` — 보존 (변경 안 함)
+- ✅ 하드코딩 `box-shadow` → `var(--shadow-sm/lg)` 토큰 교체
+- ✅ 리사이즈 핸들 하이라이트 제거 (Notebook 패턴 통일)
+- ✅ 다크 모드: 불필요한 border-color 오버라이드 제거
+- ✅ 검증: Light + Dark 스크린샷 확인
 
 #### Phase 1c: Explorer — ~1일
 
@@ -271,8 +277,8 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 
 | Phase | 내용 | 예상 공수 | 출처 | 상태 |
 |:-----:|------|:--------:|:----:|:----:|
-| 1a | **디자인 확산: Launcher + Login** (토큰 교체) | ~2시간 | Plan-18 Ph.8 | ⬜ |
-| 1b | **디자인 확산: Compare** (border→gap 전환) | ~반나절 | Plan-18 Ph.8 | ⬜ |
+| 1a | **디자인 확산: Launcher + Login** (토큰 교체) | ~2시간 | Plan-18 Ph.8 | ✅ |
+| 1b | **디자인 확산: Compare** (border→gap 전환 + 리사이즈 핸들) | ~반나절 | Plan-18 Ph.8 | ✅ |
 | 1c | **디자인 확산: Explorer** (3-패널 grid 재구성) | ~1일 | Plan-18 Ph.8 | ⬜ |
 | 2 | **검색 구분 UI + ZIP 다운로드** | ~1.5일 | Plan-17 Ph.4b | ⬜ |
 | 3 | **관리자 설정 GUI** (웹 뷰 추출 설정) | ~반나절 | Plan-17 Ph.4d | ⬜ |
