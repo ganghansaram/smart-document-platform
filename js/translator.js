@@ -2561,15 +2561,9 @@
                             function(h) { return h.id !== annId; }
                         );
                     }
-                    ['left', 'right'].forEach(function(side) {
-                        var layer = side === 'left' ? $leftAnnotationLayer : $rightAnnotationLayer;
-                        var divs = layer.querySelectorAll('[data-ann-id="' + annId + '"]');
-                        for (var i = 0; i < divs.length; i++) {
-                            divs[i].parentNode.removeChild(divs[i]);
-                        }
-                    });
-                    updateMarkingBadge();
-                    renderMarkingList();
+                    // 단일 진입점: renderAnnotations 훅 경유 → badge + list + 메모 패널 자동 갱신
+                    renderAnnotations();
+                    renderAnnotationsRight();
                 }
             }).catch(function(err) {
                 console.error('[Annotations] delete error:', err);
