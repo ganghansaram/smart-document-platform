@@ -3242,21 +3242,6 @@
             }
         });
 
-        // 검색 필터
-        var _searchSourceFilter = '';
-        var $searchFilter = document.getElementById('ts-search-filter');
-        if ($searchFilter) {
-            $searchFilter.addEventListener('click', function(e) {
-                var btn = e.target.closest('.ts-filter-btn');
-                if (!btn) return;
-                $searchFilter.querySelectorAll('.ts-filter-btn').forEach(function(b) { b.classList.remove('active'); });
-                btn.classList.add('active');
-                _searchSourceFilter = btn.dataset.filter || '';
-                var q = $searchInput.value.trim();
-                if (q) performSearch(q);
-            });
-        }
-
         // 입력 디바운스
         $searchInput.addEventListener('input', function() {
             clearTimeout(_searchTimeout);
@@ -3270,9 +3255,7 @@
 
         function performSearch(query) {
             $searchResults.innerHTML = '<div class="ts-search-empty">검색 중...</div>';
-            var url = API + '/api/translator/search?q=' + encodeURIComponent(query);
-            if (_searchSourceFilter) url += '&source=' + _searchSourceFilter;
-            fetch(url, { credentials: 'include' })
+            fetch(API + '/api/translator/search?q=' + encodeURIComponent(query), { credentials: 'include' })
             .then(function(r) { return r.json(); })
             .then(function(data) { renderSearchResults(data, query); })
             .catch(function(err) {
@@ -3312,7 +3295,7 @@
                     html += '<span class="ts-search-item-title">' + escHtml(p.doc_title) + '</span>';
                     html += '<span class="ts-search-item-page">p.' + p.page + '</span>';
                     if (p.match_source === 'translated') {
-                        html += '<span class="badge badge-success ts-search-source-badge">번역</span>';
+                        html += '<span class="badge badge-success ts-search-source-badge">웹뷰 번역</span>';
                     } else if (p.match_source === 'source') {
                         html += '<span class="badge badge-info ts-search-source-badge">원문</span>';
                     }
