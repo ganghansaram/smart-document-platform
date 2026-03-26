@@ -475,6 +475,10 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     font-weight: 300;
 }
 
+/* 리사이즈 핸들 — 하이라이트 제거 (커서 변경만, Notebook 패턴 통일) */
+.compare-main .resize-handle:hover,
+.compare-main .resize-handle.dragging { background-color: transparent; }
+
 body.cp-resizing {
     user-select: none;
     cursor: col-resize;
