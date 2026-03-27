@@ -313,6 +313,34 @@ var SETTINGS_SCHEMA = {
                                           desc: '선택 번역/요약 최대 대기 시간. 짧은 텍스트 대상이므로 30초 권장' },
                                     ]
                                 },
+                                {
+                                    subtabId: 'quality-web-extract',
+                                    subtabLabel: '웹 뷰 추출',
+                                    fields: [
+                                        { group: 'translator', key: 'web_table_mode',
+                                          label: '표 추출 모드', type: 'select', restart: false,
+                                          options: [['extract','구조 추출 (Markdown 테이블)'], ['image','이미지만'], ['off','끄기']],
+                                          desc: '표 영역 처리 방식. "구조 추출"은 셀 데이터를 Markdown 테이블로 변환, "이미지만"은 스크린샷 캡처' },
+                                        { group: 'translator', key: 'web_formula_mode',
+                                          label: '수식 추출 모드', type: 'select', restart: false,
+                                          options: [['latex','LaTeX 변환'], ['image','이미지만'], ['off','끄기']],
+                                          desc: '수식 영역 처리 방식. "LaTeX"는 Pix2Text 모델 필요 (~200MB)' },
+                                        { group: 'translator', key: 'web_image_dpi',
+                                          label: '이미지 해상도 (DPI)', type: 'range', restart: false,
+                                          min: 72, max: 300, step: 6,
+                                          desc: '추출 이미지의 해상도. 높을수록 선명하지만 파일 크기 증가' },
+                                        { group: 'translator', key: 'web_table_strategy',
+                                          label: '표 감지 전략', type: 'select', restart: false,
+                                          options: [['lines_strict','lines_strict (엄격)'], ['lines','lines (표준)'], ['text','text (텍스트 기반)']],
+                                          desc: 'PyMuPDF 표 감지 알고리즘. "lines_strict"가 가장 정확하나 선 없는 표 누락 가능' },
+                                        { group: 'translator', key: 'web_auto_summary',
+                                          label: '번역 완료 시 자동 요약', type: 'toggle', restart: false,
+                                          desc: '웹 뷰 번역 완료 후 자동으로 문서 요약 생성 (향후 기능)' },
+                                        { group: 'translator', key: 'web_debug',
+                                          label: '디버그 모드', type: 'toggle', restart: false,
+                                          desc: '추출 중간 결과 파일을 저장. 문제 해결 시에만 사용' },
+                                    ]
+                                },
                             ]
                         },
                         {
