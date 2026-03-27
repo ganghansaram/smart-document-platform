@@ -98,8 +98,8 @@ TRANSLATOR_WEB_DEBUG = False                   # 디버그: 추출 중간 결과
 
 # Translator AI 요약·Q&A
 TRANSLATOR_AI_SUMMARY_MODEL = ""               # 빈값이면 OLLAMA_MODEL 폴백
-TRANSLATOR_AI_SUMMARY_THRESHOLD = 6000         # 이 글자수 이하 → 단일 패스 요약, 초과 → 계층적
-TRANSLATOR_AI_QA_THRESHOLD = 6000              # 이 글자수 이하 → 직접 주입, 초과 → 섹션 선별
+TRANSLATOR_AI_SUMMARY_THRESHOLD = 0            # 0 = 기본값(12000자), >0 = 수동 지정. 이하 → 단일패스, 초과 → 계층적
+TRANSLATOR_AI_QA_THRESHOLD = 0                 # 0 = 기본값(12000자), >0 = 수동 지정. 이하 → 직접주입, 초과 → 섹션선별
 
 # Compare AI 의미 분류 설정
 COMPARE_AI_ENABLED = True

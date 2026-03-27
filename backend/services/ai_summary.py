@@ -166,18 +166,23 @@ def _parse_keywords_response(text: str) -> list[str]:
     return []
 
 
+# ── 모델 컨텍스트 자동 감지 ──
+
+_DEFAULT_SUMMARY_THRESHOLD = 12000  # 기본 12,000자 — 8K 토큰급 모델 기준
+
+
 # ── 요약 생성 (메인 진입점) ──
 
 async def generate_summary(
     full_text: str,
-    source: str = "translated",
+    source: str = "extracted",
     progress_callback=None,
 ) -> dict:
     """크기 적응형 요약 생성.
 
     Args:
-        full_text: 전체 문서 텍스트 (full_translated.md 또는 full_extracted.md)
-        source: "translated" | "extracted" — 소스 유형 기록용
+        full_text: 전체 문서 텍스트 (full_extracted.md)
+        source: "extracted" — 소스 유형 기록용
         progress_callback: 진행 상태 콜백 (단계 문자열)
 
     Returns:
@@ -186,7 +191,6 @@ async def generate_summary(
     from services.md_translator import _strip_frontmatter
 
     text = _strip_frontmatter(full_text).strip()
-    threshold = getattr(config, "TRANSLATOR_AI_SUMMARY_THRESHOLD", 6000)
 
     provider = get_provider()
     # 요약 전용 모델이 설정되어 있으면 별도 Ollama 인스턴스 생성
@@ -196,15 +200,18 @@ async def generate_summary(
         provider = OllamaProvider(config.OLLAMA_URL, model_name_override)
     model_name = provider.model_name
 
+    # threshold: config에 설정값이 있으면 사용, 없으면 기본값
+    threshold = getattr(config, "TRANSLATOR_AI_SUMMARY_THRESHOLD", 0) or _DEFAULT_SUMMARY_THRESHOLD
+
     start_time = time.monotonic()
 
     if len(text) <= threshold:
-        # ── 단일 패스 (짧은 문서) ──
+        # ── 단일 패스 (컨텍스트에 들어가는 문서) ──
         result = await _generate_direct(text, provider, progress_callback)
         result["strategy"] = "direct"
         result["sections"] = []
     else:
-        # ── 계층적 요약 (긴 문서) ──
+        # ── 계층적 요약 (컨텍스트 초과 문서) ──
         result = await _generate_hierarchical(text, provider, progress_callback)
         result["strategy"] = "hierarchical"
 

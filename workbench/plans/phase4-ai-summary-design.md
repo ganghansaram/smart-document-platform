@@ -276,7 +276,7 @@ GET /api/translator/document/{doc_id}/full-extracted-md
 Ollama 로컬 모델(gemma3:4b) 컨텍스트 윈도우: **~8K 토큰 (~6000자 한국어)**.
 
 ```
-문서 크기 측정: full_translated.md 또는 full_extracted.md의 문자 수
+문서 크기 측정: full_extracted.md의 문자 수 (항상 원문 기준 — 전체 커버 보장)
 
                ┌─────────────────────────────────────┐
                │        문서 크기 < 6000자?            │
@@ -303,10 +303,10 @@ Ollama 로컬 모델(gemma3:4b) 컨텍스트 윈도우: **~8K 토큰 (~6000자 �
 ### 4.3 요약 파이프라인
 
 ```
-Step 1: 소스 선택
-        full_translated.md 존재 → 번역문 사용 (한국어, 이해도 ↑)
-        full_extracted.md만 존재  → 원문 사용
-        둘 다 없음              → 전체 추출 먼저 실행
+Step 1: 소스 확보
+        full_extracted.md 존재 → 원문 사용 (항상 전체 문서 커버, LLM 영어 이해도 높음)
+        없음                  → 자동 추출 실행 → full_extracted.md 생성
+        ※ 번역문(full_translated.md)은 요약에 사용하지 않음 (부분 번역 문제 방지)
 
 Step 2: 크기 판정
         문서 전문 문자 수 측정
@@ -787,58 +787,67 @@ POST /api/translator/document/{doc_id}/chat/stream
 
 의존성을 기반으로 4단계로 분할한다.
 
-### Step 1: 추출 전용 파이프라인 (백엔드) — ~1일
+### Step 1: 추출 전용 파이프라인 (백엔드) — ✅ 완료
 
 > 요약·Q&A의 **전제 조건**. 이것 없이는 번역 안 한 문서에서 아무것도 할 수 없다.
 
-1. `md_translator.py` — `merge_full_document()` 일반화 (translated/extracted 공용)
-2. `translator_service.py`:
-   - `start_web_extraction()` 비동기 엔트리포인트
-   - `_run_web_extraction()` → `_sync_extraction()` 파이프라인
-   - `get_web_extraction_status()` 상태 조회
-   - `get_web_extracted_md()`, `get_web_full_extracted_md()` 데이터 조회
-3. `translator.py` (API) — 추출 엔드포인트 4개 추가
-4. 기존 `_run_web_translation()` 수정 — 추출 결과 재사용 로직
+- ✅ `md_translator.py` — `merge_full_document()` 일반화 (translated/extracted 공용)
+- ✅ `md_translator.py` — `assemble_extracted_md()` 원문 MD frontmatter 부착
+- ✅ `translator_service.py`:
+  - `start_web_extraction()`, `_run_web_extraction()` 비동기 추출 파이프라인
+  - `start_full_extraction()` 전체 페이지 일괄 추출
+  - `get_web_extraction_status()`, `get_full_extraction_status()` 상태 조회
+  - `get_web_extracted_md()`, `get_web_full_extracted_md()` 데이터 조회
+- ✅ `translator.py` (API) — 추출 엔드포인트 4개 (extract, extract/status, extracted-view/page, extracted-view/full)
+- ✅ 기존 `_run_web_translation()` 수정 — 추출 결과 재사용 (extract_page 스킵)
+- ✅ `config.py` — `TRANSLATOR_AI_SUMMARY_MODEL`, `THRESHOLD` 키 추가
+- ✅ 검증: 4페이지 문서 전체 추출 (~3초), 중복 추출 방지, 번역 시 재사용 확인
 
-### Step 2: AI 요약 (백엔드 + 프론트) — ~1.5일
+### Step 2: AI 요약 (백엔드 + 프론트) — ✅ 완료
 
 > 추출 파이프라인 위에 구축.
 
-1. `services/ai_summary.py` (신규):
-   - `split_sections()` — 헤딩 기반 섹션 분할
-   - `generate_summary()` — **크기 적응형** 요약 오케스트레이터
-     - 짧은 문서: 단일 패스 (LLM 1회, JSON 응답)
-     - 긴 문서: 계층적 (섹션별 → 통합 → 키워드)
-   - `generate_keywords()` — 키워드 추출 (긴 문서 전용, 단일 패스는 요약과 동시)
-2. `translator_service.py` — `start_summary_generation()`, 상태 관리
-3. `translator.py` (API) — 요약 생성/조회 엔드포인트
-4. 프론트엔드 — 레일 5번 활성화, 요약 탭 UI, 상태별 화면
-   - `strategy: "direct"` → 전체 요약 + 키워드만 표시
-   - `strategy: "hierarchical"` → 전체 요약 + 키워드 + 섹션별 아코디언
+- ✅ `services/ai_summary.py` (신규):
+  - `split_sections()` — 헤딩 기반 섹션 분할 + 페이지 주석 폴백
+  - `generate_summary()` — **크기 적응형** 요약 오케스트레이터
+    - 짧은 문서 (≤6000자): 단일 패스 (LLM 1회, JSON 응답)
+    - 긴 문서 (>6000자): 계층적 (섹션별 → 통합 → 키워드)
+  - JSON 파싱 + 정규식 폴백 파서
+- ✅ `translator_service.py` — `start_summary_generation()`, 비동기 태스크, ai_summary.json 저장
+- ✅ `translator_service.py` — 소스 파일 없을 시 **자동 추출 → 요약** 연속 실행 (설계서 3.9)
+- ✅ `translator.py` (API) — POST/GET document/{id}/summary
+- ✅ 프론트엔드:
+  - 아이콘 레일 5번 활성화, 6번(문서요약) 삭제 → 7→6개
+  - 패널 헤더 (요약/Q&A 탭), panelHdrMap 확장, _showToolContent 분기
+  - 상태별 화면 (empty → loading → result → error)
+  - 요약 카드 + 키워드 배지 + 섹션별 아코디언 + 재생성 버튼
+  - 3초 폴링, 캐시, 문서 전환 시 리셋 (nb-doc-switch 이벤트)
+- ✅ CSS: ai-tab-bar, ai-summary-card, ai-keywords, ai-section-list + 다크모드
+- ✅ 검증: 실제 요약 생성 성공 (계층적, ~10초), Light + Dark 확인, 기존 패널 회귀 없음
 
-### Step 3: Q&A 챗봇 (백엔드 + 프론트) — ~1일
+### Step 3: Q&A 챗봇 (백엔드 + 프론트) — ⬜ 미착수
 
 > Explorer 챗봇 인프라(llm_provider, conversation, NDJSON) 재사용. 컨텍스트 공급부만 신규.
 
-1. `services/notebook_chat.py` (신규):
-   - `get_qa_context()` — 소스 폴백 체인 (translated → extracted → raw PDF)
-   - `build_qa_context()` — **크기 적응형** 컨텍스트 구성
-     - 짧은 문서: 직접 주입 (Notion AI 방식)
-     - 긴 문서: 키워드 매칭 섹션 선별
-   - 내부적으로 `llm_client.generate_response_stream()` 호출
-2. `translator.py` (API) — Q&A 엔드포인트 (일반 + 스트리밍)
-   - Explorer `chat.py`의 NDJSON 스트리밍 패턴 동일 적용
-   - 시스템 프롬프트만 Notebook 전용으로 교체
-3. 프론트엔드 — Q&A 탭 UI, 채팅 인터페이스
-   - Explorer `ai-chat.js`의 스트리밍 파서(NDJSON 파싱, rAF 버퍼링, 자동스크롤) 패턴 재활용
-   - DOM 구조만 사이드 패널용으로 조정
+- ⬜ `services/notebook_chat.py` (신규):
+  - `get_qa_context()` — 소스 폴백 체인 (translated → extracted → raw PDF)
+  - `build_qa_context()` — **크기 적응형** 컨텍스트 구성
+    - 짧은 문서: 직접 주입 (Notion AI 방식)
+    - 긴 문서: 키워드 매칭 섹션 선별
+  - 내부적으로 `llm_client.generate_response_stream()` 호출
+- ⬜ `translator.py` (API) — Q&A 엔드포인트 (일반 + 스트리밍)
+  - Explorer `chat.py`의 NDJSON 스트리밍 패턴 동일 적용
+  - 시스템 프롬프트만 Notebook 전용으로 교체
+- ⬜ 프론트엔드 — Q&A 탭 UI, 채팅 인터페이스
+  - Explorer `ai-chat.js`의 스트리밍 파서(NDJSON 파싱, rAF 버퍼링, 자동스크롤) 패턴 재활용
+  - DOM 구조만 사이드 패널용으로 조정
 
-### Step 4: 통합·검증 — ~0.5일
+### Step 4: 통합·검증 — ⬜ 미착수
 
-1. 자동 요약 옵션 연결 (`TRANSLATOR_WEB_AUTO_SUMMARY`)
-2. 문서 전환 시 패널 상태 초기화
-3. Light + Dark 모드 전수 검증
-4. 에러 케이스 테스트 (Ollama 미실행, 빈 문서, 1페이지 문서)
+- ⬜ 자동 요약 옵션 연결 (`TRANSLATOR_WEB_AUTO_SUMMARY`)
+- ⬜ 문서 전환 시 패널 상태 초기화
+- ⬜ Light + Dark 모드 전수 검증
+- ⬜ 에러 케이스 테스트 (Ollama 미실행, 빈 문서, 1페이지 문서)
 
 ---
 

@@ -53,42 +53,48 @@ class OllamaProvider(LLMProvider):
         temperature = opts.get("temperature", 0)
         timeout = opts.get("timeout", 120)
 
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
         payload = {
             "model": self.model,
-            "prompt": prompt,
+            "messages": messages,
             "stream": False,
             "options": {"temperature": temperature},
         }
-        if system:
-            payload["system"] = system
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                f"{self.url}/api/generate",
+                f"{self.url}/api/chat",
                 json=payload,
                 timeout=timeout,
             )
             resp.raise_for_status()
             data = resp.json()
-            return data.get("response", "")
+            return data.get("message", {}).get("content", "")
 
     async def generate_stream(self, prompt: str, system: Optional[str] = None, **opts) -> AsyncIterator[str]:
         temperature = opts.get("temperature", 0)
         timeout = opts.get("timeout", 300)
 
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
         payload = {
             "model": self.model,
-            "prompt": prompt,
+            "messages": messages,
             "stream": True,
             "options": {"temperature": temperature},
         }
-        if system:
-            payload["system"] = system
 
         async with httpx.AsyncClient() as client:
             async with client.stream(
                 "POST",
-                f"{self.url}/api/generate",
+                f"{self.url}/api/chat",
                 json=payload,
                 timeout=timeout,
             ) as resp:
@@ -98,7 +104,7 @@ class OllamaProvider(LLMProvider):
                         continue
                     try:
                         chunk = json.loads(line)
-                        token = chunk.get("response", "")
+                        token = chunk.get("message", {}).get("content", "")
                         if token:
                             yield token
                         if chunk.get("done"):

@@ -1822,19 +1822,13 @@ def start_summary_generation(username: str, doc_id: str, force: bool = False):
     if key in _summary_active_tasks and not _summary_active_tasks[key].done():
         raise RuntimeError("요약이 이미 생성 중입니다")
 
-    # 소스 파일 결정 (translated 우선)
+    # 소스 파일 결정 — 항상 원문(extracted) 기준
+    # 이유: 원문은 전체 문서를 커버, 부분 번역 문제 없음, LLM 영어 이해도 높음
     doc_dir = _doc_dir(username, doc_id)
-    translated_path = doc_dir / "full_translated.md"
     extracted_path = doc_dir / "full_extracted.md"
-
-    if translated_path.exists():
-        source_path = translated_path
-        source_type = "translated"
-    elif extracted_path.exists():
-        source_path = extracted_path
-        source_type = "extracted"
-    else:
-        raise ValueError("요약을 생성하려면 먼저 문서 추출 또는 번역이 필요합니다")
+    source_path = extracted_path
+    source_type = "extracted"
+    needs_extraction = not extracted_path.exists()
 
     # meta.json 상태 기록
     meta["ai_summary"] = {
@@ -1845,14 +1839,16 @@ def start_summary_generation(username: str, doc_id: str, force: bool = False):
 
     _summary_progress[key] = "요약 준비 중..."
     task = asyncio.create_task(
-        _run_summary_generation(username, doc_id, source_path, source_type, key)
+        _run_summary_generation(username, doc_id, source_path, source_type, key,
+                                auto_extract=needs_extraction)
     )
     _summary_active_tasks[key] = task
     return "started"
 
 
-async def _run_summary_generation(username: str, doc_id: str, source_path, source_type: str, key: str):
-    """AI 요약 비동기 실행."""
+async def _run_summary_generation(username: str, doc_id: str, source_path, source_type: str, key: str,
+                                   auto_extract: bool = False):
+    """AI 요약 비동기 실행. auto_extract=True면 추출부터 먼저 수행."""
     from services.ai_summary import generate_summary
     import time as _time
 
@@ -1862,6 +1858,57 @@ async def _run_summary_generation(username: str, doc_id: str, source_path, sourc
         _summary_progress[key] = stage
 
     try:
+        # 자동 추출: 소스 파일이 없으면 전체 페이지 추출 먼저 실행
+        if auto_extract:
+            progress_cb("문서 텍스트 추출 중...")
+            meta = _load_meta(username, doc_id)
+            total = (meta or {}).get("pages", 0)
+            for page_num in range(1, total + 1):
+                ps = (meta or {}).get("page_status", {}).get(str(page_num), {})
+                we = ps.get("web_extract", {})
+                if we.get("status") == "done":
+                    continue
+                progress_cb(f"페이지 추출 중... ({page_num}/{total})")
+                # 동기 추출 직접 실행 (별도 태스크가 아닌 인라인)
+                from services.md_extractor import extract_page
+                from services.md_translator import assemble_extracted_md, merge_full_document
+                src_path = _doc_dir(username, doc_id) / "original.pdf"
+                output_dir = _doc_dir(username, doc_id) / "pages" / str(page_num)
+                assets_dir = output_dir / "assets"
+
+                def _do_extract(pg=page_num):
+                    if not assets_dir.exists():
+                        assets_dir.mkdir(parents=True, exist_ok=True)
+                    result = extract_page(src_path, pg, assets_dir=assets_dir)
+                    md_text = assemble_extracted_md(
+                        result["markdown"], page_num=pg, total_pages=total,
+                        title=(meta or {}).get("title", ""), assets_dir=assets_dir,
+                    )
+                    output_dir.mkdir(parents=True, exist_ok=True)
+                    (output_dir / "web_extracted.md").write_text(md_text, encoding="utf-8")
+                    boxes_path = output_dir / "web_page_boxes.json"
+                    if not boxes_path.exists():
+                        import json as _json
+                        with open(boxes_path, "w", encoding="utf-8") as f:
+                            _json.dump(result["page_boxes"], f, ensure_ascii=False)
+
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(None, _do_extract)
+
+                # 페이지 상태 갱신
+                meta = _load_meta(username, doc_id)
+                if meta:
+                    ps = meta.get("page_status", {}).get(str(page_num), {})
+                    ps["web_extract"] = {"status": "done", "extracted_at": datetime.now().isoformat()}
+                    meta["page_status"][str(page_num)] = ps
+                    _save_meta(username, doc_id, meta)
+
+            # 전체 병합
+            from services.md_translator import merge_full_document
+            doc_dir = _doc_dir(username, doc_id)
+            merge_full_document(doc_dir, total, (meta or {}).get("title", ""), source="extracted")
+            progress_cb("추출 완료, 요약 시작...")
+
         full_text = source_path.read_text(encoding="utf-8")
 
         result = await generate_summary(
