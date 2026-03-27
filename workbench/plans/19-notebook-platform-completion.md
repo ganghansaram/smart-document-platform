@@ -150,18 +150,30 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 - ✅ `.admin-modal`: 하드코딩 색상/shadow → 토큰 교체
 - ✅ 검증: Light + Dark, 저장/초기화 정상
 
-### Phase 2: 검색 구분 UI + ZIP 다운로드 — ~1.5일
+### Phase 2: 검색 구분 UI + ZIP 다운로드 — 완료
 
 > 출처: Plan-17 Phase 4b
 > 검색 인덱스에 `translated_pages`와 `match_source`가 이미 구현되어 있으나 UI에서 활용하지 않음.
 
-- ⬜ 검색 결과에 원문/번역 출처 구분 배지 (`.badge-info` "원문" / `.badge-success` "번역")
-- ⬜ 검색 입력란에 필터 옵션 (전체 / 원문만 / 번역만) — 또는 결과 그룹핑
-- ⬜ ZIP 다운로드 버튼 (다운로드 메뉴에 추가)
+**검색 UX:**
+- ✅ 본문 결과에 match_source 배지 ("원문" badge-info / "웹뷰 번역" badge-success)
+- ✅ 검색 결과 클릭 시 패널 자동 열기 (번역 매칭 → 웹뷰 패널, 메모 매칭 → 메모 패널)
+- ✅ 검색어 하이라이트 — 웹뷰/메모 패널 내 TreeWalker 패턴, 5초 후 페이드아웃
+- ✅ 검색 오버레이 Explorer↔Notebook 시각 통일 (780px, shadow/radius/font 토큰)
+- ✅ Explorer 결과 타이틀색 var(--primary-navy) → var(--active-color) 통일
+- ✅ mark 배경색 통일 (#ffe066 / 다크 #665500)
+- ❌ 필터 버튼 → 설계 후 제거 (결과 그룹(메모/본문)과 축이 달라 혼란 유발, 향후 재도입 가능)
+
+**다운로드:**
+- ✅ MD 버튼 (페이지/전체) — 웹뷰 번역 있으면 엔진 무관 노출
+- ✅ ZIP 다운로드 — 백엔드 `GET /api/translator/document/{doc_id}/download/zip` (zipfile 모듈)
   - 포함: `full_translated.md` + 페이지별 `web_translated.md` + `assets/*.png`
-  - 백엔드: `GET /api/translator/document/{doc_id}/download/zip`
-  - Python `zipfile` 모듈 (표준 라이브러리, 추가 설치 없음)
-- ⬜ 다운로드 메뉴의 "현재 페이지 MD" / "전체 문서 MD" 버튼 상시 표시 (현재 `display:none`)
+  - 임시 파일 자동 삭제 (BackgroundTasks)
+- ✅ ZIP 버튼 — 다운로드 메뉴에 추가, 웹뷰 번역 있으면 노출
+
+**백엔드:**
+- ✅ 검색 API `source` 파라미터 추가 (하위 호환, 기본값 전체) — 향후 필터 재도입 대비
+- ✅ `create_document_zip()` 서비스 함수
 
 ### Phase 3: 관리자 설정 GUI (웹 뷰) — ~반나절
 
@@ -291,7 +303,7 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 | 1b | **디자인 확산: Compare** (border→gap 전환 + 리사이즈 핸들) | ~반나절 | Plan-18 Ph.8 | ✅ |
 | 1c | **디자인 확산: Explorer** (3-패널 라운드 + 캔버스) | ~1일 | Plan-18 Ph.8 | ✅ |
 | 1d | **디자인 확산: Settings** (배경 + 토큰 교체) | ~2시간 | Plan-18 Ph.8 | ✅ |
-| 2 | **검색 구분 UI + ZIP 다운로드** | ~1.5일 | Plan-17 Ph.4b | ⬜ |
+| 2 | **검색 구분 UI + ZIP 다운로드 + 검색 UX 통일** | ~1.5일 | Plan-17 Ph.4b | ✅ |
 | 3 | **관리자 설정 GUI** (웹 뷰 추출 설정) | ~반나절 | Plan-17 Ph.4d | ⬜ |
 | 4 | **AI 요약·Q&A 패널** (요약 탭 + 챗봇 탭) | ~4일 | Plan-18 Ph.6 + Plan-17 Ph.6 | ⬜ |
 | 5 | **Markdown 편집기** (EasyMDE 또는 Monaco) | ~2일 | Plan-17 Ph.4c | ⬜ |
