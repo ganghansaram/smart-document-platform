@@ -234,6 +234,20 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
                     </div>
+                    <div class="panel-header sp-hdr" id="hdr-ai-summary" style="display:none">
+                        <span class="panel-title">AI 분석</span>
+                        <div class="ai-tab-bar">
+                            <button class="ai-tab-btn active" data-tab="summary">요약</button>
+                            <button class="ai-tab-btn" data-tab="qa">Q&A</button>
+                        </div>
+                        <span class="spacer"></span>
+                        <button class="sp-btn sp-expand-btn" title="확장">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                        </button>
+                        <button class="sp-btn sp-close-btn" title="닫기">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
                     <!-- 공유 요소 (model, translate, cancel) — 활성 헤더의 shared-slot에 이동됨 -->
                     <div id="shared-controls-home" style="display:none">
                         <select class="form-select form-select-sm" id="model-select"></select>
@@ -285,6 +299,36 @@
                                 <div class="glossary-empty" id="gl-empty" style="display:none">등록된 용어가 없습니다</div>
                             </div>
                         </div>
+                        <!-- AI 분석 패널 콘텐츠 -->
+                        <div class="tool-panel-content" id="ai-summary-panel" style="display:none">
+                            <!-- 요약 탭 -->
+                            <div class="ai-tab-content" id="ai-tab-summary">
+                                <div class="ai-state-empty" id="ai-summary-empty">
+                                    <p class="ai-state-msg">AI 요약을 생성하세요</p>
+                                    <button class="btn btn-primary btn-sm" id="ai-generate-btn">요약 생성</button>
+                                </div>
+                                <div class="ai-state-loading" id="ai-summary-loading" style="display:none">
+                                    <div class="spinner spinner-sm"></div>
+                                    <p class="ai-state-msg" id="ai-summary-progress">요약 생성 중...</p>
+                                </div>
+                                <div class="ai-state-result" id="ai-summary-result" style="display:none">
+                                    <div class="ai-summary-card" id="ai-overall-summary"></div>
+                                    <div class="ai-keywords" id="ai-keywords"></div>
+                                    <div class="ai-section-list" id="ai-section-list"></div>
+                                    <button class="btn btn-ghost btn-sm" id="ai-regenerate-btn" style="margin-top:8px">재생성</button>
+                                </div>
+                                <div class="ai-state-error" id="ai-summary-error" style="display:none">
+                                    <p class="ai-state-msg ai-error-msg" id="ai-error-text"></p>
+                                    <button class="btn btn-primary btn-sm" id="ai-retry-btn">재시도</button>
+                                </div>
+                            </div>
+                            <!-- Q&A 탭 (Phase 4 Step 3에서 구현) -->
+                            <div class="ai-tab-content" id="ai-tab-qa" style="display:none">
+                                <div class="ai-state-empty">
+                                    <p class="ai-state-msg">Q&A 기능은 준비 중입니다</p>
+                                </div>
+                            </div>
+                        </div>
                       </div><!-- /panel-scroll -->
                     </div>
                 </div>
@@ -305,11 +349,8 @@
                     </button>
                     <div class="rail-separator"></div>
                     <!-- AI · 분석 -->
-                    <button class="rail-btn" data-panel="ai-summary" title="AI 요약 · Q&A" disabled>
+                    <button class="rail-btn" data-panel="ai-summary" title="AI 요약 · Q&A">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                    </button>
-                    <button class="rail-btn" title="문서 요약" disabled>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
                     </button>
                     <button class="rail-btn" data-panel="mindmap" title="마인드맵" disabled>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/><line x1="10" y1="10" x2="6" y2="7"/><line x1="14" y1="10" x2="18" y2="7"/><line x1="10" y1="14" x2="6" y2="17"/><line x1="14" y1="14" x2="18" y2="17"/></svg>

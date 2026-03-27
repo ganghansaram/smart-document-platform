@@ -17,6 +17,10 @@ from services.translator_service import (
     start_web_translation, get_web_translation_status,
     get_web_translated_md, get_web_page_boxes, cancel_web_translation,
     get_web_full_md,
+    start_web_extraction, start_full_extraction,
+    get_web_extraction_status, get_full_extraction_status,
+    get_web_extracted_md, get_web_full_extracted_md,
+    start_summary_generation, get_summary_status, get_summary,
     get_annotations, create_annotation, update_annotation, delete_annotation,
     ai_selection_query,
     search_documents,
@@ -475,6 +479,120 @@ async def api_cancel_web_translation(
     """웹 뷰 번역 취소"""
     cancel_web_translation(user["username"], doc_id, page_num)
     return {"success": True, "status": "cancelled"}
+
+
+# ── 추출 전용 (번역 없이 MD 추출) ──
+
+@router.post("/extract/{doc_id}")
+async def api_start_extraction(
+    doc_id: str,
+    body: dict = Body(default={}),
+    user: dict = Depends(get_current_user),
+):
+    """전체 또는 지정 페이지 MD 추출 시작 → 202 Accepted"""
+    pages = body.get("pages", "all")
+    try:
+        if pages == "all":
+            started = await start_full_extraction(user["username"], doc_id)
+        else:
+            started = 0
+            for p in pages:
+                start_web_extraction(user["username"], doc_id, int(p))
+                started += 1
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return JSONResponse(
+        status_code=202,
+        content={"status": "extracting", "doc_id": doc_id, "started_pages": started},
+    )
+
+
+@router.get("/extract/{doc_id}/status")
+async def api_extraction_status(
+    doc_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """전체 문서 추출 진행 상태"""
+    status = get_full_extraction_status(user["username"], doc_id)
+    if status is None:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    return status
+
+
+@router.get("/extracted-view/{doc_id}/page/{page_num}")
+async def api_serve_extracted_view(
+    doc_id: str,
+    page_num: int,
+    user: dict = Depends(get_current_user),
+):
+    """추출된 원문 Markdown 서빙"""
+    md = get_web_extracted_md(user["username"], doc_id, page_num)
+    if md is None:
+        raise HTTPException(status_code=404, detail="추출된 Markdown이 없습니다")
+    boxes = get_web_page_boxes(user["username"], doc_id, page_num)
+    return {"markdown": md, "page_boxes": boxes}
+
+
+@router.get("/extracted-view/{doc_id}/full")
+async def api_serve_extracted_view_full(
+    doc_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """전체 문서 추출 병합 Markdown 서빙"""
+    result = get_web_full_extracted_md(user["username"], doc_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    return result
+
+
+# ── AI 요약 ──
+
+@router.post("/document/{doc_id}/summary")
+async def api_generate_summary(
+    doc_id: str,
+    body: dict = Body(default={}),
+    user: dict = Depends(get_current_user),
+):
+    """AI 요약 생성 시작 (또는 기존 요약 반환)"""
+    force = body.get("force", False)
+    try:
+        result = start_summary_generation(user["username"], doc_id, force=force)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+    if result == "exists":
+        summary = get_summary(user["username"], doc_id)
+        return {"status": "exists", "summary": summary}
+
+    return JSONResponse(
+        status_code=202,
+        content={"status": "generating", "doc_id": doc_id},
+    )
+
+
+@router.get("/document/{doc_id}/summary")
+async def api_get_summary(
+    doc_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """AI 요약 조회 (상태 + 데이터)"""
+    status = get_summary_status(user["username"], doc_id)
+    if status is None:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+
+    if status.get("status") == "done":
+        summary = get_summary(user["username"], doc_id)
+        return {"status": "done", "summary": summary}
+
+    return status
 
 
 @router.get("/web-view/{doc_id}/full")

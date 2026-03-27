@@ -410,6 +410,34 @@ def assemble_translated_md(
     return fm + body
 
 
+def assemble_extracted_md(
+    markdown: str,
+    page_num: int,
+    total_pages: int,
+    title: str = "",
+    assets_dir: Optional[Path] = None,
+) -> str:
+    """추출된 원문 MD에 frontmatter 부착. 번역 없이 원본 그대로 저장."""
+    safe_title = title.replace('"', '\\"')
+    fm = (
+        "---\n"
+        f"title: \"{safe_title}\"\n"
+        f"page: {page_num}\n"
+        f"total_pages: {total_pages}\n"
+        f"extracted_at: \"{datetime.now().isoformat()}\"\n"
+        "summary: \"\"\n"
+        "keywords: []\n"
+        "---\n\n"
+    )
+
+    # 이미지 절대경로 → assets/ 상대경로로 변환
+    body = markdown
+    if assets_dir:
+        body = _convert_image_path(body, assets_dir)
+
+    return fm + body
+
+
 def _convert_image_path(text: str, assets_dir: Path) -> str:
     """이미지 참조의 절대경로를 assets/ 상대경로로 변환."""
     def replacer(match):
@@ -425,17 +453,31 @@ def _convert_image_path(text: str, assets_dir: Path) -> str:
 # 전체 병합
 # ══════════════════════════════════════
 
-def merge_full_translated(doc_dir: Path, total_pages: int, title: str = "") -> Optional[Path]:
-    """번역된 페이지들을 full_translated.md로 병합."""
+def merge_full_document(
+    doc_dir: Path,
+    total_pages: int,
+    title: str = "",
+    source: str = "translated",
+) -> Optional[Path]:
+    """페이지별 MD를 하나의 전체 문서로 병합.
+
+    Args:
+        source: "translated" → web_translated.md / full_translated.md
+                "extracted"  → web_extracted.md  / full_extracted.md
+    """
     pages_dir = doc_dir / "pages"
     if not pages_dir.exists():
         return None
 
+    page_filename = f"web_{source}.md"
     merged_parts = []
-    translated_pages = []
+    collected_pages = []
+
+    # frontmatter에서 날짜 필드 이름 결정
+    date_field = "translated_at" if source == "translated" else "extracted_at"
 
     for page_num in range(1, total_pages + 1):
-        md_path = pages_dir / str(page_num) / "web_translated.md"
+        md_path = pages_dir / str(page_num) / page_filename
         if not md_path.exists():
             continue
 
@@ -445,32 +487,40 @@ def merge_full_translated(doc_dir: Path, total_pages: int, title: str = "") -> O
         body = _strip_frontmatter(content)
 
         # 페이지별 모델/일자 정보 추출
-        model = _extract_frontmatter_field(content, "model")
-        translated_at = _extract_frontmatter_field(content, "translated_at")
-        date_str = translated_at[:10] if translated_at else ""
+        model = _extract_frontmatter_field(content, "model") if source == "translated" else ""
+        date_val = _extract_frontmatter_field(content, date_field)
+        date_str = date_val[:10] if date_val else ""
 
-        merged_parts.append(f"<!-- Page {page_num} | {model} | {date_str} -->")
+        comment = f"<!-- Page {page_num} | {model} | {date_str} -->" if source == "translated" \
+            else f"<!-- Page {page_num} | {date_str} -->"
+        merged_parts.append(comment)
         merged_parts.append(body.strip())
         merged_parts.append("")
-        translated_pages.append(page_num)
+        collected_pages.append(page_num)
 
     if not merged_parts:
         return None
 
     # 전체 frontmatter
+    pages_key = f"pages_{source}"
     header = (
         "---\n"
         f"title: \"{title}\"\n"
-        f"pages_translated: {translated_pages}\n"
+        f"{pages_key}: {collected_pages}\n"
         f"pages_total: {total_pages}\n"
         f"last_merged: \"{datetime.now().isoformat()}\"\n"
         "---\n\n"
     )
 
-    full_path = doc_dir / "full_translated.md"
+    full_path = doc_dir / f"full_{source}.md"
     full_path.write_text(header + "\n".join(merged_parts), encoding="utf-8")
-    logger.info(f"전체 병합 완료: {len(translated_pages)}/{total_pages} pages → {full_path}")
+    logger.info(f"전체 병합 완료 ({source}): {len(collected_pages)}/{total_pages} pages → {full_path}")
     return full_path
+
+
+def merge_full_translated(doc_dir: Path, total_pages: int, title: str = "") -> Optional[Path]:
+    """번역된 페이지들을 full_translated.md로 병합. (하위 호환 래퍼)"""
+    return merge_full_document(doc_dir, total_pages, title, source="translated")
 
 
 def _strip_frontmatter(text: str) -> str:

@@ -148,6 +148,7 @@
             'web-translate': 'hdr-web',
             'memo':          'hdr-memo',
             'glossary':      'hdr-glossary',
+            'ai-summary':    'hdr-ai-summary',
         };
         var sharedSlotMap = {
             'pdf-translate': 'shared-slot-pdf',
@@ -836,9 +837,10 @@
         var $memoPanel = document.getElementById('memo-panel');
         var $glossaryPanel = document.getElementById('glossary-panel');
         var $memoList = document.getElementById('memo-list');
+        var $aiSummaryPanel = document.getElementById('ai-summary-panel');
 
         function _showToolContent(panelId) {
-            var isTool = (panelId === 'memo' || panelId === 'glossary');
+            var isTool = (panelId === 'memo' || panelId === 'glossary' || panelId === 'ai-summary');
 
             // 도구 패널일 때 번역 콘텐츠 숨김
             if (isTool) {
@@ -850,6 +852,7 @@
             // 도구 패널 콘텐츠 전환
             $memoPanel.style.display = (panelId === 'memo') ? '' : 'none';
             $glossaryPanel.style.display = (panelId === 'glossary') ? '' : 'none';
+            if ($aiSummaryPanel) $aiSummaryPanel.style.display = (panelId === 'ai-summary') ? '' : 'none';
 
             // 메모 패널: 목록 렌더
             if (panelId === 'memo') {
@@ -858,6 +861,10 @@
             // 용어집 패널: 데이터 로드
             if (panelId === 'glossary') {
                 _renderGlossaryPanel();
+            }
+            // AI 요약 패널: 상태 로드
+            if (panelId === 'ai-summary') {
+                _loadAiSummary();
             }
         }
 
@@ -1021,6 +1028,8 @@
             activeRailPanel = null;
             translateEngine = 'pdf'; // 기본값
             _hideDualPanel(); // 이전 문서의 사이드 패널 잔류 방지
+            // AI 요약 캐시 리셋 알림
+            document.dispatchEvent(new CustomEvent('nb-doc-switch'));
         }
 
         function showRightPending() {
@@ -3752,5 +3761,196 @@
                 if (typeof rerenderBothPanels === 'function') rerenderBothPanels();
             });
         })();
+
+        // ══════════════════════════════════════
+        // AI 요약·Q&A 패널
+        // ══════════════════════════════════════
+
+        var _aiSummaryCache = null; // 현재 문서 요약 캐시
+        var _aiSummaryPolling = null;
+
+        // 탭 전환
+        (function _initAiTabs() {
+            var hdr = document.getElementById('hdr-ai-summary');
+            if (!hdr) return;
+            hdr.querySelectorAll('.ai-tab-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    hdr.querySelectorAll('.ai-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    var tab = btn.getAttribute('data-tab');
+                    var summaryTab = document.getElementById('ai-tab-summary');
+                    var qaTab = document.getElementById('ai-tab-qa');
+                    if (summaryTab) summaryTab.style.display = (tab === 'summary') ? '' : 'none';
+                    if (qaTab) qaTab.style.display = (tab === 'qa') ? '' : 'none';
+                });
+            });
+        })();
+
+        // 요약 버튼 이벤트
+        (function _initAiButtons() {
+            var genBtn = document.getElementById('ai-generate-btn');
+            var retryBtn = document.getElementById('ai-retry-btn');
+            var regenBtn = document.getElementById('ai-regenerate-btn');
+
+            if (genBtn) genBtn.addEventListener('click', function() { _requestSummary(false); });
+            if (retryBtn) retryBtn.addEventListener('click', function() { _requestSummary(false); });
+            if (regenBtn) regenBtn.addEventListener('click', function() { _requestSummary(true); });
+        })();
+
+        function _loadAiSummary() {
+            if (!currentDocId) return;
+            // 캐시가 있고 같은 문서면 바로 렌더
+            if (_aiSummaryCache && _aiSummaryCache._docId === currentDocId) {
+                _renderSummaryResult(_aiSummaryCache);
+                return;
+            }
+            _showAiState('loading');
+            var prog = document.getElementById('ai-summary-progress');
+            if (prog) prog.textContent = '요약 상태 확인 중...';
+
+            fetch(API + '/api/translator/document/' + currentDocId + '/summary', { credentials: 'include' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.status === 'done' && data.summary) {
+                        _aiSummaryCache = data.summary;
+                        _aiSummaryCache._docId = currentDocId;
+                        _renderSummaryResult(data.summary);
+                    } else if (data.status === 'generating') {
+                        _showAiState('loading');
+                        if (prog) prog.textContent = data.progress_stage || '요약 생성 중...';
+                        _startSummaryPolling();
+                    } else if (data.status === 'error') {
+                        _showAiState('error');
+                        var errEl = document.getElementById('ai-error-text');
+                        if (errEl) errEl.textContent = data.error || '요약 생성 실패';
+                    } else {
+                        _showAiState('empty');
+                    }
+                })
+                .catch(function() { _showAiState('empty'); });
+        }
+
+        function _requestSummary(force) {
+            if (!currentDocId) return;
+            _showAiState('loading');
+            var prog = document.getElementById('ai-summary-progress');
+            if (prog) prog.textContent = '요약 요청 중...';
+
+            fetch(API + '/api/translator/document/' + currentDocId + '/summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ force: !!force }),
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status === 'exists' && data.summary) {
+                    _aiSummaryCache = data.summary;
+                    _aiSummaryCache._docId = currentDocId;
+                    _renderSummaryResult(data.summary);
+                } else if (data.status === 'generating') {
+                    _startSummaryPolling();
+                } else if (data.detail) {
+                    // 에러 (추출 필요 등)
+                    _showAiState('error');
+                    var errEl = document.getElementById('ai-error-text');
+                    if (errEl) errEl.textContent = data.detail;
+                }
+            })
+            .catch(function(err) {
+                _showAiState('error');
+                var errEl = document.getElementById('ai-error-text');
+                if (errEl) errEl.textContent = '요청 실패: ' + err.message;
+            });
+        }
+
+        function _startSummaryPolling() {
+            if (_aiSummaryPolling) clearInterval(_aiSummaryPolling);
+            _aiSummaryPolling = setInterval(function() {
+                if (!currentDocId) { clearInterval(_aiSummaryPolling); return; }
+                fetch(API + '/api/translator/document/' + currentDocId + '/summary', { credentials: 'include' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        var prog = document.getElementById('ai-summary-progress');
+                        if (data.status === 'done' && data.summary) {
+                            clearInterval(_aiSummaryPolling);
+                            _aiSummaryPolling = null;
+                            _aiSummaryCache = data.summary;
+                            _aiSummaryCache._docId = currentDocId;
+                            _renderSummaryResult(data.summary);
+                        } else if (data.status === 'generating') {
+                            if (prog) prog.textContent = data.progress_stage || '요약 생성 중...';
+                        } else if (data.status === 'error') {
+                            clearInterval(_aiSummaryPolling);
+                            _aiSummaryPolling = null;
+                            _showAiState('error');
+                            var errEl = document.getElementById('ai-error-text');
+                            if (errEl) errEl.textContent = data.error || '요약 생성 실패';
+                        }
+                    });
+            }, 3000);
+        }
+
+        function _showAiState(state) {
+            var empty = document.getElementById('ai-summary-empty');
+            var loading = document.getElementById('ai-summary-loading');
+            var result = document.getElementById('ai-summary-result');
+            var error = document.getElementById('ai-summary-error');
+            if (empty) empty.style.display = (state === 'empty') ? '' : 'none';
+            if (loading) loading.style.display = (state === 'loading') ? '' : 'none';
+            if (result) result.style.display = (state === 'result') ? '' : 'none';
+            if (error) error.style.display = (state === 'error') ? '' : 'none';
+        }
+
+        function _renderSummaryResult(summary) {
+            _showAiState('result');
+
+            // 전체 요약
+            var overallEl = document.getElementById('ai-overall-summary');
+            if (overallEl) overallEl.textContent = summary.overall_summary || '';
+
+            // 키워드
+            var kwEl = document.getElementById('ai-keywords');
+            if (kwEl) {
+                var keywords = summary.keywords || [];
+                kwEl.innerHTML = keywords.map(function(kw) {
+                    return '<span class="ai-keyword-tag">' + _escHtml(kw) + '</span>';
+                }).join('');
+            }
+
+            // 섹션별 요약 (계층적 전략일 때만)
+            var secEl = document.getElementById('ai-section-list');
+            if (secEl) {
+                var sections = summary.sections || [];
+                if (sections.length === 0) {
+                    secEl.style.display = 'none';
+                } else {
+                    secEl.style.display = '';
+                    secEl.innerHTML = sections.map(function(sec) {
+                        return '<div class="ai-section-item">' +
+                            '<div class="ai-section-heading" onclick="this.parentElement.classList.toggle(\'open\')">' +
+                            '<span class="ai-section-arrow">&#9656;</span> ' +
+                            _escHtml(sec.heading) +
+                            '</div>' +
+                            '<div class="ai-section-body">' + _escHtml(sec.summary) + '</div>' +
+                            '</div>';
+                    }).join('');
+                }
+            }
+        }
+
+        function _escHtml(str) {
+            var d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        // 문서 전환 시 요약 캐시 초기화 — _initRailState에 훅
+        var _origInitRailState = typeof _initRailState === 'function' ? _initRailState : null;
+        // Note: _initRailState는 이미 정의되어 있으므로, 문서 전환 시 캐시만 리셋
+        document.addEventListener('nb-doc-switch', function() {
+            _aiSummaryCache = null;
+            if (_aiSummaryPolling) { clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; }
+        });
 
     })();
