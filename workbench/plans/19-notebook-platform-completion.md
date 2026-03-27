@@ -175,25 +175,21 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 - ✅ 검색 API `source` 파라미터 추가 (하위 호환, 기본값 전체) — 향후 필터 재도입 대비
 - ✅ `create_document_zip()` 서비스 함수
 
-### Phase 3: 관리자 설정 GUI (웹 뷰) — ~반나절
+### Phase 3: 관리자 설정 GUI (웹 뷰) — 완료
 
 > 출처: Plan-17 Phase 4d-2
-> 백엔드 `config.py`에 6개 키가 정의되어 있으나 admin-settings UI 없음.
 
-- ⬜ `admin-settings.js` 스키마에 "웹 뷰 추출" 서브탭 추가 (기존 "PDF (pdf2zh)" 패턴)
-- ⬜ 설정 항목:
-
-| 설정 | 타입 | 현재 기본값 | UI 컴포넌트 |
-|------|------|-----------|------------|
-| `TRANSLATOR_WEB_TABLE_MODE` | select | `"image"` | `.form-select` ("구조 추출" / "이미지만" / "끄기") |
-| `TRANSLATOR_WEB_FORMULA_MODE` | select | `"image"` | `.form-select` ("LaTeX" / "이미지만" / "끄기") |
-| `TRANSLATOR_WEB_IMAGE_DPI` | range | `150` | `.form-range` (72~300) |
-| `TRANSLATOR_WEB_TABLE_STRATEGY` | select | `"lines_strict"` | `.form-select` |
-| `TRANSLATOR_WEB_AUTO_SUMMARY` | checkbox | `false` | 체크박스 |
-| `TRANSLATOR_WEB_DEBUG` | checkbox | `false` | 체크박스 |
-
-- ⬜ 각 항목에 `.tooltip-icon` 설명 추가
-- ⬜ `settings.json` 저장 + `apply_to_config()` 적용 — 기존 패턴 그대로
+- ✅ `admin-settings.js` "번역 품질" 섹션에 "웹 뷰 추출" 서브탭 추가 (PDF/AI 선택과 동일 패턴)
+- ✅ 6개 설정 항목:
+  - 표 추출 모드 (select: 구조 추출 / 이미지만 / 끄기)
+  - 수식 추출 모드 (select: LaTeX 변환 / 이미지만 / 끄기)
+  - 이미지 해상도 DPI (range: 72~300)
+  - 표 감지 전략 (select: lines_strict / lines / text)
+  - 번역 완료 시 자동 요약 (toggle)
+  - 디버그 모드 (toggle)
+- ✅ 각 항목에 설명 텍스트 포함
+- ✅ `settings.json` 저장 + `apply_to_config()` 즉시 적용 (기존 매핑 활용)
+- ✅ 검증: Light + Dark, 저장 정상
 
 ### Phase 4: AI 요약·Q&A 패널 — ~4일
 
@@ -304,7 +300,7 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 | 1c | **디자인 확산: Explorer** (3-패널 라운드 + 캔버스) | ~1일 | Plan-18 Ph.8 | ✅ |
 | 1d | **디자인 확산: Settings** (배경 + 토큰 교체) | ~2시간 | Plan-18 Ph.8 | ✅ |
 | 2 | **검색 구분 UI + ZIP 다운로드 + 검색 UX 통일** | ~1.5일 | Plan-17 Ph.4b | ✅ |
-| 3 | **관리자 설정 GUI** (웹 뷰 추출 설정) | ~반나절 | Plan-17 Ph.4d | ⬜ |
+| 3 | **관리자 설정 GUI** (웹 뷰 추출 서브탭 6개 항목) | ~반나절 | Plan-17 Ph.4d | ✅ |
 | 4 | **AI 요약·Q&A 패널** (요약 탭 + 챗봇 탭) | ~4일 | Plan-18 Ph.6 + Plan-17 Ph.6 | ⬜ |
 | 5 | **Markdown 편집기** (EasyMDE 또는 Monaco) | ~2일 | Plan-17 Ph.4c | ⬜ |
 | 6 | **클릭 네비게이션** (원문↔번역 블록 매핑) | ~2일 | Plan-17 Ph.4d | ⬜ |
