@@ -270,7 +270,7 @@ var SETTINGS_SCHEMA = {
                             subtabs: [
                                 {
                                     subtabId: 'quality-pdf',
-                                    subtabLabel: 'PDF (pdf2zh)',
+                                    subtabLabel: 'PDF 번역',
                                     fields: [
                                         { group: 'translator', key: 'custom_prompt',
                                           label: '시스템 프롬프트 (role block)', type: 'textarea', restart: false,
@@ -296,26 +296,8 @@ var SETTINGS_SCHEMA = {
                                     ]
                                 },
                                 {
-                                    subtabId: 'quality-ai-selection',
-                                    subtabLabel: 'AI 선택',
-                                    fields: [
-                                        { group: 'translator', key: 'ai_translate_prompt',
-                                          label: '번역 프롬프트', type: 'textarea', restart: false,
-                                          rows: 4,
-                                          desc: '텍스트 선택 → 번역 시 Ollama에 전달되는 system 프롬프트' },
-                                        { group: 'translator', key: 'ai_summarize_prompt',
-                                          label: '요약 프롬프트', type: 'textarea', restart: false,
-                                          rows: 4,
-                                          desc: '텍스트 선택 → 요약 시 Ollama에 전달되는 system 프롬프트' },
-                                        { group: 'translator', key: 'ai_selection_timeout',
-                                          label: '타임아웃 (초)', type: 'number', restart: false,
-                                          min: 5, max: 120, step: 5,
-                                          desc: '선택 번역/요약 최대 대기 시간. 짧은 텍스트 대상이므로 30초 권장' },
-                                    ]
-                                },
-                                {
-                                    subtabId: 'quality-web-extract',
-                                    subtabLabel: '웹 뷰 추출',
+                                    subtabId: 'quality-web',
+                                    subtabLabel: '웹 뷰 번역',
                                     fields: [
                                         { group: 'translator', key: 'web_table_mode',
                                           label: '표 추출 모드', type: 'select', restart: false,
@@ -339,6 +321,24 @@ var SETTINGS_SCHEMA = {
                                         { group: 'translator', key: 'web_debug',
                                           label: '디버그 모드', type: 'toggle', restart: false,
                                           desc: '추출 중간 결과 파일을 저장. 문제 해결 시에만 사용' },
+                                    ]
+                                },
+                                {
+                                    subtabId: 'quality-ai-selection',
+                                    subtabLabel: 'AI 선택 번역',
+                                    fields: [
+                                        { group: 'translator', key: 'ai_translate_prompt',
+                                          label: '번역 프롬프트', type: 'textarea', restart: false,
+                                          rows: 4,
+                                          desc: '텍스트 선택 → 번역 시 Ollama에 전달되는 system 프롬프트' },
+                                        { group: 'translator', key: 'ai_summarize_prompt',
+                                          label: '요약 프롬프트', type: 'textarea', restart: false,
+                                          rows: 4,
+                                          desc: '텍스트 선택 → 요약 시 Ollama에 전달되는 system 프롬프트' },
+                                        { group: 'translator', key: 'ai_selection_timeout',
+                                          label: '타임아웃 (초)', type: 'number', restart: false,
+                                          min: 5, max: 120, step: 5,
+                                          desc: '선택 번역/요약 최대 대기 시간. 짧은 텍스트 대상이므로 30초 권장' },
                                     ]
                                 },
                             ]
