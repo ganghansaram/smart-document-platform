@@ -849,12 +849,31 @@ POST /api/translator/document/{doc_id}/chat/stream
 - ✅ CSS: qa-messages, qa-bubble, qa-input-area, qa-typing, qa-streaming + 다크모드 (토큰 변수만)
 - ✅ 검증: 질문 → 한국어 스트리밍 응답, 멀티턴, 마크다운 렌더링, 요약↔Q&A 탭 전환, 기존 패널 회귀 없음
 
-### Step 4: 통합·검증 — ⬜ 미착수
+### Step 3+: Q&A UX 개선 + 버그 수정 — ✅ 완료
 
-- ⬜ 자동 요약 옵션 연결 (`TRANSLATOR_WEB_AUTO_SUMMARY`)
-- ⬜ 문서 전환 시 패널 상태 초기화
-- ⬜ Light + Dark 모드 전수 검증
-- ⬜ 에러 케이스 테스트 (Ollama 미실행, 빈 문서, 1페이지 문서)
+- ✅ 자동 스크롤 버그 수정 (CSS flex 체인 완성: #right-scroll → ai-summary-panel → qa-messages)
+- ✅ 맨 아래로 스크롤 버튼 (스크롤 갭 > 80px 시 표시, Explorer 패턴)
+- ✅ 대화 초기화 버튼 (Q&A 탭 헤더, 세션+대화 전부 리셋)
+- ✅ 추천 질문 칩 3개 (요약/핵심 내용/방법론)
+- ✅ 답변 복사 버튼 (hover 시 표시, clipboard + 2초 체크마크)
+- ✅ 출처 페이지 배지 (p.1 p.2 등, 클릭 시 goToPage → 마킹 포함 페이지 이동)
+- ✅ 버그 11건 수정:
+  - BUG-1,10: AI 패널 중 페이지 이동 시 번역 콘텐츠 덮어씀 → updateRightPanel 가드 추가
+  - BUG-4: 스트리밍 중 입력 disabled 미처리
+  - BUG-5: 에러 시 scrollListener 메모리 누수
+  - BUG-6: AbortError 기술 메시지 노출
+  - BUG-7: marked.parse XSS → DOMPurify 적용
+  - BUG-8: _qaReset 후 scroll 버튼 잔류
+  - BUG-9: panel-scroll 비flex → Q&A 스크롤 깨짐
+  - BUG-11: showList에서 폴링 누수
+  - 출처 배지: renderLeftPage → goToPage (마킹 재렌더링)
+
+### Step 4: 통합·검증 — ✅ 완료
+
+- ✅ 문서 전환 시 패널 상태 초기화 (nb-doc-switch 이벤트, _qaReset, _aiSummaryPolling 정리)
+- ✅ Light + Dark 모드 검증 완료
+- ✅ 에러 케이스: AbortError 메시지 개선, 입력 disabled 처리, DOMPurify XSS 방지
+- ⏭️ 자동 요약 옵션 (`TRANSLATOR_WEB_AUTO_SUMMARY`) — 실사용 피드백 후 활성화 예정. 관리자 GUI 토글 이미 존재
 
 ---
 

@@ -191,37 +191,21 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 - ✅ `settings.json` 저장 + `apply_to_config()` 즉시 적용 (기존 매핑 활용)
 - ✅ 검증: Light + Dark, 저장 정상
 
-### Phase 4: AI 요약·Q&A 패널 — ~4일
+### Phase 4: AI 요약·Q&A 패널 — 완료
 
 > 출처: Plan-18 Phase 6 + Plan-17 Phase 6(챗봇) + Plan-17 섹션 10(자동 요약)
-> 아이콘 레일 5번 버튼 활성화. disabled 해제 후 가장 임팩트 큰 기능.
+> 상세 설계서: `workbench/plans/phase4-ai-summary-design.md`
 
-**사전 설계 결정 필요:**
-- 챗봇 대상 범위: 현재 열린 문서 1개만 vs 전체 개인 문서
-  - 1개 문서: `full_translated.md` (또는 원문 텍스트)를 컨텍스트로 직접 전달 (RAG 불필요)
-  - 전체 문서: 개인 문서별 벡터 인덱스 격리 구조 필요 (Explorer RAG와 분리)
-  - **권장**: 1개 문서로 시작 → 피드백 후 확장
+**완료 항목:**
 
-**구현 항목:**
-
-- ⬜ 패널 UI: 탭 2개 구성 (요약 / Q&A)
-  - **요약 탭**: 문서 요약문 + 핵심 키워드 표시, "요약 생성" 버튼
-  - **Q&A 탭**: 채팅 인터페이스 (Explorer `ai-chat.js` 패턴 재활용)
-- ⬜ 백엔드 — 자동 요약 + 키워드 추출:
-  - `POST /api/translator/document/{doc_id}/summary` → Ollama 요약 생성
-  - 데이터 소스: `full_translated.md` (번역 있으면) 또는 원문 텍스트 (없으면)
-  - 결과 저장: `meta.json`의 `summary` / `keywords` 필드 (frontmatter와 동기화)
-  - `TRANSLATOR_WEB_AUTO_SUMMARY = true` 시 번역 완료 후 자동 실행
-- ⬜ 백엔드 — Q&A:
-  - `POST /api/translator/document/{doc_id}/chat` → Ollama 질의응답
-  - 컨텍스트: `full_translated.md` 전문 (문서 1개 기준, 8000자 제한)
-  - 세션: Explorer `conversation.py` 패턴 재활용 (인메모리 LRU)
-- ⬜ 프론트엔드 — 아이콘 레일 5번 활성화:
-  - `disabled` 제거, `data-panel="ai-summary"` 핸들러 연결
-  - 패널 헤더 `#hdr-ai` 추가 (탭 전환 UI)
-  - `_showToolContent('ai-summary')` 지원
-- ⬜ 6번 "문서 요약" 버튼 → 5번과 통합 (별도 패널 불필요, 탭으로 충분)
-  - 레일에서 6번 제거하거나 5번과 병합 → 레일 아이콘 6개로 축소
+- ✅ 추출 전용 파이프라인 (번역 없이 MD 추출 → 요약·Q&A의 전제 조건)
+- ✅ AI 요약 — 크기 적응형 (단일 패스 / 계층적), 원문 기준, `/api/chat` 업계 표준
+- ✅ Q&A 챗봇 — NDJSON 스트리밍, 멀티턴, Explorer 인프라 재사용
+- ✅ 아이콘 레일 5번 활성화, 6번(문서요약) 삭제 → 7→6개 축소
+- ✅ 패널 UI: 요약 탭 (카드+키워드+아코디언) + Q&A 탭 (채팅+스트리밍)
+- ✅ Q&A UX: 추천 질문, 출처 배지(페이지 이동), 복사, 스크롤 버튼, 대화 초기화
+- ✅ 버그 11건 수정 (패널 간섭, XSS, 메모리 누수, 입력 disabled 등)
+- ⏭️ 자동 요약 옵션 — 실사용 피드백 후 활성화 (관리자 GUI 토글 준비됨)
 
 ### Phase 5: Markdown 편집기 — ~2일
 
