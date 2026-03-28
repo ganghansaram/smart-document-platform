@@ -194,7 +194,7 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 ### Phase 4: AI 요약·Q&A 패널 — 완료
 
 > 출처: Plan-18 Phase 6 + Plan-17 Phase 6(챗봇) + Plan-17 섹션 10(자동 요약)
-> 상세 설계서: `workbench/plans/phase4-ai-summary-design.md`
+> 상세 설계서: `workbench/plans/done-phase4-ai-summary-design.md`
 
 **완료 항목:**
 
