@@ -825,22 +825,29 @@ POST /api/translator/document/{doc_id}/chat/stream
 - ✅ CSS: ai-tab-bar, ai-summary-card, ai-keywords, ai-section-list + 다크모드
 - ✅ 검증: 실제 요약 생성 성공 (계층적, ~10초), Light + Dark 확인, 기존 패널 회귀 없음
 
-### Step 3: Q&A 챗봇 (백엔드 + 프론트) — ⬜ 미착수
+### Step 3: Q&A 챗봇 (백엔드 + 프론트) — ✅ 완료
 
 > Explorer 챗봇 인프라(llm_provider, conversation, NDJSON) 재사용. 컨텍스트 공급부만 신규.
 
-- ⬜ `services/notebook_chat.py` (신규):
+- ✅ `services/notebook_chat.py` (신규):
   - `get_qa_context()` — 소스 폴백 체인 (translated → extracted → raw PDF)
-  - `build_qa_context()` — **크기 적응형** 컨텍스트 구성
-    - 짧은 문서: 직접 주입 (Notion AI 방식)
-    - 긴 문서: 키워드 매칭 섹션 선별
-  - 내부적으로 `llm_client.generate_response_stream()` 호출
-- ⬜ `translator.py` (API) — Q&A 엔드포인트 (일반 + 스트리밍)
-  - Explorer `chat.py`의 NDJSON 스트리밍 패턴 동일 적용
-  - 시스템 프롬프트만 Notebook 전용으로 교체
-- ⬜ 프론트엔드 — Q&A 탭 UI, 채팅 인터페이스
-  - Explorer `ai-chat.js`의 스트리밍 파서(NDJSON 파싱, rAF 버퍼링, 자동스크롤) 패턴 재활용
-  - DOM 구조만 사이드 패널용으로 조정
+  - `build_qa_context()` — **크기 적응형** 컨텍스트 구성 (직접 주입 / 키워드 매칭 섹션 선별)
+  - `ask_document_stream()` — 스트리밍 응답, `ConversationStore` 싱글턴 재사용
+  - 시스템 프롬프트: 문서 분석 어시스턴트 (한국어, 마크다운, 근거 인용)
+- ✅ `translator.py` (API) — `POST /document/{doc_id}/chat/stream`
+  - `NotebookChatRequest` Pydantic 모델 (`question`, `conversation_id`)
+  - Explorer `chat.py`와 동일 NDJSON 포맷 (token/done/error)
+  - `StreamingResponse` + `event_generator()` 패턴
+- ✅ 프론트엔드 — Q&A 탭 UI
+  - 채팅 버블 (user 우측 파란색 / assistant 좌측 회색)
+  - NDJSON 스트리밍 파서 + rAF 버퍼링 + 자동스크롤 (Explorer 패턴 재활용)
+  - 타이핑 인디케이터 (dot bounce 애니메이션)
+  - 스트리밍 커서 (깜빡이는 블루 커서)
+  - `marked.js` 마크다운 렌더링 (스트리밍 완료 시)
+  - 멀티턴 대화 (`conversation_id` 유지)
+  - 문서 전환 시 대화 리셋 (`nb-doc-switch` 이벤트)
+- ✅ CSS: qa-messages, qa-bubble, qa-input-area, qa-typing, qa-streaming + 다크모드 (토큰 변수만)
+- ✅ 검증: 질문 → 한국어 스트리밍 응답, 멀티턴, 마크다운 렌더링, 요약↔Q&A 탭 전환, 기존 패널 회귀 없음
 
 ### Step 4: 통합·검증 — ⬜ 미착수
 
