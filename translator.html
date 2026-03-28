@@ -241,6 +241,9 @@
                             <button class="ai-tab-btn" data-tab="qa">Q&A</button>
                         </div>
                         <span class="spacer"></span>
+                        <button class="sp-btn qa-reset-btn" id="qa-reset-btn" title="대화 초기화" style="display:none">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        </button>
                         <button class="sp-btn sp-expand-btn" title="확장">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
                         </button>
@@ -324,11 +327,21 @@
                             </div>
                             <!-- Q&A 탭 -->
                             <div class="ai-tab-content qa-tab-content" id="ai-tab-qa" style="display:none">
-                                <div class="qa-messages" id="qa-messages">
-                                    <div class="qa-welcome" id="qa-welcome">
-                                        <p class="qa-welcome-title">문서에 대해 질문하세요</p>
-                                        <p class="qa-welcome-sub">이 문서의 내용을 바탕으로 답변합니다</p>
+                                <div class="qa-messages-wrap">
+                                    <div class="qa-messages" id="qa-messages">
+                                        <div class="qa-welcome" id="qa-welcome">
+                                            <p class="qa-welcome-title">문서에 대해 질문하세요</p>
+                                            <p class="qa-welcome-sub">이 문서의 내용을 바탕으로 답변합니다</p>
+                                            <div class="qa-quick-actions" id="qa-quick-actions">
+                                                <button class="qa-quick-btn" data-question="이 문서를 요약해줘">요약</button>
+                                                <button class="qa-quick-btn" data-question="핵심 내용을 알려줘">핵심 내용</button>
+                                                <button class="qa-quick-btn" data-question="이 논문의 방법론을 설명해줘">방법론</button>
+                                            </div>
+                                        </div>
                                     </div>
+                                    <button class="qa-scroll-bottom" id="qa-scroll-bottom" title="최신 메시지로 이동">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                    </button>
                                 </div>
                                 <div class="qa-input-area" id="qa-input-area">
                                     <textarea class="qa-input" id="qa-input" placeholder="질문을 입력하세요..." rows="1"></textarea>

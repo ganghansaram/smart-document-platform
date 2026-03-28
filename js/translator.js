@@ -491,6 +491,8 @@
             stopPolling();
             stopWebPolling();
             destroyPdfs();
+            // AI 요약/Q&A 정리 (폴링 중단, Q&A 리셋)
+            document.dispatchEvent(new CustomEvent('nb-doc-switch'));
             loadDocuments();
         }
 
@@ -589,8 +591,8 @@
         // ── Right Panel: Translation PDF or Placeholder ──
 
         function updateRightPanel() {
-            // 도구 패널(메모/용어집)이 활성이면 번역 콘텐츠 갱신 스킵
-            if (activeRailPanel === 'memo' || activeRailPanel === 'glossary') return;
+            // 도구 패널(메모/용어집/AI)이 활성이면 번역 콘텐츠 갱신 스킵
+            if (activeRailPanel === 'memo' || activeRailPanel === 'glossary' || activeRailPanel === 'ai-summary') return;
 
             // 웹 뷰 모드
             if (translateEngine === 'web') {
@@ -3975,14 +3977,94 @@
             });
         })();
 
-        // 탭 전환 시 Q&A 로드
+        // 스크롤-투-바텀 버튼
+        (function _initQaScrollBottom() {
+            var messagesEl = document.getElementById('qa-messages');
+            var scrollBtn = document.getElementById('qa-scroll-bottom');
+            if (!messagesEl || !scrollBtn) return;
+
+            messagesEl.addEventListener('scroll', function() {
+                var gap = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight;
+                if (gap > 80) {
+                    scrollBtn.classList.add('visible');
+                    _qaAutoScroll = false;
+                } else {
+                    scrollBtn.classList.remove('visible');
+                    _qaAutoScroll = true;
+                }
+            });
+
+            scrollBtn.addEventListener('click', function() {
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+                _qaAutoScroll = true;
+                scrollBtn.classList.remove('visible');
+            });
+        })();
+
+        // 추천 질문 칩
+        (function _initQaQuickActions() {
+            var container = document.getElementById('qa-quick-actions');
+            if (!container) return;
+            container.querySelectorAll('.qa-quick-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var q = btn.getAttribute('data-question');
+                    if (q) {
+                        var input = document.getElementById('qa-input');
+                        if (input) input.value = q;
+                        _qaSend();
+                    }
+                });
+            });
+        })();
+
+        // 대화 초기화
+        function _qaReset() {
+            _qaConvId = null;
+            _qaIsLoading = false;
+            _qaAutoScroll = true;
+            // scroll-to-bottom 버튼 정리
+            var scrollBtn = document.getElementById('qa-scroll-bottom');
+            if (scrollBtn) scrollBtn.classList.remove('visible');
+            // 입력 복원
+            var input = document.getElementById('qa-input');
+            var sendBtn = document.getElementById('qa-send-btn');
+            if (input) input.disabled = false;
+            if (sendBtn) sendBtn.disabled = false;
+            var messagesEl = document.getElementById('qa-messages');
+            if (messagesEl) {
+                messagesEl.innerHTML =
+                    '<div class="qa-welcome" id="qa-welcome">' +
+                    '<p class="qa-welcome-title">문서에 대해 질문하세요</p>' +
+                    '<p class="qa-welcome-sub">이 문서의 내용을 바탕으로 답변합니다</p>' +
+                    '<div class="qa-quick-actions" id="qa-quick-actions">' +
+                    '<button class="qa-quick-btn" data-question="이 문서를 요약해줘">요약</button>' +
+                    '<button class="qa-quick-btn" data-question="핵심 내용을 알려줘">핵심 내용</button>' +
+                    '<button class="qa-quick-btn" data-question="이 논문의 방법론을 설명해줘">방법론</button>' +
+                    '</div></div>';
+                // 추천 질문 이벤트 재바인딩
+                messagesEl.querySelectorAll('.qa-quick-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var q = btn.getAttribute('data-question');
+                        if (q) {
+                            var input = document.getElementById('qa-input');
+                            if (input) input.value = q;
+                            _qaSend();
+                        }
+                    });
+                });
+            }
+        }
+
+        // 탭 전환 시 Q&A 로드 + 초기화 버튼 토글
         (function _patchAiTabForQa() {
             var hdr = document.getElementById('hdr-ai-summary');
+            var resetBtn = document.getElementById('qa-reset-btn');
             if (!hdr) return;
             hdr.querySelectorAll('.ai-tab-btn').forEach(function(btn) {
                 btn.addEventListener('click', function() {
-                    if (btn.getAttribute('data-tab') === 'qa') {
-                        // 입력창에 포커스
+                    var isQa = btn.getAttribute('data-tab') === 'qa';
+                    if (resetBtn) resetBtn.style.display = isQa ? '' : 'none';
+                    if (isQa) {
                         setTimeout(function() {
                             var input = document.getElementById('qa-input');
                             if (input) input.focus();
@@ -3990,6 +4072,9 @@
                     }
                 });
             });
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() { _qaReset(); });
+            }
         })();
 
         function _qaSend() {
@@ -4007,8 +4092,11 @@
             // 사용자 메시지 추가
             _qaAddBubble('user', question);
 
-            // 로딩 상태
+            // 로딩 상태 — 입력 비활성화
             _qaIsLoading = true;
+            var sendBtn = document.getElementById('qa-send-btn');
+            if (input) input.disabled = true;
+            if (sendBtn) sendBtn.disabled = true;
             _qaAddTypingIndicator();
 
             // 스트리밍 요청
@@ -4079,6 +4167,7 @@
                 var fullText = '';
                 var bubbleEl = null;
                 var firstToken = true;
+                var sourcePages = [];
 
                 _qaStreamRafId = null;
                 _qaAutoScroll = true;
@@ -4132,6 +4221,9 @@
                                 if (data.conversation_id) {
                                     _qaConvId = data.conversation_id;
                                 }
+                                if (data.source_pages) {
+                                    sourcePages = data.source_pages;
+                                }
 
                             } else if (data.type === 'error') {
                                 if (firstToken) { _qaRemoveTypingIndicator(); firstToken = false; }
@@ -4144,23 +4236,32 @@
                     }
                 }
 
-                // 스트리밍 완료 — 마크다운 렌더링
+                // 스트리밍 완료 — 마크다운 렌더링 + 출처 + 복사
                 if (bubbleEl) {
-                    _qaFinalizeStreaming(bubbleEl, fullText);
+                    _qaFinalizeStreaming(bubbleEl, fullText, sourcePages);
                 }
 
-                // 정리
-                if (messagesEl && scrollListener) {
-                    messagesEl.removeEventListener('scroll', scrollListener);
-                }
                 try { reader.releaseLock(); } catch (e) {}
 
             } catch (err) {
                 _qaRemoveTypingIndicator();
-                _qaAddBubble('error', err.message || '응답 생성 실패');
+                // BUG-6: AbortError 사용자 친화적 메시지
+                var errMsg = (err.name === 'AbortError')
+                    ? '응답 시간이 초과되었습니다. 다시 시도해주세요.'
+                    : (err.message || '응답 생성 실패');
+                _qaAddBubble('error', errMsg);
             } finally {
                 _qaIsLoading = false;
                 if (_qaStreamRafId) { cancelAnimationFrame(_qaStreamRafId); _qaStreamRafId = null; }
+                // BUG-4: 입력 복원
+                var _input = document.getElementById('qa-input');
+                var _sendBtn = document.getElementById('qa-send-btn');
+                if (_input) { _input.disabled = false; _input.focus(); }
+                if (_sendBtn) _sendBtn.disabled = false;
+                // BUG-5: scrollListener 정리 (finally에서 보장)
+                if (messagesEl && scrollListener) {
+                    messagesEl.removeEventListener('scroll', scrollListener);
+                }
             }
         }
 
@@ -4189,35 +4290,65 @@
             });
         }
 
-        function _qaFinalizeStreaming(bubbleEl, rawText) {
+        function _qaFinalizeStreaming(bubbleEl, rawText, sourcePages) {
             if (!bubbleEl) return;
             bubbleEl.classList.remove('qa-streaming');
             // 마크다운 렌더링 (marked.js 사용 가능하면)
             var contentSpan = bubbleEl.querySelector('.qa-bubble-content');
             if (contentSpan) {
                 if (typeof marked !== 'undefined') {
-                    contentSpan.innerHTML = marked.parse(rawText);
+                    var parsed = marked.parse(rawText);
+                    contentSpan.innerHTML = (typeof DOMPurify !== 'undefined')
+                        ? DOMPurify.sanitize(parsed, { ADD_ATTR: ['target'] })
+                        : parsed;
                 } else {
                     contentSpan.textContent = rawText;
                 }
             }
             _qaRenderedLen = 0;
+
+            // 출처 페이지 배지
+            if (sourcePages && sourcePages.length > 0) {
+                var sourcesEl = document.createElement('div');
+                sourcesEl.className = 'qa-sources';
+                var uniquePages = sourcePages.filter(function(p, i, arr) { return arr.indexOf(p) === i; }).sort(function(a,b){return a-b;});
+                uniquePages.forEach(function(p) {
+                    var badge = document.createElement('button');
+                    badge.className = 'qa-source-badge';
+                    badge.textContent = 'p.' + p;
+                    badge.title = '페이지 ' + p + '로 이동';
+                    badge.addEventListener('click', function() {
+                        if (typeof goToPage === 'function') goToPage(p);
+                    });
+                    sourcesEl.appendChild(badge);
+                });
+                bubbleEl.appendChild(sourcesEl);
+            }
+
+            // 복사 버튼
+            var actionsEl = document.createElement('div');
+            actionsEl.className = 'qa-actions';
+            var copyBtn = document.createElement('button');
+            copyBtn.className = 'qa-action-btn';
+            copyBtn.title = '복사';
+            copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+            copyBtn.addEventListener('click', function() {
+                navigator.clipboard.writeText(rawText).then(function() {
+                    copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+                    setTimeout(function() {
+                        copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+                    }, 2000);
+                });
+            });
+            actionsEl.appendChild(copyBtn);
+            bubbleEl.appendChild(actionsEl);
         }
 
         // 문서 전환 시 요약·Q&A 캐시 초기화
         document.addEventListener('nb-doc-switch', function() {
             _aiSummaryCache = null;
             if (_aiSummaryPolling) { clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; }
-            // Q&A 리셋
-            _qaConvId = null;
-            _qaIsLoading = false;
-            var messagesEl = document.getElementById('qa-messages');
-            if (messagesEl) {
-                messagesEl.innerHTML = '<div class="qa-welcome" id="qa-welcome">' +
-                    '<p class="qa-welcome-title">문서에 대해 질문하세요</p>' +
-                    '<p class="qa-welcome-sub">이 문서의 내용을 바탕으로 답변합니다</p>' +
-                    '</div>';
-            }
+            _qaReset();
         });
 
     })();

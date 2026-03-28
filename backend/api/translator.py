@@ -622,7 +622,7 @@ async def api_document_chat_stream(
     conversation_id = request.conversation_id
 
     try:
-        token_iter, source_type, model_name, session_id = await ask_document_stream(
+        token_iter, source_type, model_name, session_id, source_pages = await ask_document_stream(
             user["username"], doc_id, question, conversation_id
         )
     except FileNotFoundError:
@@ -647,6 +647,7 @@ async def api_document_chat_stream(
                 "source_type": source_type,
                 "model": model_name,
                 "conversation_id": session_id,
+                "source_pages": source_pages,
             }, ensure_ascii=False) + "\n"
 
         except Exception as e:

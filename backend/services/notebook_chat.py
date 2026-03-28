@@ -65,11 +65,13 @@ def get_qa_context(username: str, doc_id: str) -> tuple[str, str]:
     return "", "none"
 
 
-def build_qa_context(question: str, full_text: str) -> str:
+def build_qa_context(question: str, full_text: str) -> tuple[str, list[int]]:
     """크기 적응형 컨텍스트 구성.
 
     짧은 문서 → 직접 주입 (업계 표준, Notion AI 방식)
     긴 문서 → 질문 관련 섹션 선별 (키워드 매칭)
+
+    Returns: (context_text, source_pages)
     """
     from services.md_translator import _strip_frontmatter
 
@@ -77,9 +79,17 @@ def build_qa_context(question: str, full_text: str) -> str:
     threshold = getattr(config, "TRANSLATOR_AI_QA_THRESHOLD", 0) or _DEFAULT_QA_THRESHOLD
 
     if len(text) <= threshold:
-        return text
+        pages = _extract_page_numbers(text)
+        return text, pages
 
-    return _select_relevant_sections(question, text, threshold)
+    context = _select_relevant_sections(question, text, threshold)
+    pages = _extract_page_numbers(context)
+    return context, pages
+
+
+def _extract_page_numbers(text: str) -> list[int]:
+    """텍스트 내 <!-- Page N --> 주석에서 페이지 번호 추출."""
+    return sorted(set(int(m) for m in re.findall(r'<!--\s*Page\s+(\d+)', text)))
 
 
 def _select_relevant_sections(question: str, full_text: str, max_chars: int) -> str:
@@ -132,10 +142,10 @@ async def ask_document_stream(
     doc_id: str,
     question: str,
     conversation_id: Optional[str] = None,
-) -> tuple[AsyncIterator[str], str, str, str]:
+) -> tuple[AsyncIterator[str], str, str, str, list[int]]:
     """문서 Q&A 스트리밍 응답.
 
-    Returns: (token_iterator, source_type, model_name, conversation_id)
+    Returns: (token_iterator, source_type, model_name, conversation_id, source_pages)
     """
     from services.conversation import store as conversation_store
 
@@ -154,9 +164,9 @@ async def ask_document_stream(
     if not full_text:
         async def error_stream():
             yield "문서 텍스트를 찾을 수 없습니다. 먼저 문서 추출 또는 번역을 실행해주세요."
-        return error_stream(), "none", "", session.id
+        return error_stream(), "none", "", session.id, []
 
-    context = build_qa_context(question, full_text)
+    context, source_pages = build_qa_context(question, full_text)
 
     # 4. 프롬프트 구성
     prompt = _build_qa_prompt(question, context, history)
@@ -170,4 +180,4 @@ async def ask_document_stream(
     # 6. 대화 기록 저장 (사용자 메시지 먼저, 어시스턴트는 스트리밍 완료 후 호출자가 저장)
     session.add_message("user", question)
 
-    return token_iter, source_type, model_name, session.id
+    return token_iter, source_type, model_name, session.id, source_pages

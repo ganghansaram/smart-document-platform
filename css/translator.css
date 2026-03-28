@@ -584,10 +584,24 @@ body[data-theme="dark"] .hero-banner-img {
 .panel-header { overflow: visible; }
 .panel-header .download-wrap { position: relative; z-index: 200; }
 
-/* ── 도구 패널 콘텐츠 (메모/용어집) ── */
+/* ── 도구 패널 콘텐츠 (메모/용어집/AI) ── */
 .tool-panel-content {
     padding: 0;
     text-align: left;
+}
+/* 우측 패널 스크롤 영역: AI 패널 활성 시 flex 체인 완성 */
+#right-scroll {
+    display: flex;
+    flex-direction: column;
+}
+
+/* AI 패널: flex 체인 유지하여 Q&A 스크롤 정상 동작 */
+.tool-panel-content#ai-summary-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* 메모 목록 */
@@ -2265,11 +2279,12 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
    Q&A 챗봇
    =================================== */
 
-/* 탭 콘텐츠 레이아웃 */
 .qa-tab-content {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
+    min-height: 0; /* flex 자식 shrink 허용 */
+    position: relative;
 }
 
 /* 메시지 영역 */
@@ -2280,6 +2295,8 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
+    min-height: 0; /* flex 자식 shrink 허용 */
+    position: relative;
 }
 
 /* 웰컴 메시지 */
@@ -2439,5 +2456,131 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
 .qa-send-btn svg {
     width: 16px;
     height: 16px;
+}
+
+/* 메시지 영역 래퍼 (스크롤 버튼 기준) */
+.qa-messages-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* 맨 아래로 스크롤 버튼 */
+.qa-scroll-bottom {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--panel-bg);
+    color: var(--text-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 10;
+    box-shadow: var(--shadow-sm);
+}
+.qa-scroll-bottom.visible {
+    opacity: 0.85;
+    pointer-events: auto;
+}
+.qa-scroll-bottom:hover {
+    opacity: 1;
+    background: var(--active-color);
+    color: #fff;
+    border-color: var(--active-color);
+}
+.qa-scroll-bottom svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 추천 질문 칩 */
+.qa-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: var(--space-sm);
+    justify-content: center;
+}
+.qa-quick-btn {
+    padding: 4px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background: transparent;
+    color: var(--text-dark);
+    font-size: 12px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+.qa-quick-btn:hover {
+    background: var(--active-color);
+    color: #fff;
+    border-color: var(--active-color);
+}
+
+/* 출처 페이지 배지 */
+.qa-sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: var(--space-xs);
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--border-color);
+}
+.qa-source-badge {
+    padding: 1px 8px;
+    border: none;
+    border-radius: 10px;
+    background: var(--active-color);
+    color: #fff;
+    font-size: 10px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    opacity: 0.8;
+}
+.qa-source-badge:hover {
+    opacity: 1;
+}
+
+/* 답변 액션 (복사 버튼) */
+.qa-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: var(--space-xs);
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.qa-bubble-assistant:hover .qa-actions {
+    opacity: 1;
+}
+.qa-action-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+}
+.qa-action-btn:hover {
+    color: var(--active-color);
+}
+
+/* 대화 초기화 버튼 */
+.qa-reset-btn svg {
+    width: 14px;
+    height: 14px;
 }
 
