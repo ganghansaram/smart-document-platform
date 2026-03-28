@@ -3945,12 +3945,279 @@
             return d.innerHTML;
         }
 
-        // 문서 전환 시 요약 캐시 초기화 — _initRailState에 훅
-        var _origInitRailState = typeof _initRailState === 'function' ? _initRailState : null;
-        // Note: _initRailState는 이미 정의되어 있으므로, 문서 전환 시 캐시만 리셋
+        // ══════════════════════════════════════
+        // Q&A 챗봇 (Explorer ai-chat.js 패턴 재활용)
+        // ══════════════════════════════════════
+
+        var _qaConvId = null;
+        var _qaIsLoading = false;
+        var _qaStreamRafId = null;
+        var _qaAutoScroll = true;
+        var _qaRenderedLen = 0;
+
+        // 입력 이벤트
+        (function _initQaInput() {
+            var input = document.getElementById('qa-input');
+            var sendBtn = document.getElementById('qa-send-btn');
+            if (!input || !sendBtn) return;
+
+            sendBtn.addEventListener('click', function() { _qaSend(); });
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    _qaSend();
+                }
+            });
+            // 자동 높이 조절
+            input.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+            });
+        })();
+
+        // 탭 전환 시 Q&A 로드
+        (function _patchAiTabForQa() {
+            var hdr = document.getElementById('hdr-ai-summary');
+            if (!hdr) return;
+            hdr.querySelectorAll('.ai-tab-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    if (btn.getAttribute('data-tab') === 'qa') {
+                        // 입력창에 포커스
+                        setTimeout(function() {
+                            var input = document.getElementById('qa-input');
+                            if (input) input.focus();
+                        }, 100);
+                    }
+                });
+            });
+        })();
+
+        function _qaSend() {
+            var input = document.getElementById('qa-input');
+            var question = input ? input.value.trim() : '';
+            if (!question || _qaIsLoading || !currentDocId) return;
+
+            input.value = '';
+            input.style.height = 'auto';
+
+            // 웰컴 메시지 숨기기
+            var welcome = document.getElementById('qa-welcome');
+            if (welcome) welcome.style.display = 'none';
+
+            // 사용자 메시지 추가
+            _qaAddBubble('user', question);
+
+            // 로딩 상태
+            _qaIsLoading = true;
+            _qaAddTypingIndicator();
+
+            // 스트리밍 요청
+            _qaStreamRequest(question);
+        }
+
+        function _qaAddBubble(role, content) {
+            var container = document.getElementById('qa-messages');
+            if (!container) return null;
+
+            var bubble = document.createElement('div');
+            bubble.className = 'qa-bubble qa-bubble-' + role;
+
+            if (role === 'error') {
+                bubble.innerHTML = '<span class="qa-error-icon">!</span> ' + _escHtml(content);
+            } else {
+                bubble.textContent = content;
+            }
+
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+            return bubble;
+        }
+
+        function _qaAddTypingIndicator() {
+            var container = document.getElementById('qa-messages');
+            if (!container) return;
+            var indicator = document.createElement('div');
+            indicator.className = 'qa-bubble qa-bubble-assistant qa-typing';
+            indicator.id = 'qa-typing';
+            indicator.innerHTML = '<span class="qa-dot"></span><span class="qa-dot"></span><span class="qa-dot"></span>';
+            container.appendChild(indicator);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function _qaRemoveTypingIndicator() {
+            var el = document.getElementById('qa-typing');
+            if (el) el.remove();
+        }
+
+        async function _qaStreamRequest(question) {
+            var controller = new AbortController();
+            var timeoutId = setTimeout(function() { controller.abort(); }, 180000);
+
+            try {
+                var payload = { question: question };
+                if (_qaConvId) payload.conversation_id = _qaConvId;
+
+                var response = await fetch(
+                    API + '/api/translator/document/' + currentDocId + '/chat/stream',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(payload),
+                        signal: controller.signal,
+                    }
+                );
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error('API 요청 실패: ' + response.status);
+                }
+
+                var reader = response.body.getReader();
+                var decoder = new TextDecoder();
+                var buffer = '';
+                var fullText = '';
+                var bubbleEl = null;
+                var firstToken = true;
+
+                _qaStreamRafId = null;
+                _qaAutoScroll = true;
+                _qaRenderedLen = 0;
+
+                // 스크롤 감지
+                var messagesEl = document.getElementById('qa-messages');
+                var scrollListener = null;
+                if (messagesEl) {
+                    scrollListener = function() {
+                        var gap = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight;
+                        _qaAutoScroll = gap < 40;
+                    };
+                    messagesEl.addEventListener('scroll', scrollListener);
+                }
+
+                while (true) {
+                    var result = await reader.read();
+                    if (result.done) break;
+
+                    buffer += decoder.decode(result.value, { stream: true });
+                    var lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (var i = 0; i < lines.length; i++) {
+                        var line = lines[i].trim();
+                        if (!line) continue;
+
+                        try {
+                            var data = JSON.parse(line);
+
+                            if (data.type === 'token') {
+                                if (firstToken) {
+                                    _qaRemoveTypingIndicator();
+                                    bubbleEl = document.createElement('div');
+                                    bubbleEl.className = 'qa-bubble qa-bubble-assistant qa-streaming';
+                                    var contentSpan = document.createElement('span');
+                                    contentSpan.className = 'qa-bubble-content';
+                                    bubbleEl.appendChild(contentSpan);
+                                    messagesEl.appendChild(bubbleEl);
+                                    firstToken = false;
+                                }
+                                fullText += data.content;
+                                _qaUpdateStreaming(bubbleEl, fullText);
+
+                            } else if (data.type === 'done') {
+                                if (firstToken) {
+                                    _qaRemoveTypingIndicator();
+                                    firstToken = false;
+                                }
+                                if (data.conversation_id) {
+                                    _qaConvId = data.conversation_id;
+                                }
+
+                            } else if (data.type === 'error') {
+                                if (firstToken) { _qaRemoveTypingIndicator(); firstToken = false; }
+                                throw new Error(data.message || 'LLM 오류');
+                            }
+                        } catch (parseErr) {
+                            if (parseErr instanceof SyntaxError) continue;
+                            throw parseErr;
+                        }
+                    }
+                }
+
+                // 스트리밍 완료 — 마크다운 렌더링
+                if (bubbleEl) {
+                    _qaFinalizeStreaming(bubbleEl, fullText);
+                }
+
+                // 정리
+                if (messagesEl && scrollListener) {
+                    messagesEl.removeEventListener('scroll', scrollListener);
+                }
+                try { reader.releaseLock(); } catch (e) {}
+
+            } catch (err) {
+                _qaRemoveTypingIndicator();
+                _qaAddBubble('error', err.message || '응답 생성 실패');
+            } finally {
+                _qaIsLoading = false;
+                if (_qaStreamRafId) { cancelAnimationFrame(_qaStreamRafId); _qaStreamRafId = null; }
+            }
+        }
+
+        function _qaUpdateStreaming(bubbleEl, fullText) {
+            if (!bubbleEl) return;
+            bubbleEl._pendingText = fullText;
+
+            if (_qaStreamRafId) return; // rAF 이미 예약됨
+            _qaStreamRafId = requestAnimationFrame(function() {
+                _qaStreamRafId = null;
+                var text = bubbleEl._pendingText || '';
+                var contentSpan = bubbleEl.querySelector('.qa-bubble-content');
+                if (contentSpan) {
+                    // 새로 추가된 부분만 append
+                    var delta = text.substring(_qaRenderedLen);
+                    if (delta) {
+                        contentSpan.appendChild(document.createTextNode(delta));
+                        _qaRenderedLen = text.length;
+                    }
+                }
+                // 자동 스크롤
+                if (_qaAutoScroll) {
+                    var container = document.getElementById('qa-messages');
+                    if (container) container.scrollTop = container.scrollHeight;
+                }
+            });
+        }
+
+        function _qaFinalizeStreaming(bubbleEl, rawText) {
+            if (!bubbleEl) return;
+            bubbleEl.classList.remove('qa-streaming');
+            // 마크다운 렌더링 (marked.js 사용 가능하면)
+            var contentSpan = bubbleEl.querySelector('.qa-bubble-content');
+            if (contentSpan) {
+                if (typeof marked !== 'undefined') {
+                    contentSpan.innerHTML = marked.parse(rawText);
+                } else {
+                    contentSpan.textContent = rawText;
+                }
+            }
+            _qaRenderedLen = 0;
+        }
+
+        // 문서 전환 시 요약·Q&A 캐시 초기화
         document.addEventListener('nb-doc-switch', function() {
             _aiSummaryCache = null;
             if (_aiSummaryPolling) { clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; }
+            // Q&A 리셋
+            _qaConvId = null;
+            _qaIsLoading = false;
+            var messagesEl = document.getElementById('qa-messages');
+            if (messagesEl) {
+                messagesEl.innerHTML = '<div class="qa-welcome" id="qa-welcome">' +
+                    '<p class="qa-welcome-title">문서에 대해 질문하세요</p>' +
+                    '<p class="qa-welcome-sub">이 문서의 내용을 바탕으로 답변합니다</p>' +
+                    '</div>';
+            }
         });
 
     })();

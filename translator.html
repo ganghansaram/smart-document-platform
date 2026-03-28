@@ -322,10 +322,19 @@
                                     <button class="btn btn-primary btn-sm" id="ai-retry-btn">재시도</button>
                                 </div>
                             </div>
-                            <!-- Q&A 탭 (Phase 4 Step 3에서 구현) -->
-                            <div class="ai-tab-content" id="ai-tab-qa" style="display:none">
-                                <div class="ai-state-empty">
-                                    <p class="ai-state-msg">Q&A 기능은 준비 중입니다</p>
+                            <!-- Q&A 탭 -->
+                            <div class="ai-tab-content qa-tab-content" id="ai-tab-qa" style="display:none">
+                                <div class="qa-messages" id="qa-messages">
+                                    <div class="qa-welcome" id="qa-welcome">
+                                        <p class="qa-welcome-title">문서에 대해 질문하세요</p>
+                                        <p class="qa-welcome-sub">이 문서의 내용을 바탕으로 답변합니다</p>
+                                    </div>
+                                </div>
+                                <div class="qa-input-area" id="qa-input-area">
+                                    <textarea class="qa-input" id="qa-input" placeholder="질문을 입력하세요..." rows="1"></textarea>
+                                    <button class="qa-send-btn" id="qa-send-btn" title="전송">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                    </button>
                                 </div>
                             </div>
                         </div>

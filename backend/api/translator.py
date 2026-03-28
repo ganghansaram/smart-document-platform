@@ -2,7 +2,8 @@
 Translator API — PDF 업로드, 페이지별 번역, 문서 관리
 """
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body, Request, BackgroundTasks
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from pydantic import BaseModel
 from typing import Optional
 
 from dependencies import get_current_user, require_editor
@@ -21,6 +22,7 @@ from services.translator_service import (
     get_web_extraction_status, get_full_extraction_status,
     get_web_extracted_md, get_web_full_extracted_md,
     start_summary_generation, get_summary_status, get_summary,
+    start_full_extraction,
     get_annotations, create_annotation, update_annotation, delete_annotation,
     ai_selection_query,
     search_documents,
@@ -593,6 +595,65 @@ async def api_get_summary(
         return {"status": "done", "summary": summary}
 
     return status
+
+
+# ── Q&A 챗봇 ──
+
+class NotebookChatRequest(BaseModel):
+    question: str
+    conversation_id: Optional[str] = None
+
+
+@router.post("/document/{doc_id}/chat/stream")
+async def api_document_chat_stream(
+    doc_id: str,
+    request: NotebookChatRequest,
+    user: dict = Depends(get_current_user),
+):
+    """문서 Q&A 스트리밍 (NDJSON). Explorer chat/stream과 동일 포맷."""
+    import json as _json
+    from services.notebook_chat import ask_document_stream
+    from services.conversation import store as conversation_store
+
+    question = request.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="질문이 비어있습니다")
+
+    conversation_id = request.conversation_id
+
+    try:
+        token_iter, source_type, model_name, session_id = await ask_document_stream(
+            user["username"], doc_id, question, conversation_id
+        )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+
+    async def event_generator():
+        full_answer = []
+        try:
+            async for token in token_iter:
+                full_answer.append(token)
+                yield _json.dumps({"type": "token", "content": token}, ensure_ascii=False) + "\n"
+
+            answer_text = "".join(full_answer)
+
+            # 어시스턴트 응답 대화 기록 저장
+            session = conversation_store.get_session(session_id)
+            if session:
+                session.add_message("assistant", answer_text)
+
+            yield _json.dumps({
+                "type": "done",
+                "source_type": source_type,
+                "model": model_name,
+                "conversation_id": session_id,
+            }, ensure_ascii=False) + "\n"
+
+        except Exception as e:
+            logger.error("Q&A 스트리밍 오류: %s", e, exc_info=True)
+            yield _json.dumps({"type": "error", "message": str(e)}, ensure_ascii=False) + "\n"
+
+    return StreamingResponse(event_generator(), media_type="application/x-ndjson")
 
 
 @router.get("/web-view/{doc_id}/full")

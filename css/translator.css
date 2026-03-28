@@ -2261,3 +2261,183 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
     background: var(--active-color);
 }
 
+/* ===================================
+   Q&A 챗봇
+   =================================== */
+
+/* 탭 콘텐츠 레이아웃 */
+.qa-tab-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* 메시지 영역 */
+.qa-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+/* 웰컴 메시지 */
+.qa-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    text-align: center;
+    gap: 4px;
+}
+.qa-welcome-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 0;
+}
+.qa-welcome-sub {
+    font-size: 12px;
+    color: var(--text-light);
+    margin: 0;
+}
+
+/* 채팅 버블 */
+.qa-bubble {
+    max-width: 88%;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-lg);
+    font-size: 13px;
+    line-height: 1.6;
+    word-break: break-word;
+}
+.qa-bubble-user {
+    align-self: flex-end;
+    background: var(--active-color);
+    color: #fff;
+    border-bottom-right-radius: var(--radius-xs);
+}
+.qa-bubble-assistant {
+    align-self: flex-start;
+    background: var(--content-bg);
+    color: var(--text-dark);
+    border-bottom-left-radius: var(--radius-xs);
+}
+.qa-bubble-assistant .qa-bubble-content p {
+    margin: 0 0 var(--space-xs);
+}
+.qa-bubble-assistant .qa-bubble-content p:last-child {
+    margin-bottom: 0;
+}
+.qa-bubble-assistant .qa-bubble-content ul,
+.qa-bubble-assistant .qa-bubble-content ol {
+    margin: var(--space-xs) 0;
+    padding-left: 18px;
+}
+.qa-bubble-assistant .qa-bubble-content strong {
+    font-weight: 600;
+}
+.qa-bubble-error {
+    align-self: center;
+    background: transparent;
+    color: var(--color-error);
+    font-size: 12px;
+    padding: var(--space-xs);
+}
+.qa-error-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-error);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* 타이핑 인디케이터 */
+.qa-typing {
+    display: flex;
+    gap: 4px;
+    padding: var(--space-sm) var(--space-md);
+}
+.qa-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-light);
+    animation: qa-bounce 1.2s infinite;
+}
+.qa-dot:nth-child(2) { animation-delay: 0.2s; }
+.qa-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes qa-bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-4px); }
+}
+
+/* 스트리밍 커서 */
+.qa-streaming .qa-bubble-content::after {
+    content: '';
+    display: inline-block;
+    width: 2px;
+    height: 14px;
+    background: var(--active-color);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: qa-cursor-blink 0.8s infinite;
+}
+@keyframes qa-cursor-blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* 입력 영역 */
+.qa-input-area {
+    display: flex;
+    gap: var(--space-xs);
+    padding: var(--space-sm);
+    border-top: 1px solid var(--border-color);
+    background: var(--panel-bg);
+}
+.qa-input {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--space-xs) var(--space-sm);
+    font-size: 13px;
+    background: var(--content-bg);
+    color: var(--text-dark);
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    line-height: 1.5;
+}
+.qa-input:focus {
+    border-color: var(--active-color);
+}
+.qa-send-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--active-color);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: var(--transition-fast);
+}
+.qa-send-btn:hover {
+    opacity: 0.85;
+}
+.qa-send-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
