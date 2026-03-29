@@ -211,15 +211,52 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 
 > 출처: Plan-17 Phase 4c
 > 번역 결과를 사용자가 직접 수정 가능 → "지식 저장소" 비전의 핵심 조각.
+> **결정 (2026-03-29):** Monaco Editor 재활용 (이미 `js/monaco-editor/`에 번들됨). EasyMDE 도입 불요.
 
-- ⬜ EasyMDE 번들 준비 (~400KB, CodeMirror 포함) → `js/lib/easymde/`
-  - 폐쇄망 호환: UMD 빌드 `<script>` 로드
-  - 대안 검토: Monaco Editor가 이미 `js/monaco-editor/`에 존재 — 재활용 가능성 평가
-- ⬜ 웹 뷰 패널 헤더에 "편집" 버튼 추가 (번역 완료 상태에서만 노출)
-- ⬜ 편집 UI: 모달 오버레이 (`.modal-overlay` + `.modal-box` 패턴) 또는 패널 내 인라인
-- ⬜ 저장: `PUT /api/translator/web-view/{doc_id}/page/{page_num}` (API 이미 설계됨)
-- ⬜ 저장 완료 → marked.js 재렌더링 + `full_translated.md` 자동 재병합
-- ⬜ 다크모드 검증 (EasyMDE/Monaco 테마 오버라이드)
+**백엔드 상태: 100% 완료** — PUT API + `merge_full_translated()` 재병합 이미 구현됨.
+
+#### Step 1: 공통 에디터 코어 분리 (리팩토링)
+
+> Explorer(`js/editor.js`)와 Translator가 동일 에디터 코어를 공유하도록 분리.
+> 목적: 스타일·로직 변경을 한 곳에서 관리하여 시간에 따른 분기 방지.
+
+- ⬜ `js/editor-core.js` 신규 생성 — 공통 엔진 (Strategy 패턴)
+  - Monaco 로드 (`loadMonaco()`)
+  - 분할 뷰 컨테이너 생성 (소스 + 프리뷰 + 리사이즈 핸들)
+  - 양방향 네비게이션 (커서→프리뷰 하이라이트, 프리뷰 클릭→소스 이동)
+  - 변경 감지, 미저장 경고 다이얼로그, 전체화면 토글
+  - **콜백 주입 인터페이스:**
+    ```js
+    createDocumentEditor({
+        container,           // 에디터를 넣을 DOM
+        language,            // 'html' | 'markdown'
+        renderPreview(content), // 프리뷰 렌더링 (HTML: innerHTML, MD: marked.parse)
+        onSave(content),     // 저장 API 호출
+        resolveAssets(content), // 이미지 등 상대경로 해결 (선택)
+    })
+    ```
+- ⬜ `css/editor.css` 신규 생성 — 공통 에디터 스타일
+  - `index.html` 인라인 `<style>` 중 에디터 관련 CSS 추출
+  - 모달, 분할뷰, 하이라이트, 로딩 오버레이, 확인 다이얼로그
+  - 다크모드 변형 포함, 토큰 변수 사용
+- ⬜ `js/editor.js` 리팩토링 — Explorer 어댑터로 축소
+  - `editor-core.js`의 `createDocumentEditor()` 호출
+  - Explorer 전용: `language: 'html'`, `innerHTML` 프리뷰, 파일 시스템 PUT API
+  - 기존 동작 100% 유지 (회귀 없음)
+- ⬜ 검증: Explorer 편집기 기존 기능 전수 테스트 (열기/편집/프리뷰/네비게이션/저장/전체화면)
+
+#### Step 2: Translator 어댑터 구현
+
+- ⬜ translator.html에 `editor-core.js` + `css/editor.css` 로드
+- ⬜ 웹 뷰 패널 헤더에 "편집" 버튼 추가 (번역 완료 또는 추출 완료 상태에서만 노출)
+- ⬜ Translator 어댑터 — `createDocumentEditor()` 호출
+  - `language: 'markdown'`
+  - `renderPreview`: `marked.parse()` + DOMPurify (기존 웹뷰 렌더링 로직 재사용)
+  - `onSave`: `PUT /api/translator/web-view/{doc_id}/page/{page_num}` 호출
+  - `resolveAssets`: 이미지 경로를 `/api/translator/` 엔드포인트로 해결
+- ⬜ 저장 완료 → 웹 뷰 패널 재렌더링 + `full_translated.md` 자동 재병합 (백엔드 자동 처리)
+- ⬜ 다크모드 검증 (Monaco `vs-dark` 테마 자동 전환)
+- ⬜ 검증: 편집→저장→프리뷰 갱신→전체 MD 재병합 E2E 테스트
 
 ### Phase 6: 클릭 네비게이션 — ~2일
 
@@ -286,7 +323,7 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 | 2 | **검색 구분 UI + ZIP 다운로드 + 검색 UX 통일** | ~1.5일 | Plan-17 Ph.4b | ✅ |
 | 3 | **관리자 설정 GUI** (웹 뷰 추출 서브탭 6개 항목) | ~반나절 | Plan-17 Ph.4d | ✅ |
 | 4 | **AI 요약·Q&A 패널** (요약 탭 + 챗봇 탭) | ~4일 | Plan-18 Ph.6 + Plan-17 Ph.6 | ✅ |
-| 5 | **Markdown 편집기** (EasyMDE 또는 Monaco) | ~2일 | Plan-17 Ph.4c | ⬜ |
+| 5 | **Markdown 편집기** (공통 코어 분리 + Monaco 재활용) | ~2일 | Plan-17 Ph.4c | ⬜ |
 | 6 | **클릭 네비게이션** (원문↔번역 블록 매핑) | ~2일 | Plan-17 Ph.4d | ⬜ |
 | 7 | **마인드맵 패널** (확장 모드, 라이브러리 번들) | ~3일 | Plan-18 Ph.7 | ⬜ |
 
@@ -302,7 +339,7 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 | 리스크 | 영향 | 대응 |
 |--------|------|------|
 | Explorer/Compare CSS 교체 시 기존 레이아웃 깨짐 | 화면별 개별 검증 필요 | 화면당 Light+Dark 전수 검증, 기능 변경 없이 CSS만 |
-| EasyMDE CodeMirror CSS 충돌 | 다크모드 깨짐 | Monaco Editor 재활용 대안 검토, CSS 스코핑 |
+| 에디터 코어 분리 시 Explorer 회귀 | 편집기 동작 깨짐 | Step 1 완료 후 Explorer 전수 테스트, 기존 동작 100% 유지 확인 |
 | AI 요약 품질 (Ollama 소형 모델) | 요약이 부정확할 수 있음 | 사용자 편집 가능, 모델 선택 옵션 제공 |
 | 마인드맵 라이브러리 폐쇄망 호환 | CDN 의존 시 사용 불가 | UMD 빌드 확인, Markmap 우선 검토 |
 | ZIP 대용량 문서 | 이미지 assets 다수 시 용량 | 스트리밍 응답 또는 용량 제한 |

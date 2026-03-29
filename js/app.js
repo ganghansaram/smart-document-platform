@@ -691,21 +691,7 @@ function optimizeContent(html) {
  * @param {string} message - 표시할 메시지
  * @param {string} [type] - 'success' | 'error' | 'warning' (기본: info)
  */
-function showToast(message, type) {
-    var toast = document.getElementById('app-toast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'app-toast';
-        toast.className = 'toast';
-        document.body.appendChild(toast);
-    }
-    clearTimeout(toast._timer);
-    toast.textContent = message;
-    toast.className = 'toast' + (type ? ' ' + type : '') + ' show';
-    toast._timer = setTimeout(function() {
-        toast.classList.remove('show');
-    }, 3000);
-}
+// showToast() → js/toast.js 로 이관됨
 
 // 브라우저 뒤로가기/앞으로가기 지원
 window.addEventListener('popstate', function(event) {

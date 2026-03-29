@@ -161,14 +161,12 @@
     position: relative;
 }
 
-.editor-body #toast-editor {
+.editor-body #toast-editor,
+.editor-body #ec-body-inner {
     flex: 1;
     height: 100%;
-}
-
-/* Monaco 에디터 스플릿 레이아웃 */
-.editor-body #toast-editor {
-    height: 100%;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* 에디터 로딩 오버레이 */
@@ -240,12 +238,14 @@
     background-color: var(--active-color);
 }
 
-#monaco-editor {
+#monaco-editor,
+#ec-monaco {
     flex: 1;
     min-height: 0;
 }
 
-#monaco-preview {
+#monaco-preview,
+#ec-preview {
     flex: 1;
     overflow: auto;
     padding: 20px 40px;
@@ -254,28 +254,30 @@
 }
 
 /* 미리보기 영역 스타일 (main-content 상속) */
-#monaco-preview h1,
-#monaco-preview h2,
-#monaco-preview h3,
-#monaco-preview h4,
-#monaco-preview h5,
-#monaco-preview h6,
-#monaco-preview p,
-#monaco-preview ul,
-#monaco-preview ol,
-#monaco-preview table {
+#monaco-preview h1, #ec-preview h1,
+#monaco-preview h2, #ec-preview h2,
+#monaco-preview h3, #ec-preview h3,
+#monaco-preview h4, #ec-preview h4,
+#monaco-preview h5, #ec-preview h5,
+#monaco-preview h6, #ec-preview h6,
+#monaco-preview p, #ec-preview p,
+#monaco-preview ul, #ec-preview ul,
+#monaco-preview ol, #ec-preview ol,
+#monaco-preview table, #ec-preview table {
     max-width: none;
 }
 
 /* 미리보기 요소 호버 (클릭 가능 표시) */
-#monaco-preview *:hover {
+#monaco-preview *:hover,
+#ec-preview *:hover {
     cursor: pointer;
     outline: 1px dashed rgba(59, 130, 246, 0.3);
     outline-offset: 1px;
 }
 
 /* 커서 위치 하이라이트 */
-#monaco-preview .editor-highlight {
+#monaco-preview .editor-highlight,
+#ec-preview .editor-highlight {
     outline: 2px solid var(--active-color);
     outline-offset: 2px;
     background-color: rgba(59, 130, 246, 0.1);

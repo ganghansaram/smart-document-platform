@@ -1479,6 +1479,12 @@
         function updateToolbarForStatus(status) {
             // 웹 뷰 모드에서는 범위 번역 항상 숨김
             var hideRange = (translateEngine === 'web');
+            // 편집 버튼: 웹뷰 번역 완료 + 페이지별 모드에서만 표시
+            // (전체 문서 모드에서는 currentPage와 다른 페이지를 보고 있으므로 숨김)
+            var $editBtn = document.getElementById('web-edit-btn');
+            if ($editBtn) {
+                $editBtn.style.display = (translateEngine === 'web' && status === 'done' && !webFullViewMode) ? '' : 'none';
+            }
 
             if (status === 'pending' || status === 'error') {
                 $translateBtn.style.display = '';
@@ -4350,5 +4356,75 @@
             if (_aiSummaryPolling) { clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; }
             _qaReset();
         });
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Markdown 편집기 (EditorCore 어댑터)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        var _nbEditor = null;
+
+        function _initNotebookEditor() {
+            if (typeof EditorCore === 'undefined') return;
+
+            _nbEditor = EditorCore.create({
+                language: 'markdown',
+                title: 'Markdown Editor',
+                sourceLabel: 'Markdown',
+                previewLabel: 'Preview',
+                previewClass: 'markdown-body web-view-content',
+                autoSaveInterval: 0,
+                renderPreview: function (md) {
+                    // frontmatter 제거
+                    if (md.startsWith('---')) {
+                        var endIdx = md.indexOf('---', 3);
+                        if (endIdx > 0) md = md.substring(endIdx + 3).trim();
+                    }
+                    // 이미지 경로 → API URL
+                    var assetBase = API + '/api/translator/web-view/' + currentDocId + '/page/' + currentPage + '/assets/';
+                    md = md.replace(/!\[([^\]]*)\]\(assets\/([^)]+)\)/g, '![$1](' + assetBase + '$2)');
+                    md = md.replace(/src="assets\/([^"]+)"/g, 'src="' + assetBase + '$1"');
+                    // marked → DOMPurify
+                    return DOMPurify.sanitize(marked.parse(md), { ADD_ATTR: ['style'] });
+                },
+                onSave: async function (content) {
+                    var resp = await fetch(API + '/api/translator/web-view/' + currentDocId + '/page/' + currentPage, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ markdown: content }),
+                    });
+                    if (!resp.ok) {
+                        var err = await resp.json().catch(function () { return {}; });
+                        throw new Error(err.detail || 'Save failed');
+                    }
+                    // 저장 성공 → 우측 웹뷰 패널 재렌더링
+                    showRightWebView();
+                },
+                onClose: function () { /* nothing */ },
+            });
+
+            // 편집 버튼 클릭 → 현재 페이지 MD 로드 후 에디터 열기
+            var $editBtn = document.getElementById('web-edit-btn');
+            if ($editBtn) {
+                $editBtn.addEventListener('click', function () {
+                    if (!currentDocId) return;
+                    fetch(API + '/api/translator/web-view/' + currentDocId + '/page/' + currentPage, {
+                        credentials: 'include',
+                    }).then(function (r) {
+                        if (!r.ok) throw new Error('load failed');
+                        return r.json();
+                    }).then(function (data) {
+                        var md = data.markdown || '';
+                        var docPath = currentDocId + ' / Page ' + currentPage;
+                        _nbEditor.open(md, docPath);
+                    }).catch(function (err) {
+                        // editor load error — toast shown below
+                        if (typeof showToast === 'function') showToast('편집할 문서를 불러올 수 없습니다', 'error');
+                    });
+                });
+            }
+        }
+
+        _initNotebookEditor();
 
     })();
