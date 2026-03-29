@@ -75,6 +75,7 @@
     --panel-bg: #f8f9fa;
     --content-bg: #ffffff;
     --panel-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06);
+    --panel-border: none;
 
     /* 폰트 사이즈 3단계 */
     --font-title: 15px;
@@ -134,6 +135,7 @@ body[data-theme="dark"] {
     --panel-bg: #1a1a2e;
     --content-bg: #22223a;
     --panel-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.3);
+    --panel-border: 1px solid rgba(255,255,255,0.06);
 
     /* Diff 색상 */
     --diff-added: rgba(46,160,67,0.15);

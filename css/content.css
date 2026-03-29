@@ -556,7 +556,10 @@ body[data-table-style="minimal"] .main-content table tbody tr:last-child td {
 
 .section-nav {
     padding: 10px;
-    overflow-x: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    min-height: 0;
 }
 
 .section-nav > ul {
@@ -813,6 +816,7 @@ body[data-theme="dark"] .search-glossary-abbr {
     overflow: hidden;
     background-color: var(--dark-gray);
     margin: -40px 0 0 -40px;
+    border-radius: var(--panel-radius) var(--panel-radius) 0 0;
 }
 
 .banner-slide {

@@ -547,6 +547,7 @@ body[data-theme="dark"] .tree-item .item-icon.icon-settings {
     font-size: 11px;
     color: var(--medium-gray);
     flex-shrink: 0;
+    border-radius: 0 0 var(--panel-radius) var(--panel-radius);
 }
 
 .index-status-dot {
