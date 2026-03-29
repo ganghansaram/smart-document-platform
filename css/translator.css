@@ -1607,6 +1607,53 @@ body[data-theme="dark"] .highlight.has-memo::after {
     100% { filter: none; }
 }
 
+/* ===================================
+   클릭 네비게이션 (Phase 6)
+   원문 PDF ↔ 번역 MD 양방향 블록 매핑
+   =================================== */
+
+/* 좌측 PDF 위 투명 박스 — 기본 상태 */
+.nav-box {
+    transition: background-color var(--transition-fast), outline var(--transition-fast);
+}
+.nav-box:hover {
+    background-color: color-mix(in srgb, var(--active-color) 10%, transparent);
+    outline: 1px dashed color-mix(in srgb, var(--active-color) 40%, transparent);
+    outline-offset: -1px;
+}
+/* 좌측 PDF 박스 — 활성(클릭) 상태 */
+.nav-box.nav-active {
+    background-color: color-mix(in srgb, var(--active-color) 18%, transparent);
+    outline: 2px solid var(--active-color);
+    outline-offset: -1px;
+    animation: navBoxFlash 2s ease forwards;
+}
+@keyframes navBoxFlash {
+    0%   { background-color: color-mix(in srgb, var(--active-color) 25%, transparent); }
+    100% { background-color: transparent; outline-color: transparent; }
+}
+
+/* 우측 MD 블록 — 네비게이션 대상 표시 */
+.web-view-content [data-box-index] {
+    cursor: pointer;
+    transition: background-color var(--transition-fast), outline var(--transition-fast);
+    border-radius: var(--radius-sm);
+}
+.web-view-content [data-box-index]:hover {
+    background-color: color-mix(in srgb, var(--active-color) 6%, transparent);
+}
+/* 우측 MD 블록 — 활성(클릭됨) 상태 */
+.web-view-content .nav-md-active {
+    outline: 2px solid var(--active-color);
+    outline-offset: 2px;
+    background-color: color-mix(in srgb, var(--active-color) 10%, transparent);
+    animation: navMdFlash 2s ease forwards;
+}
+@keyframes navMdFlash {
+    0%   { background-color: color-mix(in srgb, var(--active-color) 15%, transparent); }
+    100% { background-color: transparent; outline-color: transparent; }
+}
+
 /* 트리 폴더 drag-over 하이라이트 */
 .tree-item.drag-over {
     background: var(--active-color-subtle) !important;

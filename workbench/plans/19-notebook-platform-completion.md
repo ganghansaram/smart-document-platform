@@ -1,7 +1,7 @@
 # Plan 19: Notebook 플랫폼 완성
 
 > 작성일: 2026-03-26
-> 상태: Phase 5 완료 / Phase 6 미착수
+> 상태: Phase 6 완료 / Phase 7 미착수
 > 브랜치: `plan17-library` (기존 브랜치 계속 사용)
 > 선행: Plan-17 Phase 1~5 완료, Plan-18 Phase 1a~5 완료
 > 범위: Plan-17/18 잔여 항목 통합 + 우선순위 재편
@@ -36,7 +36,7 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 | ~~검색 인덱스 `translated_pages`~~ | ✅ | ✅ Phase 2에서 해결 (배지 구분) |
 | ~~웹 뷰 설정 키 6개~~ | ✅ | ✅ Phase 3에서 해결 (admin-settings GUI) |
 | ~~웹 뷰 Markdown 편집~~ | ✅ PUT API | ✅ Phase 5에서 해결 (EditorCore + Monaco) |
-| **page_boxes 좌표 데이터** | ✅ `web_page_boxes.json` 저장, API 응답 포함 | ❌ 클릭 네비게이션 미구현 |
+| ~~page_boxes 좌표 데이터~~ | ✅ `web_page_boxes.json` 저장, API 응답 포함 | ✅ Phase 6에서 해결 (양방향 클릭 네비게이션) |
 | **frontmatter summary/keywords** | ✅ 빈 필드로 구조 존재 | ❌ 자동 생성 로직 없음 |
 | **annotation CRUD API** | ✅ 완전 구현 | ❌ 카드 목록에 문서별 메모 수 미표시 |
 
@@ -245,16 +245,22 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 - ✅ 다크모드 검증 (Monaco `vs-dark` 테마 자동 전환 + 테마 토글 시 동기화)
 - ✅ 검증: 편집→저장→프리뷰 갱신→전체 MD 재병합 E2E 테스트
 
-### Phase 6: 클릭 네비게이션 — ~2일
+### Phase 6: 클릭 네비게이션 — 완료
 
 > 출처: Plan-17 Phase 4d-1
 > `web_page_boxes.json`에 블록별 PDF 좌표가 이미 저장되어 있음. 프론트엔드만 구현.
 
-- ⬜ 웹 뷰 Markdown 렌더링 시 블록별 `data-box-index` 속성 부여
-- ⬜ 우측 Markdown 블록 클릭 → 좌측 PDF 해당 영역으로 스크롤 + 박스 하이라이트
-- ⬜ 좌측 PDF 영역 클릭 → 우측 Markdown 해당 블록으로 스크롤 + 배경 플래시
-- ⬜ 기존 마킹 시스템의 `scrollIntoView` + 하이라이트 패턴 재활용
-- ⬜ `GET /api/translator/web-translate/{doc_id}/page/{page_num}/boxes` API 연결
+- ✅ `page_boxes` 데이터 캐시 (`_navBoxes`) + 현재 scale 외부 노출 (`_navScale`, `_navPdfViewport`)
+- ✅ 웹 뷰 렌더링 후 블록별 `data-box-index` 속성 부여 (순서 매칭, page-header/footer 제외)
+- ✅ 좌측 PDF 위에 투명 boxes 오버레이 레이어 (`.nav-box-layer` → `.nav-box`)
+- ✅ 우측→좌측: MD 블록 클릭 → PDF 해당 box 스크롤 + 아웃라인 하이라이트 (2초 페이드)
+- ✅ 좌측→우측: PDF box 클릭 → MD 해당 블록 스크롤 + 배경 플래시 (2초 페이드)
+- ✅ 호버: 양쪽 모두 dashed 아웃라인으로 클릭 가능 표시
+- ✅ 줌/페이지 변경 시 오버레이 자동 재그리기 (`renderLeftPage` 완료 훅)
+- ✅ 전체 문서 모드·PDF 엔진 모드에서 오버레이 비활성
+- ✅ 기존 텍스트 선택/하이라이트 이벤트와 `stopPropagation`으로 충돌 방지
+- ✅ CSS: `var(--active-color)`, `var(--transition-fast)`, `var(--radius-sm)` 토큰 사용
+- ✅ 별도 API 호출 불필요 — 기존 웹뷰 API 응답의 `page_boxes` 필드 재사용
 
 ### Phase 7: 마인드맵 패널 — ~3일
 
@@ -311,7 +317,7 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 | 3 | **관리자 설정 GUI** (웹 뷰 추출 서브탭 6개 항목) | ~반나절 | Plan-17 Ph.4d | ✅ |
 | 4 | **AI 요약·Q&A 패널** (요약 탭 + 챗봇 탭) | ~4일 | Plan-18 Ph.6 + Plan-17 Ph.6 | ✅ |
 | 5 | **Markdown 편집기** (공통 코어 분리 + Monaco 재활용 + toast 공통화) | ~2일 | Plan-17 Ph.4c | ✅ |
-| 6 | **클릭 네비게이션** (원문↔번역 블록 매핑) | ~2일 | Plan-17 Ph.4d | ⬜ |
+| 6 | **클릭 네비게이션** (원문↔번역 블록 양방향 매핑) | ~2일 | Plan-17 Ph.4d | ✅ |
 | 7 | **마인드맵 패널** (확장 모드, 라이브러리 번들) | ~3일 | Plan-18 Ph.7 | ⬜ |
 
 **전체 합계**: ~15.5일
