@@ -1,7 +1,7 @@
 # Plan 19: Notebook 플랫폼 완성
 
 > 작성일: 2026-03-26
-> 상태: 설계 완료 / Phase 1 미착수
+> 상태: Phase 5 완료 / Phase 6 미착수
 > 브랜치: `plan17-library` (기존 브랜치 계속 사용)
 > 선행: Plan-17 Phase 1~5 완료, Plan-18 Phase 1a~5 완료
 > 범위: Plan-17/18 잔여 항목 통합 + 우선순위 재편
@@ -33,9 +33,10 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 
 | 기능 | 백엔드 상태 | 프론트엔드 상태 |
 |------|-----------|---------------|
-| **검색 인덱스 `translated_pages`** | ✅ 저장·검색·`match_source` 구분 완료 | ❌ UI에서 원문/번역 구분 없음 |
-| **웹 뷰 설정 키 6개** | ✅ `config.py`에 `TRANSLATOR_WEB_*` 정의, `settings_service.py` 매핑 | ❌ admin-settings GUI 없음 |
-| **page_boxes 좌표 데이터** | ✅ `web_page_boxes.json` 저장, `get_web_page_boxes()` API | ❌ 클릭 네비게이션 미구현 |
+| ~~검색 인덱스 `translated_pages`~~ | ✅ | ✅ Phase 2에서 해결 (배지 구분) |
+| ~~웹 뷰 설정 키 6개~~ | ✅ | ✅ Phase 3에서 해결 (admin-settings GUI) |
+| ~~웹 뷰 Markdown 편집~~ | ✅ PUT API | ✅ Phase 5에서 해결 (EditorCore + Monaco) |
+| **page_boxes 좌표 데이터** | ✅ `web_page_boxes.json` 저장, API 응답 포함 | ❌ 클릭 네비게이션 미구현 |
 | **frontmatter summary/keywords** | ✅ 빈 필드로 구조 존재 | ❌ 자동 생성 로직 없음 |
 | **annotation CRUD API** | ✅ 완전 구현 | ❌ 카드 목록에 문서별 메모 수 미표시 |
 
@@ -207,7 +208,7 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 - ✅ 버그 11건 수정 (패널 간섭, XSS, 메모리 누수, 입력 disabled 등)
 - ⏭️ 자동 요약 옵션 — 실사용 피드백 후 활성화 (관리자 GUI 토글 준비됨)
 
-### Phase 5: Markdown 편집기 — ~2일
+### Phase 5: Markdown 편집기 — 완료
 
 > 출처: Plan-17 Phase 4c
 > 번역 결과를 사용자가 직접 수정 가능 → "지식 저장소" 비전의 핵심 조각.
@@ -220,43 +221,29 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 > Explorer(`js/editor.js`)와 Translator가 동일 에디터 코어를 공유하도록 분리.
 > 목적: 스타일·로직 변경을 한 곳에서 관리하여 시간에 따른 분기 방지.
 
-- ⬜ `js/editor-core.js` 신규 생성 — 공통 엔진 (Strategy 패턴)
-  - Monaco 로드 (`loadMonaco()`)
-  - 분할 뷰 컨테이너 생성 (소스 + 프리뷰 + 리사이즈 핸들)
-  - 양방향 네비게이션 (커서→프리뷰 하이라이트, 프리뷰 클릭→소스 이동)
-  - 변경 감지, 미저장 경고 다이얼로그, 전체화면 토글
-  - **콜백 주입 인터페이스:**
-    ```js
-    createDocumentEditor({
-        container,           // 에디터를 넣을 DOM
-        language,            // 'html' | 'markdown'
-        renderPreview(content), // 프리뷰 렌더링 (HTML: innerHTML, MD: marked.parse)
-        onSave(content),     // 저장 API 호출
-        resolveAssets(content), // 이미지 등 상대경로 해결 (선택)
-    })
-    ```
-- ⬜ `css/editor.css` 신규 생성 — 공통 에디터 스타일
-  - `index.html` 인라인 `<style>` 중 에디터 관련 CSS 추출
-  - 모달, 분할뷰, 하이라이트, 로딩 오버레이, 확인 다이얼로그
-  - 다크모드 변형 포함, 토큰 변수 사용
-- ⬜ `js/editor.js` 리팩토링 — Explorer 어댑터로 축소
-  - `editor-core.js`의 `createDocumentEditor()` 호출
-  - Explorer 전용: `language: 'html'`, `innerHTML` 프리뷰, 파일 시스템 PUT API
-  - 기존 동작 100% 유지 (회귀 없음)
-- ⬜ 검증: Explorer 편집기 기존 기능 전수 테스트 (열기/편집/프리뷰/네비게이션/저장/전체화면)
+- ✅ `js/editor-core.js` 신규 생성 — 공통 엔진 (Strategy 패턴)
+  - `EditorCore.create(options)` — 콜백 주입 인터페이스
+  - Monaco 로드, 분할 뷰, 양방향 네비게이션, 변경 감지, 미저장 경고, 전체화면
+  - HTML/Markdown 양쪽 모드 지원 (하이라이트·소스이동 로직 분기)
+  - 다크모드 자동 감지 (`vs-dark`), 테마 전환 시 MutationObserver 동기화
+- ✅ `css/editor.css` 확장 — `#ec-*` 셀렉터 추가, flex 레이아웃 안정화
+- ✅ `js/editor.js` 리팩토링 — Explorer 어댑터로 축소 (803→157줄)
+  - `EditorCore.create({ language: 'html' })` 호출
+  - 기존 외부 인터페이스 100% 유지 (`openEditor`, `updateEditButtonVisibility`, `EditorState`)
+- ✅ `js/toast.js` 신규 — `showToast()` 공통화 (`app.js`에서 추출, Explorer+Notebook 공용)
+- ✅ 검증: Explorer 편집기 기존 기능 전수 테스트 — 회귀 없음
 
 #### Step 2: Translator 어댑터 구현
 
-- ⬜ translator.html에 `editor-core.js` + `css/editor.css` 로드
-- ⬜ 웹 뷰 패널 헤더에 "편집" 버튼 추가 (번역 완료 또는 추출 완료 상태에서만 노출)
-- ⬜ Translator 어댑터 — `createDocumentEditor()` 호출
-  - `language: 'markdown'`
-  - `renderPreview`: `marked.parse()` + DOMPurify (기존 웹뷰 렌더링 로직 재사용)
-  - `onSave`: `PUT /api/translator/web-view/{doc_id}/page/{page_num}` 호출
-  - `resolveAssets`: 이미지 경로를 `/api/translator/` 엔드포인트로 해결
-- ⬜ 저장 완료 → 웹 뷰 패널 재렌더링 + `full_translated.md` 자동 재병합 (백엔드 자동 처리)
-- ⬜ 다크모드 검증 (Monaco `vs-dark` 테마 자동 전환)
-- ⬜ 검증: 편집→저장→프리뷰 갱신→전체 MD 재병합 E2E 테스트
+- ✅ translator.html에 `editor-core.js` + `css/editor.css` + `toast.js` 로드
+- ✅ 웹 뷰 패널 헤더에 편집 아이콘 버튼 추가 (웹뷰 번역 완료 + 페이지별 모드에서만 노출)
+- ✅ Translator 어댑터 — `EditorCore.create({ language: 'markdown' })` 호출
+  - `renderPreview`: frontmatter 제거 → 이미지 경로 치환 → `marked.parse()` + DOMPurify
+  - `onSave`: `PUT /api/translator/web-view/{doc_id}/page/{page_num}` → 웹뷰 재렌더링
+- ✅ 저장 완료 → showToast 피드백 + 웹 뷰 패널 재렌더링 + `full_translated.md` 자동 재병합
+- ✅ 전체 문서 모드에서 편집 버튼 숨김 (페이지 혼동 방지)
+- ✅ 다크모드 검증 (Monaco `vs-dark` 테마 자동 전환 + 테마 토글 시 동기화)
+- ✅ 검증: 편집→저장→프리뷰 갱신→전체 MD 재병합 E2E 테스트
 
 ### Phase 6: 클릭 네비게이션 — ~2일
 
@@ -323,7 +310,7 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 | 2 | **검색 구분 UI + ZIP 다운로드 + 검색 UX 통일** | ~1.5일 | Plan-17 Ph.4b | ✅ |
 | 3 | **관리자 설정 GUI** (웹 뷰 추출 서브탭 6개 항목) | ~반나절 | Plan-17 Ph.4d | ✅ |
 | 4 | **AI 요약·Q&A 패널** (요약 탭 + 챗봇 탭) | ~4일 | Plan-18 Ph.6 + Plan-17 Ph.6 | ✅ |
-| 5 | **Markdown 편집기** (공통 코어 분리 + Monaco 재활용) | ~2일 | Plan-17 Ph.4c | ⬜ |
+| 5 | **Markdown 편집기** (공통 코어 분리 + Monaco 재활용 + toast 공통화) | ~2일 | Plan-17 Ph.4c | ✅ |
 | 6 | **클릭 네비게이션** (원문↔번역 블록 매핑) | ~2일 | Plan-17 Ph.4d | ⬜ |
 | 7 | **마인드맵 패널** (확장 모드, 라이브러리 번들) | ~3일 | Plan-18 Ph.7 | ⬜ |
 
@@ -339,7 +326,7 @@ Plan-17(Markdown 파이프라인)과 Plan-18(뷰어 레이아웃 재설계)의 �
 | 리스크 | 영향 | 대응 |
 |--------|------|------|
 | Explorer/Compare CSS 교체 시 기존 레이아웃 깨짐 | 화면별 개별 검증 필요 | 화면당 Light+Dark 전수 검증, 기능 변경 없이 CSS만 |
-| 에디터 코어 분리 시 Explorer 회귀 | 편집기 동작 깨짐 | Step 1 완료 후 Explorer 전수 테스트, 기존 동작 100% 유지 확인 |
+| ~~에디터 코어 분리 시 Explorer 회귀~~ | ~~편집기 동작 깨짐~~ | ✅ 해소 — Playwright 전수 테스트 통과, 회귀 없음 |
 | AI 요약 품질 (Ollama 소형 모델) | 요약이 부정확할 수 있음 | 사용자 편집 가능, 모델 선택 옵션 제공 |
 | 마인드맵 라이브러리 폐쇄망 호환 | CDN 의존 시 사용 불가 | UMD 빌드 확인, Markmap 우선 검토 |
 | ZIP 대용량 문서 | 이미지 assets 다수 시 용량 | 스트리밍 응답 또는 용량 제한 |
