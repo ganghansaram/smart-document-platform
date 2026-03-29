@@ -368,6 +368,16 @@
             }
             card.appendChild(statusEl);
 
+            // 메모 수 배지
+            var annCount = doc.annotation_count || 0;
+            if (annCount > 0) {
+                var memoBadge = document.createElement('span');
+                memoBadge.className = 'badge badge-info';
+                memoBadge.style.cssText = 'font-size:11px;margin-left:6px;vertical-align:middle';
+                memoBadge.textContent = '메모 ' + annCount;
+                statusEl.appendChild(memoBadge);
+            }
+
             // 액션
             var actions = document.createElement('div');
             actions.className = 'doc-card-actions';

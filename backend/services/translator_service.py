@@ -787,6 +787,9 @@ def get_documents(username: str) -> list[dict]:
             translated_path = _doc_dir(username, entry["id"]) / "translated.pdf"
             if translated_path.exists():
                 entry["has_legacy_translation"] = True
+            # 메모(annotation) 수
+            ann = _load_annotations(username, entry["id"])
+            entry["annotation_count"] = len(ann.get("highlights", []))
     return index
 
 
@@ -1924,6 +1927,16 @@ async def _run_summary_generation(username: str, doc_id: str, source_path, sourc
         import json as _json
         with open(summary_path, "w", encoding="utf-8") as f:
             _json.dump(result, f, ensure_ascii=False, indent=2)
+
+        # frontmatter keywords 자동 기록
+        keywords = result.get("keywords", [])
+        if keywords:
+            from services.md_translator import update_frontmatter_keywords
+            doc_dir = _doc_dir(username, doc_id)
+            for fname in ("full_translated.md", "full_extracted.md"):
+                fpath = doc_dir / fname
+                if fpath.exists():
+                    update_frontmatter_keywords(fpath, keywords)
 
         # meta.json 상태 갱신
         elapsed = _time.monotonic() - start_time

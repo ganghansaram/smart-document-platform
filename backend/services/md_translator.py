@@ -537,3 +537,39 @@ def _extract_frontmatter_field(text: str, field: str) -> str:
     """frontmatter에서 특정 필드 값을 추출."""
     match = re.search(rf'^{field}:\s*"?([^"\n]+)"?', text, re.MULTILINE)
     return match.group(1).strip() if match else ""
+
+
+def update_frontmatter_keywords(md_path: Path, keywords: list[str]) -> bool:
+    """Markdown 파일의 frontmatter에 keywords 필드를 업데이트.
+    keywords: [] 형태가 이미 있으면 덮어쓰고, 없으면 frontmatter 끝에 추가.
+    반환: 성공 여부.
+    """
+    if not md_path.exists():
+        return False
+    text = md_path.read_text(encoding="utf-8")
+    if not text.startswith("---"):
+        return False
+
+    import json as _json
+    kw_json = _json.dumps(keywords, ensure_ascii=False)
+
+    # 기존 keywords 필드가 있으면 교체
+    new_text, count = re.subn(
+        r'^keywords:\s*\[.*?\]',
+        f'keywords: {kw_json}',
+        text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    if count > 0:
+        md_path.write_text(new_text, encoding="utf-8")
+        return True
+
+    # 없으면 frontmatter 닫힘(---) 직전에 추가
+    end_idx = text.find("---", 3)
+    if end_idx == -1:
+        return False
+    insert_line = f"keywords: {kw_json}\n"
+    new_text = text[:end_idx] + insert_line + text[end_idx:]
+    md_path.write_text(new_text, encoding="utf-8")
+    return True
