@@ -2278,9 +2278,25 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
     height: 100%;
 }
 
-/* 노드 텍스트 클릭 가능 어포던스 */
+/* 노드 텍스트 스타일 — pill shape 배경 + 클릭 어포던스 */
 #mm-svg foreignObject div {
     cursor: pointer;
+    background: var(--bg-gray);
+    padding: 3px 10px;
+    border-radius: 14px;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: nowrap;
+    transition: var(--transition-fast);
+}
+#mm-svg foreignObject div:hover {
+    background: var(--hover-bg);
+}
+body[data-theme="dark"] #mm-svg foreignObject div {
+    background: rgba(255,255,255,0.08);
+}
+body[data-theme="dark"] #mm-svg foreignObject div:hover {
+    background: rgba(255,255,255,0.14);
 }
 
 /* 마인드맵 컨트롤 버튼 */

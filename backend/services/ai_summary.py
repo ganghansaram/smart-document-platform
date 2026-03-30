@@ -57,19 +57,20 @@ _KEYWORD_PROMPT_SYSTEM = (
 _MINDMAP_PROMPT_SYSTEM = (
     "당신은 문서 구조 분석 전문가입니다. 아래 문서를 분석하여 마인드맵 트리를 JSON으로 생성하세요.\n\n"
     "규칙:\n"
-    "1. 루트: 문서 전체 주제를 간결하게 (20자 이내)\n"
-    "2. 1단계 자식: 핵심 주제 3~6개 (15자 이내)\n"
-    "3. 2단계 자식: 각 주제의 핵심 포인트 2~4개 (25자 이내)\n"
-    "4. 섹션 제목(I. II. 등)을 나열하지 말고, 문서 내용을 이해한 사람이 핵심을 정리하듯 작성\n"
-    "5. 구체적 방법명, 수치, 결과를 포함\n\n"
+    "1. 루트: 문서 핵심 주제 (10자 이내, 매우 짧게)\n"
+    "2. 1단계: 핵심 주제 3~5개 (각 8자 이내)\n"
+    "3. 2단계: 각 주제의 포인트 2~3개 (각 15자 이내)\n"
+    "4. 절대로 섹션 제목(I. II. A. B.)을 나열하지 말 것\n"
+    "5. 명사구 또는 짧은 구문으로 작성 (문장 금지)\n"
+    "6. 구체적 용어, 방법명, 수치를 포함\n\n"
     "JSON 형식:\n"
-    '{"content": "루트 제목", "children": [\n'
-    '  {"content": "주제1", "children": [\n'
-    '    {"content": "핵심포인트1"},\n'
-    '    {"content": "핵심포인트2"}\n'
+    '{"content": "주제", "children": [\n'
+    '  {"content": "카테고리", "children": [\n'
+    '    {"content": "포인트1"},\n'
+    '    {"content": "포인트2"}\n'
     "  ]}\n"
     "]}\n\n"
-    "반드시 위 JSON 형식으로만 출력. 한국어로 답변."
+    "반드시 위 JSON만 출력. 한국어로 답변."
 )
 
 
@@ -208,16 +209,19 @@ def _parse_mindmap_response(text: str) -> dict | None:
     return None
 
 
-def _normalize_mindmap_node(node: dict, depth: int = 0) -> dict:
-    """INode 트리에 depth 필드 부여 + children 정규화."""
+def _normalize_mindmap_node(node: dict, depth: int = 0, max_depth: int = 2) -> dict:
+    """INode 트리에 depth 필드 부여 + children 정규화. max_depth로 깊이 제한."""
     result = {
-        "content": str(node.get("content", ""))[:40],
+        "content": str(node.get("content", ""))[:25],
         "children": [],
         "depth": depth,
     }
-    for child in node.get("children", []):
-        if isinstance(child, dict) and "content" in child:
-            result["children"].append(_normalize_mindmap_node(child, depth + 1))
+    if depth < max_depth:
+        for child in node.get("children", []):
+            if isinstance(child, dict) and "content" in child:
+                result["children"].append(
+                    _normalize_mindmap_node(child, depth + 1, max_depth)
+                )
     return result
 
 
