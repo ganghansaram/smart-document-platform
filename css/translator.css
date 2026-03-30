@@ -2241,12 +2241,25 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
     flex: 1;
     min-height: 0;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.mm-svg-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
     position: relative;
 }
 
 #mm-svg {
     width: 100%;
     height: 100%;
+}
+
+/* 노드 텍스트 클릭 가능 어포던스 */
+#mm-svg foreignObject div {
+    cursor: pointer;
 }
 
 /* 마인드맵 컨트롤 버튼 */
@@ -2282,6 +2295,69 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
 }
 .mm-ctrl-btn:active {
     transform: scale(0.92);
+}
+
+/* 마인드맵 인라인 AI 설명 드로어 */
+.mm-drawer {
+    flex-shrink: 0;
+    height: 0;
+    overflow: hidden;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+    transition: height 0.25s ease;
+    display: flex;
+    flex-direction: column;
+}
+.mm-drawer.open {
+    height: 35%;
+}
+.mm-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    min-height: 32px;
+}
+.mm-drawer-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--active-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 8px;
+}
+.mm-drawer-close {
+    flex-shrink: 0;
+}
+.mm-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+.mm-drawer-body .mm-typing {
+    display: inline-block;
+    width: 6px;
+    height: 14px;
+    background: var(--active-color);
+    border-radius: 1px;
+    animation: mmBlink 0.8s infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+}
+@keyframes mmBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+.mm-drawer-body .mm-error {
+    color: var(--color-error, #e53e3e);
+    font-style: italic;
 }
 
 /* Markmap 다크모드 오버라이드 — foreignObject div 텍스트 */

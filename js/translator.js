@@ -4388,6 +4388,9 @@
             _qaReset();
             _mmCache = null;
             _mmInstance = null;
+            // 드로어 닫기
+            var drawer = document.getElementById('mm-drawer');
+            if (drawer) drawer.classList.remove('open');
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -4493,24 +4496,111 @@
                 }
             }, 400);
 
-            // 노드 클릭 → 웹뷰 해당 섹션 스크롤
+            // 노드 텍스트 클릭 → 인라인 AI 설명 드로어
+            var _mmDrawer = document.getElementById('mm-drawer');
+            var _mmDrawerTitle = document.getElementById('mm-drawer-title');
+            var _mmDrawerBody = document.getElementById('mm-drawer-body');
+            var _mmDrawerAbort = null;
+
+            function _mmDrawerOpen(label) {
+                _mmDrawerTitle.textContent = label;
+                _mmDrawerBody.innerHTML = '<span class="mm-typing"></span>';
+                _mmDrawer.classList.add('open');
+                // SVG 영역 축소에 맞춰 fit
+                setTimeout(function () { if (_mmInstance) _mmInstance.fit(); }, 300);
+                // LLM 스트리밍 요청
+                _mmDrawerStream(label);
+            }
+
+            function _mmDrawerClose() {
+                if (_mmDrawerAbort) { _mmDrawerAbort.abort(); _mmDrawerAbort = null; }
+                _mmDrawer.classList.remove('open');
+                setTimeout(function () { if (_mmInstance) _mmInstance.fit(); }, 300);
+            }
+
+            async function _mmDrawerStream(label) {
+                if (_mmDrawerAbort) _mmDrawerAbort.abort();
+                _mmDrawerAbort = new AbortController();
+
+                var question = '다음 섹션/용어에 대해 이 문서의 맥락에서 간결하게 설명해줘: "' + label + '"';
+                var payload = { question: question };
+
+                try {
+                    var response = await fetch(
+                        API + '/api/translator/document/' + currentDocId + '/chat/stream',
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify(payload),
+                            signal: _mmDrawerAbort.signal,
+                        }
+                    );
+
+                    if (!response.ok) throw new Error('API ' + response.status);
+
+                    var reader = response.body.getReader();
+                    var decoder = new TextDecoder();
+                    var buffer = '';
+                    var fullText = '';
+
+                    while (true) {
+                        var result = await reader.read();
+                        if (result.done) break;
+
+                        buffer += decoder.decode(result.value, { stream: true });
+                        var lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        for (var i = 0; i < lines.length; i++) {
+                            var line = lines[i].trim();
+                            if (!line) continue;
+                            try {
+                                var parsed = JSON.parse(line);
+                                if (parsed.type === 'token' && parsed.content) {
+                                    fullText += parsed.content;
+                                    _mmDrawerBody.innerHTML = _mmFormatText(fullText) + '<span class="mm-typing"></span>';
+                                    _mmDrawerBody.scrollTop = _mmDrawerBody.scrollHeight;
+                                }
+                            } catch (e) { /* skip non-JSON lines */ }
+                        }
+                    }
+
+                    // 완료 — 커서 제거
+                    _mmDrawerBody.innerHTML = _mmFormatText(fullText);
+
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                    _mmDrawerBody.innerHTML = '<span class="mm-error">설명을 불러올 수 없습니다.</span>';
+                }
+                _mmDrawerAbort = null;
+            }
+
+            function _mmFormatText(text) {
+                // 간단한 마크다운 → HTML (볼드, 줄바꿈)
+                return text
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+            }
+
+            document.getElementById('mm-drawer-close').addEventListener('click', _mmDrawerClose);
+
             svgEl.addEventListener('click', function (ev) {
-                // Markmap은 foreignObject > div 구조
+                // Markmap 접기/펼치기 circle 클릭은 무시 (Markmap 자체 처리)
+                if (ev.target.closest('circle')) return;
+
                 var nodeEl = ev.target.closest('foreignObject div');
                 if (!nodeEl) return;
                 var label = nodeEl.textContent.trim();
-                if (!label || label === '키워드') return;
+                if (!label || label === 'Keywords') return;
 
-                // 웹뷰 패널이 열려있으면 해당 헤딩으로 스크롤
-                if ($webViewContent && $webViewContent.offsetParent) {
-                    var headings = $webViewContent.querySelectorAll('h1,h2,h3,h4');
-                    for (var i = 0; i < headings.length; i++) {
-                        if (headings[i].textContent.indexOf(label.substring(0, 12)) >= 0) {
-                            headings[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            return;
-                        }
-                    }
-                }
+                // 루트 노드 클릭은 무시 (전체 문서 제목)
+                var rootContent = _mmInstance && _mmInstance.state.data
+                    ? _mmInstance.state.data.content : '';
+                if (label === rootContent) return;
+
+                _mmDrawerOpen(label);
             });
         }
 

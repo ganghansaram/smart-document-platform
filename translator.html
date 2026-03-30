@@ -362,38 +362,53 @@
                                     <p class="ai-state-msg">번역 또는 추출이 완료된 문서의 구조를 마인드맵으로 표시합니다</p>
                                 </div>
                                 <div class="mm-container" id="mm-container" style="display:none">
-                                    <!-- 마인드맵 컨트롤 — 펼치기/접기 (우상단) -->
-                                    <div class="mm-controls mm-controls-top">
-                                        <button class="mm-ctrl-btn" id="mm-expand-all" title="전체 펼치기">
-                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                                <polyline points="4,10 8,14 12,10"/><polyline points="4,2 8,6 12,2"/>
-                                            </svg>
-                                        </button>
-                                        <button class="mm-ctrl-btn" id="mm-collapse-all" title="전체 접기">
-                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                                <polyline points="4,6 8,2 12,6"/><polyline points="4,10 8,14 12,10"/>
-                                            </svg>
-                                        </button>
+                                    <!-- SVG 래퍼 — 드로어와 공간을 나눔 (flex) -->
+                                    <div class="mm-svg-wrap">
+                                        <!-- 마인드맵 컨트롤 — 펼치기/접기 (우상단) -->
+                                        <div class="mm-controls mm-controls-top">
+                                            <button class="mm-ctrl-btn" id="mm-expand-all" title="전체 펼치기">
+                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="4,10 8,14 12,10"/><polyline points="4,2 8,6 12,2"/>
+                                                </svg>
+                                            </button>
+                                            <button class="mm-ctrl-btn" id="mm-collapse-all" title="전체 접기">
+                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="4,6 8,2 12,6"/><polyline points="4,10 8,14 12,10"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <!-- 마인드맵 컨트롤 — 줌 (우하단) -->
+                                        <div class="mm-controls mm-controls-bottom">
+                                            <button class="mm-ctrl-btn" id="mm-zoom-in" title="확대">
+                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                                                    <line x1="8" y1="4" x2="8" y2="12"/><line x1="4" y1="8" x2="12" y2="8"/>
+                                                </svg>
+                                            </button>
+                                            <button class="mm-ctrl-btn" id="mm-zoom-out" title="축소">
+                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                                                    <line x1="4" y1="8" x2="12" y2="8"/>
+                                                </svg>
+                                            </button>
+                                            <button class="mm-ctrl-btn" id="mm-zoom-fit" title="화면 맞춤">
+                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="2,6 2,2 6,2"/><polyline points="10,2 14,2 14,6"/><polyline points="14,10 14,14 10,14"/><polyline points="6,14 2,14 2,10"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <svg id="mm-svg"></svg>
                                     </div>
-                                    <!-- 마인드맵 컨트롤 — 줌 (우하단) -->
-                                    <div class="mm-controls mm-controls-bottom">
-                                        <button class="mm-ctrl-btn" id="mm-zoom-in" title="확대">
-                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                                                <line x1="8" y1="4" x2="8" y2="12"/><line x1="4" y1="8" x2="12" y2="8"/>
-                                            </svg>
-                                        </button>
-                                        <button class="mm-ctrl-btn" id="mm-zoom-out" title="축소">
-                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                                                <line x1="4" y1="8" x2="12" y2="8"/>
-                                            </svg>
-                                        </button>
-                                        <button class="mm-ctrl-btn" id="mm-zoom-fit" title="화면 맞춤">
-                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                                <polyline points="2,6 2,2 6,2"/><polyline points="10,2 14,2 14,6"/><polyline points="14,10 14,14 10,14"/><polyline points="6,14 2,14 2,10"/>
-                                            </svg>
-                                        </button>
+                                    <!-- 인라인 AI 설명 드로어 -->
+                                    <div class="mm-drawer" id="mm-drawer">
+                                        <div class="mm-drawer-header">
+                                            <span class="mm-drawer-title" id="mm-drawer-title"></span>
+                                            <button class="mm-ctrl-btn mm-drawer-close" id="mm-drawer-close" title="닫기">
+                                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                                                    <line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="mm-drawer-body" id="mm-drawer-body"></div>
                                     </div>
-                                    <svg id="mm-svg"></svg>
                                 </div>
                             </div>
                         </div>
