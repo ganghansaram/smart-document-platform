@@ -368,6 +368,13 @@
             }
             card.appendChild(statusEl);
 
+            // 메모 수 (플레인 텍스트, 다른 현황 정보와 동일 스타일)
+            var annCount = doc.annotation_count || 0;
+            if (annCount > 0) {
+                var memoText = document.createTextNode(' · 메모 ' + annCount);
+                statusEl.appendChild(memoText);
+            }
+
             // 액션
             var actions = document.createElement('div');
             actions.className = 'doc-card-actions';
@@ -695,6 +702,8 @@
                 called = true;
                 $sidePanel.removeEventListener('transitionend', onEnd);
                 if (typeof rerenderBothPanels === 'function') rerenderBothPanels();
+                // 마인드맵이 열려있으면 새 크기에 맞춤
+                if (_mmInstance) setTimeout(function () { _mmInstance.fit(); }, 100);
             }
             $sidePanel.addEventListener('transitionend', onEnd);
             // fallback — transition이 발생하지 않거나 빠르게 완료된 경우
@@ -3799,26 +3808,79 @@
             if (!hdr) return;
             hdr.querySelectorAll('.ai-tab-btn').forEach(function(btn) {
                 btn.addEventListener('click', function() {
+                    if (btn.disabled) return;
                     hdr.querySelectorAll('.ai-tab-btn').forEach(function(b) { b.classList.remove('active'); });
                     btn.classList.add('active');
                     var tab = btn.getAttribute('data-tab');
                     var summaryTab = document.getElementById('ai-tab-summary');
                     var qaTab = document.getElementById('ai-tab-qa');
+                    var mmTab = document.getElementById('ai-tab-mindmap');
                     if (summaryTab) summaryTab.style.display = (tab === 'summary') ? '' : 'none';
                     if (qaTab) qaTab.style.display = (tab === 'qa') ? '' : 'none';
+                    if (mmTab) mmTab.style.display = (tab === 'mindmap') ? '' : 'none';
+                    if (tab === 'mindmap') _loadMindmap();
                 });
             });
         })();
 
-        // 요약 버튼 이벤트
+        // 문서 분석 버튼 이벤트 — 확인 모달 연동
         (function _initAiButtons() {
             var genBtn = document.getElementById('ai-generate-btn');
             var retryBtn = document.getElementById('ai-retry-btn');
             var regenBtn = document.getElementById('ai-regenerate-btn');
+            var cancelBtn = document.getElementById('ai-cancel-btn');
 
-            if (genBtn) genBtn.addEventListener('click', function() { _requestSummary(false); });
+            var modal = document.getElementById('analysis-confirm-modal');
+            var confirmOk = document.getElementById('analysis-confirm-ok');
+            var confirmCancel = document.getElementById('analysis-confirm-cancel');
+            var confirmCancelX = document.getElementById('analysis-confirm-cancel-x');
+            var _pendingForce = false;
+
+            function _showAnalysisModal(force) {
+                _pendingForce = force;
+                if (modal) modal.style.display = '';
+            }
+            function _hideAnalysisModal() {
+                if (modal) modal.style.display = 'none';
+            }
+
+            if (genBtn) genBtn.addEventListener('click', function() { _showAnalysisModal(false); });
+            if (regenBtn) regenBtn.addEventListener('click', function() { _showAnalysisModal(true); });
             if (retryBtn) retryBtn.addEventListener('click', function() { _requestSummary(false); });
-            if (regenBtn) regenBtn.addEventListener('click', function() { _requestSummary(true); });
+
+            if (confirmOk) confirmOk.addEventListener('click', function() {
+                _hideAnalysisModal();
+                _requestSummary(_pendingForce);
+            });
+            if (confirmCancel) confirmCancel.addEventListener('click', _hideAnalysisModal);
+            if (confirmCancelX) confirmCancelX.addEventListener('click', _hideAnalysisModal);
+            if (modal) modal.addEventListener('click', function(e) {
+                if (e.target === modal) _hideAnalysisModal();
+            });
+
+            // 분석 취소 버튼
+            if (cancelBtn) cancelBtn.addEventListener('click', function() {
+                if (!currentDocId) return;
+                cancelBtn.disabled = true;
+                cancelBtn.textContent = '취소 중...';
+                fetch(API + '/api/translator/document/' + currentDocId + '/analysis/cancel', {
+                    method: 'POST',
+                    credentials: 'include',
+                }).then(function() {
+                    if (_aiSummaryPolling) { clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; }
+                    _aiSummaryCache = null;
+                    _showAiState('empty');
+                    _disableAnalysisTabs();
+                }).catch(function() {
+                    if (_aiSummaryPolling) { clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; }
+                    _aiSummaryCache = null;
+                    _showAiState('empty');
+                    _disableAnalysisTabs();
+                }).finally(function() {
+                    cancelBtn.disabled = false;
+                    cancelBtn.textContent = '취소';
+                });
+            });
         })();
 
         function _loadAiSummary() {
@@ -3830,7 +3892,7 @@
             }
             _showAiState('loading');
             var prog = document.getElementById('ai-summary-progress');
-            if (prog) prog.textContent = '요약 상태 확인 중...';
+            if (prog) prog.textContent = '분석 상태 확인 중...';
 
             fetch(API + '/api/translator/document/' + currentDocId + '/summary', { credentials: 'include' })
                 .then(function(r) { return r.json(); })
@@ -3841,12 +3903,12 @@
                         _renderSummaryResult(data.summary);
                     } else if (data.status === 'generating') {
                         _showAiState('loading');
-                        if (prog) prog.textContent = data.progress_stage || '요약 생성 중...';
+                        if (prog) prog.textContent = data.progress_stage || '문서 분석 중...';
                         _startSummaryPolling();
                     } else if (data.status === 'error') {
                         _showAiState('error');
                         var errEl = document.getElementById('ai-error-text');
-                        if (errEl) errEl.textContent = data.error || '요약 생성 실패';
+                        if (errEl) errEl.textContent = data.error || '문서 분석 실패';
                     } else {
                         _showAiState('empty');
                     }
@@ -3858,7 +3920,7 @@
             if (!currentDocId) return;
             _showAiState('loading');
             var prog = document.getElementById('ai-summary-progress');
-            if (prog) prog.textContent = '요약 요청 중...';
+            if (prog) prog.textContent = '분석 요청 중...';
 
             fetch(API + '/api/translator/document/' + currentDocId + '/summary', {
                 method: 'POST',
@@ -3875,43 +3937,54 @@
                 } else if (data.status === 'generating') {
                     _startSummaryPolling();
                 } else if (data.detail) {
-                    // 에러 (추출 필요 등)
+                    // 에러 — 사용자 친화적 메시지로 변환
                     _showAiState('error');
                     var errEl = document.getElementById('ai-error-text');
-                    if (errEl) errEl.textContent = data.detail;
+                    if (errEl) {
+                        if (data.detail.indexOf('이미') >= 0) {
+                            errEl.textContent = '문서 분석이 이미 진행 중입니다. 잠시 후 다시 시도해주세요.';
+                        } else {
+                            errEl.textContent = data.detail;
+                        }
+                    }
                 }
             })
             .catch(function(err) {
                 _showAiState('error');
                 var errEl = document.getElementById('ai-error-text');
-                if (errEl) errEl.textContent = '요청 실패: ' + err.message;
+                if (errEl) errEl.textContent = '문서 분석 요청에 실패했습니다. 잠시 후 다시 시도해주세요.';
             });
         }
 
         function _startSummaryPolling() {
             if (_aiSummaryPolling) clearInterval(_aiSummaryPolling);
+            var pollDocId = currentDocId; // 클로저 캡처 — 문서 전환 시 오염 방지
             _aiSummaryPolling = setInterval(function() {
-                if (!currentDocId) { clearInterval(_aiSummaryPolling); return; }
-                fetch(API + '/api/translator/document/' + currentDocId + '/summary', { credentials: 'include' })
+                if (!currentDocId || pollDocId !== currentDocId) {
+                    clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; return;
+                }
+                fetch(API + '/api/translator/document/' + pollDocId + '/summary', { credentials: 'include' })
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
+                        if (pollDocId !== currentDocId) return; // 응답 도착 시점 재확인
                         var prog = document.getElementById('ai-summary-progress');
                         if (data.status === 'done' && data.summary) {
                             clearInterval(_aiSummaryPolling);
                             _aiSummaryPolling = null;
                             _aiSummaryCache = data.summary;
-                            _aiSummaryCache._docId = currentDocId;
+                            _aiSummaryCache._docId = pollDocId;
                             _renderSummaryResult(data.summary);
                         } else if (data.status === 'generating') {
-                            if (prog) prog.textContent = data.progress_stage || '요약 생성 중...';
+                            if (prog) prog.textContent = data.progress_stage || '문서 분석 중...';
                         } else if (data.status === 'error') {
                             clearInterval(_aiSummaryPolling);
                             _aiSummaryPolling = null;
                             _showAiState('error');
                             var errEl = document.getElementById('ai-error-text');
-                            if (errEl) errEl.textContent = data.error || '요약 생성 실패';
+                            if (errEl) errEl.textContent = data.error || '문서 분석 실패';
                         }
-                    });
+                    })
+                    .catch(function() { /* 일시적 네트워크 오류 — 다음 인터벌에서 재시도 */ });
             }, 3000);
         }
 
@@ -3926,8 +3999,22 @@
             if (error) error.style.display = (state === 'error') ? '' : 'none';
         }
 
+        function _enableAnalysisTabs() {
+            var mm = document.getElementById('mm-tab-btn');
+            var qa = document.getElementById('qa-tab-btn');
+            if (mm) { mm.disabled = false; mm.removeAttribute('title'); }
+            if (qa) { qa.disabled = false; qa.removeAttribute('title'); }
+        }
+        function _disableAnalysisTabs() {
+            var mm = document.getElementById('mm-tab-btn');
+            var qa = document.getElementById('qa-tab-btn');
+            if (mm) { mm.disabled = true; mm.title = '문서 분석 수행 후 이용 가능'; }
+            if (qa) { qa.disabled = true; qa.title = '문서 분석 수행 후 이용 가능'; }
+        }
+
         function _renderSummaryResult(summary) {
             _showAiState('result');
+            _enableAnalysisTabs();
 
             // 전체 요약
             var overallEl = document.getElementById('ai-overall-summary');
@@ -4366,14 +4453,292 @@
             bubbleEl.appendChild(actionsEl);
         }
 
-        // 문서 전환 시 요약·Q&A 캐시 초기화
+        // 문서 전환 시 요약·Q&A·마인드맵 캐시 초기화
         document.addEventListener('nb-doc-switch', function() {
             _aiSummaryCache = null;
             if (_aiSummaryPolling) { clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; }
             _qaReset();
+            _mmCache = null;
+            if (_mmInstance) { try { _mmInstance.destroy(); } catch(e){} _mmInstance = null; }
+            _disableAnalysisTabs();
+            // AI 탭을 요약 탭으로 리셋
+            var hdr = document.getElementById('hdr-ai-summary');
+            if (hdr) {
+                hdr.querySelectorAll('.ai-tab-btn').forEach(function(b) {
+                    b.classList.toggle('active', b.getAttribute('data-tab') === 'summary');
+                });
+            }
+            var summaryTab = document.getElementById('ai-tab-summary');
+            var qaTab = document.getElementById('ai-tab-qa');
+            var mmTab = document.getElementById('ai-tab-mindmap');
+            if (summaryTab) summaryTab.style.display = '';
+            if (qaTab) qaTab.style.display = 'none';
+            if (mmTab) mmTab.style.display = 'none';
+            // DOM 초기화 — 이전 문서의 마인드맵 잔류 방지
+            var mmEmpty = document.getElementById('mm-empty');
+            var mmContainer = document.getElementById('mm-container');
+            var mmSvg = document.getElementById('mm-svg');
+            if (mmEmpty) mmEmpty.style.display = '';
+            if (mmContainer) mmContainer.style.display = 'none';
+            if (mmSvg) mmSvg.innerHTML = '';
+            // 드로어 닫기
+            var drawer = document.getElementById('mm-drawer');
+            if (drawer) drawer.classList.remove('open');
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 마인드맵 (Plan-20 Phase 2 — Markmap)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        var _mmCache = null;    // { docId, data }
+        var _mmInstance = null; // Markmap 인스턴스
+        var _mmSvgObserver = null; // SVG MutationObserver (다크모드 텍스트 보정)
+
+        function _loadMindmap() {
+            if (!currentDocId) return;
+            var $empty = document.getElementById('mm-empty');
+            var $container = document.getElementById('mm-container');
+            if (!$empty || !$container) return;
+
+            // 캐시 히트
+            if (_mmCache && _mmCache.docId === currentDocId && _mmInstance) {
+                $empty.style.display = 'none';
+                $container.style.display = '';
+                _mmInstance.fit();
+                return;
+            }
+
+            // API 호출
+            fetch(API + '/api/translator/document/' + currentDocId + '/mindmap', {
+                credentials: 'include',
+            }).then(function (r) {
+                if (!r.ok) throw new Error('load failed');
+                return r.json();
+            }).then(function (data) {
+                if (!data.children || data.children.length === 0) {
+                    $empty.style.display = '';
+                    $container.style.display = 'none';
+                    return;
+                }
+                _mmCache = { docId: currentDocId, data: data };
+                $empty.style.display = 'none';
+                $container.style.display = '';
+                _renderMindmap(data);
+            }).catch(function () {
+                $empty.style.display = '';
+                $container.style.display = 'none';
+            });
+        }
+
+        function _fixMmTextColor() {
+            var svgEl = document.getElementById('mm-svg');
+            if (!svgEl) return;
+            var isDark = document.body.getAttribute('data-theme') === 'dark';
+            var color = isDark ? '#e2e8f0' : '';  // 라이트면 인라인 제거 → CSS 기본값
+            var divs = svgEl.querySelectorAll('foreignObject div');
+            for (var i = 0; i < divs.length; i++) divs[i].style.color = color;
+        }
+
+        // body[data-theme] 변경 감지 → 마인드맵 텍스트 색상 동기화
+        new MutationObserver(function () {
+            _fixMmTextColor();
+        }).observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+
+        function _renderMindmap(data) {
+            if (typeof markmap === 'undefined' || !markmap.Markmap) return;
+
+            var svgEl = document.getElementById('mm-svg');
+            if (!svgEl) return;
+
+            // 기존 인스턴스 + Observer 정리
+            if (_mmSvgObserver) { _mmSvgObserver.disconnect(); _mmSvgObserver = null; }
+            if (_mmInstance) {
+                try { _mmInstance.destroy(); } catch (e) { /* ignore */ }
+                _mmInstance = null;
+            }
+            svgEl.innerHTML = '';
+
+            // 다크모드 감지 → 색상 결정
+            var isDark = document.body.getAttribute('data-theme') === 'dark';
+
+            // Markmap 생성
+            _mmInstance = markmap.Markmap.create(svgEl, {
+                autoFit: true,
+                initialExpandLevel: 1,
+                duration: 300,
+                maxWidth: 200,
+                paddingX: 16,
+                spacingVertical: 8,
+                spacingHorizontal: 80,
+                color: function (node) {
+                    var colors = isDark
+                        ? ['#63a0e0', '#e69500', '#48bb78', '#ed8936', '#9f7aea', '#f56565']
+                        : ['#2c5282', '#c05621', '#276749', '#b7791f', '#6b46c1', '#c53030'];
+                    var depth = node.state ? node.state.depth || 0 : 0;
+                    return colors[depth % colors.length];
+                },
+            }, data);
+
+            // 초기 fit + 다크모드 텍스트 색상 보정
+            setTimeout(function () {
+                if (_mmInstance) _mmInstance.fit();
+                // Markmap foreignObject div 텍스트 색상 — 다크모드 보정
+                if (isDark) {
+                    _fixMmTextColor();
+                    // 접기/펼치기 후 Markmap이 DOM 재생성하므로 Observer로 지속 감시
+                    _mmSvgObserver = new MutationObserver(function () { _fixMmTextColor(); });
+                    _mmSvgObserver.observe(svgEl, { childList: true, subtree: true });
+                }
+            }, 400);
+
+        }
+
+        // ── 마인드맵 드로어 (1회만 초기화) ──
+        (function _initMmDrawer() {
+            var _mmDrawer = document.getElementById('mm-drawer');
+            var _mmDrawerTitle = document.getElementById('mm-drawer-title');
+            var _mmDrawerBody = document.getElementById('mm-drawer-body');
+            var _mmDrawerAbort = null;
+
+            function _mmDrawerOpen(label) {
+                _mmDrawerTitle.textContent = label;
+                _mmDrawerBody.innerHTML = '<span class="mm-typing"></span>';
+                _mmDrawer.classList.add('open');
+                setTimeout(function () { if (_mmInstance) _mmInstance.fit(); }, 300);
+                _mmDrawerStream(label);
+            }
+
+            function _mmDrawerClose() {
+                if (_mmDrawerAbort) { _mmDrawerAbort.abort(); _mmDrawerAbort = null; }
+                _mmDrawer.classList.remove('open');
+                setTimeout(function () { if (_mmInstance) _mmInstance.fit(); }, 300);
+            }
+
+            async function _mmDrawerStream(label) {
+                if (_mmDrawerAbort) _mmDrawerAbort.abort();
+                _mmDrawerAbort = new AbortController();
+
+                var question = '다음 섹션/용어에 대해 이 문서의 맥락에서 간결하게 설명해줘: "' + label + '"';
+                var payload = { question: question };
+
+                try {
+                    var response = await fetch(
+                        API + '/api/translator/document/' + currentDocId + '/chat/stream',
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify(payload),
+                            signal: _mmDrawerAbort.signal,
+                        }
+                    );
+
+                    if (!response.ok) throw new Error('API ' + response.status);
+
+                    var reader = response.body.getReader();
+                    var decoder = new TextDecoder();
+                    var buffer = '';
+                    var fullText = '';
+
+                    while (true) {
+                        var result = await reader.read();
+                        if (result.done) break;
+
+                        buffer += decoder.decode(result.value, { stream: true });
+                        var lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        for (var i = 0; i < lines.length; i++) {
+                            var line = lines[i].trim();
+                            if (!line) continue;
+                            try {
+                                var parsed = JSON.parse(line);
+                                if (parsed.type === 'token' && parsed.content) {
+                                    fullText += parsed.content;
+                                    _mmDrawerBody.innerHTML = _mmFormatText(fullText) + '<span class="mm-typing"></span>';
+                                    _mmDrawerBody.scrollTop = _mmDrawerBody.scrollHeight;
+                                }
+                            } catch (e) { /* skip non-JSON lines */ }
+                        }
+                    }
+
+                    _mmDrawerBody.innerHTML = _mmFormatText(fullText);
+
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                    _mmDrawerBody.innerHTML = '<span class="mm-error">설명을 불러올 수 없습니다.</span>';
+                }
+                _mmDrawerAbort = null;
+            }
+
+            function _mmFormatText(text) {
+                return text
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+            }
+
+            document.getElementById('mm-drawer-close').addEventListener('click', _mmDrawerClose);
+
+            // SVG 클릭 이벤트 — 1회 등록, 이벤트 위임으로 동작
+            document.getElementById('mm-svg').addEventListener('click', function (ev) {
+                if (ev.target.closest('circle')) return;
+
+                var nodeEl = ev.target.closest('foreignObject div');
+                if (!nodeEl) return;
+                var label = nodeEl.textContent.trim();
+                if (!label || label === 'Keywords') return;
+
+                var rootContent = _mmInstance && _mmInstance.state.data
+                    ? _mmInstance.state.data.content : '';
+                if (label === rootContent) return;
+
+                _mmDrawerOpen(label);
+            });
+        })();
+
+        // 마인드맵 컨트롤 버튼 바인딩
+        (function () {
+            function _walkTree(node, fn) {
+                fn(node);
+                if (node.children) node.children.forEach(function (c) { _walkTree(c, fn); });
+            }
+
+            document.getElementById('mm-expand-all').addEventListener('click', function () {
+                if (!_mmInstance || !_mmInstance.state.data) return;
+                _walkTree(_mmInstance.state.data, function (n) {
+                    if (n.payload) n.payload.fold = 0;
+                });
+                _mmInstance.renderData();
+                setTimeout(function () { if (_mmInstance) _mmInstance.fit(); _fixMmTextColor(); }, 350);
+            });
+
+            document.getElementById('mm-collapse-all').addEventListener('click', function () {
+                if (!_mmInstance || !_mmInstance.state.data) return;
+                var root = _mmInstance.state.data;
+                _walkTree(root, function (n) {
+                    if (n.children && n.children.length && n !== root) {
+                        n.payload = n.payload || {};
+                        n.payload.fold = 1;
+                    }
+                });
+                _mmInstance.renderData();
+                setTimeout(function () { _mmInstance.fit(); _fixMmTextColor(); }, 350);
+            });
+
+            document.getElementById('mm-zoom-in').addEventListener('click', function () {
+                if (_mmInstance) _mmInstance.rescale(1.25);
+            });
+
+            document.getElementById('mm-zoom-out').addEventListener('click', function () {
+                if (_mmInstance) _mmInstance.rescale(0.8);
+            });
+
+            document.getElementById('mm-zoom-fit').addEventListener('click', function () {
+                if (_mmInstance) _mmInstance.fit();
+            });
+        })();
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // 클릭 네비게이션 (Phase 6)
         // 우측 MD 블록 ↔ 좌측 PDF 박스 양방향 동기화

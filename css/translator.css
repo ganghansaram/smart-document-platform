@@ -603,6 +603,12 @@ body[data-theme="dark"] .hero-banner-img {
     min-height: 0;
     overflow: hidden;
 }
+/* 요약 탭: 섹션 아코디언 펼침 시 스크롤 */
+#ai-tab-summary {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
 
 /* 메모 목록 */
 .memo-list { display: flex; flex-direction: column; gap: var(--space-sm); }
@@ -2216,6 +2222,187 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
 .ai-tab-btn.active {
     background: var(--active-color);
     color: #fff;
+}
+.ai-tab-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: auto; /* 툴팁 표시를 위해 이벤트는 허용 */
+}
+.ai-tab-btn:disabled:hover {
+    background: transparent;
+}
+
+/* 문서 분석 확인 모달 */
+.analysis-modal-desc {
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.7;
+}
+
+/* ===================================
+   마인드맵 (Plan-20 Phase 2 — Markmap)
+   =================================== */
+
+#ai-tab-mindmap {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.mm-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2xl);
+    text-align: center;
+}
+
+.mm-container {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.mm-svg-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+#mm-svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* 노드 텍스트 스타일 — pill shape 배경 + 클릭 어포던스 */
+#mm-svg foreignObject div {
+    cursor: pointer;
+    background: var(--bg-gray);
+    padding: 3px 10px;
+    border-radius: 14px;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: nowrap;
+    transition: var(--transition-fast);
+}
+#mm-svg foreignObject div:hover {
+    background: var(--hover-bg);
+}
+body[data-theme="dark"] #mm-svg foreignObject div {
+    background: rgba(255,255,255,0.08);
+}
+body[data-theme="dark"] #mm-svg foreignObject div:hover {
+    background: rgba(255,255,255,0.14);
+}
+
+/* 마인드맵 컨트롤 버튼 */
+.mm-controls {
+    position: absolute;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.mm-controls-top { top: 8px; right: 8px; }
+.mm-controls-bottom { bottom: 8px; right: 8px; }
+
+.mm-ctrl-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    opacity: 0.7;
+}
+.mm-ctrl-btn:hover {
+    opacity: 1;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--active-color);
+}
+.mm-ctrl-btn:active {
+    transform: scale(0.92);
+}
+
+/* 마인드맵 인라인 AI 설명 드로어 */
+.mm-drawer {
+    flex-shrink: 0;
+    height: 0;
+    overflow: hidden;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+    transition: height 0.25s ease;
+    display: flex;
+    flex-direction: column;
+}
+.mm-drawer.open {
+    height: 35%;
+}
+.mm-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    min-height: 32px;
+}
+.mm-drawer-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--active-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 8px;
+}
+.mm-drawer-close {
+    flex-shrink: 0;
+}
+.mm-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+.mm-drawer-body .mm-typing {
+    display: inline-block;
+    width: 6px;
+    height: 14px;
+    background: var(--active-color);
+    border-radius: 1px;
+    animation: mmBlink 0.8s infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+}
+@keyframes mmBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+.mm-drawer-body .mm-error {
+    color: var(--color-error, #e53e3e);
+    font-style: italic;
+}
+
+/* Markmap 다크모드 오버라이드 — foreignObject div 텍스트 */
+body[data-theme="dark"] #mm-svg foreignObject div {
+    color: #e2e8f0 !important;
+}
+body[data-theme="dark"] #mm-svg path {
+    stroke-opacity: 0.7;
 }
 
 /* 상태별 화면 */

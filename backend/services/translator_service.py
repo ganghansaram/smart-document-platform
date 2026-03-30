@@ -787,6 +787,9 @@ def get_documents(username: str) -> list[dict]:
             translated_path = _doc_dir(username, entry["id"]) / "translated.pdf"
             if translated_path.exists():
                 entry["has_legacy_translation"] = True
+            # 메모(annotation) 수
+            ann = _load_annotations(username, entry["id"])
+            entry["annotation_count"] = len(ann.get("highlights", []))
     return index
 
 
@@ -1925,6 +1928,16 @@ async def _run_summary_generation(username: str, doc_id: str, source_path, sourc
         with open(summary_path, "w", encoding="utf-8") as f:
             _json.dump(result, f, ensure_ascii=False, indent=2)
 
+        # frontmatter keywords 자동 기록
+        keywords = result.get("keywords", [])
+        if keywords:
+            from services.md_translator import update_frontmatter_keywords
+            doc_dir = _doc_dir(username, doc_id)
+            for fname in ("full_translated.md", "full_extracted.md"):
+                fpath = doc_dir / fname
+                if fpath.exists():
+                    update_frontmatter_keywords(fpath, keywords)
+
         # meta.json 상태 갱신
         elapsed = _time.monotonic() - start_time
         meta = _load_meta(username, doc_id)
@@ -1941,6 +1954,9 @@ async def _run_summary_generation(username: str, doc_id: str, source_path, sourc
 
         logger.info(f"AI 요약 완료: {doc_id} ({result['strategy']}, {elapsed:.1f}s)")
 
+    except asyncio.CancelledError:
+        logger.info(f"AI 요약 취소됨: {doc_id}")
+        # 취소 시 meta 상태는 cancel_analysis()에서 처리 — 여기서 덮어쓰지 않음
     except Exception as e:
         logger.error(f"AI 요약 실패: {doc_id}: {e}")
         meta = _load_meta(username, doc_id)
@@ -1951,8 +1967,50 @@ async def _run_summary_generation(username: str, doc_id: str, source_path, sourc
             }
             _save_meta(username, doc_id, meta)
     finally:
-        _summary_active_tasks.pop(key, None)
+        # 자기 자신인 경우만 제거 (취소 후 재시작된 새 task를 날리지 않음)
+        if _summary_active_tasks.get(key) is asyncio.current_task():
+            _summary_active_tasks.pop(key, None)
         _summary_progress.pop(key, None)
+
+
+async def cancel_analysis(username: str, doc_id: str) -> bool:
+    """문서 분석(추출+요약) 취소. 이미 추출 완료된 페이지는 보존.
+    await으로 task 완료를 대기하여 교차 오염 방지."""
+    cancelled = False
+
+    # 1. 요약 task 취소 + 완료 대기
+    sm_key = f"sm:{doc_id}"
+    task = _summary_active_tasks.pop(sm_key, None)
+    if task and not task.done():
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, Exception):
+            pass
+        cancelled = True
+    _summary_progress.pop(sm_key, None)
+
+    # 2. 진행 중인 추출 tasks 취소 + 완료 대기
+    ex_keys = [k for k in _web_extract_tasks if k.startswith(f"ex:{doc_id}:")]
+    for k in ex_keys:
+        t = _web_extract_tasks.pop(k, None)
+        if t and not t.done():
+            t.cancel()
+            try:
+                await t
+            except (asyncio.CancelledError, Exception):
+                pass
+            cancelled = True
+        _web_extract_progress.pop(k, None)
+
+    # 3. meta 상태 원복 — generating → 제거 (초기 상태)
+    meta = _load_meta(username, doc_id)
+    if meta and meta.get("ai_summary", {}).get("status") == "generating":
+        meta.pop("ai_summary", None)
+        _save_meta(username, doc_id, meta)
+
+    logger.info(f"문서 분석 취소: {doc_id}, cancelled={cancelled}")
+    return cancelled
 
 
 def get_summary_status(username: str, doc_id: str) -> Optional[dict]:
@@ -2049,3 +2107,164 @@ def get_ollama_models() -> dict:
     resp = requests.get(f"{config.OLLAMA_URL}/api/tags", timeout=5)
     resp.raise_for_status()
     return resp.json()
+
+
+# ── 마인드맵 (Plan-20 Phase 2) ──
+
+# 번호 패턴 → 헤딩 레벨 추론 (업계 표준: GROBID, Apache Tika 등과 동일 접근)
+_HEADING_NUM_PATTERNS: list = []  # 초기화는 아래 함수에서
+
+
+def _init_heading_patterns():
+    """번호 패턴 정규식 초기화 (모듈 로드 시 1회)."""
+    import re as _re
+    global _HEADING_NUM_PATTERNS
+    if _HEADING_NUM_PATTERNS:
+        return
+    # 유효한 로마숫자만 매치 (I~XXXIX, C/D/L/M 단독은 알파벳으로 처리)
+    _roman_strict = r'^(X{0,3}(?:IX|IV|V?I{0,3}))\.\s'
+    _HEADING_NUM_PATTERNS = [
+        # 십진 번호: 1.1.1.1 → 점 개수+1 = 레벨
+        (_re.compile(r'^(\d+(?:\.\d+)+)\s'), lambda m: m.group(1).count('.') + 1),
+        # 로마숫자 (엄격): I. / II. / III. / IV. / V. / IX. / X. 등 → 대분류 (level 1)
+        (_re.compile(_roman_strict), lambda m: 1 if m.group(1) else None),
+        # 알파벳 대문자: A. / B. / C. → 소분류 (level 2)
+        (_re.compile(r'^([A-Z])\.\s'), lambda m: 2),
+        # 단일 숫자 + 점: 1. / 2. / 3. → 대분류 (level 1)
+        (_re.compile(r'^(\d+)\.\s'), lambda m: 1),
+        # 알파벳 소문자: a. / b. → 세부 (level 3)
+        (_re.compile(r'^([a-z])\.\s'), lambda m: 3),
+        # 괄호 숫자: (1) / (2) → level 2
+        (_re.compile(r'^\(\d+\)\s'), lambda m: 2),
+        # 한국 법률: 제1조, 제2장 등
+        (_re.compile(r'^제\d+[조장절항]\s'), lambda m: 1),
+        # ALL CAPS 독립 섹션 (REFERENCES, ACKNOWLEDGMENT 등) → level 1
+        (_re.compile(r'^[A-Z][A-Z\s]{3,}$'), lambda m: 1),
+    ]
+
+
+def _detect_heading_level_from_numbering(text: str) -> int | None:
+    """텍스트 앞의 번호 패턴으로 헤딩 레벨을 추론. 없으면 None."""
+    _init_heading_patterns()
+    for pattern, level_fn in _HEADING_NUM_PATTERNS:
+        m = pattern.match(text)
+        if m:
+            result = level_fn(m)
+            if result is not None:
+                return result
+    return None
+
+
+def build_mindmap_tree(username: str, doc_id: str) -> dict:
+    """마인드맵 INode 트리 반환.
+
+    우선순위:
+      1순위: LLM 생성 트리 (ai_summary.json → mindmap_tree)
+      2순위: 헤딩 정규식 추출 + 번호 패턴 캐스케이드 (폴백)
+
+    반환: { content, children, depth } (Markmap INode 호환)
+    """
+    import re as _re
+
+    doc_dir = _doc_dir(username, doc_id)
+
+    # ── 1순위: LLM 생성 마인드맵 (ai_summary.json) ──
+    summary_path = doc_dir / "ai_summary.json"
+    if summary_path.exists():
+        try:
+            with open(summary_path, "r", encoding="utf-8") as f:
+                summary_data = json.load(f)
+            llm_tree = summary_data.get("mindmap_tree")
+            if llm_tree and isinstance(llm_tree, dict) and llm_tree.get("children"):
+                return llm_tree
+        except Exception:
+            pass
+
+    # ── 2순위: 헤딩 정규식 추출 (폴백) ──
+    # MD 파일 찾기
+    md_text = ""
+    title = doc_id
+    for fname in ("full_translated.md", "full_extracted.md"):
+        fpath = doc_dir / fname
+        if fpath.exists():
+            md_text = fpath.read_text(encoding="utf-8")
+            break
+
+    if not md_text:
+        return {"content": title, "children": [], "depth": 0}
+
+    # frontmatter에서 title 추출 후 제거
+    if md_text.startswith("---"):
+        end_idx = md_text.find("---", 3)
+        if end_idx > 0:
+            fm = md_text[:end_idx]
+            title_match = _re.search(r'title:\s*"?([^"\n]+)"?', fm)
+            if title_match:
+                title = title_match.group(1).strip()
+            md_text = md_text[end_idx + 3:]
+
+    # 페이지 주석 제거
+    md_text = _re.sub(r"<!--[^>]*-->", "", md_text)
+
+    # 헤딩 추출 → 캐스케이드 레벨 결정
+    heading_regex = _re.compile(r"^(#{1,4})\s+(.+)", _re.MULTILINE)
+    headings = []
+    for m in heading_regex.finditer(md_text):
+        md_level = len(m.group(1))
+        text = m.group(2).strip().strip("_* ")  # MD 강조 제거
+        if not text or len(text) > 80:
+            continue
+        # 캐스케이드: 번호 패턴 우선 → MD 레벨 폴백
+        inferred_level = _detect_heading_level_from_numbering(text)
+        level = inferred_level if inferred_level is not None else md_level
+        display_text = text if len(text) <= 40 else text[:37] + "..."
+        headings.append((level, display_text))
+
+    # AI 키워드 로드
+    keywords = []
+    summary_path = doc_dir / "ai_summary.json"
+    if summary_path.exists():
+        try:
+            with open(summary_path, "r", encoding="utf-8") as f:
+                summary_data = json.load(f)
+            keywords = summary_data.get("keywords", [])
+        except Exception:
+            pass
+
+    # 루트 제목: 첫 번째 헤딩이 있으면 그것을 사용 (파일명보다 의미 있음)
+    root_title = title
+    if headings:
+        root_title = headings[0][1]  # 첫 번째 헤딩 텍스트
+        headings = headings[1:]      # 루트로 사용했으므로 목록에서 제거
+
+    # INode 트리 조립
+    root = {"content": root_title, "children": [], "depth": 0}
+
+    # 헤딩을 스택 기반으로 계층화
+    stack = [root]  # stack[i] = depth i의 현재 노드
+
+    for level, text in headings:
+        node = {"content": text, "children": [], "depth": level}
+        # 올바른 부모 찾기 (현재 level보다 작은 가장 가까운 노드)
+        while len(stack) > level:
+            stack.pop()
+        if not stack:
+            stack = [root]
+        parent = stack[-1]
+        parent["children"].append(node)
+        # 스택에 현재 level 위치에 노드 추가
+        while len(stack) <= level:
+            stack.append(node)
+        stack[level] = node
+
+    # 키워드를 별도 가지로 추가 — 섹션과 시각 구분을 위해 접두사 사용
+    if keywords:
+        kw_branch = {"content": "Keywords", "children": [], "depth": 1}
+        for kw in keywords[:12]:
+            kw = kw.strip()
+            if kw:
+                kw_branch["children"].append({"content": kw, "children": [], "depth": 2})
+        if kw_branch["children"]:
+            root["children"].append(kw_branch)
+
+    return root
