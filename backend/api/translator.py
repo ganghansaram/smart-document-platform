@@ -604,7 +604,7 @@ async def api_cancel_analysis(
     user: dict = Depends(get_current_user),
 ):
     """문서 분석(추출+요약) 취소"""
-    cancelled = cancel_analysis(user["username"], doc_id)
+    cancelled = await cancel_analysis(user["username"], doc_id)
     return {"cancelled": cancelled}
 
 

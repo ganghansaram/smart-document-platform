@@ -1954,6 +1954,9 @@ async def _run_summary_generation(username: str, doc_id: str, source_path, sourc
 
         logger.info(f"AI 요약 완료: {doc_id} ({result['strategy']}, {elapsed:.1f}s)")
 
+    except asyncio.CancelledError:
+        logger.info(f"AI 요약 취소됨: {doc_id}")
+        # 취소 시 meta 상태는 cancel_analysis()에서 처리 — 여기서 덮어쓰지 않음
     except Exception as e:
         logger.error(f"AI 요약 실패: {doc_id}: {e}")
         meta = _load_meta(username, doc_id)
@@ -1964,28 +1967,39 @@ async def _run_summary_generation(username: str, doc_id: str, source_path, sourc
             }
             _save_meta(username, doc_id, meta)
     finally:
-        _summary_active_tasks.pop(key, None)
+        # 자기 자신인 경우만 제거 (취소 후 재시작된 새 task를 날리지 않음)
+        if _summary_active_tasks.get(key) is asyncio.current_task():
+            _summary_active_tasks.pop(key, None)
         _summary_progress.pop(key, None)
 
 
-def cancel_analysis(username: str, doc_id: str) -> bool:
-    """문서 분석(추출+요약) 취소. 이미 추출 완료된 페이지는 보존."""
+async def cancel_analysis(username: str, doc_id: str) -> bool:
+    """문서 분석(추출+요약) 취소. 이미 추출 완료된 페이지는 보존.
+    await으로 task 완료를 대기하여 교차 오염 방지."""
     cancelled = False
 
-    # 1. 요약 task 취소
+    # 1. 요약 task 취소 + 완료 대기
     sm_key = f"sm:{doc_id}"
     task = _summary_active_tasks.pop(sm_key, None)
     if task and not task.done():
         task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, Exception):
+            pass
         cancelled = True
     _summary_progress.pop(sm_key, None)
 
-    # 2. 진행 중인 추출 tasks 취소
+    # 2. 진행 중인 추출 tasks 취소 + 완료 대기
     ex_keys = [k for k in _web_extract_tasks if k.startswith(f"ex:{doc_id}:")]
     for k in ex_keys:
         t = _web_extract_tasks.pop(k, None)
         if t and not t.done():
             t.cancel()
+            try:
+                await t
+            except (asyncio.CancelledError, Exception):
+                pass
             cancelled = True
         _web_extract_progress.pop(k, None)
 
@@ -2097,8 +2111,57 @@ def get_ollama_models() -> dict:
 
 # ── 마인드맵 (Plan-20 Phase 2) ──
 
+# 번호 패턴 → 헤딩 레벨 추론 (업계 표준: GROBID, Apache Tika 등과 동일 접근)
+_HEADING_NUM_PATTERNS: list = []  # 초기화는 아래 함수에서
+
+
+def _init_heading_patterns():
+    """번호 패턴 정규식 초기화 (모듈 로드 시 1회)."""
+    import re as _re
+    global _HEADING_NUM_PATTERNS
+    if _HEADING_NUM_PATTERNS:
+        return
+    # 유효한 로마숫자만 매치 (I~XXXIX, C/D/L/M 단독은 알파벳으로 처리)
+    _roman_strict = r'^(X{0,3}(?:IX|IV|V?I{0,3}))\.\s'
+    _HEADING_NUM_PATTERNS = [
+        # 십진 번호: 1.1.1.1 → 점 개수+1 = 레벨
+        (_re.compile(r'^(\d+(?:\.\d+)+)\s'), lambda m: m.group(1).count('.') + 1),
+        # 로마숫자 (엄격): I. / II. / III. / IV. / V. / IX. / X. 등 → 대분류 (level 1)
+        (_re.compile(_roman_strict), lambda m: 1 if m.group(1) else None),
+        # 알파벳 대문자: A. / B. / C. → 소분류 (level 2)
+        (_re.compile(r'^([A-Z])\.\s'), lambda m: 2),
+        # 단일 숫자 + 점: 1. / 2. / 3. → 대분류 (level 1)
+        (_re.compile(r'^(\d+)\.\s'), lambda m: 1),
+        # 알파벳 소문자: a. / b. → 세부 (level 3)
+        (_re.compile(r'^([a-z])\.\s'), lambda m: 3),
+        # 괄호 숫자: (1) / (2) → level 2
+        (_re.compile(r'^\(\d+\)\s'), lambda m: 2),
+        # 한국 법률: 제1조, 제2장 등
+        (_re.compile(r'^제\d+[조장절항]\s'), lambda m: 1),
+        # ALL CAPS 독립 섹션 (REFERENCES, ACKNOWLEDGMENT 등) → level 1
+        (_re.compile(r'^[A-Z][A-Z\s]{3,}$'), lambda m: 1),
+    ]
+
+
+def _detect_heading_level_from_numbering(text: str) -> int | None:
+    """텍스트 앞의 번호 패턴으로 헤딩 레벨을 추론. 없으면 None."""
+    _init_heading_patterns()
+    for pattern, level_fn in _HEADING_NUM_PATTERNS:
+        m = pattern.match(text)
+        if m:
+            result = level_fn(m)
+            if result is not None:
+                return result
+    return None
+
+
 def build_mindmap_tree(username: str, doc_id: str) -> dict:
     """문서의 헤딩 구조 + AI 키워드를 Markmap INode 트리로 변환.
+
+    헤딩 레벨 결정 캐스케이드 (업계 표준):
+      1순위: 번호 패턴 인식 (I./II., A./B., 1.1.2 등)
+      2순위: MD 헤딩 레벨 폴백 (PyMuPDF 폰트 크기 기반)
+
     반환: { content, children, depth } (Markmap INode 호환)
     """
     import re as _re
@@ -2130,17 +2193,19 @@ def build_mindmap_tree(username: str, doc_id: str) -> dict:
     # 페이지 주석 제거
     md_text = _re.sub(r"<!--[^>]*-->", "", md_text)
 
-    # 헤딩 추출 → 계층 구조 구축
+    # 헤딩 추출 → 캐스케이드 레벨 결정
     heading_regex = _re.compile(r"^(#{1,4})\s+(.+)", _re.MULTILINE)
     headings = []
     for m in heading_regex.finditer(md_text):
-        level = len(m.group(1))
+        md_level = len(m.group(1))
         text = m.group(2).strip().strip("_* ")  # MD 강조 제거
         if not text or len(text) > 80:
-            continue  # 빈 텍스트 또는 단락이 헤딩으로 잘못 파싱된 경우 제외
-        if len(text) > 40:
-            text = text[:37] + "..."
-        headings.append((level, text))
+            continue
+        # 캐스케이드: 번호 패턴 우선 → MD 레벨 폴백
+        inferred_level = _detect_heading_level_from_numbering(text)
+        level = inferred_level if inferred_level is not None else md_level
+        display_text = text if len(text) <= 40 else text[:37] + "..."
+        headings.append((level, display_text))
 
     # AI 키워드 로드
     keywords = []

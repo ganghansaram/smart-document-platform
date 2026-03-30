@@ -2226,6 +2226,13 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
     background: transparent;
 }
 
+/* 문서 분석 확인 모달 */
+.analysis-modal-desc {
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.7;
+}
+
 /* ===================================
    마인드맵 (Plan-20 Phase 2 — Markmap)
    =================================== */

@@ -360,7 +360,7 @@
                             <!-- 마인드맵 탭 -->
                             <div class="ai-tab-content" id="ai-tab-mindmap" style="display:none">
                                 <div class="mm-empty" id="mm-empty">
-                                    <p class="ai-state-msg">번역 또는 추출이 완료된 문서의 구조를 마인드맵으로 표시합니다</p>
+                                    <p class="ai-state-msg">문서 분석 후 문서 구조를 마인드맵으로 표시합니다</p>
                                 </div>
                                 <div class="mm-container" id="mm-container" style="display:none">
                                     <!-- SVG 래퍼 — 드로어와 공간을 나눔 (flex) -->
@@ -445,20 +445,15 @@
 
     <!-- 문서 분석 확인 모달 -->
     <div class="modal-overlay" id="analysis-confirm-modal" style="display:none">
-        <div class="modal-box" style="max-width:400px">
+        <div class="modal-box" style="max-width:320px">
             <div class="modal-header">
                 <h3>문서 분석</h3>
                 <button class="modal-close" id="analysis-confirm-cancel-x">&times;</button>
             </div>
-            <div class="modal-body" style="text-align:center;padding:var(--space-lg) var(--space-xl)">
-                <p style="margin-bottom:var(--space-sm);color:var(--text-primary)">
-                    AI가 문서를 분석하여 요약 · Q&A · 마인드맵을 생성합니다.
-                </p>
-                <p style="font-size:13px;color:var(--text-secondary)">
-                    문서 분량에 따라 <strong>수 분에서 십여 분</strong> 정도 소요될 수 있습니다.
-                </p>
+            <div class="modal-body">
+                <p class="analysis-modal-desc">AI가 문서를 분석하여 요약, Q&A, 마인드맵을 생성합니다. (문서 분량에 따라 수 분에서 십여 분 정도 소요될 수 있습니다)</p>
             </div>
-            <div class="modal-footer" style="justify-content:center;gap:var(--space-sm)">
+            <div class="modal-footer">
                 <button class="btn btn-secondary btn-sm" id="analysis-confirm-cancel">취소</button>
                 <button class="btn btn-primary btn-sm" id="analysis-confirm-ok">분석 시작</button>
             </div>

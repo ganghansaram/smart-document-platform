@@ -3934,10 +3934,16 @@
                 } else if (data.status === 'generating') {
                     _startSummaryPolling();
                 } else if (data.detail) {
-                    // 에러 (추출 필요 등)
+                    // 에러 — 사용자 친화적 메시지로 변환
                     _showAiState('error');
                     var errEl = document.getElementById('ai-error-text');
-                    if (errEl) errEl.textContent = data.detail;
+                    if (errEl) {
+                        if (data.detail.indexOf('이미') >= 0) {
+                            errEl.textContent = '문서 분석이 이미 진행 중입니다. 잠시 후 다시 시도해주세요.';
+                        } else {
+                            errEl.textContent = data.detail;
+                        }
+                    }
                 }
             })
             .catch(function(err) {
