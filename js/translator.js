@@ -4431,6 +4431,11 @@
             });
         }
 
+        function _fixMmDarkText(svgEl) {
+            var divs = svgEl.querySelectorAll('foreignObject div');
+            for (var i = 0; i < divs.length; i++) divs[i].style.color = '#e2e8f0';
+        }
+
         function _renderMindmap(data) {
             if (typeof markmap === 'undefined' || !markmap.Markmap) return;
 
@@ -4456,7 +4461,6 @@
                 spacingVertical: 8,
                 spacingHorizontal: 80,
                 color: function (node) {
-                    // depth별 색상 — 가지별로 다른 색
                     var colors = isDark
                         ? ['#63a0e0', '#e69500', '#48bb78', '#ed8936', '#9f7aea', '#f56565']
                         : ['#2c5282', '#c05621', '#276749', '#b7791f', '#6b46c1', '#c53030'];
@@ -4465,10 +4469,37 @@
                 },
             }, data);
 
-            // 초기 fit
+            // 초기 fit + 다크모드 텍스트 색상 보정
             setTimeout(function () {
                 if (_mmInstance) _mmInstance.fit();
+                // Markmap foreignObject div 텍스트 색상 — 다크모드 보정
+                if (isDark) {
+                    _fixMmDarkText(svgEl);
+                    // 접기/펼치기 후 Markmap이 DOM 재생성하므로 Observer로 지속 감시
+                    new MutationObserver(function () { _fixMmDarkText(svgEl); })
+                        .observe(svgEl, { childList: true, subtree: true });
+                }
             }, 400);
+
+            // 노드 클릭 → 웹뷰 해당 섹션 스크롤
+            svgEl.addEventListener('click', function (ev) {
+                // Markmap은 foreignObject > div 구조
+                var nodeEl = ev.target.closest('foreignObject div');
+                if (!nodeEl) return;
+                var label = nodeEl.textContent.trim();
+                if (!label || label === '키워드') return;
+
+                // 웹뷰 패널이 열려있으면 해당 헤딩으로 스크롤
+                if ($webViewContent && $webViewContent.offsetParent) {
+                    var headings = $webViewContent.querySelectorAll('h1,h2,h3,h4');
+                    for (var i = 0; i < headings.length; i++) {
+                        if (headings[i].textContent.indexOf(label.substring(0, 12)) >= 0) {
+                            headings[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            return;
+                        }
+                    }
+                }
+            });
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

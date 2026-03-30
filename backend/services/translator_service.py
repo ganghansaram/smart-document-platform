@@ -2122,8 +2122,14 @@ def build_mindmap_tree(username: str, doc_id: str) -> dict:
         except Exception:
             pass
 
+    # 루트 제목: 첫 번째 헤딩이 있으면 그것을 사용 (파일명보다 의미 있음)
+    root_title = title
+    if headings:
+        root_title = headings[0][1]  # 첫 번째 헤딩 텍스트
+        headings = headings[1:]      # 루트로 사용했으므로 목록에서 제거
+
     # INode 트리 조립
-    root = {"content": title, "children": [], "depth": 0}
+    root = {"content": root_title, "children": [], "depth": 0}
 
     # 헤딩을 스택 기반으로 계층화
     stack = [root]  # stack[i] = depth i의 현재 노드

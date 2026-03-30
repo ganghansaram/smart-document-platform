@@ -2249,9 +2249,9 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
     height: 100%;
 }
 
-/* Markmap 다크모드 오버라이드 */
-body[data-theme="dark"] #mm-svg text {
-    fill: var(--text-dark) !important;
+/* Markmap 다크모드 오버라이드 — foreignObject div 텍스트 */
+body[data-theme="dark"] #mm-svg foreignObject div {
+    color: #e2e8f0 !important;
 }
 body[data-theme="dark"] #mm-svg path {
     stroke-opacity: 0.7;
