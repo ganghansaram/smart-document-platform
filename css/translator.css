@@ -603,6 +603,12 @@ body[data-theme="dark"] .hero-banner-img {
     min-height: 0;
     overflow: hidden;
 }
+/* 요약 탭: 섹션 아코디언 펼침 시 스크롤 */
+#ai-tab-summary {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
 
 /* 메모 목록 */
 .memo-list { display: flex; flex-direction: column; gap: var(--space-sm); }
