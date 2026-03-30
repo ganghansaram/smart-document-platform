@@ -2156,11 +2156,11 @@ def _detect_heading_level_from_numbering(text: str) -> int | None:
 
 
 def build_mindmap_tree(username: str, doc_id: str) -> dict:
-    """문서의 헤딩 구조 + AI 키워드를 Markmap INode 트리로 변환.
+    """마인드맵 INode 트리 반환.
 
-    헤딩 레벨 결정 캐스케이드 (업계 표준):
-      1순위: 번호 패턴 인식 (I./II., A./B., 1.1.2 등)
-      2순위: MD 헤딩 레벨 폴백 (PyMuPDF 폰트 크기 기반)
+    우선순위:
+      1순위: LLM 생성 트리 (ai_summary.json → mindmap_tree)
+      2순위: 헤딩 정규식 추출 + 번호 패턴 캐스케이드 (폴백)
 
     반환: { content, children, depth } (Markmap INode 호환)
     """
@@ -2168,6 +2168,19 @@ def build_mindmap_tree(username: str, doc_id: str) -> dict:
 
     doc_dir = _doc_dir(username, doc_id)
 
+    # ── 1순위: LLM 생성 마인드맵 (ai_summary.json) ──
+    summary_path = doc_dir / "ai_summary.json"
+    if summary_path.exists():
+        try:
+            with open(summary_path, "r", encoding="utf-8") as f:
+                summary_data = json.load(f)
+            llm_tree = summary_data.get("mindmap_tree")
+            if llm_tree and isinstance(llm_tree, dict) and llm_tree.get("children"):
+                return llm_tree
+        except Exception:
+            pass
+
+    # ── 2순위: 헤딩 정규식 추출 (폴백) ──
     # MD 파일 찾기
     md_text = ""
     title = doc_id

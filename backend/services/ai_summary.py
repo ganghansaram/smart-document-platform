@@ -54,6 +54,24 @@ _KEYWORD_PROMPT_SYSTEM = (
     "- 한국어 키워드 우선, 영어 원어가 중요하면 병기"
 )
 
+_MINDMAP_PROMPT_SYSTEM = (
+    "당신은 문서 구조 분석 전문가입니다. 아래 문서를 분석하여 마인드맵 트리를 JSON으로 생성하세요.\n\n"
+    "규칙:\n"
+    "1. 루트: 문서 전체 주제를 간결하게 (20자 이내)\n"
+    "2. 1단계 자식: 핵심 주제 3~6개 (15자 이내)\n"
+    "3. 2단계 자식: 각 주제의 핵심 포인트 2~4개 (25자 이내)\n"
+    "4. 섹션 제목(I. II. 등)을 나열하지 말고, 문서 내용을 이해한 사람이 핵심을 정리하듯 작성\n"
+    "5. 구체적 방법명, 수치, 결과를 포함\n\n"
+    "JSON 형식:\n"
+    '{"content": "루트 제목", "children": [\n'
+    '  {"content": "주제1", "children": [\n'
+    '    {"content": "핵심포인트1"},\n'
+    '    {"content": "핵심포인트2"}\n'
+    "  ]}\n"
+    "]}\n\n"
+    "반드시 위 JSON 형식으로만 출력. 한국어로 답변."
+)
+
 
 # ── 섹션 분할 ──
 
@@ -166,6 +184,78 @@ def _parse_keywords_response(text: str) -> list[str]:
     return []
 
 
+def _parse_mindmap_response(text: str) -> dict | None:
+    """마인드맵 JSON 트리 파싱. 실패 시 None."""
+    try:
+        cleaned = re.sub(r'^```json\s*', '', text.strip())
+        cleaned = re.sub(r'\s*```$', '', cleaned)
+        data = json.loads(cleaned)
+        if isinstance(data, dict) and "content" in data:
+            return _normalize_mindmap_node(data, depth=0)
+    except (json.JSONDecodeError, KeyError):
+        pass
+
+    # 폴백: JSON 객체 추출 시도
+    json_match = re.search(r'\{.*"content".*\}', text, re.DOTALL)
+    if json_match:
+        try:
+            data = json.loads(json_match.group())
+            if isinstance(data, dict) and "content" in data:
+                return _normalize_mindmap_node(data, depth=0)
+        except (json.JSONDecodeError, KeyError):
+            pass
+
+    return None
+
+
+def _normalize_mindmap_node(node: dict, depth: int = 0) -> dict:
+    """INode 트리에 depth 필드 부여 + children 정규화."""
+    result = {
+        "content": str(node.get("content", ""))[:40],
+        "children": [],
+        "depth": depth,
+    }
+    for child in node.get("children", []):
+        if isinstance(child, dict) and "content" in child:
+            result["children"].append(_normalize_mindmap_node(child, depth + 1))
+    return result
+
+
+async def generate_mindmap_tree(
+    text: str,
+    provider=None,
+    progress_callback=None,
+) -> dict | None:
+    """LLM으로 마인드맵 트리 생성. 실패 시 None (폴백은 호출자가 처리)."""
+    if provider is None:
+        provider = get_provider()
+        model_override = getattr(config, "TRANSLATOR_AI_SUMMARY_MODEL", "")
+        if model_override:
+            from services.llm_provider import OllamaProvider
+            provider = OllamaProvider(config.OLLAMA_URL, model_override)
+
+    if progress_callback:
+        progress_callback("마인드맵 구조 생성 중...")
+
+    # 입력 텍스트: 요약용과 동일 (최대 6000자로 클리핑 — 구조 파악에 충분)
+    input_text = text[:6000] if len(text) > 6000 else text
+
+    try:
+        resp = await provider.generate(
+            input_text, system=_MINDMAP_PROMPT_SYSTEM, temperature=0.2, timeout=90
+        )
+        tree = _parse_mindmap_response(resp)
+        if tree and tree.get("children"):
+            logger.info("LLM 마인드맵 생성 성공: 루트='%s', children=%d",
+                        tree["content"], len(tree["children"]))
+            return tree
+        logger.warning("LLM 마인드맵 파싱 실패 또는 빈 트리")
+    except Exception as e:
+        logger.warning("LLM 마인드맵 생성 실패: %s", e)
+
+    return None
+
+
 # ── 모델 컨텍스트 자동 감지 ──
 
 _DEFAULT_SUMMARY_THRESHOLD = 12000  # 기본 12,000자 — 8K 토큰급 모델 기준
@@ -215,6 +305,10 @@ async def generate_summary(
         result = await _generate_hierarchical(text, provider, progress_callback)
         result["strategy"] = "hierarchical"
 
+    # ── 마인드맵 트리 생성 (요약 완료 후, 동일 provider 재사용) ──
+    mindmap_tree = await generate_mindmap_tree(text, provider=provider,
+                                                progress_callback=progress_callback)
+
     elapsed = time.monotonic() - start_time
 
     return {
@@ -227,6 +321,7 @@ async def generate_summary(
         "overall_summary": result["summary"],
         "keywords": result["keywords"],
         "sections": result.get("sections", []),
+        "mindmap_tree": mindmap_tree,
     }
 
 
