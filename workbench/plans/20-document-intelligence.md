@@ -112,14 +112,15 @@ Markmap.create() → SVG 렌더링
 |:-----:|------|------|:----:|
 | 1a | frontmatter keywords 자동 기록 | d7e0fcd | ✅ |
 | 1b | 카드 목록 메모 수 배지 | d7e0fcd | ✅ |
+| 2 | AI 패널 마인드맵 탭 (Markmap) | 429efb8 | ✅ |
 
 ### 3.2 현재 파일 상태
 
-- `translator.html`: AI 탭 [요약][Q&A] 2개, 마인드맵 disabled 버튼 존재
-- `translator.js`: Phase 2 코드 없음 (깨끗한 상태)
-- `translator.css`: Phase 2 CSS 없음
-- `js/lib/`: D3.js 없음, Markmap 아직 없음
-- 백엔드: concept-map API 없음
+- `translator.html`: AI 탭 [요약][Q&A][마인드맵] 3개, 마인드맵 disabled 레일 버튼 삭제됨
+- `translator.js`: Markmap 렌더링 (`_loadMindmap`, `_renderMindmap`) 구현
+- `translator.css`: `.mm-container`, `#ai-tab-mindmap`, 다크모드 오버라이드
+- `js/lib/markmap/`: `d3.min.js` (280KB) + `markmap-view.js` (50KB)
+- 백엔드: `GET /mindmap` API — `build_mindmap_tree()` (헤딩+키워드→INode 트리)
 
 ---
 
@@ -130,68 +131,43 @@ Markmap.create() → SVG 렌더링
 - ✅ 1a: frontmatter keywords 자동 기록
 - ✅ 1b: 카드 목록 메모 수 배지
 
-### Phase 2: AI 분석 패널 — 마인드맵 탭 (~2~3일)
+### Phase 2: AI 분석 패널 — 마인드맵 탭 — ✅ 완료
 
 > NotebookLM 마인드맵을 타깃. Markmap 라이브러리 사용.
-> 기존 [요약][Q&A] 탭 옆에 [마인드맵] 탭 추가.
-> 아이콘 레일의 마인드맵 disabled 버튼 삭제.
 
-#### Step 1: Markmap 번들 확보
+**D3.js 시도 → 롤백 → Markmap 전환 경위**: 섹션 1.3 참고.
 
-- Markmap IIFE 파일 다운로드 → `js/lib/markmap/` 배치
-  - `markmap-lib.min.js` (~12KB)
-  - `markmap-view.min.js` (~15KB)
-  - `d3.min.js` (Markmap 전용 d3 서브셋, ~30KB)
-- `translator.html`에 `<script>` 로드 추가
+#### Step 1: Markmap 번들 확보 — ✅
 
-#### Step 2: 백엔드 — 마인드맵 데이터 API
+- ✅ `js/lib/markmap/d3.min.js` (280KB, d3 v7 전체 — Markmap 의존성)
+- ✅ `js/lib/markmap/markmap-view.js` (50KB, IIFE 빌드 v0.18.12)
+- ✅ `markmap-lib`(transformer)는 미사용 — 백엔드에서 직접 INode 트리 생성
+- ✅ `translator.html`에 `<script>` 로드 추가
 
-- `GET /api/translator/document/{doc_id}/mindmap` — 신규
-- `full_translated.md` (또는 `full_extracted.md`)에서:
-  1. 헤딩 구조 추출 (`##`, `###`, `####` → 계층적 Markdown)
-  2. `ai_summary.json`의 keywords를 최하위 가지로 삽입
-  3. 용어 태그(`[용어: A=B]`) 중 빈도 높은 것을 가지로 추가 (선택)
-- 응답: `{ "markdown": "# 문서제목\n## 서론\n### 배경\n- 키워드1\n- 키워드2\n## 관련연구\n..." }`
-- 불필요한 본문 텍스트는 제외, 헤딩+키워드만 포함
+#### Step 2: 백엔드 — 마인드맵 데이터 API — ✅
 
-#### Step 3: 프론트엔드 — 탭 구조 + Markmap 렌더링
+- ✅ `GET /api/translator/document/{doc_id}/mindmap` — `build_mindmap_tree()`
+- ✅ `full_translated.md` (또는 `full_extracted.md`)에서 헤딩 추출 → INode 트리
+- ✅ `ai_summary.json`의 keywords를 "키워드" 가지로 삽입 (최대 12개)
+- ✅ 긴 헤딩 40자 제한, 80자 초과 단락 제외
+- ✅ 응답: Markmap INode 호환 `{ content, children, depth }`
 
-**HTML 변경:**
-- 탭 바: `<button class="ai-tab-btn" data-tab="mindmap">마인드맵</button>` 추가
-- 콘텐츠: 빈 상태 UI + SVG 컨테이너
-  ```html
-  <div class="ai-tab-content" id="ai-tab-mindmap" style="display:none">
-      <div id="mm-empty">요약을 먼저 생성하세요</div>
-      <div id="mm-container" style="display:none">
-          <svg id="mm-svg"></svg>
-      </div>
-  </div>
-  ```
-- 마인드맵 disabled 레일 버튼 삭제
+#### Step 3: 프론트엔드 — 탭 구조 + Markmap 렌더링 — ✅
 
-**JS 변경:**
-- 탭 전환 로직 확장 (`_initAiTabs`에 `mindmap` 케이스 추가)
-- `_loadMindmap()` — API fetch → Markmap 렌더링
-- `_renderMindmap(markdown)` — Markmap.transform + create
-- 캐시: `_mmCache = { docId, instance }` (문서 전환 시 초기화)
-- 노드 클릭 → 해당 섹션 헤딩으로 스크롤 (Markmap 이벤트 활용)
+- ✅ 탭 바: [요약][Q&A][마인드맵] 3개 탭
+- ✅ 마인드맵 disabled 레일 버튼 삭제 (AI 탭으로 통합)
+- ✅ `_loadMindmap()` — API fetch → 캐시 → `_renderMindmap()`
+- ✅ `Markmap.create()` — autoFit, depth별 6색 팔레트 (라이트/다크 각각)
+- ✅ 접기/펼치기 내장, 줌/패닝 내장
+- ✅ 문서 전환 시 캐시 초기화
 
-**CSS 변경:**
-- `#ai-tab-mindmap` flex 레이아웃 (전체 높이 활용)
-- `#mm-svg` 100% 너비/높이
-- Markmap 기본 스타일 위에 다크모드 오버라이드:
-  - 라이트: 노드 텍스트 `var(--text-dark)`, 배경 `var(--white)`
-  - 다크: 노드 텍스트 `var(--text-dark)` (다크에서 밝은 색), 라인 색상 조정
-- 가지 색상: `var(--active-color)` 기반 또는 Markmap 기본 컬러 팔레트
+#### Step 4: UX 품질 검증 — ✅
 
-#### Step 4: UX 품질 검증
-
-- 라이트/다크 모드 양쪽 스크린샷 비교
-- 접기/펼치기 동작 확인
-- 노드 클릭 → 섹션 스크롤 확인
-- 확장 모드(전체 화면)에서의 레이아웃
-- 패널 크기 변경(리사이즈) 시 SVG 재조정
-- 요약 없는 문서에서의 빈 상태 UI
+- ✅ 라이트/다크 모드 양쪽 스크린샷 확인 — 가독성 양호
+- ✅ 접기/펼치기 동작 정상 (Markmap 내장)
+- ✅ 콘솔 에러 0건
+- ⏭️ 노드 클릭 → 섹션 스크롤 — Markmap 이벤트 커스텀 필요, 추후 개선
+- ⏭️ 확장 모드 SVG 재조정 — 추후 개선
 
 ### Phase 3: 규격 번호 자동 링크 (~1일)
 
@@ -221,7 +197,7 @@ Markmap.create() → SVG 렌더링
 |:-----:|------|:--------:|:----:|
 | 1a | frontmatter keywords 자동 기록 | ~2시간 | ✅ |
 | 1b | 카드 목록 메모 수 배지 | ~2시간 | ✅ |
-| 2 | **AI 패널 마인드맵 탭** (Markmap) | ~2~3일 | ⬜ |
+| 2 | **AI 패널 마인드맵 탭** (Markmap) | ~2~3일 | ✅ |
 | 3 | **규격 번호 자동 링크** (Notebook + Explorer 독립) | ~1일 | ⬜ |
 | 4 | **Notebook 내 관련 문서 추천** | ~1~2일 | ⬜ |
 
