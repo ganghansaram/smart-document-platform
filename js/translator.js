@@ -4466,6 +4466,7 @@
             // Markmap 생성
             _mmInstance = markmap.Markmap.create(svgEl, {
                 autoFit: true,
+                initialExpandLevel: 1,
                 duration: 300,
                 maxWidth: 200,
                 paddingX: 16,
@@ -4512,6 +4513,48 @@
                 }
             });
         }
+
+        // 마인드맵 컨트롤 버튼 바인딩
+        (function () {
+            function _walkTree(node, fn) {
+                fn(node);
+                if (node.children) node.children.forEach(function (c) { _walkTree(c, fn); });
+            }
+
+            document.getElementById('mm-expand-all').addEventListener('click', function () {
+                if (!_mmInstance || !_mmInstance.state.data) return;
+                _walkTree(_mmInstance.state.data, function (n) {
+                    if (n.payload) n.payload.fold = 0;
+                });
+                _mmInstance.renderData();
+                _fixMmTextColor();
+            });
+
+            document.getElementById('mm-collapse-all').addEventListener('click', function () {
+                if (!_mmInstance || !_mmInstance.state.data) return;
+                var root = _mmInstance.state.data;
+                _walkTree(root, function (n) {
+                    if (n.children && n.children.length && n !== root) {
+                        n.payload = n.payload || {};
+                        n.payload.fold = 1;
+                    }
+                });
+                _mmInstance.renderData();
+                setTimeout(function () { _mmInstance.fit(); _fixMmTextColor(); }, 350);
+            });
+
+            document.getElementById('mm-zoom-in').addEventListener('click', function () {
+                if (_mmInstance) _mmInstance.rescale(1.25);
+            });
+
+            document.getElementById('mm-zoom-out').addEventListener('click', function () {
+                if (_mmInstance) _mmInstance.rescale(0.8);
+            });
+
+            document.getElementById('mm-zoom-fit').addEventListener('click', function () {
+                if (_mmInstance) _mmInstance.fit();
+            });
+        })();
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // 클릭 네비게이션 (Phase 6)
