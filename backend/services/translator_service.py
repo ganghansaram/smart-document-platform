@@ -2148,10 +2148,10 @@ def build_mindmap_tree(username: str, doc_id: str) -> dict:
             stack.append(node)
         stack[level] = node
 
-    # 키워드를 "키워드" 가지로 추가 (있으면)
+    # 키워드를 별도 가지로 추가 — 섹션과 시각 구분을 위해 접두사 사용
     if keywords:
-        kw_branch = {"content": "키워드", "children": [], "depth": 1}
-        for kw in keywords[:12]:  # 최대 12개
+        kw_branch = {"content": "Keywords", "children": [], "depth": 1}
+        for kw in keywords[:12]:
             kw = kw.strip()
             if kw:
                 kw_branch["children"].append({"content": kw, "children": [], "depth": 2})

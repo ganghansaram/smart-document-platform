@@ -705,6 +705,8 @@
                 called = true;
                 $sidePanel.removeEventListener('transitionend', onEnd);
                 if (typeof rerenderBothPanels === 'function') rerenderBothPanels();
+                // 마인드맵이 열려있으면 새 크기에 맞춤
+                if (_mmInstance) setTimeout(function () { _mmInstance.fit(); }, 100);
             }
             $sidePanel.addEventListener('transitionend', onEnd);
             // fallback — transition이 발생하지 않거나 빠르게 완료된 경우
@@ -4431,10 +4433,19 @@
             });
         }
 
-        function _fixMmDarkText(svgEl) {
+        function _fixMmTextColor() {
+            var svgEl = document.getElementById('mm-svg');
+            if (!svgEl) return;
+            var isDark = document.body.getAttribute('data-theme') === 'dark';
+            var color = isDark ? '#e2e8f0' : '';  // 라이트면 인라인 제거 → CSS 기본값
             var divs = svgEl.querySelectorAll('foreignObject div');
-            for (var i = 0; i < divs.length; i++) divs[i].style.color = '#e2e8f0';
+            for (var i = 0; i < divs.length; i++) divs[i].style.color = color;
         }
+
+        // body[data-theme] 변경 감지 → 마인드맵 텍스트 색상 동기화
+        new MutationObserver(function () {
+            _fixMmTextColor();
+        }).observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
 
         function _renderMindmap(data) {
             if (typeof markmap === 'undefined' || !markmap.Markmap) return;
@@ -4474,9 +4485,9 @@
                 if (_mmInstance) _mmInstance.fit();
                 // Markmap foreignObject div 텍스트 색상 — 다크모드 보정
                 if (isDark) {
-                    _fixMmDarkText(svgEl);
+                    _fixMmTextColor();
                     // 접기/펼치기 후 Markmap이 DOM 재생성하므로 Observer로 지속 감시
-                    new MutationObserver(function () { _fixMmDarkText(svgEl); })
+                    new MutationObserver(function () { _fixMmTextColor(); })
                         .observe(svgEl, { childList: true, subtree: true });
                 }
             }, 400);
