@@ -2062,3 +2062,94 @@ def get_ollama_models() -> dict:
     resp = requests.get(f"{config.OLLAMA_URL}/api/tags", timeout=5)
     resp.raise_for_status()
     return resp.json()
+
+
+# ── 마인드맵 (Plan-20 Phase 2) ──
+
+def build_mindmap_tree(username: str, doc_id: str) -> dict:
+    """문서의 헤딩 구조 + AI 키워드를 Markmap INode 트리로 변환.
+    반환: { content, children, depth } (Markmap INode 호환)
+    """
+    import re as _re
+
+    doc_dir = _doc_dir(username, doc_id)
+
+    # MD 파일 찾기
+    md_text = ""
+    title = doc_id
+    for fname in ("full_translated.md", "full_extracted.md"):
+        fpath = doc_dir / fname
+        if fpath.exists():
+            md_text = fpath.read_text(encoding="utf-8")
+            break
+
+    if not md_text:
+        return {"content": title, "children": [], "depth": 0}
+
+    # frontmatter에서 title 추출 후 제거
+    if md_text.startswith("---"):
+        end_idx = md_text.find("---", 3)
+        if end_idx > 0:
+            fm = md_text[:end_idx]
+            title_match = _re.search(r'title:\s*"?([^"\n]+)"?', fm)
+            if title_match:
+                title = title_match.group(1).strip()
+            md_text = md_text[end_idx + 3:]
+
+    # 페이지 주석 제거
+    md_text = _re.sub(r"<!--[^>]*-->", "", md_text)
+
+    # 헤딩 추출 → 계층 구조 구축
+    heading_regex = _re.compile(r"^(#{1,4})\s+(.+)", _re.MULTILINE)
+    headings = []
+    for m in heading_regex.finditer(md_text):
+        level = len(m.group(1))
+        text = m.group(2).strip().strip("_* ")  # MD 강조 제거
+        if not text or len(text) > 80:
+            continue  # 빈 텍스트 또는 단락이 헤딩으로 잘못 파싱된 경우 제외
+        if len(text) > 40:
+            text = text[:37] + "..."
+        headings.append((level, text))
+
+    # AI 키워드 로드
+    keywords = []
+    summary_path = doc_dir / "ai_summary.json"
+    if summary_path.exists():
+        try:
+            with open(summary_path, "r", encoding="utf-8") as f:
+                summary_data = json.load(f)
+            keywords = summary_data.get("keywords", [])
+        except Exception:
+            pass
+
+    # INode 트리 조립
+    root = {"content": title, "children": [], "depth": 0}
+
+    # 헤딩을 스택 기반으로 계층화
+    stack = [root]  # stack[i] = depth i의 현재 노드
+
+    for level, text in headings:
+        node = {"content": text, "children": [], "depth": level}
+        # 올바른 부모 찾기 (현재 level보다 작은 가장 가까운 노드)
+        while len(stack) > level:
+            stack.pop()
+        if not stack:
+            stack = [root]
+        parent = stack[-1]
+        parent["children"].append(node)
+        # 스택에 현재 level 위치에 노드 추가
+        while len(stack) <= level:
+            stack.append(node)
+        stack[level] = node
+
+    # 키워드를 "키워드" 가지로 추가 (있으면)
+    if keywords:
+        kw_branch = {"content": "키워드", "children": [], "depth": 1}
+        for kw in keywords[:12]:  # 최대 12개
+            kw = kw.strip()
+            if kw:
+                kw_branch["children"].append({"content": kw, "children": [], "depth": 2})
+        if kw_branch["children"]:
+            root["children"].append(kw_branch)
+
+    return root

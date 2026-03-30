@@ -28,6 +28,7 @@ from services.translator_service import (
     search_documents,
     get_glossary, save_glossary,
     create_document_zip,
+    build_mindmap_tree,
 )
 import config
 
@@ -595,6 +596,17 @@ async def api_get_summary(
         return {"status": "done", "summary": summary}
 
     return status
+
+
+# ── 마인드맵 ──
+
+@router.get("/document/{doc_id}/mindmap")
+async def api_mindmap(doc_id: str, user: dict = Depends(get_current_user)):
+    """문서의 마인드맵 트리 데이터 반환 (Markmap INode 호환)"""
+    try:
+        return build_mindmap_tree(user["username"], doc_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
 
 
 # ── Q&A 챗봇 ──

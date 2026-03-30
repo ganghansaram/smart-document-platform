@@ -3814,8 +3814,11 @@
                     var tab = btn.getAttribute('data-tab');
                     var summaryTab = document.getElementById('ai-tab-summary');
                     var qaTab = document.getElementById('ai-tab-qa');
+                    var mmTab = document.getElementById('ai-tab-mindmap');
                     if (summaryTab) summaryTab.style.display = (tab === 'summary') ? '' : 'none';
                     if (qaTab) qaTab.style.display = (tab === 'qa') ? '' : 'none';
+                    if (mmTab) mmTab.style.display = (tab === 'mindmap') ? '' : 'none';
+                    if (tab === 'mindmap') _loadMindmap();
                 });
             });
         })();
@@ -4376,14 +4379,98 @@
             bubbleEl.appendChild(actionsEl);
         }
 
-        // 문서 전환 시 요약·Q&A 캐시 초기화
+        // 문서 전환 시 요약·Q&A·마인드맵 캐시 초기화
         document.addEventListener('nb-doc-switch', function() {
             _aiSummaryCache = null;
             if (_aiSummaryPolling) { clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; }
             _qaReset();
+            _mmCache = null;
+            _mmInstance = null;
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 마인드맵 (Plan-20 Phase 2 — Markmap)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        var _mmCache = null;    // { docId, data }
+        var _mmInstance = null; // Markmap 인스턴스
+
+        function _loadMindmap() {
+            if (!currentDocId) return;
+            var $empty = document.getElementById('mm-empty');
+            var $container = document.getElementById('mm-container');
+            if (!$empty || !$container) return;
+
+            // 캐시 히트
+            if (_mmCache && _mmCache.docId === currentDocId && _mmInstance) {
+                $empty.style.display = 'none';
+                $container.style.display = '';
+                _mmInstance.fit();
+                return;
+            }
+
+            // API 호출
+            fetch(API + '/api/translator/document/' + currentDocId + '/mindmap', {
+                credentials: 'include',
+            }).then(function (r) {
+                if (!r.ok) throw new Error('load failed');
+                return r.json();
+            }).then(function (data) {
+                if (!data.children || data.children.length === 0) {
+                    $empty.style.display = '';
+                    $container.style.display = 'none';
+                    return;
+                }
+                _mmCache = { docId: currentDocId, data: data };
+                $empty.style.display = 'none';
+                $container.style.display = '';
+                _renderMindmap(data);
+            }).catch(function () {
+                $empty.style.display = '';
+                $container.style.display = 'none';
+            });
+        }
+
+        function _renderMindmap(data) {
+            if (typeof markmap === 'undefined' || !markmap.Markmap) return;
+
+            var svgEl = document.getElementById('mm-svg');
+            if (!svgEl) return;
+
+            // 기존 인스턴스 정리
+            if (_mmInstance) {
+                try { _mmInstance.destroy(); } catch (e) { /* ignore */ }
+                _mmInstance = null;
+            }
+            svgEl.innerHTML = '';
+
+            // 다크모드 감지 → 색상 결정
+            var isDark = document.body.getAttribute('data-theme') === 'dark';
+
+            // Markmap 생성
+            _mmInstance = markmap.Markmap.create(svgEl, {
+                autoFit: true,
+                duration: 300,
+                maxWidth: 200,
+                paddingX: 16,
+                spacingVertical: 8,
+                spacingHorizontal: 80,
+                color: function (node) {
+                    // depth별 색상 — 가지별로 다른 색
+                    var colors = isDark
+                        ? ['#63a0e0', '#e69500', '#48bb78', '#ed8936', '#9f7aea', '#f56565']
+                        : ['#2c5282', '#c05621', '#276749', '#b7791f', '#6b46c1', '#c53030'];
+                    var depth = node.state ? node.state.depth || 0 : 0;
+                    return colors[depth % colors.length];
+                },
+            }, data);
+
+            // 초기 fit
+            setTimeout(function () {
+                if (_mmInstance) _mmInstance.fit();
+            }, 400);
+        }
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // 클릭 네비게이션 (Phase 6)
         // 우측 MD 블록 ↔ 좌측 PDF 박스 양방향 동기화

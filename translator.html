@@ -244,6 +244,7 @@
                         <div class="ai-tab-bar">
                             <button class="ai-tab-btn active" data-tab="summary">요약</button>
                             <button class="ai-tab-btn" data-tab="qa">Q&A</button>
+                            <button class="ai-tab-btn" data-tab="mindmap">마인드맵</button>
                         </div>
                         <span class="spacer"></span>
                         <button class="sp-btn qa-reset-btn" id="qa-reset-btn" title="대화 초기화" style="display:none">
@@ -355,6 +356,15 @@
                                     </button>
                                 </div>
                             </div>
+                            <!-- 마인드맵 탭 -->
+                            <div class="ai-tab-content" id="ai-tab-mindmap" style="display:none">
+                                <div class="mm-empty" id="mm-empty">
+                                    <p class="ai-state-msg">번역 또는 추출이 완료된 문서의 구조를 마인드맵으로 표시합니다</p>
+                                </div>
+                                <div class="mm-container" id="mm-container" style="display:none">
+                                    <svg id="mm-svg"></svg>
+                                </div>
+                            </div>
                         </div>
                       </div><!-- /panel-scroll -->
                     </div>
@@ -379,9 +389,7 @@
                     <button class="rail-btn" data-panel="ai-summary" title="AI 요약 · Q&A">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                     </button>
-                    <button class="rail-btn" data-panel="mindmap" title="마인드맵" disabled>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/><line x1="10" y1="10" x2="6" y2="7"/><line x1="14" y1="10" x2="18" y2="7"/><line x1="10" y1="14" x2="6" y2="17"/><line x1="14" y1="14" x2="18" y2="17"/></svg>
-                    </button>
+                    <!-- 마인드맵 독립 버튼 삭제 → AI 분석 패널 내 마인드맵 탭으로 통합 (Plan-20) -->
                 </div>
             </div>
         </div>
@@ -426,6 +434,8 @@
     <script src="js/lib/pdfjs/pdf.min.js"></script>
     <script src="js/lib/marked.min.js"></script>
     <script src="js/lib/purify.min.js"></script>
+    <script src="js/lib/markmap/d3.min.js"></script>
+    <script src="js/lib/markmap/markmap-view.js"></script>
     <script src="js/platform-header.js"></script>
     <script src="js/platform-footer.js"></script>
     <script>
