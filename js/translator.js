@@ -368,14 +368,11 @@
             }
             card.appendChild(statusEl);
 
-            // 메모 수 배지
+            // 메모 수 (플레인 텍스트, 다른 현황 정보와 동일 스타일)
             var annCount = doc.annotation_count || 0;
             if (annCount > 0) {
-                var memoBadge = document.createElement('span');
-                memoBadge.className = 'badge badge-info';
-                memoBadge.style.cssText = 'font-size:11px;margin-left:6px;vertical-align:middle';
-                memoBadge.textContent = '메모 ' + annCount;
-                statusEl.appendChild(memoBadge);
+                var memoText = document.createTextNode(' · 메모 ' + annCount);
+                statusEl.appendChild(memoText);
             }
 
             // 액션
