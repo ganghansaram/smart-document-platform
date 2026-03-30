@@ -4581,7 +4581,10 @@
                 }
             }, 400);
 
-            // 노드 텍스트 클릭 → 인라인 AI 설명 드로어
+        }
+
+        // ── 마인드맵 드로어 (1회만 초기화) ──
+        (function _initMmDrawer() {
             var _mmDrawer = document.getElementById('mm-drawer');
             var _mmDrawerTitle = document.getElementById('mm-drawer-title');
             var _mmDrawerBody = document.getElementById('mm-drawer-body');
@@ -4591,9 +4594,7 @@
                 _mmDrawerTitle.textContent = label;
                 _mmDrawerBody.innerHTML = '<span class="mm-typing"></span>';
                 _mmDrawer.classList.add('open');
-                // SVG 영역 축소에 맞춰 fit
                 setTimeout(function () { if (_mmInstance) _mmInstance.fit(); }, 300);
-                // LLM 스트리밍 요청
                 _mmDrawerStream(label);
             }
 
@@ -4651,7 +4652,6 @@
                         }
                     }
 
-                    // 완료 — 커서 제거
                     _mmDrawerBody.innerHTML = _mmFormatText(fullText);
 
                 } catch (err) {
@@ -4662,7 +4662,6 @@
             }
 
             function _mmFormatText(text) {
-                // 간단한 마크다운 → HTML (볼드, 줄바꿈)
                 return text
                     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -4671,8 +4670,8 @@
 
             document.getElementById('mm-drawer-close').addEventListener('click', _mmDrawerClose);
 
-            svgEl.addEventListener('click', function (ev) {
-                // Markmap 접기/펼치기 circle 클릭은 무시 (Markmap 자체 처리)
+            // SVG 클릭 이벤트 — 1회 등록, 이벤트 위임으로 동작
+            document.getElementById('mm-svg').addEventListener('click', function (ev) {
                 if (ev.target.closest('circle')) return;
 
                 var nodeEl = ev.target.closest('foreignObject div');
@@ -4680,14 +4679,13 @@
                 var label = nodeEl.textContent.trim();
                 if (!label || label === 'Keywords') return;
 
-                // 루트 노드 클릭은 무시 (전체 문서 제목)
                 var rootContent = _mmInstance && _mmInstance.state.data
                     ? _mmInstance.state.data.content : '';
                 if (label === rootContent) return;
 
                 _mmDrawerOpen(label);
             });
-        }
+        })();
 
         // 마인드맵 컨트롤 버튼 바인딩
         (function () {
