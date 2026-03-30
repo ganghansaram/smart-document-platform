@@ -2,8 +2,8 @@
 
 > 작성일: 2026-03-29
 > 수정일: 2026-03-30
-> 상태: Phase 1 완료 / Phase 2 착수 대기
-> 브랜치: `plan20-document-intelligence`
+> 상태: ✅ 핵심 완료 (Phase 1~2). 잔여 Phase 3~4 → `backlog.md`로 이관
+> 브랜치: `plan20-document-intelligence` → main 머지 대상
 > 선행: Plan-19 Phase 1~6 완료 (Notebook 플랫폼 핵심 기능 완성)
 
 ---
@@ -188,45 +188,53 @@ Markmap.create() → SVG 렌더링
 - ✅ **전체 펼치기/접기 버튼** — 우상단 ↕ 아이콘 2개 (NotebookLM 동일 위치)
 - ✅ **줌 +/- 버튼 + 화면 맞춤** — 우하단 +/-/⛶ 아이콘 3개 (터치패드 없는 환경 대응)
 
-#### Step 6: 마인드맵 PNG 내보내기 (Phase 3 이후 검토)
+#### Step 6: 마인드맵 PNG 내보내기 — ⏭️ backlog 이관
 
-> NotebookLM에도 있는 기능. SVG→Canvas→PNG 변환. 공유·보고 용도.
+> `backlog.md` 참고
 
-- ⬜ 마인드맵 컨테이너 우상단에 다운로드 아이콘 버튼
-- ⬜ 현재 펼침/줌 상태 그대로 PNG 캡처
-- ⬜ 다크/라이트 모드 각각 올바른 색상으로 내보내기
+#### Step 7: 노드 클릭 → 인라인 AI 설명 드로어 — ✅
 
-#### Step 7: 노드 클릭 → 인라인 AI 설명 드로어
+> NotebookLM 패턴. 노드 텍스트 클릭 시 하단 드로어에서 LLM 설명.
 
-> NotebookLM 패턴. 노드 텍스트 클릭 시 하단 1/4 드로어가 열리며 LLM이 해당 섹션/용어 설명.
-> 마인드맵을 벗어나지 않고 "탐색 → 이해" 흐름이 한 화면에서 완결.
+- ✅ flex 레이아웃 (SVG-드로어 공간 분할, 오버랩 해소)
+- ✅ 노드 텍스트 클릭 → 드로어 열림 + LLM 스트리밍 응답 (notebook_chat.py 재사용)
+- ✅ 프롬프트: "다음 섹션/용어에 대해 간결하게 설명해줘: {노드 텍스트}" 자동 생성
+- ✅ 드로어 열릴 때 SVG 영역 축소 → `fit()` 재호출
+- ✅ 닫기 버튼 / 다른 노드 클릭 시 내용 교체 (이전 요청 abort)
+- ✅ cursor: pointer 어포던스
+- ✅ 이벤트 리스너 중복 등록 수정 (IIFE 분리)
+- ⏭️ 좌측 PDF 페이지 이동 (`goToPage`) — backlog 이관
 
-- ⬜ 마인드맵 컨테이너 하단 1/4에 슬라이드업 드로어 (`.mm-drawer`)
-- ⬜ 노드 텍스트 클릭 → 드로어 열림 + LLM 스트리밍 응답 (notebook_chat.py 재사용)
-- ⬜ 프롬프트: "다음 섹션/용어에 대해 간결하게 설명해줘: {노드 텍스트}" 자동 생성
-- ⬜ 드로어 열릴 때 SVG 영역 축소 → `fit()` 재호출
-- ⬜ 닫기 버튼 / 다른 노드 클릭 시 내용 교체
-- ⬜ 좌측 PDF도 해당 페이지로 이동 (`goToPage`) — 헤딩별 페이지 번호 매핑
+#### Step 8: 문서 분석 흐름 재설계 — ✅ (세션 중 추가)
 
-### Phase 3: 규격 번호 자동 링크 (~1일)
+> "요약 생성" → "문서 분석"으로 개념 통합. Q&A·마인드맵의 전제 조건 명확화.
 
-> 양쪽 시스템(Explorer + Notebook)에서 독립적으로 동작.
+- ✅ "문서 분석" 버튼 + 확인 모달 (소요 시간 안내)
+- ✅ Q&A·마인드맵 탭 비활성화 — 분석 완료 전 disabled + 툴팁
+- ✅ 분석 완료 시 자동 활성화 (`_enableAnalysisTabs`)
+- ✅ 분석 취소 기능 — `POST /analysis/cancel` + await task 완료 대기
+- ✅ CancelledError 별도 처리 + finally 교차 오염 방지
+- ✅ 문서 전환 시 AI 탭을 요약 탭으로 리셋
 
-- 정규식 패턴: `MIL-STD-\d+[A-Z]?`, `MIL-DTL-\d+`, `AS\d{4,}`, `EN\s?\d{4,}`, `KS\s?[A-Z]\s?\d+` 등
-- **Notebook**: 웹뷰 렌더링 후 DOM 후처리 — 매칭 텍스트를 `<a class="spec-link">` 래핑
-  - 클릭 시: Explorer 검색 URL로 이동 (`index.html?search=MIL-STD-810`)
-- **Explorer**: 본문 렌더링 후 동일 후처리
-- 정규식 패턴을 `js/config.js`에 공통 정의 (독립 실행, 공유 데이터 없음)
-- precision 우선 (오탐 최소화)
+#### Step 9: 헤딩 계층 캐스케이드 — ✅ (세션 중 추가)
 
-### Phase 4: Notebook 내 관련 문서 추천 (~1~2일)
+> 업계 표준 (GROBID, Apache Tika 패턴). 번호 패턴으로 헤딩 레벨 추론.
 
-> Notebook 개인 문서끼리만. Explorer와 무관.
+- ✅ 1순위: 번호 패턴 (로마숫자 I.~XXXIX., 알파벳 A.~Z., 십진 1.1.2)
+- ✅ 2순위: ALL CAPS 독립 섹션 (REFERENCES 등)
+- ✅ 3순위: MD 헤딩 레벨 폴백 (PyMuPDF 폰트 크기 기반)
 
-- 문서 열람 시 → 현재 문서의 키워드와 다른 문서의 키워드 비교 (자카드 유사도)
-- 뷰어 사이드 또는 카드 목록에 "비슷한 내 문서" 위젯 (최대 3개)
-- 백엔드: `GET /api/translator/document/{doc_id}/related` — 키워드 유사도 상위 N개
-- 클릭 시 해당 문서 뷰어로 전환
+#### 기타 UX 개선 — ✅ (세션 중 추가)
+
+- ✅ 카드 메모 수 — badge → 플레인 텍스트 통일
+- ✅ AI 레일 아이콘 — 번개(⚡) → Sparkles(✨) 업계 표준
+- ✅ 마인드맵 DOM 초기화 — 문서 전환 시 이전 SVG 잔류 방지
+- ✅ 코드 리뷰 Critical 3건 + Warning 4건 수정
+
+### Phase 3~4: ⏭️ backlog 이관
+
+> 핵심 기능과 독립적. 필요 시 별도 계획으로 진행.
+> `workbench/plans/backlog.md` 참고.
 
 ---
 
@@ -236,11 +244,9 @@ Markmap.create() → SVG 렌더링
 |:-----:|------|:--------:|:----:|
 | 1a | frontmatter keywords 자동 기록 | ~2시간 | ✅ |
 | 1b | 카드 목록 메모 수 배지 | ~2시간 | ✅ |
-| 2 | **AI 패널 마인드맵 탭** (Markmap) | ~2~3일 | ✅ |
-| 3 | **규격 번호 자동 링크** (Notebook + Explorer 독립) | ~1일 | ⬜ |
-| 4 | **Notebook 내 관련 문서 추천** | ~1~2일 | ⬜ |
-
-**전체 합계**: ~5~6일 (Phase 1 완료 제외)
+| 2 | **AI 패널 마인드맵 탭** (Markmap + 드로어 + 분석 흐름) | ~3일 | ✅ |
+| 3 | **규격 번호 자동 링크** | ~1일 | ⏭️ backlog |
+| 4 | **Notebook 내 관련 문서 추천** | ~1~2일 | ⏭️ backlog |
 
 ---
 
