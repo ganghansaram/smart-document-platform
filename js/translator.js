@@ -3872,7 +3872,10 @@
                     _showAiState('empty');
                     _disableAnalysisTabs();
                 }).catch(function() {
+                    if (_aiSummaryPolling) { clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; }
+                    _aiSummaryCache = null;
                     _showAiState('empty');
+                    _disableAnalysisTabs();
                 }).finally(function() {
                     cancelBtn.disabled = false;
                     cancelBtn.textContent = '취소';
@@ -3949,23 +3952,27 @@
             .catch(function(err) {
                 _showAiState('error');
                 var errEl = document.getElementById('ai-error-text');
-                if (errEl) errEl.textContent = '요청 실패: ' + err.message;
+                if (errEl) errEl.textContent = '문서 분석 요청에 실패했습니다. 잠시 후 다시 시도해주세요.';
             });
         }
 
         function _startSummaryPolling() {
             if (_aiSummaryPolling) clearInterval(_aiSummaryPolling);
+            var pollDocId = currentDocId; // 클로저 캡처 — 문서 전환 시 오염 방지
             _aiSummaryPolling = setInterval(function() {
-                if (!currentDocId) { clearInterval(_aiSummaryPolling); return; }
-                fetch(API + '/api/translator/document/' + currentDocId + '/summary', { credentials: 'include' })
+                if (!currentDocId || pollDocId !== currentDocId) {
+                    clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; return;
+                }
+                fetch(API + '/api/translator/document/' + pollDocId + '/summary', { credentials: 'include' })
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
+                        if (pollDocId !== currentDocId) return; // 응답 도착 시점 재확인
                         var prog = document.getElementById('ai-summary-progress');
                         if (data.status === 'done' && data.summary) {
                             clearInterval(_aiSummaryPolling);
                             _aiSummaryPolling = null;
                             _aiSummaryCache = data.summary;
-                            _aiSummaryCache._docId = currentDocId;
+                            _aiSummaryCache._docId = pollDocId;
                             _renderSummaryResult(data.summary);
                         } else if (data.status === 'generating') {
                             if (prog) prog.textContent = data.progress_stage || '문서 분석 중...';
@@ -3976,7 +3983,8 @@
                             var errEl = document.getElementById('ai-error-text');
                             if (errEl) errEl.textContent = data.error || '문서 분석 실패';
                         }
-                    });
+                    })
+                    .catch(function() { /* 일시적 네트워크 오류 — 다음 인터벌에서 재시도 */ });
             }, 3000);
         }
 
@@ -4484,6 +4492,7 @@
 
         var _mmCache = null;    // { docId, data }
         var _mmInstance = null; // Markmap 인스턴스
+        var _mmSvgObserver = null; // SVG MutationObserver (다크모드 텍스트 보정)
 
         function _loadMindmap() {
             if (!currentDocId) return;
@@ -4541,7 +4550,8 @@
             var svgEl = document.getElementById('mm-svg');
             if (!svgEl) return;
 
-            // 기존 인스턴스 정리
+            // 기존 인스턴스 + Observer 정리
+            if (_mmSvgObserver) { _mmSvgObserver.disconnect(); _mmSvgObserver = null; }
             if (_mmInstance) {
                 try { _mmInstance.destroy(); } catch (e) { /* ignore */ }
                 _mmInstance = null;
@@ -4576,8 +4586,8 @@
                 if (isDark) {
                     _fixMmTextColor();
                     // 접기/펼치기 후 Markmap이 DOM 재생성하므로 Observer로 지속 감시
-                    new MutationObserver(function () { _fixMmTextColor(); })
-                        .observe(svgEl, { childList: true, subtree: true });
+                    _mmSvgObserver = new MutationObserver(function () { _fixMmTextColor(); });
+                    _mmSvgObserver.observe(svgEl, { childList: true, subtree: true });
                 }
             }, 400);
 
@@ -4700,7 +4710,7 @@
                     if (n.payload) n.payload.fold = 0;
                 });
                 _mmInstance.renderData();
-                _fixMmTextColor();
+                setTimeout(function () { if (_mmInstance) _mmInstance.fit(); _fixMmTextColor(); }, 350);
             });
 
             document.getElementById('mm-collapse-all').addEventListener('click', function () {
