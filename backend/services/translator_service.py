@@ -1968,6 +1968,37 @@ async def _run_summary_generation(username: str, doc_id: str, source_path, sourc
         _summary_progress.pop(key, None)
 
 
+def cancel_analysis(username: str, doc_id: str) -> bool:
+    """문서 분석(추출+요약) 취소. 이미 추출 완료된 페이지는 보존."""
+    cancelled = False
+
+    # 1. 요약 task 취소
+    sm_key = f"sm:{doc_id}"
+    task = _summary_active_tasks.pop(sm_key, None)
+    if task and not task.done():
+        task.cancel()
+        cancelled = True
+    _summary_progress.pop(sm_key, None)
+
+    # 2. 진행 중인 추출 tasks 취소
+    ex_keys = [k for k in _web_extract_tasks if k.startswith(f"ex:{doc_id}:")]
+    for k in ex_keys:
+        t = _web_extract_tasks.pop(k, None)
+        if t and not t.done():
+            t.cancel()
+            cancelled = True
+        _web_extract_progress.pop(k, None)
+
+    # 3. meta 상태 원복 — generating → 제거 (초기 상태)
+    meta = _load_meta(username, doc_id)
+    if meta and meta.get("ai_summary", {}).get("status") == "generating":
+        meta.pop("ai_summary", None)
+        _save_meta(username, doc_id, meta)
+
+    logger.info(f"문서 분석 취소: {doc_id}, cancelled={cancelled}")
+    return cancelled
+
+
 def get_summary_status(username: str, doc_id: str) -> Optional[dict]:
     """요약 생성 상태 조회."""
     key = f"sm:{doc_id}"

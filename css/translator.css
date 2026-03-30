@@ -2217,6 +2217,14 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: #665500; colo
     background: var(--active-color);
     color: #fff;
 }
+.ai-tab-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: auto; /* 툴팁 표시를 위해 이벤트는 허용 */
+}
+.ai-tab-btn:disabled:hover {
+    background: transparent;
+}
 
 /* ===================================
    마인드맵 (Plan-20 Phase 2 — Markmap)

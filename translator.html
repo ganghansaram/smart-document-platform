@@ -243,8 +243,8 @@
                         <span class="panel-title">AI 분석</span>
                         <div class="ai-tab-bar">
                             <button class="ai-tab-btn active" data-tab="summary">요약</button>
-                            <button class="ai-tab-btn" data-tab="qa">Q&A</button>
-                            <button class="ai-tab-btn" data-tab="mindmap">마인드맵</button>
+                            <button class="ai-tab-btn" data-tab="qa" id="qa-tab-btn" disabled title="문서 분석 수행 후 이용 가능">Q&A</button>
+                            <button class="ai-tab-btn" data-tab="mindmap" id="mm-tab-btn" disabled title="문서 분석 수행 후 이용 가능">마인드맵</button>
                         </div>
                         <span class="spacer"></span>
                         <button class="sp-btn qa-reset-btn" id="qa-reset-btn" title="대화 초기화" style="display:none">
@@ -313,22 +313,23 @@
                             <!-- 요약 탭 -->
                             <div class="ai-tab-content" id="ai-tab-summary">
                                 <div class="ai-state-empty" id="ai-summary-empty">
-                                    <p class="ai-state-msg">AI 요약을 생성하세요</p>
-                                    <button class="btn btn-primary btn-sm" id="ai-generate-btn">요약 생성</button>
+                                    <p class="ai-state-msg">AI가 문서를 분석하여<br>요약 · Q&A · 마인드맵을 제공합니다</p>
+                                    <button class="btn btn-primary btn-sm" id="ai-generate-btn">문서 분석</button>
                                 </div>
                                 <div class="ai-state-loading" id="ai-summary-loading" style="display:none">
                                     <div class="spinner spinner-sm"></div>
-                                    <p class="ai-state-msg" id="ai-summary-progress">요약 생성 중...</p>
+                                    <p class="ai-state-msg" id="ai-summary-progress">문서 분석 중...</p>
+                                    <button class="btn btn-ghost btn-sm" id="ai-cancel-btn" style="margin-top:var(--space-sm)">취소</button>
                                 </div>
                                 <div class="ai-state-result" id="ai-summary-result" style="display:none">
                                     <div class="ai-summary-card" id="ai-overall-summary"></div>
                                     <div class="ai-keywords" id="ai-keywords"></div>
                                     <div class="ai-section-list" id="ai-section-list"></div>
-                                    <button class="btn btn-ghost btn-sm" id="ai-regenerate-btn" style="margin-top:8px">재생성</button>
+                                    <button class="btn btn-ghost btn-sm" id="ai-regenerate-btn" style="margin-top:8px">재분석</button>
                                 </div>
                                 <div class="ai-state-error" id="ai-summary-error" style="display:none">
                                     <p class="ai-state-msg ai-error-msg" id="ai-error-text"></p>
-                                    <button class="btn btn-primary btn-sm" id="ai-retry-btn">재시도</button>
+                                    <button class="btn btn-primary btn-sm" id="ai-retry-btn">다시 시도</button>
                                 </div>
                             </div>
                             <!-- Q&A 탭 -->
@@ -441,6 +442,28 @@
         </div>
     </div>
 
+
+    <!-- 문서 분석 확인 모달 -->
+    <div class="modal-overlay" id="analysis-confirm-modal" style="display:none">
+        <div class="modal-box" style="max-width:400px">
+            <div class="modal-header">
+                <h3>문서 분석</h3>
+                <button class="modal-close" id="analysis-confirm-cancel-x">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align:center;padding:var(--space-lg) var(--space-xl)">
+                <p style="margin-bottom:var(--space-sm);color:var(--text-primary)">
+                    AI가 문서를 분석하여 요약 · Q&A · 마인드맵을 생성합니다.
+                </p>
+                <p style="font-size:13px;color:var(--text-secondary)">
+                    문서 분량에 따라 <strong>수 분에서 십여 분</strong> 정도 소요될 수 있습니다.
+                </p>
+            </div>
+            <div class="modal-footer" style="justify-content:center;gap:var(--space-sm)">
+                <button class="btn btn-secondary btn-sm" id="analysis-confirm-cancel">취소</button>
+                <button class="btn btn-primary btn-sm" id="analysis-confirm-ok">분석 시작</button>
+            </div>
+        </div>
+    </div>
 
     <!-- 용어집 모달 -->
     <div class="modal-overlay" id="glossary-modal" style="display:none">

@@ -3808,6 +3808,7 @@
             if (!hdr) return;
             hdr.querySelectorAll('.ai-tab-btn').forEach(function(btn) {
                 btn.addEventListener('click', function() {
+                    if (btn.disabled) return;
                     hdr.querySelectorAll('.ai-tab-btn').forEach(function(b) { b.classList.remove('active'); });
                     btn.classList.add('active');
                     var tab = btn.getAttribute('data-tab');
@@ -3822,15 +3823,61 @@
             });
         })();
 
-        // 요약 버튼 이벤트
+        // 문서 분석 버튼 이벤트 — 확인 모달 연동
         (function _initAiButtons() {
             var genBtn = document.getElementById('ai-generate-btn');
             var retryBtn = document.getElementById('ai-retry-btn');
             var regenBtn = document.getElementById('ai-regenerate-btn');
+            var cancelBtn = document.getElementById('ai-cancel-btn');
 
-            if (genBtn) genBtn.addEventListener('click', function() { _requestSummary(false); });
+            var modal = document.getElementById('analysis-confirm-modal');
+            var confirmOk = document.getElementById('analysis-confirm-ok');
+            var confirmCancel = document.getElementById('analysis-confirm-cancel');
+            var confirmCancelX = document.getElementById('analysis-confirm-cancel-x');
+            var _pendingForce = false;
+
+            function _showAnalysisModal(force) {
+                _pendingForce = force;
+                if (modal) modal.style.display = '';
+            }
+            function _hideAnalysisModal() {
+                if (modal) modal.style.display = 'none';
+            }
+
+            if (genBtn) genBtn.addEventListener('click', function() { _showAnalysisModal(false); });
+            if (regenBtn) regenBtn.addEventListener('click', function() { _showAnalysisModal(true); });
             if (retryBtn) retryBtn.addEventListener('click', function() { _requestSummary(false); });
-            if (regenBtn) regenBtn.addEventListener('click', function() { _requestSummary(true); });
+
+            if (confirmOk) confirmOk.addEventListener('click', function() {
+                _hideAnalysisModal();
+                _requestSummary(_pendingForce);
+            });
+            if (confirmCancel) confirmCancel.addEventListener('click', _hideAnalysisModal);
+            if (confirmCancelX) confirmCancelX.addEventListener('click', _hideAnalysisModal);
+            if (modal) modal.addEventListener('click', function(e) {
+                if (e.target === modal) _hideAnalysisModal();
+            });
+
+            // 분석 취소 버튼
+            if (cancelBtn) cancelBtn.addEventListener('click', function() {
+                if (!currentDocId) return;
+                cancelBtn.disabled = true;
+                cancelBtn.textContent = '취소 중...';
+                fetch(API + '/api/translator/document/' + currentDocId + '/analysis/cancel', {
+                    method: 'POST',
+                    credentials: 'include',
+                }).then(function() {
+                    if (_aiSummaryPolling) { clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; }
+                    _aiSummaryCache = null;
+                    _showAiState('empty');
+                    _disableAnalysisTabs();
+                }).catch(function() {
+                    _showAiState('empty');
+                }).finally(function() {
+                    cancelBtn.disabled = false;
+                    cancelBtn.textContent = '취소';
+                });
+            });
         })();
 
         function _loadAiSummary() {
@@ -3842,7 +3889,7 @@
             }
             _showAiState('loading');
             var prog = document.getElementById('ai-summary-progress');
-            if (prog) prog.textContent = '요약 상태 확인 중...';
+            if (prog) prog.textContent = '분석 상태 확인 중...';
 
             fetch(API + '/api/translator/document/' + currentDocId + '/summary', { credentials: 'include' })
                 .then(function(r) { return r.json(); })
@@ -3853,12 +3900,12 @@
                         _renderSummaryResult(data.summary);
                     } else if (data.status === 'generating') {
                         _showAiState('loading');
-                        if (prog) prog.textContent = data.progress_stage || '요약 생성 중...';
+                        if (prog) prog.textContent = data.progress_stage || '문서 분석 중...';
                         _startSummaryPolling();
                     } else if (data.status === 'error') {
                         _showAiState('error');
                         var errEl = document.getElementById('ai-error-text');
-                        if (errEl) errEl.textContent = data.error || '요약 생성 실패';
+                        if (errEl) errEl.textContent = data.error || '문서 분석 실패';
                     } else {
                         _showAiState('empty');
                     }
@@ -3870,7 +3917,7 @@
             if (!currentDocId) return;
             _showAiState('loading');
             var prog = document.getElementById('ai-summary-progress');
-            if (prog) prog.textContent = '요약 요청 중...';
+            if (prog) prog.textContent = '분석 요청 중...';
 
             fetch(API + '/api/translator/document/' + currentDocId + '/summary', {
                 method: 'POST',
@@ -3915,13 +3962,13 @@
                             _aiSummaryCache._docId = currentDocId;
                             _renderSummaryResult(data.summary);
                         } else if (data.status === 'generating') {
-                            if (prog) prog.textContent = data.progress_stage || '요약 생성 중...';
+                            if (prog) prog.textContent = data.progress_stage || '문서 분석 중...';
                         } else if (data.status === 'error') {
                             clearInterval(_aiSummaryPolling);
                             _aiSummaryPolling = null;
                             _showAiState('error');
                             var errEl = document.getElementById('ai-error-text');
-                            if (errEl) errEl.textContent = data.error || '요약 생성 실패';
+                            if (errEl) errEl.textContent = data.error || '문서 분석 실패';
                         }
                     });
             }, 3000);
@@ -3938,8 +3985,22 @@
             if (error) error.style.display = (state === 'error') ? '' : 'none';
         }
 
+        function _enableAnalysisTabs() {
+            var mm = document.getElementById('mm-tab-btn');
+            var qa = document.getElementById('qa-tab-btn');
+            if (mm) { mm.disabled = false; mm.removeAttribute('title'); }
+            if (qa) { qa.disabled = false; qa.removeAttribute('title'); }
+        }
+        function _disableAnalysisTabs() {
+            var mm = document.getElementById('mm-tab-btn');
+            var qa = document.getElementById('qa-tab-btn');
+            if (mm) { mm.disabled = true; mm.title = '문서 분석 수행 후 이용 가능'; }
+            if (qa) { qa.disabled = true; qa.title = '문서 분석 수행 후 이용 가능'; }
+        }
+
         function _renderSummaryResult(summary) {
             _showAiState('result');
+            _enableAnalysisTabs();
 
             // 전체 요약
             var overallEl = document.getElementById('ai-overall-summary');
@@ -4384,7 +4445,28 @@
             if (_aiSummaryPolling) { clearInterval(_aiSummaryPolling); _aiSummaryPolling = null; }
             _qaReset();
             _mmCache = null;
-            _mmInstance = null;
+            if (_mmInstance) { try { _mmInstance.destroy(); } catch(e){} _mmInstance = null; }
+            _disableAnalysisTabs();
+            // AI 탭을 요약 탭으로 리셋
+            var hdr = document.getElementById('hdr-ai-summary');
+            if (hdr) {
+                hdr.querySelectorAll('.ai-tab-btn').forEach(function(b) {
+                    b.classList.toggle('active', b.getAttribute('data-tab') === 'summary');
+                });
+            }
+            var summaryTab = document.getElementById('ai-tab-summary');
+            var qaTab = document.getElementById('ai-tab-qa');
+            var mmTab = document.getElementById('ai-tab-mindmap');
+            if (summaryTab) summaryTab.style.display = '';
+            if (qaTab) qaTab.style.display = 'none';
+            if (mmTab) mmTab.style.display = 'none';
+            // DOM 초기화 — 이전 문서의 마인드맵 잔류 방지
+            var mmEmpty = document.getElementById('mm-empty');
+            var mmContainer = document.getElementById('mm-container');
+            var mmSvg = document.getElementById('mm-svg');
+            if (mmEmpty) mmEmpty.style.display = '';
+            if (mmContainer) mmContainer.style.display = 'none';
+            if (mmSvg) mmSvg.innerHTML = '';
             // 드로어 닫기
             var drawer = document.getElementById('mm-drawer');
             if (drawer) drawer.classList.remove('open');

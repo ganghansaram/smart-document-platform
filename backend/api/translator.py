@@ -21,7 +21,7 @@ from services.translator_service import (
     start_web_extraction, start_full_extraction,
     get_web_extraction_status, get_full_extraction_status,
     get_web_extracted_md, get_web_full_extracted_md,
-    start_summary_generation, get_summary_status, get_summary,
+    start_summary_generation, get_summary_status, get_summary, cancel_analysis,
     start_full_extraction,
     get_annotations, create_annotation, update_annotation, delete_annotation,
     ai_selection_query,
@@ -596,6 +596,16 @@ async def api_get_summary(
         return {"status": "done", "summary": summary}
 
     return status
+
+
+@router.post("/document/{doc_id}/analysis/cancel")
+async def api_cancel_analysis(
+    doc_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """문서 분석(추출+요약) 취소"""
+    cancelled = cancel_analysis(user["username"], doc_id)
+    return {"cancelled": cancelled}
 
 
 # ── 마인드맵 ──
