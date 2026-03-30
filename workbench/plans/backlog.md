@@ -61,6 +61,14 @@
 - 4-C: 연결 테스트 API (`POST /api/settings/test-llm`)
 - 프로바이더 구현(4-A)은 Phase 1에서 완료됨, 설정 UI + 테스트만 잔여
 
+## 플랫폼 — 개발 워크플로우 정립
+
+> 출처: Plan-15 Phase 4 (실사용 경험 축적 후)
+
+- 구현 전 워크플로우 정립 (codebase-researcher → Plan → 구현)
+- 구현 후 워크플로우 정립 (code-reviewer → 수정 → 커밋)
+- CLAUDE.md에 워크플로우 섹션 추가
+
 ## Explorer — 챗봇 고급 기능
 
 > 출처: Plan-10 Phase 5
