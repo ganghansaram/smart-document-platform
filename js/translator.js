@@ -311,7 +311,7 @@
             }
 
             $docGrid.innerHTML = '';
-            docs.forEach(function(doc) {
+            docs.slice().reverse().forEach(function(doc) {
                 var card = createDocCard(doc);
                 $docGrid.appendChild(card);
             });
