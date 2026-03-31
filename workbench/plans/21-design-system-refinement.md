@@ -74,11 +74,11 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 
 > tokens.css에 누락 변수 추가. 기존 하드코딩 참조는 아직 수정하지 않음.
 
-- ⬜ `--color-highlight` / `--color-highlight-dark` 추가
-- ⬜ `--popover-bg` / `--popover-bg-hover` 추가
-- ⬜ `--line-height-body: 1.5`, `--line-height-relaxed: 1.65` 추가
-- ⬜ `--font-weight-bold: 700`, `--font-weight-semibold: 600`, `--font-weight-medium: 500` 추가
-- ⬜ 기존 `--radius-sm`/`--radius-md`/`--radius-lg` 값 검토 (현행 유지 또는 조정)
+- ✅ `--color-highlight` / `--color-highlight-text` 추가 (라이트: #ffe066/#2c3e50, 다크: #665500/#ffe066)
+- ✅ `--popover-bg` / `--popover-bg-hover` 추가 (라이트: #ffffff/#f5f7fa, 다크: #1e1e2e/#2a2a3e)
+- ✅ `--line-height-body: 1.5`, `--line-height-relaxed: 1.65` 추가
+- ✅ `--font-weight-bold: 700`, `--font-weight-semibold: 600`, `--font-weight-medium: 500` 추가
+- ⬜ 기존 `--radius-sm`/`--radius-md`/`--radius-lg` 값 검토 → Phase 5로 이관 (값 변경 시 기존 참조에 즉시 영향)
 
 ### Phase 2: components.css 토큰 준수 (~0.5일)
 
@@ -89,6 +89,15 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 - ⬜ `.badge` — `font-size` → `var(--font-caption)`
 - ⬜ `.spinner` — rgba 색상 → `var(--active-color-subtle)`
 - ⬜ `.tooltip-popup` — `line-height` → `var(--line-height-body)`
+
+> **⚠️ Phase 2 주의사항**
+> - `font-weight` 교체 범위: components.css 내부만 교체. 다른 CSS 파일은 Phase 3~4에서 처리
+> - `line-height` 교체 시 주의: 현재 1.4~1.8까지 **의도적으로 다른 값**이 혼용됨
+>   - `1.4` = 밀도 높은 UI (배지, 메뉴 항목) → 교체하지 않음
+>   - `1.5` = 일반 본문 → `var(--line-height-body)`
+>   - `1.6~1.7` = 긴 텍스트 → `var(--line-height-relaxed)` 또는 유지
+>   - `1.8` = 읽기 전용 콘텐츠 → 유지 (토큰 범위 밖)
+>   - **일괄 교체 금지** — 항목별로 의도를 확인 후 개별 판단
 
 ### Phase 3: modal.css + platform-header.css 토큰 준수 (~0.5일)
 
@@ -105,6 +114,12 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 - ⬜ 트리패널 다크 배경 — `--panel-bg` 통일
 - ⬜ 검색 하이라이트 — `#ffe066` → `var(--color-highlight)`
 - ⬜ title-edit 관련 — GitHub 팔레트 → 토큰 참조
+
+> **⚠️ Phase 4 주의사항**
+> - `--popover-bg`와 `--white`는 라이트/다크 모두 동일 값. 팝오버·컨텍스트메뉴·드롭다운 등
+>   **떠 있는 레이어 전용**으로 `--popover-bg`를 사용하고, 일반 배경은 `--white`/`--bg-primary` 유지
+>   → Phase 5에서 팝오버 배경만 별도 조정할 수 있는 여지 확보
+> - `--color-highlight` 교체는 안전 — 5개 파일 17곳 모두 동일 패턴 (`#ffe066`/`#665500`)
 - ⬜ Markmap `#e2e8f0` → `var(--text-primary)`
 - ⬜ 독자 버튼 (`.card-btn`, `.translate-page-btn` 등) → `.btn` 시리즈 위임 또는 토큰 참조
 
