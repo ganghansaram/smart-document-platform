@@ -2,11 +2,14 @@
 인증 서비스 — SQLite 기반 사용자/세션 관리
 """
 import hashlib
+import logging
 import os
 import secrets
 import sqlite3
 from datetime import datetime, timedelta
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 import config
 
@@ -82,7 +85,9 @@ def authenticate(username: str, password: str) -> Optional[dict]:
     try:
         row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
         if row and verify_password(password, row["password_hash"]):
+            logger.info("로그인 성공: %s (role=%s)", username, row["role"])
             return _user_dict(row)
+        logger.warning("로그인 실패: %s", username)
         return None
     finally:
         conn.close()

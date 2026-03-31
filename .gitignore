@@ -25,6 +25,9 @@ desktop.ini
 *.log
 logs/
 
+# Backups
+backups/
+
 # Temporary files
 *.tmp
 *.temp

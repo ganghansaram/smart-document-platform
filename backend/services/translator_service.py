@@ -34,6 +34,17 @@ _page_progress: dict[str, str] = {}
 
 MAX_RANGE_PAGES = 5
 
+import logging as _logging
+_logger = _logging.getLogger(__name__)
+
+
+def _atomic_write_json(path: Path, data, indent: Optional[int] = 2, ensure_ascii: bool = False):
+    """원자적 JSON 저장 (tmp → rename). 크래시 시 원본 보존."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=ensure_ascii, indent=indent), encoding="utf-8")
+    tmp.replace(path)
+
 
 def _ensure_data_dir():
     """data/translator 디렉토리 보장"""
@@ -88,9 +99,8 @@ def save_glossary(username: str, data: dict) -> dict:
     data.setdefault("version", 1)
     data.setdefault("entries", [])
 
-    # JSON 저장
-    gp = _glossary_json_path(username)
-    gp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    # JSON 저장 (원자적)
+    _atomic_write_json(_glossary_json_path(username), data)
 
     # pdf2zh용 CSV 동기 생성
     csv_path = _glossary_csv_path(username)
@@ -184,28 +194,35 @@ def _load_user_index(username: str) -> list[dict]:
 
 
 def _save_user_index(username: str, index: list[dict]):
-    udir = _user_dir(username)
-    udir.mkdir(parents=True, exist_ok=True)
-    with open(_user_index_path(username), "w", encoding="utf-8") as f:
-        json.dump(index, f, ensure_ascii=False, indent=2)
+    _atomic_write_json(_user_index_path(username), index)
+
+
+def _load_json_safe(path: Path) -> Optional[dict]:
+    """JSON 로드 — 파손 시 .tmp 복구 시도."""
+    if not path.exists():
+        tmp = path.with_suffix(".tmp")
+        if tmp.exists():
+            try:
+                data = json.loads(tmp.read_text(encoding="utf-8"))
+                tmp.replace(path)
+                _logger.warning("JSON 복구 성공 (.tmp → %s)", path.name)
+                return data
+            except Exception:
+                _logger.warning("JSON 복구 실패: %s", path)
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        _logger.warning("JSON 파싱 실패: %s", path)
+        return None
 
 
 def _load_meta(username: str, doc_id: str) -> Optional[dict]:
-    meta_path = _doc_dir(username, doc_id) / "meta.json"
-    if not meta_path.exists():
-        return None
-    try:
-        with open(meta_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return None
+    return _load_json_safe(_doc_dir(username, doc_id) / "meta.json")
 
 
 def _save_meta(username: str, doc_id: str, meta: dict):
-    doc_path = _doc_dir(username, doc_id)
-    doc_path.mkdir(parents=True, exist_ok=True)
-    with open(doc_path / "meta.json", "w", encoding="utf-8") as f:
-        json.dump(meta, f, ensure_ascii=False, indent=2)
+    _atomic_write_json(_doc_dir(username, doc_id) / "meta.json", meta)
 
 
 # ══════════════════════════════════════
@@ -224,11 +241,8 @@ def _load_search_index(username: str) -> dict:
 
 
 def _save_search_index(username: str, index: dict):
-    udir = _user_dir(username)
-    udir.mkdir(parents=True, exist_ok=True)
     index["updated_at"] = datetime.now().isoformat()
-    with open(_search_index_path(username), "w", encoding="utf-8") as f:
-        json.dump(index, f, ensure_ascii=False)
+    _atomic_write_json(_search_index_path(username), index, indent=None)
 
 
 def _extract_pdf_text(pdf_bytes: bytes, total_pages: int) -> dict[str, str]:
@@ -447,10 +461,7 @@ def _load_user_folders(username: str) -> list[dict]:
 
 
 def _save_user_folders(username: str, folders: list[dict]):
-    udir = _user_dir(username)
-    udir.mkdir(parents=True, exist_ok=True)
-    with open(_user_folders_path(username), "w", encoding="utf-8") as f:
-        json.dump(folders, f, ensure_ascii=False, indent=2)
+    _atomic_write_json(_user_folders_path(username), folders)
 
 
 def get_folders(username: str) -> list[dict]:
@@ -566,8 +577,7 @@ def _load_annotations(username: str, doc_id: str) -> dict:
 
 
 def _save_annotations(username: str, doc_id: str, data: dict):
-    with open(_annotations_path(username, doc_id), "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    _atomic_write_json(_annotations_path(username, doc_id), data)
 
 
 def get_annotations(username: str, doc_id: str) -> dict:
@@ -896,6 +906,7 @@ def start_page_translation(username: str, doc_id: str, pages: str, model: Option
     """페이지 번역 시작 (단일 또는 범위) → asyncio.Task 생성, 즉시 반환
     pages: "3" (단일) 또는 "3-7" (범위, 최대 5페이지)
     """
+    _logger.info("번역 시작 요청: user=%s, doc=%s, pages=%s, model=%s", username, doc_id, pages, model)
     meta = _load_meta(username, doc_id)
     if not meta:
         raise FileNotFoundError(f"문서 없음: {doc_id}")
@@ -1811,6 +1822,7 @@ def start_summary_generation(username: str, doc_id: str, force: bool = False):
 
     force=True면 기존 요약 무시하고 재생성.
     """
+    _logger.info("문서 분석 시작: user=%s, doc=%s, force=%s", username, doc_id, force)
     meta = _load_meta(username, doc_id)
     if not meta:
         raise FileNotFoundError(f"문서 없음: {doc_id}")

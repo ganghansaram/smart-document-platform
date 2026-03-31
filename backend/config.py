@@ -1,10 +1,15 @@
 """
 백엔드 설정
+
+환경변수로 오버라이드 가능한 설정:
+    OLLAMA_URL          Ollama 서버 주소 (기본: http://localhost:11434)
+    CORS_ORIGINS        CORS 허용 오리진 (쉼표 구분, 기본: http://localhost:8080)
 """
+import os
 from pathlib import Path
 
 # Ollama 서버 설정
-OLLAMA_URL = "http://localhost:11434"  # 회사: http://<linux-server-ip>:11434
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = "gemma3:4b"
 
 # LLM 프로바이더 설정
@@ -50,7 +55,9 @@ AUTH_DB_PATH = str(Path(__file__).parent.parent / "data" / "auth.db")
 ANALYTICS_DB_PATH = str(Path(__file__).parent.parent / "data" / "analytics.db")
 SESSION_EXPIRY_HOURS = 24
 LOGIN_REQUIRED = True  # False: 열람 자유 (시범 운영용)
-CORS_ORIGINS = ["http://localhost:8080", "http://127.0.0.1:8080"]
+CORS_ORIGINS = os.getenv(
+    "CORS_ORIGINS", "http://localhost:8080,http://127.0.0.1:8080"
+).split(",")
 
 # 업로드 임시 디렉토리 (DRM 등으로 로컬 저장이 문제될 경우 네트워크 경로로 변경)
 # 예: UPLOAD_TEMP_DIR = "\\\\server\\share\\webbook_temp"
