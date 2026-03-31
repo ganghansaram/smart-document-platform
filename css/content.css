@@ -90,7 +90,6 @@
 
 .main-content {
     width: 100%;
-    min-width: 900px;
     line-height: 1.8;
     flex: 1;  /* 남은 공간 채우기 - 푸터를 하단에 고정 */
 }
