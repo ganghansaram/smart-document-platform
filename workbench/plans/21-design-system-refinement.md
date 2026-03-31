@@ -108,9 +108,22 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 
 ### Phase 3: modal.css + platform-header.css 토큰 준수 (~0.5일)
 
-- ⬜ `.modal-box` — `box-shadow` → `var(--shadow-lg)`, `border-radius` → `var(--radius-lg)`
-- ⬜ `.platform-header` — `box-shadow` → `var(--shadow-sm)`
-- ⬜ `.ph-system-dropdown` — 검토 및 토큰 교체
+**modal.css:**
+- ✅ `.modal-box` `border-radius: 8px` → `var(--radius-md)` (8px=8px, 동일)
+- ✅ `.modal-header h3` `font-weight: 600` → `var(--font-weight-semibold)` (동일)
+- ✅ `.modal-close` `transition` → `var(--transition-normal)` (0.2s=0.2s, 동일)
+- ⏭️ `.modal-box` `box-shadow` — 현재 `0 16px 48px` ≠ `--shadow-lg`(`0 8px 32px`), Phase 5에서 `--shadow-modal` 토큰 신설 검토
+- ⏭️ `.modal-close` `border-radius: 6px` — Phase 5 이관 (6px 이슈)
+
+**platform-header.css:**
+- ✅ `.ph-system-dropdown` `border-radius: 8px` → `var(--radius-md)` (동일)
+- ✅ `.ph-system-item` `font-weight/transition` → 토큰 참조 (동일)
+- ✅ `.ph-system-item.current` `font-weight: 600` → `var(--font-weight-semibold)` (동일)
+- ✅ `.ph-system-badge` / `.ph-system-badge.dev` `font-weight` → 토큰 참조 (동일)
+- ⏭️ `.platform-header` `box-shadow` — 현재 `0 2px 8px` ≠ `--shadow-sm`(`0 1px 4px`), Phase 5 이관
+- ⏭️ `.ph-switcher-btn` `border-radius: 6px` — Phase 5 이관
+
+> **계획서 수정**: 원래 `--radius-lg`(12px) 제안은 `--radius-md`(8px)로 정정 — 현재 값 보존 우선
 
 ### Phase 4: translator.css 하드코딩 정리 (~1일)
 
@@ -140,9 +153,15 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
   - 다크: `--bg-primary: #1a1a2e`, `--content-bg: #24243c` (깊이 차이 강화)
 - ⬜ **경계선 연하게** — `--border-color: #e8ecf0` (라이트), 주장 줄임
 - ⬜ **곡선 부드럽게** — `--radius-sm: 6px`, `--radius-md: 10px`, `--radius-lg: 14px`
+  - ⚠️ `--radius-sm` 4→6 변경 시 기존 47곳 참조에 영향 (배지·소형 입력 등 4px→6px)
+  - 변경 전 전 페이지 스크린샷 비교 필수
+  - 변경 후 `.btn` 시리즈 `border-radius: 6px` → `var(--radius-sm)` 일괄 교체 (Phase 2 이관분)
 - ⬜ **그림자 강화** — `--shadow-sm/md/lg` 값 미세 조정 (현재보다 약간 더 visible)
+  - `.modal-box` shadow (`0 16px 48px`)가 `--shadow-lg`(`0 8px 32px`)보다 큼 → `--shadow-modal` 신설 또는 `--shadow-xl` 조정
+  - `.platform-header` shadow (`0 2px 8px`)가 `--shadow-sm`(`0 1px 4px`)보다 큼 → `--shadow-sm` 값 상향 검토
 - ⬜ **호버 피드백 강화** — `--hover-bg` 톤 조정, `--transition-fast: 0.15s`로 변경 검토
 - ⬜ **line-height 토큰 적용** — body 1.5, relaxed 1.65 통일
+- ⬜ **`--font-small: 12px` 토큰 추가 검토** — 현재 12px가 components.css에 5곳, 전체 CSS에 다수 사용되나 토큰 없음. `--font-body`(13)과 `--font-caption`(11) 사이 갭
 
 ### Phase 6: 크로스 검증 (~0.5일)
 
