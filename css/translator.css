@@ -343,14 +343,14 @@ body[data-theme="dark"] .hero-banner-img {
 }
 
 /* ── 목록형 뷰 ── */
-.doc-grid.view-list {
+.doc-grid.doc-list-mode {
     display: flex;
     flex-direction: column;
     gap: 0;
-    flex-shrink: 0;
+    flex: 0 0 auto;
 }
 
-.doc-grid.view-list .doc-card {
+.doc-grid.doc-list-mode .doc-card {
     border-radius: 0;
     padding: 12px 20px;
     display: flex;
@@ -363,26 +363,26 @@ body[data-theme="dark"] .hero-banner-img {
     transition: background var(--transition-fast);
 }
 
-.doc-grid.view-list .doc-card:hover {
+.doc-grid.doc-list-mode .doc-card:hover {
     background: var(--hover-bg);
 }
 
-.doc-grid.view-list .doc-card:first-child {
+.doc-grid.doc-list-mode .doc-card:first-child {
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     border-top: 1px solid var(--border-color);
 }
 
-.doc-grid.view-list .doc-card:last-child {
+.doc-grid.doc-list-mode .doc-card:last-child {
     border-radius: 0 0 var(--radius-md) var(--radius-md);
     border-bottom: 1px solid var(--border-color);
 }
 
-.doc-grid.view-list .doc-card:only-child {
+.doc-grid.doc-list-mode .doc-card:only-child {
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
 }
 
-.doc-grid.view-list .doc-card-title {
+.doc-grid.doc-list-mode .doc-card-title {
     flex: 1;
     min-width: 0;
     margin-bottom: 0;
@@ -392,38 +392,38 @@ body[data-theme="dark"] .hero-banner-img {
     gap: 4px;
 }
 
-.doc-grid.view-list .doc-card-title span {
+.doc-grid.doc-list-mode .doc-card-title span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
 }
 
-.doc-grid.view-list .doc-card-title .title-edit-btn {
+.doc-grid.doc-list-mode .doc-card-title .title-edit-btn {
     position: static;
     transform: none;
     flex-shrink: 0;
 }
 
-.doc-grid.view-list .doc-card-meta {
+.doc-grid.doc-list-mode .doc-card-meta {
     flex-shrink: 0;
     margin-bottom: 0;
     min-width: 130px;
     text-align: right;
 }
 
-.doc-grid.view-list .doc-card-status {
+.doc-grid.doc-list-mode .doc-card-status {
     flex-shrink: 0;
     margin-bottom: 0;
     min-width: 120px;
     text-align: right;
 }
 
-.doc-grid.view-list .doc-card-actions {
+.doc-grid.doc-list-mode .doc-card-actions {
     flex-shrink: 0;
 }
 
-.doc-grid.view-list .doc-empty {
+.doc-grid.doc-list-mode .doc-empty {
     grid-column: auto;
 }
 

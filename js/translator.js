@@ -89,6 +89,7 @@
         var $docCount       = document.getElementById('doc-count');
         var $btnViewList    = document.getElementById('btn-view-list');
         var $btnViewTile    = document.getElementById('btn-view-tile');
+        var $translatorFooter = document.getElementById('translator-footer');
         var $uploadZone     = document.getElementById('upload-zone');
         var $fileInput      = document.getElementById('file-input');
         var $pageInfo       = document.getElementById('page-info');
@@ -315,11 +316,11 @@
             docViewMode = mode;
             localStorage.setItem('nb-view-mode', mode);
             if (mode === 'list') {
-                $docGrid.classList.add('view-list');
+                $docGrid.classList.add('doc-list-mode');
                 $btnViewList.classList.add('active');
                 $btnViewTile.classList.remove('active');
             } else {
-                $docGrid.classList.remove('view-list');
+                $docGrid.classList.remove('doc-list-mode');
                 $btnViewTile.classList.add('active');
                 $btnViewList.classList.remove('active');
             }
@@ -521,6 +522,7 @@
         function showViewer() {
             $viewList.style.display = 'none';
             $viewViewer.style.display = 'flex';
+            if ($translatorFooter) $translatorFooter.style.display = 'none';
             header.nav['back-list'].style.display = '';
             updatePageNav();
         }
@@ -528,6 +530,7 @@
         function showList() {
             $viewViewer.style.display = 'none';
             $viewList.style.display = 'flex';
+            if ($translatorFooter) $translatorFooter.style.display = '';
             header.nav['back-list'].style.display = 'none';
             currentDocId = null;
             annotationsCache = null;

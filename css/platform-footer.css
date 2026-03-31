@@ -25,9 +25,9 @@ body[data-theme="dark"] .platform-footer {
     color: inherit;
 }
 
-/* ── Translator: 푸터를 바닥에 고정 ─────────────────────────────────────────── */
-.view-list > #translator-footer {
-    margin-top: auto;
+/* ── Translator: body 레벨 푸터 ─────────────────────────────────────────── */
+#translator-footer {
+    flex-shrink: 0;
 }
 
 /* ── Launcher 전용 (투명 배경, 밝은 텍스트) ──────────────────────────────────── */
