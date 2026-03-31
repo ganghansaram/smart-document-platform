@@ -100,20 +100,6 @@ body {
     z-index: 1;
 }
 
-.hero-features {
-    position: absolute;
-    bottom: 28px;
-    right: 48px;
-    z-index: 2;
-    display: flex;
-    gap: 32px;
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.hero-feature-icon svg {
-    width: 56px;
-    height: 56px;
-}
 
 @keyframes starBreathing {
     0%, 100% { opacity: 0.15; box-shadow: 0 0 4px 1px rgba(180, 210, 255, 0.2); }
