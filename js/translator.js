@@ -85,6 +85,10 @@
         var $viewList       = document.getElementById('view-list');
         var $viewViewer     = document.getElementById('view-viewer');
         var $docGrid        = document.getElementById('doc-grid');
+        var $docToolbar     = document.getElementById('doc-toolbar');
+        var $docCount       = document.getElementById('doc-count');
+        var $btnViewList    = document.getElementById('btn-view-list');
+        var $btnViewTile    = document.getElementById('btn-view-tile');
         var $uploadZone     = document.getElementById('upload-zone');
         var $fileInput      = document.getElementById('file-input');
         var $pageInfo       = document.getElementById('page-info');
@@ -304,11 +308,38 @@
 
         function loadDocuments() { loadTreeData(); }
 
+        // ── 뷰 모드 (목록형/타일형) ──
+        var docViewMode = localStorage.getItem('nb-view-mode') || 'tile';
+
+        function applyViewMode(mode) {
+            docViewMode = mode;
+            localStorage.setItem('nb-view-mode', mode);
+            if (mode === 'list') {
+                $docGrid.classList.add('view-list');
+                $btnViewList.classList.add('active');
+                $btnViewTile.classList.remove('active');
+            } else {
+                $docGrid.classList.remove('view-list');
+                $btnViewTile.classList.add('active');
+                $btnViewList.classList.remove('active');
+            }
+        }
+
+        $btnViewList.addEventListener('click', function() { applyViewMode('list'); });
+        $btnViewTile.addEventListener('click', function() { applyViewMode('tile'); });
+
+        // 초기 모드 적용
+        applyViewMode(docViewMode);
+
         function renderDocGrid(docs) {
             if (!docs.length) {
+                $docToolbar.classList.add('hidden');
                 $docGrid.innerHTML = '<div class="doc-empty">워크스페이스가 비어 있습니다.<br>PDF를 업로드하거나, 내 문서에서 드래그하세요.</div>';
                 return;
             }
+
+            $docToolbar.classList.remove('hidden');
+            $docCount.textContent = docs.length + '개 문서';
 
             $docGrid.innerHTML = '';
             docs.slice().reverse().forEach(function(doc) {

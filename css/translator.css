@@ -281,6 +281,163 @@ body[data-theme="dark"] .hero-banner-img {
     grid-column: 1 / -1;
 }
 
+/* ── 문서 툴바 (뷰 전환) ── */
+.doc-toolbar.hidden {
+    display: none;
+}
+
+.doc-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 900px;
+    margin: 0 auto 12px;
+    width: 100%;
+}
+
+.doc-toolbar-count {
+    font-size: var(--font-body);
+    color: var(--text-light);
+}
+
+.doc-toolbar-views {
+    display: flex;
+    gap: 4px;
+}
+
+.doc-view-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all var(--transition-fast);
+}
+
+.doc-view-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--text-light);
+}
+
+.doc-view-btn:hover {
+    border-color: var(--active-color);
+}
+
+.doc-view-btn:hover svg {
+    stroke: var(--active-color);
+}
+
+.doc-view-btn.active {
+    background: var(--active-color);
+    border-color: var(--active-color);
+}
+
+.doc-view-btn.active svg {
+    stroke: #fff;
+}
+
+/* ── 목록형 뷰 ── */
+.doc-grid.view-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex-shrink: 0;
+}
+
+.doc-grid.view-list .doc-card {
+    border-radius: 0;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--border-color);
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    transition: background var(--transition-fast);
+}
+
+.doc-grid.view-list .doc-card:hover {
+    background: var(--hover-bg);
+}
+
+.doc-grid.view-list .doc-card:first-child {
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.doc-grid.view-list .doc-card:last-child {
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.doc-grid.view-list .doc-card:only-child {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.doc-grid.view-list .doc-card-title {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+    padding-right: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.doc-grid.view-list .doc-card-title span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.doc-grid.view-list .doc-card-title .title-edit-btn {
+    position: static;
+    transform: none;
+    flex-shrink: 0;
+}
+
+.doc-grid.view-list .doc-card-meta {
+    flex-shrink: 0;
+    margin-bottom: 0;
+    min-width: 130px;
+    text-align: right;
+}
+
+.doc-grid.view-list .doc-card-status {
+    flex-shrink: 0;
+    margin-bottom: 0;
+    min-width: 120px;
+    text-align: right;
+}
+
+.doc-grid.view-list .doc-card-actions {
+    flex-shrink: 0;
+}
+
+.doc-grid.view-list .doc-empty {
+    grid-column: auto;
+}
+
+/* 다크 모드 뷰 전환 */
+body[data-theme="dark"] .doc-view-btn {
+    background: var(--content-bg);
+    border-color: var(--border-color);
+}
+
+body[data-theme="dark"] .doc-view-btn.active {
+    background: var(--active-color);
+    border-color: var(--active-color);
+}
+
 /* ══ State: Viewer (Dual Panel) ══ */
 
 /* Panel header (좌/우 공통 — V4 패턴) */
