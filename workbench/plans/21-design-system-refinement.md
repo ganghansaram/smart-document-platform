@@ -84,11 +84,18 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 
 > 핵심 공통 컴포넌트의 하드코딩을 토큰 참조로 교체.
 
-- ⬜ `.btn` 시리즈 — `border-radius` → `var(--radius-sm)`, `font-size` → `var(--font-body)`
-- ⬜ `.form-input`, `.form-select` — `border-radius`, `font-size` 토큰화
-- ⬜ `.badge` — `font-size` → `var(--font-caption)`
-- ⬜ `.spinner` — rgba 색상 → `var(--active-color-subtle)`
-- ⬜ `.tooltip-popup` — `line-height` → `var(--line-height-body)`
+- ✅ `.btn` — `font-size` → `var(--font-body)`, `font-weight` → `var(--font-weight-medium)`, `transition` → `var(--transition-fast)`
+- ✅ `.btn-icon-sm` — `border-radius: 4px` → `var(--radius-sm)`
+- ✅ `.btn-lg` — `font-size` → `var(--font-title)`
+- ✅ `.form-input`, `.form-select` — `font-size` → `var(--font-body)`, `transition` → `var(--transition-fast)`
+- ✅ `.form-group label` — `font-size` → `var(--font-body)`, `font-weight` → `var(--font-weight-medium)`
+- ✅ `.form-input-sm`, `.form-select-sm` — `border-radius` → `var(--radius-sm)`
+- ✅ `.badge` — `font-size` → `var(--font-caption)`, `font-weight` → `var(--font-weight-semibold)`, `border-radius` → `var(--radius-sm)`
+- ✅ `.tooltip-popup` — `line-height` → `var(--line-height-body)`
+- ✅ `.form-range-value` — `font-weight` → `var(--font-weight-semibold)`
+- ✅ `.mode-toggle-btn` — `font-size`, `font-weight`, `transition` 토큰화
+- ⏭️ `.btn` 시리즈 `border-radius: 6px` — Phase 5로 이관 (--radius-sm=4px ≠ 6px, 시각 변화 방지)
+- ⏭️ `.spinner` rgba — 값이 다름 (rgba(0,102,204,0.15) ≠ --active-color-subtle), 의도적 차이 유지
 
 > **⚠️ Phase 2 주의사항**
 > - `font-weight` 교체 범위: components.css 내부만 교체. 다른 CSS 파일은 Phase 3~4에서 처리
