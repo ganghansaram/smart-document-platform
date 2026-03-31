@@ -38,7 +38,7 @@
 
 ### 결론부터 말하면
 
-> **현재 수준: 소규모 팀 내부 운용은 가능, 부서/조직 단위 정식 운영에는 보완 필요**
+> **현재 수준: 소규모 팀 내부 운용 가능 → Plan-22(2026-03-31) 보완 후 부서 단위 운영 준비 완료**
 
 잘 되어 있는 것:
 - 인증/인가 구조 (PBKDF2 해싱, RBAC 3단계, HttpOnly 쿠키)
@@ -48,11 +48,18 @@
 - 검색 파이프라인 품질 (하이브리드 검색 + 리랭킹)
 - 에러 폴백 체인 (벡터→키워드, 리랭커→원본순위)
 
-보완이 필요한 것:
-- 백엔드 프로세스 관리 (크래시 시 수동 재시작)
-- 로깅/모니터링
-- DB 백업 체계
-- 보안 세부 설정
+Plan-22에서 보완 완료:
+- ✅ JSON 원자 쓰기 (`tmp → rename`) — 서버 크래시 시 데이터 파손 방지
+- ✅ Graceful Shutdown (`lifespan` 핸들러) — 태스크/서브프로세스 정리
+- ✅ 고착 태스크 자동 리셋 — 서버 재시작 시 `translating` → `pending`
+- ✅ 구조화 로깅 (`RotatingFileHandler`, `logs/app.log`, 10MB×5)
+- ✅ 헬스체크 확장 (`/api/health` — DB/Ollama/디스크 상태)
+- ✅ 일일 백업 스크립트 (`tools/daily-backup.py`, 30일 보존)
+- ✅ CORS/Ollama URL 환경변수 지원 (코드 수정 없이 배포 가능)
+
+잔여 보완 (nice-to-have):
+- 프로세스 관리 (NSSM 서비스 등록 — 아래 3.1 참조)
+- 보안 세부 설정 (Rate Limit, CSP — 폐쇄망에서 우선순위 낮음)
 
 ---
 
@@ -67,7 +74,7 @@
 | 리버스 프록시 | 없음 (Tomcat 직접 노출) | ⚠️ | 필수는 아님, 있으면 좋음 |
 | HTTPS | 미적용 (`secure=False`) | ⚠️ | 폐쇄망이므로 위험 낮음 |
 | 프로세스 관리 (백엔드) | 없음 | ❌ | 크래시 시 수동 재시작 필요 |
-| CORS | localhost만 허용 | ⚠️ | 운영 호스트명/IP 등록 필요 |
+| CORS | ✅ 환경변수 지원 | ✅ | `CORS_ORIGINS` 환경변수로 설정 (코드 수정 불필요) |
 | Ollama 연결 | `config.py` → GPU 서버 IP | ✅ | 이미 분리 운영 중 |
 
 **Tomcat에 대한 평가**:
@@ -120,7 +127,7 @@ goto loop
 | 연결 관리 | 매 쿼리마다 새 연결 | ⚠️ | SQLite에서는 허용 범위 |
 | SQL 인젝션 방어 | 파라미터화 쿼리 (`?`) | ✅ | 전수 적용 |
 | 마이그레이션 | `executescript`로 초기화 | ⚠️ | 스키마 변경 시 수동 대응 |
-| 백업 | 없음 | ❌ | DB 파일 손상 시 복구 불가 |
+| 백업 | ✅ `tools/daily-backup.py` | ✅ | SQLite + settings + translator 일일 백업, 30일 보존 |
 | 암호화 | 없음 (평문 파일) | — | 폐쇄망에서는 수용 가능 |
 
 **현재 DB 구조**:
@@ -188,7 +195,7 @@ echo [%date% %time%] Backup completed.
 | 로그인 Rate Limit | 없음 | ⚠️ | 브루트포스 가능 (폐쇄망이라 위험 낮음) |
 | 보안 헤더 (CSP 등) | 없음 | ⚠️ | Tomcat에서 설정 가능 |
 | RBAC | 3단계 (viewer/editor/admin) | ✅ | 역할별 엔드포인트 제한 |
-| 감사 로깅 | 없음 | ⚠️ | 관리자 작업 추적 불가 |
+| 감사 로깅 | ✅ 로그인 성공/실패 기록 | ✅ | `logs/app.log`에 username + role 기록 |
 
 **폐쇄망 환경 보안 재평가**:
 
@@ -205,13 +212,13 @@ echo [%date% %time%] Backup completed.
 
 | 항목 | 현재 상태 | 평가 | 비고 |
 |------|-----------|:---:|------|
-| 애플리케이션 로그 | `logging.getLogger(__name__)` | ⚠️ | 있으나 설정 미흡 |
-| 로그 레벨 설정 | 없음 (기본값) | ⚠️ | 디버그/프로덕션 구분 불가 |
-| 로그 파일 출력 | 없음 (콘솔만) | ❌ | 서버 재시작 시 소실 |
-| 로그 로테이션 | 없음 | ❌ | 파일 출력이 없으니 해당 없음 |
-| 요청/응답 로깅 | 없음 | ⚠️ | API 호출 추적 불가 |
+| 애플리케이션 로그 | ✅ `logging_config.py` | ✅ | RotatingFileHandler, 구조화 포맷 |
+| 로그 레벨 설정 | ✅ INFO (기본) | ✅ | setup_logging(level=) 인자로 변경 가능 |
+| 로그 파일 출력 | ✅ `logs/app.log` | ✅ | 10MB × 5 로테이션 |
+| 로그 로테이션 | ✅ RotatingFileHandler | ✅ | 자동 로테이션 |
+| 핵심 이벤트 로깅 | ✅ 번역/분석/로그인 | ✅ | translator_service.py, auth.py |
 | Tomcat 접속 로그 | 있음 (AccessLogValve) | ✅ | 프론트엔드 접속은 추적 가능 |
-| 헬스 체크 | `GET /api/health` 존재 | ✅ | 모니터링 연계 가능 |
+| 헬스 체크 | ✅ DB/Ollama/디스크 확인 | ✅ | `GET /api/health` → `{"status":"ok","checks":{...}}` |
 
 **보완 방법**:
 
