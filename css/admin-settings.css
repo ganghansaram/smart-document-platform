@@ -512,7 +512,7 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
     color: var(--as-text);
     background: var(--as-bg-card);
     border: 1px solid var(--as-input-border);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -870,7 +870,7 @@ body[data-theme="dark"] .admin-modal {
     font-size: 13px;
     background: #ffffff;
     border: 1px solid #cbd5e1;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     color: #1a1a2e;
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
@@ -990,7 +990,7 @@ body[data-theme="dark"] .admin-modal .admin-btn-reset:hover:not(:disabled) {
     align-items: center;
     gap: 6px;
     padding: 5px 8px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: 14px;
     cursor: default;
     transition: background 0.1s;

@@ -11,7 +11,7 @@
     gap: 6px;
     padding: 8px 20px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: var(--font-body);
     font-weight: var(--font-weight-medium);
     font-family: inherit;
@@ -85,7 +85,7 @@
     padding: 0;
     background: transparent;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     color: var(--text-dark);
 }
 
@@ -130,7 +130,7 @@
     width: 100%;
     padding: 8px 10px;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: var(--font-body);
     font-family: inherit;
     color: var(--text-dark);
@@ -154,7 +154,7 @@
     width: 100%;
     padding: 12px;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: 14px;
     font-family: inherit;
     color: var(--text-dark);
@@ -176,7 +176,7 @@
     width: 100%;
     padding: 8px 10px;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: var(--font-body);
     font-family: inherit;
     color: var(--text-dark);

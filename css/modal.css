@@ -23,7 +23,7 @@
 .modal-box {
     background-color: var(--white);
     border-radius: var(--radius-md);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-xl);
     max-width: 500px;
     width: 90%;
     max-height: 85vh;
@@ -73,7 +73,7 @@
     color: var(--medium-gray);
     font-size: 24px;
     line-height: 1;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     padding: 4px;
     transition: all var(--transition-normal);
 }
@@ -89,7 +89,7 @@ body[data-theme="dark"] .modal-overlay {
 }
 
 body[data-theme="dark"] .modal-box {
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-xl);
 }
 
 body[data-theme="dark"] .modal-close:hover {

@@ -257,7 +257,7 @@ body[data-theme="dark"] .auth-separator {
     margin-top: 16px;
     padding: 14px;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--bg-gray);
 }
 
@@ -413,7 +413,7 @@ body[data-theme="dark"] .users-modal {
     width: 100%;
     padding: 9px 11px;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: 14px;
     background: var(--white);
     color: var(--text-dark);

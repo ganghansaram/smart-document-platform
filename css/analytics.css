@@ -438,7 +438,7 @@ body[data-theme="dark"] .ad-modal-overlay {
 .ad-btn {
     padding: 8px 20px;
     border: 1px solid var(--ad-border);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--ad-bg-card);
     color: var(--ad-text);
     font-size: 13px;
@@ -544,7 +544,7 @@ body[data-theme="dark"] .ad-modal-overlay {
 .ad-neg-item {
     padding: 10px 12px;
     border: 1px solid var(--ad-border);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: 13px;
     background: var(--ad-card-bg);
 }

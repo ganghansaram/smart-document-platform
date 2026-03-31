@@ -154,23 +154,19 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 > Phase 1~4가 완료되어 모든 코드가 토큰을 참조하는 상태에서,
 > tokens.css 값만 변경하여 전체 시각 품질을 일괄 업그레이드.
 
-- ⬜ **배경 팔레트 세분화**
-  - 라이트: `--white` 유지, `--bg-gray: #f8f9fb` (약간 따뜻하게), `--canvas-bg: #f0f2f5` 조정
-  - 다크: `--bg-primary: #1a1a2e`, `--content-bg: #24243c` (깊이 차이 강화)
-- ⬜ **경계선 연하게** — `--border-color: #e8ecf0` (라이트), 주장 줄임
-- ⬜ **곡선 부드럽게** — `--radius-sm: 6px`, `--radius-md: 10px`, `--radius-lg: 14px`
-  - ⚠️ `--radius-sm` 4→6 변경 시 기존 47곳 참조에 영향 (배지·소형 입력 등 4px→6px)
-  - 변경 전 전 페이지 스크린샷 비교 필수
-  - 변경 후 `border-radius: 6px` 하드코딩 일괄 교체 → `var(--radius-sm)`:
-    - `.btn`, `.btn-icon`, `.form-input`, `.form-textarea`, `.form-select` (Phase 2 이관분)
-    - `.modal-close`, `.ph-switcher-btn` (Phase 3 이관분)
-  - `.ph-system-badge` `border-radius: 3px` — 배지 전용 소형 radius, 토큰화 불필요. 유지
-- ⬜ **그림자 강화** — `--shadow-sm/md/lg` 값 미세 조정 (현재보다 약간 더 visible)
-  - `.modal-box` shadow (`0 16px 48px`)가 `--shadow-lg`(`0 8px 32px`)보다 큼 → `--shadow-modal` 신설 또는 `--shadow-xl` 조정
-  - `.platform-header` shadow (`0 2px 8px`)가 `--shadow-sm`(`0 1px 4px`)보다 큼 → `--shadow-sm` 값 상향 검토
-- ⬜ **호버 피드백 강화** — `--hover-bg` 톤 조정, `--transition-fast: 0.15s`로 변경 검토
-- ⬜ **line-height 토큰 적용** — body 1.5, relaxed 1.65 통일
-- ⬜ **`--font-small: 12px` 토큰 추가 검토** — 현재 12px가 components.css에 5곳, 전체 CSS에 다수 사용되나 토큰 없음. `--font-body`(13)과 `--font-caption`(11) 사이 갭
+- ⏭️ **배경 팔레트 세분화** — 향후 검토 (전역 영향 범위 큼, 충분한 테스트 필요)
+- ⏭️ **경계선 연하게** — 향후 검토 (동일 사유)
+- ✅ **곡선 부드럽게** — `--radius-sm: 6px`, `--radius-md: 10px`, `--radius-lg: 14px`
+  - `border-radius: 6px` 하드코딩 19곳 → `var(--radius-sm)` 일괄 전환 완료 (9개 파일)
+  - 전 CSS에서 `border-radius: 6px` 잔존 0건
+- ✅ **그림자 조정**
+  - `--shadow-sm`: `0 1px 4px 0.08` → `0 2px 6px 0.10` (라이트), `0.15` → `0.18` (다크)
+  - `--shadow-xl`: `0 20px 60px 0.30` → `0 16px 48px 0.25` (라이트), `0.50` → `0.45` (다크)
+  - `.platform-header` `box-shadow` → `var(--shadow-sm)` 전환 (라이트+다크)
+  - `.modal-box` `box-shadow` → `var(--shadow-xl)` 전환 (라이트+다크)
+- ⏭️ **호버 피드백 강화** — 향후 검토 (개별 컴포넌트별 테스트 필요)
+- ⏭️ **line-height 일괄 교체** — 향후 검토 (50+곳, 항목별 의도 확인 필요)
+- ✅ **`--font-small: 12px` 토큰 추가** — tokens.css에 정의 완료 (12px 하드코딩 교체는 점진적 진행)
 
 ### Phase 6: 크로스 검증 (~0.5일)
 
