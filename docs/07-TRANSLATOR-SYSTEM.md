@@ -1,6 +1,7 @@
-# Translator 시스템 — 설계 문서
+# Translator / Notebook 시스템 — 설계 문서
 
 PDF 논문 업로드 → 페이지별 온디맨드 번역 → 듀얼 패널(원문/번역) 열람
+문서 분석(추출/요약/마인드맵) → Q&A 챗봇 → Markdown 편집
 
 ---
 
@@ -11,7 +12,7 @@ PDF 논문 업로드 → 페이지별 온디맨드 번역 → 듀얼 패널(원�
 3. [화면 구성](#3-화면-구성)
 4. [백엔드 API](#4-백엔드-api)
 5. [데이터 구조](#5-데이터-구조)
-6. [번역 파이프라인](#6-번역-파이프라인)
+6. [파이프라인](#6-파이프라인)
 7. [파일 구조](#7-파일-구조)
 8. [설정](#8-설정)
 
@@ -21,8 +22,10 @@ PDF 논문 업로드 → 페이지별 온디맨드 번역 → 듀얼 패널(원�
 
 ### 목적
 
-- 영문 논문/기술문서 PDF를 업로드하면 PMT(PDFMathTranslate)가 **페이지별 온디맨드 번역**
+- 영문 논문/기술문서 PDF를 업로드하면 **페이지별 온디맨드 번역**
 - 듀얼 패널 뷰어: 좌측 원문, 우측 번역 PDF 동시 열람
+- **문서 분석**: 추출 → AI 요약 → 마인드맵 자동 생성
+- **Q&A 챗봇**: 문서 기반 질의응답, 스트리밍 응답
 - 에어갭(폐쇄망) 환경에서 동작: 로컬 Ollama LLM 사용
 - 사용자별 개인 작업공간 (username 기반 디렉토리 격리)
 - **개인 폴더 트리**: 문서를 폴더로 분류·관리
@@ -32,12 +35,19 @@ PDF 논문 업로드 → 페이지별 온디맨드 번역 → 듀얼 패널(원�
 | 항목 | 설명 |
 |------|------|
 | 번역 엔진 | **PDF 모드**: PDFMathTranslate (`pdf2zh`) — 레이아웃/수식 보존 |
-|  | **텍스트 모드**: 자체 렌더링 엔진 — PyMuPDF + DocLayout-YOLO + Ollama 직접 호출 |
+|  | **웹 뷰 모드**: Markdown 추출+번역 — PyMuPDF + Ollama (편집 가능) |
 | 번역 단위 | 페이지별 온디맨드 (단일 또는 범위 최대 5페이지) |
 | PDF 뷰어 | 듀얼 패널 (좌=원문, 우=번역), 스크롤 동기화 토글 |
+| 문서 분석 | PDF → Markdown 추출 → AI 요약(크기 적응형) → 마인드맵(LLM 생성) |
+| Q&A 챗봇 | 문서 기반 질의응답, 컨텍스트 폴백 체인, NDJSON 스트리밍 |
+| 마인드맵 | Markmap 인터랙티브 트리, LLM 의미 분석 + 헤딩 폴백 |
+| Markdown 편집기 | Monaco 기반 분할뷰 (editor-core.js Strategy 패턴) |
 | 마킹/메모 | 원문 텍스트 드래그 → 형광펜 마킹, 색상 4종, 메모 작성, 목록 탐색 |
+| 개인 용어집 | source/target 쌍 관리, pdf2zh 번역 시 자동 적용 |
+| 문서 내 검색 | 원문+번역문+메모 키워드 검색, Ctrl+K |
 | 개인 폴더 | 트리 패널로 폴더 생성/이름변경/삭제, 문서 이동 |
-| 백그라운드 번역 | asyncio Task, 문서당 1페이지 동시 번역, 3초 폴링 |
+| ZIP 다운로드 | MD + 이미지 자산 일괄 다운로드 |
+| 백그라운드 처리 | asyncio Task, 문서당 1페이지 동시 번역, 3초 폴링 |
 | 개인 작업공간 | `data/translator/{username}/` 디렉토리 격리 |
 | 권한 | 업로드/삭제/폴더관리: editor 이상 / 열람·번역: viewer 이상 |
 
@@ -46,19 +56,24 @@ PDF 논문 업로드 → 페이지별 온디맨드 번역 → 듀얼 패널(원�
 ## 2. 아키텍처
 
 ```
-[업로드] → [카드 생성] → [뷰어 열기] → [페이지별 번역 버튼]
+[업로드] → [카드 생성] → [뷰어 열기] → [페이지별 번역]
                                               ↓
-                              [PMT 백그라운드 번역 (1페이지)]
+                              [PMT/웹뷰 백그라운드 번역]
                                               ↓
-                              [번역 PDF → 우측 패널에 표시]
+                              [번역 결과 → 우측 패널에 표시]
+                                              ↓
+                              [문서 분석] → [추출 → 요약 → 마인드맵]
+                                              ↓
+                              [Q&A 챗봇 / Markdown 편집]
 ```
 
 ```
 Browser (translator.html)
 ├── 트리 패널: 폴더 트리 + 문서 목록 (오버레이, 핀 고정)
 ├── 목록 뷰: 업로드 존 + 카드 그리드 (폴더별 필터링)
-└── 뷰어: 듀얼 패널 (좌=원문 PDF.js, 우=번역 PDF.js)
-    └── 툴바: [모델▼] (●PDF ○텍스트) [A-][A+] [이 페이지 번역] [범위 번역]
+└── 뷰어: 듀얼 패널 (좌=원문 PDF.js, 우=번역 PDF/웹뷰)
+    ├── 툴바: [모델▼] (●PDF ○웹뷰) [번역] [범위] [A-][A+]
+    └── 우측 레일: [PDF번역] [웹뷰] [메모] [용어집] [AI분석]
 
 FastAPI Backend (:8000)
 ├── 폴더 CRUD
@@ -70,6 +85,7 @@ FastAPI Backend (:8000)
 │   ├── POST   /upload               ← PDF 업로드
 │   ├── GET    /documents            ← 문서 목록
 │   ├── GET    /document/{id}        ← 메타 조회
+│   ├── PUT    /document/{id}        ← 이름 변경
 │   ├── DELETE /document/{id}        ← 삭제
 │   └── POST   /document/{id}/move   ← 폴더 이동
 ├── 페이지별 번역 (PDF 모드 — pdf2zh)
@@ -77,11 +93,28 @@ FastAPI Backend (:8000)
 │   ├── POST   /translate/{id}/pages           ← 범위 번역 (최대 5p)
 │   ├── GET    /translate/{id}/page/{n}/status  ← 페이지 상태
 │   └── POST   /translate/{id}/page/{n}/cancel  ← 취소
-├── 페이지별 번역 (텍스트 모드 — 자체 엔진)
-│   ├── POST   /text-translate/{id}/page/{n}        ← 텍스트 번역 시작
-│   ├── GET    /text-translate/{id}/page/{n}/status  ← 상태 폴링
-│   ├── GET    /text-translated-pdf/{id}/page/{n}    ← 번역 PDF 서빙
-│   └── POST   /text-translate/{id}/page/{n}/cancel  ← 취소
+├── 웹 뷰 번역 (Markdown 추출+번역)
+│   ├── POST   /web-translate/{id}/page/{n}        ← 웹 뷰 번역 시작
+│   ├── GET    /web-translate/{id}/page/{n}/status  ← 상태 폴링
+│   └── POST   /web-translate/{id}/page/{n}/cancel  ← 취소
+├── 문서 추출 (번역 없이 Markdown 추출)
+│   ├── POST   /extract/{id}                    ← 전체/지정 페이지 추출
+│   ├── GET    /extract/{id}/status              ← 추출 진행 상태
+│   ├── GET    /extracted-view/{id}/page/{n}     ← 추출 원문 MD
+│   └── GET    /extracted-view/{id}/full         ← 전체 추출 병합 MD
+├── AI 요약/분석
+│   ├── POST   /document/{id}/summary            ← 요약 생성
+│   ├── GET    /document/{id}/summary             ← 요약 상태+데이터
+│   └── POST   /document/{id}/analysis/cancel     ← 분석(추출+요약) 취소
+├── 마인드맵
+│   └── GET    /document/{id}/mindmap             ← Markmap INode 트리
+├── Q&A 챗봇
+│   └── POST   /document/{id}/chat/stream         ← 문서 Q&A 스트리밍
+├── 웹 뷰 서빙/편집
+│   ├── GET    /web-view/{id}/full                ← 전체 번역 MD
+│   ├── GET    /web-view/{id}/page/{n}            ← 페이지 번역 MD
+│   ├── GET    /web-view/{id}/page/{n}/assets/{f} ← 이미지 자산
+│   └── PUT    /web-view/{id}/page/{n}            ← MD 편집 저장
 ├── PDF 서빙
 │   ├── GET    /pdf/{id}                       ← 원본
 │   ├── GET    /translated-pdf/{id}/page/{n}   ← 페이지별 번역 PDF
@@ -90,8 +123,16 @@ FastAPI Backend (:8000)
 ├── 마킹(annotations) CRUD
 │   ├── GET    /document/{id}/annotations          ← 마킹 목록
 │   ├── POST   /document/{id}/annotations          ← 마킹 생성
-│   ├── PUT    /document/{id}/annotations/{ann_id}  ← 수정 (memo, color)
+│   ├── PUT    /document/{id}/annotations/{ann_id}  ← 수정
 │   └── DELETE /document/{id}/annotations/{ann_id}  ← 삭제
+├── AI 텍스트 선택
+│   └── POST   /ai/selection                   ← 선택 텍스트 번역/요약
+├── 검색/용어집
+│   ├── GET    /search                         ← 문서 내 검색
+│   ├── GET    /glossary                       ← 용어집 조회
+│   └── PUT    /glossary                       ← 용어집 저장
+├── 다운로드
+│   └── GET    /document/{id}/download/zip     ← ZIP 다운로드
 ├── GET    /document/{id}/pages               ← 전체 페이지 상태 요약
 └── GET    /models                            ← Ollama 모델 목록
 ```
@@ -126,12 +167,13 @@ FastAPI Backend (:8000)
 ### 3.3 뷰어 (듀얼 패널)
 
 - **좌측**: 원문 PDF (PDF.js)
-- **우측**: 번역 PDF — 상태에 따라 다른 화면 표시
+- **우측**: 번역 결과 — 상태에 따라 다른 화면 표시
   - `pending`: 번역 대기 (번역 버튼)
   - `translating`: 스피너 + 진행 상태
-  - `done`: 번역 PDF 표시
+  - `done`: 번역 PDF 또는 웹 뷰 표시
   - `error`: 에러 메시지 + 재시도
   - `legacy`: 레거시 통번역 PDF 표시
+- **엔진 토글**: PDF 모드 (pdf2zh, 레이아웃 보존) ↔ 웹 뷰 모드 (Markdown, 편집 가능)
 - **헤더 내비게이션**: Home 버튼 (목록 복귀), 시스템 스위처 (격자 아이콘)
 - **페이지 이동**: ◀ ▶ 버튼, 키보드 ← →
 - **줌**: −/+ 버튼, 퍼센트 표시, 좌우 패널 독립 줌
@@ -164,9 +206,67 @@ FastAPI Backend (:8000)
   - **AbortController**: popover 닫힘 시 진행 중인 AI 요청을 즉시 취소 (서버 자원 절약)
 - **복사 버튼**: 결과를 클립보드에 복사
 - **마킹+메모**: AI 결과를 메모로 첨부한 마킹을 한 번에 생성
-- **뷰포트 클램핑**: 모든 popover(액션 바, AI 결과, 마킹 편집)가 화면 밖으로 넘치지 않도록 자동 위치 보정
-- **리사이즈 가능 팝업**: AI 결과(360px)·마킹(360px) popover에 `resize:both` 지원 — 사용자가 모서리 드래그로 크기 조절. 범위 다이얼로그(320px)·폴더 피커(320~400px)도 통일된 최소 너비 적용
+- **뷰포트 클램핑**: 모든 popover가 화면 밖으로 넘치지 않도록 자동 위치 보정
+- **리사이즈 가능 팝업**: AI 결과(360px)·마킹(360px) popover에 `resize:both` 지원
 - **설정 연동**: 관리자 설정에서 번역/요약 프롬프트, 타임아웃 변경 가능 (재시작 불필요)
+
+### 3.6 AI 분석 패널 (우측 레일)
+
+문서 분석(추출→요약→마인드맵)과 Q&A 챗봇을 제공하는 우측 패널.
+
+- **문서 분석 흐름**: "문서 분석" 버튼 → 확인 모달(소요 시간 안내) → 전체 페이지 추출 + AI 요약 + 마인드맵 일괄 생성
+- **탭 3종**: 요약 / Q&A / 마인드맵
+  - 분석 완료 전: Q&A·마인드맵 탭 비활성화 (`disabled`, 안내 툴팁)
+  - 분석 완료 후: 3개 탭 모두 활성화
+- **요약 탭**:
+  - 전체 요약문 (3~5문장)
+  - 키워드 배지 목록
+  - 섹션별 접이식 상세 요약 (클릭 펼침)
+- **Q&A 탭**:
+  - 질문 입력 → NDJSON 스트리밍 응답
+  - 출처 페이지 배지 (클릭 시 해당 페이지로 이동)
+  - 대화 세션 유지 (conversation_id)
+  - "대화 초기화" 버튼
+- **마인드맵 탭**:
+  - Markmap 인터랙티브 트리 (d3.js 기반)
+  - 노드 클릭 → 하단 드로어에서 LLM 스트리밍 설명
+  - 컨트롤: 전체 펼치기/접기 (우상단), 줌 +/-/맞춤 (우하단)
+  - 필 형태 노드 (배경색 + 둥근 모서리)
+- **분석 취소**: 진행 중 취소 버튼 → 추출+요약 즉시 중단
+- **재분석**: 분석 완료 후 "재분석" 버튼으로 강제 재생성
+
+### 3.7 용어집 패널
+
+개인 용어집을 관리하여 번역 품질을 향상시키는 기능.
+
+- **source/target 쌍**: 영문 원어 → 한국어 번역어
+- **인라인 편집**: 추가 (+) / 삭제 (×) 버튼
+- **자동 적용**: pdf2zh 번역 시 `_glossary.csv` 자동 생성·전달
+- **데이터**: `_glossary.json` (유저 디렉토리 내)
+
+### 3.8 문서 내 검색
+
+- **Ctrl+K** 또는 검색 아이콘 → 검색 오버레이
+- 원문 + 번역문 + 메모 본문 대상 키워드 검색
+- `source` 파라미터로 검색 대상 필터링 (원문/번역문/전체)
+- 결과 클릭 시 해당 페이지·위치로 이동
+
+### 3.9 Markdown 편집기
+
+웹 뷰 번역 결과를 직접 편집할 수 있는 기능.
+
+- **editor-core.js**: 공통 에디터 코어 (Strategy 패턴)
+  - Monaco 에디터 래퍼, 분할뷰 (좌=편집, 우=미리보기)
+  - 양방향 네비게이션 (편집↔미리보기 동기 스크롤)
+- **진입 조건**: 웹 뷰 번역 완료 + 페이지별 모드에서만 편집 버튼 노출
+- **저장**: `PUT /web-view/{doc_id}/page/{page_num}` → `full_translated.md` 자동 재병합
+- **어댑터 패턴**: Explorer(HTML 편집)와 Notebook(MD 편집) 공통 코어 재사용
+
+### 3.10 ZIP 다운로드
+
+- 원본 PDF + 전체 MD(번역/추출) + 이미지 자산을 ZIP으로 일괄 다운로드
+- DRM 환경에서 파일 반출 시 활용
+- BackgroundTask로 임시 ZIP 생성 후 자동 정리
 
 ---
 
@@ -190,6 +290,7 @@ FastAPI Backend (:8000)
 | `/upload` | POST | editor | PDF 업로드 (즉시 JSON 응답) |
 | `/documents` | GET | viewer | 유저별 문서 목록 |
 | `/document/{doc_id}` | GET | viewer | 문서 메타 (meta.json) |
+| `/document/{doc_id}` | PUT | editor | 이름 변경 `{ title }` |
 | `/document/{doc_id}` | DELETE | editor | 문서 삭제 |
 | `/document/{doc_id}/move` | POST | editor | 폴더 이동 `{ folder_id }` (null=루트) |
 | `/document/{doc_id}/pages` | GET | viewer | 전체 페이지 상태 요약 |
@@ -203,14 +304,55 @@ FastAPI Backend (:8000)
 | `/translate/{doc_id}/page/{page_num}/status` | GET | viewer | 페이지 번역 상태 |
 | `/translate/{doc_id}/page/{page_num}/cancel` | POST | viewer | 번역 취소 |
 
-### 번역 (텍스트 모드 — 자체 엔진)
+### 웹 뷰 번역 (Markdown 추출+번역)
 
 | 엔드포인트 | 메서드 | 권한 | 설명 |
 |-----------|--------|------|------|
-| `/text-translate/{doc_id}/page/{page_num}` | POST | viewer | 텍스트 번역 시작 `{ model, font_scale? }` → 202 |
-| `/text-translate/{doc_id}/page/{page_num}/status` | GET | viewer | 번역 상태 폴링 |
-| `/text-translated-pdf/{doc_id}/page/{page_num}` | GET | viewer | 번역 PDF 서빙 |
-| `/text-translate/{doc_id}/page/{page_num}/cancel` | POST | viewer | 번역 취소 |
+| `/web-translate/{doc_id}/page/{page_num}` | POST | viewer | 웹 뷰 번역 시작 `{ model? }` → 202 |
+| `/web-translate/{doc_id}/page/{page_num}/status` | GET | viewer | 번역 상태 폴링 |
+| `/web-translate/{doc_id}/page/{page_num}/cancel` | POST | viewer | 번역 취소 |
+
+### 문서 추출 (번역 없이 Markdown 추출)
+
+| 엔드포인트 | 메서드 | 권한 | 설명 |
+|-----------|--------|------|------|
+| `/extract/{doc_id}` | POST | viewer | 전체/지정 페이지 추출 `{ pages: "all" \| [1,2] }` → 202 |
+| `/extract/{doc_id}/status` | GET | viewer | 추출 진행 상태 |
+| `/extracted-view/{doc_id}/page/{page_num}` | GET | viewer | 추출 원문 Markdown |
+| `/extracted-view/{doc_id}/full` | GET | viewer | 전체 추출 병합 Markdown |
+
+### AI 요약/분석
+
+| 엔드포인트 | 메서드 | 권한 | 설명 |
+|-----------|--------|------|------|
+| `/document/{doc_id}/summary` | POST | viewer | 요약 생성 `{ force? }` → 202 또는 기존 반환 |
+| `/document/{doc_id}/summary` | GET | viewer | 요약 상태+데이터 조회 |
+| `/document/{doc_id}/analysis/cancel` | POST | viewer | 문서 분석(추출+요약) 취소 |
+
+### 마인드맵
+
+| 엔드포인트 | 메서드 | 권한 | 설명 |
+|-----------|--------|------|------|
+| `/document/{doc_id}/mindmap` | GET | viewer | Markmap INode 호환 트리 데이터 |
+
+### Q&A 챗봇
+
+| 엔드포인트 | 메서드 | 권한 | 설명 |
+|-----------|--------|------|------|
+| `/document/{doc_id}/chat/stream` | POST | viewer | 문서 Q&A 스트리밍 (NDJSON) `{ question, conversation_id? }` |
+
+- 응답 형식: NDJSON — `{"type":"token","content":"..."}` / `{"type":"done","model":"..."}`
+- 컨텍스트 폴백: 번역문 → 추출문 → 원문 PDF 순서
+- 출처 페이지: `<!-- Page N -->` 주석에서 추출
+
+### 웹 뷰 서빙/편집
+
+| 엔드포인트 | 메서드 | 권한 | 설명 |
+|-----------|--------|------|------|
+| `/web-view/{doc_id}/full` | GET | viewer | 전체 병합 번역 Markdown |
+| `/web-view/{doc_id}/page/{page_num}` | GET | viewer | 페이지 번역 Markdown + boxes |
+| `/web-view/{doc_id}/page/{page_num}/assets/{filename}` | GET | viewer | 웹 뷰 이미지 자산 (표, 수식, 그림) |
+| `/web-view/{doc_id}/page/{page_num}` | PUT | viewer | Markdown 편집 저장 `{ markdown }` → 자동 재병합 |
 
 ### PDF 서빙
 
@@ -218,7 +360,6 @@ FastAPI Backend (:8000)
 |-----------|--------|------|
 | `/pdf/{doc_id}` | GET | 원본 PDF |
 | `/translated-pdf/{doc_id}/page/{page_num}` | GET | 페이지별 번역 PDF (PDF 모드) |
-| `/text-translated-pdf/{doc_id}/page/{page_num}` | GET | 페이지별 번역 PDF (텍스트 모드) |
 | `/translated-pdf/{doc_id}` | GET | 레거시 통번역 PDF |
 | `/dual-pdf/{doc_id}` | GET | 레거시 이중언어 PDF |
 
@@ -242,10 +383,19 @@ FastAPI Backend (:8000)
 - `model`: 생략 시 기본 Ollama 모델 사용
 - 응답: `{ "result": "...", "model": "gemma3:4b" }`
 
-### 기타
+### 검색/용어집
+
+| 엔드포인트 | 메서드 | 권한 | 설명 |
+|-----------|--------|------|------|
+| `/search` | GET | viewer | 문서 검색 (본문+메모) `?q=키워드&source=원문\|번역\|전체` |
+| `/glossary` | GET | viewer | 유저 용어집 조회 |
+| `/glossary` | PUT | viewer | 유저 용어집 저장 (전체 교체) |
+
+### 다운로드/기타
 
 | 엔드포인트 | 메서드 | 설명 |
 |-----------|--------|------|
+| `/document/{doc_id}/download/zip` | GET | ZIP 다운로드 (MD + 이미지 자산) |
 | `/models` | GET | Ollama 사용 가능 모델 목록 |
 
 ---
@@ -259,16 +409,24 @@ data/translator/
 ├── {username}/
 │   ├── _index.json              ← 유저별 문서 목록
 │   ├── _folders.json            ← 유저별 폴더 구조
+│   ├── _glossary.json           ← 유저별 용어집
+│   ├── _glossary.csv            ← pdf2zh용 용어집 (자동 생성)
+│   ├── _search_index.json       ← 유저별 검색 인덱스
 │   ├── {doc_id}/
 │   │   ├── original.pdf         ← 원본 PDF
-│   │   ├── meta.json            ← 메타데이터 + 페이지별 번역 상태
+│   │   ├── meta.json            ← 메타데이터 + 페이지별 상태
 │   │   ├── pmt.log              ← PMT 실행 로그
+│   │   ├── ai_summary.json      ← AI 요약 + 마인드맵 트리
+│   │   ├── annotations.json     ← 마킹/메모 데이터
+│   │   ├── full_translated.md   ← 전체 번역 병합 Markdown
+│   │   ├── full_extracted.md    ← 전체 추출 병합 Markdown
 │   │   ├── pages/
 │   │   │   └── {N}/
 │   │   │       ├── translated.pdf       ← PDF 모드 번역 결과 (1페이지 PDF)
-│   │   │       ├── text_translated.pdf  ← 텍스트 모드 번역 결과 (1페이지 PDF)
-│   │   │       └── text_mapping.json    ← 블록 매핑 (원문↔번역 좌표)
-│   │   ├── annotations.json     ← 마킹/메모 데이터
+│   │   │       ├── web_extracted.md     ← 추출 원문 Markdown
+│   │   │       ├── web_translated.md    ← 웹 뷰 번역 Markdown
+│   │   │       ├── page_boxes.json      ← 레이아웃 박스 (좌표)
+│   │   │       └── assets/              ← 추출 이미지 (표, 수식, 그림)
 │   │   ├── translated.pdf       ← (레거시) 통번역 결과
 │   │   └── dual.pdf             ← (레거시) 이중언어 결과
 ```
@@ -280,19 +438,65 @@ data/translator/
   "id": "20260303_120000_abc123",
   "filename": "paper.pdf",
   "title": "paper.pdf",
-  "pages": 4,
+  "pages": 42,
   "uploaded_at": "2026-03-03T12:00:00",
   "status": "uploaded",
+  "folder": "f_20260304_abc123",
   "has_legacy_translation": false,
   "page_status": {
     "1": { "status": "done", "model": "gemma3:4b", "translated_at": "..." },
     "2": { "status": "translating", "model": "gemma3:4b" },
     "3": { "status": "pending" }
+  },
+  "web_pages_status": {
+    "1": { "status": "done", "extracted_at": "...", "translated_at": "..." },
+    "2": { "status": "pending" }
+  },
+  "summary_status": { "status": "done" },
+  "analysis_key": "doc_id:all"
+}
+```
+
+- 페이지 상태: `pending` → `translating` → `done` | `error`
+- `folder`: 폴더 ID (null 또는 필드 없음 = 루트)
+- `summary_status`: 요약 생성 상태 (`pending` → `generating` → `done` | `error`)
+- `analysis_key`: 추출+요약 비동기 태스크 키
+
+### `ai_summary.json`
+
+```json
+{
+  "version": 1,
+  "strategy": "direct",
+  "source": "extracted",
+  "model": "gemma3:4b",
+  "created_at": "2026-03-30T12:00:00",
+  "elapsed_sec": 45.2,
+  "overall_summary": "이 문서는 ... 에 대해 설명합니다.",
+  "keywords": ["재료공학", "피로시험", "파괴역학"],
+  "sections": [
+    { "heading": "1. 서론", "level": 1, "summary": "연구 배경과 목적을 ..." },
+    { "heading": "2. 실험 방법", "level": 1, "summary": "시편 준비 및 ..." }
+  ],
+  "mindmap_tree": {
+    "content": "피로시험 분석",
+    "depth": 0,
+    "children": [
+      {
+        "content": "연구 배경",
+        "depth": 1,
+        "children": [
+          { "content": "재료 피로 메커니즘의 이해 필요성", "depth": 2 },
+          { "content": "기존 연구의 한계점 분석", "depth": 2 }
+        ]
+      }
+    ]
   }
 }
 ```
 
-페이지 상태: `pending` → `translating` → `done` | `error`
+- `strategy`: `"direct"` (≤12,000자 단일 패스) 또는 `"hierarchical"` (초과 시 Map-Reduce)
+- `mindmap_tree`: Markmap INode 호환 포맷 (루트 → 1단계 3~5개 → 2단계 2~3개)
 
 ### `_index.json`
 
@@ -309,8 +513,6 @@ data/translator/
 ]
 ```
 
-- `folder`: 폴더 ID (null 또는 필드 없음 = 루트, 하위 호환)
-
 ### `_folders.json`
 
 ```json
@@ -322,8 +524,6 @@ data/translator/
 ```
 
 ### `annotations.json`
-
-문서 디렉토리 내 마킹/메모 데이터. 파일 없으면 빈 목록으로 취급.
 
 ```json
 {
@@ -345,13 +545,24 @@ data/translator/
 
 - `rects`: PDF 뷰포트 비율 좌표 (0~1), 복수 가능 (여러 줄 선택)
 - `color`: `yellow` | `green` | `red` | `blue` (기본값 `yellow`)
-- `id`: `h_` + timestamp + 랜덤 접미사
+
+### `_glossary.json`
+
+```json
+{
+  "version": 1,
+  "entries": [
+    { "source": "fatigue", "target": "피로" },
+    { "source": "fracture mechanics", "target": "파괴역학" }
+  ]
+}
+```
 
 ---
 
-## 6. 번역 파이프라인
+## 6. 파이프라인
 
-### 6.1 PDF 모드 (pdf2zh)
+### 6.1 PDF 모드 번역 (pdf2zh)
 
 ```
 사용자: 뷰어에서 (●PDF) 선택 → "이 페이지 번역" 클릭
@@ -373,47 +584,80 @@ _run_pmt_page (비동기):
 프론트엔드: 3초 폴링으로 상태 갱신 → 우측 패널에 번역 PDF 표시
 ```
 
-### 6.2 텍스트 모드 (자체 렌더링 엔진)
-
-pdf2zh가 실패하거나 결과가 좋지 않은 PDF를 위한 **폴백 엔진**.
-PyMuPDF + DocLayout-YOLO + Ollama 직접 호출로 자체 렌더링.
+### 6.2 웹 뷰 모드 번역 (Markdown 추출+번역)
 
 ```
-사용자: 뷰어에서 (○텍스트) 선택 → "이 페이지 번역" 클릭
+사용자: 뷰어에서 (○웹뷰) 선택 → "이 페이지 번역" 클릭
     ↓
-프론트엔드: POST /api/translator/text-translate/{doc_id}/page/{page_num}
+프론트엔드: POST /api/translator/web-translate/{doc_id}/page/{page_num}
     ↓
 백엔드: asyncio.create_task → 즉시 202 응답
     ↓
-text_translator.translate_page() (동기, 스레드풀 실행):
-    1. DocLayout-YOLO 레이아웃 감지 (YOLO 실패 시 PyMuPDF 폴백)
-       - title, plain text → 번역 대상
-       - figure, table, formula → 이미지 캡처
-       - abandon, caption → 제외
-    2. 심볼 폰트 불릿 치환 (SymbolMT "x" → "•")
-    3. 컬럼별 Ollama 번역 (full/left/right 그룹)
-    4. PDF 재구성: insert_htmlbox() + 캡처 이미지 삽입
-    5. 저장: text_translated.pdf + text_mapping.json
+1단계 — 추출 (md_extractor.py):
+    1. PyMuPDF로 PDF 페이지 열기
+    2. DocLayout-YOLO 레이아웃 감지 (실패 시 PyMuPDF 폴백)
+       - title, plain text → Markdown 추출
+       - figure, table, formula → 이미지 캡처 (assets/)
+    3. web_extracted.md + page_boxes.json 저장
     ↓
-프론트엔드: 3초 폴링 → 완료 시 번역 PDF 표시
+2단계 — 번역 (md_translator.py):
+    1. Markdown 블록 파싱 (heading/paragraph/table/list/image)
+    2. 블록별 Ollama 번역 (용어집 자동 적용)
+    3. 테이블 셀 단위 번역 (구조 보존)
+    4. web_translated.md 저장
+    5. full_translated.md 자동 재병합
+    ↓
+프론트엔드: 3초 폴링 → 완료 시 번역 Markdown 렌더링
 ```
 
-**텍스트 모드 vs PDF 모드 비교:**
+### 6.3 문서 분석 파이프라인 (추출 → 요약 → 마인드맵)
 
-| 시나리오 | PDF 모드 (pdf2zh) | 텍스트 모드 (자체 엔진) |
-|---------|-------------------|---------------------|
-| 네이티브 텍스트 PDF | **최적** (레이아웃 보존) | 양호 (좌표 기반 배치) |
-| 복잡한 레이아웃 | 가끔 깨짐 | 단순화되지만 읽기 가능 |
-| 수식 포함 PDF | 수식 보존 | 수식 이미지 캡처로 대체 |
-| 폰트 크기 불만족 | 조절 불가 | **[A-][A+]로 즉시 조절** |
+```
+사용자: AI 분석 패널에서 "문서 분석" 클릭
+    ↓
+확인 모달: "문서 크기에 따라 수 분이 소요될 수 있습니다"
+    ↓
+프론트엔드: POST /api/translator/document/{doc_id}/summary
+    ↓
+백엔드:
+    1. 전체 페이지 Markdown 추출 (extract_page × N)
+    2. full_extracted.md 병합
+    3. AI 요약 생성 (ai_summary.py)
+       - ≤ 12,000자: 단일 패스 (direct)
+       - > 12,000자: 섹션 분할 → 개별 요약 → 통합 (hierarchical)
+    4. 마인드맵 트리 생성 (LLM 의미 분석)
+       - 성공 시: INode 트리 (루트 + 1단계 3~5개 + 2단계 2~3개)
+       - 실패 시: 헤딩 파싱 폴백 (번호 패턴 → ALL CAPS → MD level)
+    5. ai_summary.json 저장 (요약 + 키워드 + 섹션 + mindmap_tree)
+    ↓
+프론트엔드: 폴링으로 완료 감지 → 요약/마인드맵 탭 활성화
+```
 
-### 범위 번역
+### 6.4 Q&A 챗봇
+
+```
+사용자: Q&A 탭에서 질문 입력 → 전송
+    ↓
+프론트엔드: POST /api/translator/document/{doc_id}/chat/stream
+    ↓
+백엔드 (notebook_chat.py):
+    1. 컨텍스트 확보 (폴백 체인: translated → extracted → raw PDF)
+    2. 크기 적응형 컨텍스트 구성:
+       - 짧은 문서: 전체 텍스트 직접 주입
+       - 긴 문서: 키워드 매칭으로 관련 섹션 선별
+    3. LLM 스트리밍 응답 (NDJSON)
+    4. 출처 페이지 번호 추출 (<!-- Page N --> 주석)
+    ↓
+프론트엔드: 토큰 단위 실시간 렌더링 + 출처 배지 표시
+```
+
+### 6.5 범위 번역
 
 - "범위 번역" 버튼 → 시작/끝 페이지 입력 다이얼로그
 - 최대 5페이지, PMT에 `--pages M-N` 전달
 - 완료 시 각 페이지를 개별 1페이지 PDF로 분리 저장
 
-### PMT CLI 명령 (페이지별)
+### 6.6 PMT CLI 명령 (페이지별)
 
 ```bash
 pdf2zh --ollama --ollama-model gemma3:4b --ollama-host http://localhost:11434 \
@@ -422,11 +666,12 @@ pdf2zh --ollama --ollama-model gemma3:4b --ollama-host http://localhost:11434 \
        --output {tmp_dir} {original.pdf}
 ```
 
-### 동시성 제어
+### 6.7 동시성 제어
 
 - 키: `"{doc_id}:{pages_str}"` — 문서당 1개 번역만 동시 실행
 - 추가 요청 시 409 Conflict 응답
 - 타임아웃: 5분/페이지 (`TRANSLATOR_PAGE_TIMEOUT`)
+- 분석 취소: `task.cancel(); await task` — CancelledError 분리 처리
 
 ---
 
@@ -434,29 +679,44 @@ pdf2zh --ollama --ollama-model gemma3:4b --ollama-host http://localhost:11434 \
 
 ```
 프론트엔드
-├── translator.html                     ← Translator SPA (트리 + 카드 + 듀얼 뷰어)
+├── translator.html                     ← Translator SPA (트리 + 카드 + 듀얼 뷰어 + AI 패널)
 ├── css/tokens.css                      ← 디자인 토큰 (CSS 변수, 리셋, 포커스 링)
-├── css/translator.css                  ← Translator 전용 스타일 (뷰어, 카드, 마킹, 다크모드)
+├── css/translator.css                  ← Translator 전용 스타일 (뷰어, 카드, 마킹, AI 패널, 다크모드)
 ├── css/platform-header.css             ← 공통 헤더 스타일 (시스템 스위처 포함)
 ├── css/platform-footer.css             ← 공통 푸터 스타일
 ├── css/tree-menu.css                   ← 트리 메뉴 스타일 (Explorer 공유)
-├── js/translator.js                    ← Translator 뷰어 로직 (PDF.js, 마킹, AI 선택, 폴링)
+├── css/components.css                  ← 공통 컴포넌트 (버튼, 입력, 배지, 스피너)
+├── css/modal.css                       ← 공통 모달 스타일
+├── js/translator.js                    ← Translator 뷰어 로직 (PDF.js, 마킹, AI 분석, 폴링)
+├── js/editor-core.js                   ← 공통 Markdown 편집기 코어 (Monaco 래퍼, Strategy 패턴)
+├── js/toast.js                         ← 공통 토스트 알림 (Translator/Compare용)
 ├── js/platform-header.js               ← 공통 헤더 컴포넌트
 ├── js/platform-footer.js               ← 공통 푸터 컴포넌트
+├── js/config.js                        ← AUTH_CONFIG (backendUrl)
 ├── js/lib/pdfjs/                       ← PDF.js v3.11.174 (legacy ES5)
-└── js/config.js                        ← AUTH_CONFIG (backendUrl)
+└── js/lib/markmap/                     ← Markmap 마인드맵 라이브러리
+    ├── d3.min.js                       ← D3 시각화 (IIFE 번들)
+    └── markmap-view.js                 ← Markmap 트리 렌더링 (IIFE 번들)
 
 백엔드
-├── backend/api/translator.py           ← Translator API 라우터
-├── backend/services/translator_service.py ← PMT 번역, 폴더 CRUD, 메타 관리
-├── backend/services/text_translator.py ← 텍스트 모드 번역 엔진 (PyMuPDF + YOLO + Ollama)
+├── backend/api/translator.py           ← Translator API 라우터 (번역, 추출, AI, 마킹, 용어집)
+├── backend/services/translator_service.py ← 오케스트레이션 (번역, 추출, 요약, 폴더, 메타 관리)
+├── backend/services/ai_summary.py      ← 크기 적응형 AI 요약 + 마인드맵 트리 생성
+├── backend/services/notebook_chat.py   ← 문서 Q&A (컨텍스트 폴백, 스트리밍)
+├── backend/services/md_extractor.py    ← PDF → Markdown 추출 (PyMuPDF + DocLayout-YOLO)
+├── backend/services/md_translator.py   ← Markdown 블록 번역 + 병합
+├── backend/services/llm_provider.py    ← LLM 프로바이더 추상화 (Ollama + OpenAI 호환)
 └── backend/config.py                   ← TRANSLATOR_* 설정
 
 데이터
 └── data/translator/{username}/
     ├── _index.json                     ← 문서 목록
     ├── _folders.json                   ← 폴더 구조
+    ├── _glossary.json                  ← 개인 용어집
     └── {doc_id}/                       ← 문서별 디렉토리
+        ├── meta.json, ai_summary.json, annotations.json
+        ├── full_translated.md, full_extracted.md
+        └── pages/{N}/ (translated.pdf, web_*.md, assets/)
 ```
 
 ---
@@ -464,6 +724,8 @@ pdf2zh --ollama --ollama-model gemma3:4b --ollama-host http://localhost:11434 \
 ## 8. 설정
 
 `backend/config.py` 내 Translator 관련 설정:
+
+### PDF 번역 (pdf2zh)
 
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
@@ -480,12 +742,37 @@ pdf2zh --ollama --ollama-model gemma3:4b --ollama-host http://localhost:11434 \
 | `TRANSLATOR_QPS` | `0` | pdf2zh QPS 제한 (0=무제한) |
 | `TRANSLATOR_OCR_WORKAROUND` | `False` | pdf2zh OCR 우회 (스캔 PDF용) |
 | `TRANSLATOR_ENHANCE_COMPAT` | `False` | pdf2zh 호환성 강화 |
-| `TRANSLATOR_TEXT_FONT_SCALE` | `0.75` | 텍스트 모드: EN→KR 폰트 축소 비율 |
-| `TRANSLATOR_TEXT_MIN_SCALE` | `0.5` | 텍스트 모드: insert_htmlbox 최소 축소 한도 |
-| `TRANSLATOR_TEXT_FONT_FAMILY` | `"sans-serif"` | 텍스트 모드: 번역 폰트 패밀리 |
-| `TRANSLATOR_TEXT_MIN_TEXT_LENGTH` | `0` | 텍스트 모드: 최소 텍스트 길이 (미만 건너뜀) |
-| `TRANSLATOR_TEXT_CUSTOM_PROMPT` | *(한국어 번역 프롬프트)* | 텍스트 모드: Ollama 시스템 프롬프트 |
+
+### 웹 뷰 (Markdown 추출+번역)
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
+| `TRANSLATOR_WEB_TABLE_MODE` | `"image"` | 테이블 처리 (`"image"` / `"extract"` / `"off"`) |
+| `TRANSLATOR_WEB_FORMULA_MODE` | `"image"` | 수식 처리 (`"latex"` / `"image"` / `"off"`) |
+| `TRANSLATOR_WEB_IMAGE_DPI` | `150` | 이미지 추출 해상도 |
+| `TRANSLATOR_WEB_AUTO_SUMMARY` | `False` | 번역 완료 후 자동 요약 |
+| `TRANSLATOR_WEB_TABLE_STRATEGY` | `"lines_strict"` | PyMuPDF 테이블 감지 전략 |
+| `TRANSLATOR_WEB_DEBUG` | `False` | 디버그 파일 저장 |
+
+### AI 요약/Q&A
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
+| `TRANSLATOR_AI_SUMMARY_MODEL` | `""` (OLLAMA_MODEL 폴백) | 요약 전용 모델 |
+| `TRANSLATOR_AI_SUMMARY_THRESHOLD` | `0` (=12,000자) | 직접/계층적 요약 전환 임계값 |
+| `TRANSLATOR_AI_QA_THRESHOLD` | `0` (=12,000자) | 전체/섹션 선별 컨텍스트 전환 임계값 |
+
+### AI 텍스트 선택 (인라인 번역/요약)
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
 | `TRANSLATOR_AI_SELECTION_TIMEOUT` | `30` (초) | AI 선택 메뉴 타임아웃 |
 | `TRANSLATOR_AI_TRANSLATE_PROMPT` | *(한국어 번역 프롬프트)* | 텍스트 선택 번역 시스템 프롬프트 |
 | `TRANSLATOR_AI_SUMMARIZE_PROMPT` | *(3문장 요약 프롬프트)* | 텍스트 선택 요약 시스템 프롬프트 |
+
+### 공통
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
 | `OLLAMA_URL` | `http://localhost:11434` | Ollama 서버 주소 |
+| `OLLAMA_MODEL` | `gemma3:4b` | 기본 LLM 모델 |

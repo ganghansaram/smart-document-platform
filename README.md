@@ -38,13 +38,19 @@
 - **그림/표 참조 팝업**: 캡션 자동 ID, 본문 참조 클릭 시 팝업
 - **항공 용어집**: 26,000+ 용어 검색, 본문 약어 자동 인식 + 클릭 팝업
 
-### Translator (문서 번역)
-- **듀얼 번역 엔진**: PDF 모드 (PDFMathTranslate, 레이아웃 보존) + 텍스트 모드 (자체 렌더링, 폰트 조절)
+### Translator / Notebook (문서 번역·분석)
+- **듀얼 번역 엔진**: PDF 모드 (PDFMathTranslate, 레이아웃 보존) + 웹 뷰 모드 (Markdown 추출+번역, 편집 가능)
 - **페이지별 온디맨드 번역**: 단일 또는 범위(최대 5페이지) 번역, 3초 폴링
-- **듀얼 패널 뷰어**: 좌측 원문 + 우측 번역 PDF, 스크롤 동기화
+- **듀얼 패널 뷰어**: 좌측 원문 + 우측 번역 PDF/웹뷰, 스크롤 동기화
+- **문서 분석 파이프라인**: PDF 추출 → AI 요약(크기 적응형) → 마인드맵(LLM 의미 분석) 자동 생성
+- **Q&A 챗봇**: 문서 기반 질의응답, 컨텍스트 폴백 체인, NDJSON 스트리밍
+- **인터랙티브 마인드맵**: Markmap 트리 시각화, 노드 클릭 시 LLM 설명, 펼치기/접기/줌
+- **Markdown 편집기**: Monaco 기반 분할뷰, 번역 결과 실시간 편집
 - **텍스트 선택 AI 메뉴**: 원문 드래그 → 번역/요약/마킹 3버튼 액션 바
 - **마킹/메모**: 형광펜 4색, popover 편집, 페이지별 목록 탐색, 플로팅 위젯
-- **리사이즈 가능 팝업**: AI 결과·마킹·범위 다이얼로그에 `resize:both` 지원 — 사용자가 모서리 드래그로 크기 조절
+- **개인 용어집**: source/target 쌍, pdf2zh 번역 시 자동 적용
+- **문서 내 검색**: 원문+번역문+메모 키워드 검색 (Ctrl+K)
+- **ZIP 다운로드**: MD + 이미지 일괄 다운로드 (DRM 환경 대응)
 - **개인 폴더 트리**: 폴더 생성/이동/삭제, 드래그 앤 드롭
 - **카드 기반 문서 관리**: 상태별 UI (pending/translating/done/error)
 - **개인 작업공간**: 사용자별 디렉토리 격리
@@ -120,7 +126,7 @@ python tools/create-admin.py
 |------|------|
 | [ARCHITECTURE](docs/05-ARCHITECTURE.md) | 시스템 구성도, 서버별 설치 항목, API 설계 |
 | [RAG-PIPELINE](docs/06-RAG-PIPELINE.md) | 검색/AI 파이프라인, 임베딩, 청킹 전략 |
-| [TRANSLATOR-SYSTEM](docs/07-TRANSLATOR-SYSTEM.md) | Translator PDF 번역 뷰어 기술 문서 |
+| [TRANSLATOR-SYSTEM](docs/07-TRANSLATOR-SYSTEM.md) | Translator/Notebook 시스템 설계 문서 |
 | [COMPARE-SYSTEM](docs/11-COMPARE-SYSTEM.md) | Compare 문서 비교/검증 기술 문서 |
 
 **개발/전략**
@@ -147,6 +153,10 @@ smart-document-platform/
 ├── login.html              # 독립 로그인 페이지
 ├── css/                    # 스타일시트
 │   ├── tokens.css         # 디자인 토큰 (CSS 변수, 리셋, 포커스 링)
+│   ├── scrollbar.css      # 공통 스크롤바 스타일
+│   ├── toast.css          # 공통 토스트 알림 스타일
+│   ├── components.css     # 공통 컴포넌트 (버튼, 입력, 배지, 스피너)
+│   ├── modal.css          # 공통 모달 스타일
 │   ├── main.css           # 전체 레이아웃 및 테마
 │   ├── tree-menu.css      # 좌측 트리 메뉴
 │   ├── content.css        # 콘텐츠, 섹션 네비게이터, 렌더링 최적화
@@ -179,8 +189,11 @@ smart-document-platform/
 │   ├── keyboard.js        # 키보드 단축키
 │   ├── analytics.js       # 접속 통계
 │   ├── admin-settings.js  # 관리자 설정 페이지
-│   ├── translator.js      # Translator 뷰어 로직 (PDF.js, 마킹, AI 선택)
-│   └── lib/pdfjs/         # PDF.js v3.11.174 (Translator용)
+│   ├── translator.js      # Translator 뷰어 로직 (PDF.js, 마킹, AI 분석, 용어집)
+│   ├── editor-core.js     # 공통 Markdown 편집기 코어 (Monaco 래퍼, Strategy 패턴)
+│   ├── toast.js           # 공통 토스트 알림 (Translator/Compare용)
+│   ├── lib/pdfjs/         # PDF.js v3.11.174 (Translator용)
+│   └── lib/markmap/       # Markmap 마인드맵 (d3.min.js, markmap-view.js)
 ├── data/                   # 데이터 파일
 │   ├── menu.json          # 메뉴 구조 정의
 │   ├── search-index.json  # 검색 인덱스
@@ -196,14 +209,17 @@ smart-document-platform/
 │   ├── dependencies.py    # FastAPI 의존성
 │   ├── requirements.txt   # 의존성 패키지
 │   ├── api/               # API 엔드포인트
-│   │   ├── translator.py     # Translator API (업로드, 번역, PDF 서빙, AI 선택, 마킹)
+│   │   ├── translator.py     # Translator API (번역, 추출, AI 요약, Q&A, 마킹, 용어집)
 │   │   ├── compare.py       # Compare API (업로드, 검증, AI 분류, 규칙 관리)
 │   │   ├── settings.py   # 설정 API
 │   │   ├── analytics.py  # 통계 API
 │   │   └── auth.py       # 인증 API
 │   └── services/          # 비즈니스 로직
-│       ├── translator_service.py  # PMT 번역, 개인 작업공간, 메타 관리, AI 선택
-│       ├── text_translator.py    # 텍스트 모드 번역 엔진 (PyMuPDF + YOLO + Ollama)
+│       ├── translator_service.py  # 번역/추출/요약 오케스트레이션, 폴더·메타 관리
+│       ├── ai_summary.py         # 크기 적응형 AI 요약 + 마인드맵 트리 생성
+│       ├── notebook_chat.py      # 문서 Q&A (컨텍스트 폴백, 스트리밍)
+│       ├── md_extractor.py       # PDF → Markdown 추출 (PyMuPDF + DocLayout-YOLO)
+│       ├── md_translator.py      # Markdown 블록 번역 + 병합
 │       ├── compare_service.py    # 텍스트 추출, 규칙 엔진, AI 의미 분류
 │       ├── keyword_search.py  # 키워드 검색
 │       ├── vector_search.py   # FAISS 벡터 검색 + RRF 병합
@@ -247,7 +263,9 @@ smart-document-platform/
 | **AI/LLM** | Ollama (로컬 LLM, 에어갭 호환) + OpenAI 호환 API (vLLM, NIM 등) |
 | **검색** | BM25 + FAISS (faiss-cpu), bge-m3 임베딩 |
 | **리랭킹** | sentence-transformers, bge-reranker-v2-m3 |
-| **PDF** | PDF.js v3.11.174 (뷰어), PDFMathTranslate/pdf2zh (번역), PyMuPDF (페이지 수 추출) |
+| **PDF** | PDF.js v3.11.174 (뷰어), PDFMathTranslate/pdf2zh (번역), PyMuPDF (추출) |
+| **문서 분석** | PyMuPDF4LLM + DocLayout-YOLO (레이아웃 추출), Ollama (AI 요약/Q&A) |
+| **마인드맵** | Markmap (d3.js 기반, 로컬 IIFE 번들) |
 | **데이터** | JSON, SQLite (auth.db) |
 | **웹서버** | Apache Tomcat / Python http.server |
 

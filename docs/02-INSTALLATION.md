@@ -173,11 +173,15 @@ xcopy /E /I /Y smart-document-platform\* C:\apache-tomcat-7.0.77\webapps\ROOT\
 ```
 ROOT\
 ├── index.html
-├── css\            # main.css, content.css, editor.css 등
-├── js\             # app.js, editor.js 등
+├── translator.html
+├── compare.html
+├── css\            # tokens.css, main.css, translator.css 등
+├── js\             # app.js, translator.js, editor-core.js, toast.js 등
+│   └── lib\        # pdfjs/, markmap/ (로컬 번들)
 ├── data\           # menu.json, search-index.json
+│   └── translator\ # Translator 개인 작업공간 (자동 생성)
 ├── contents\       # HTML 콘텐츠
-├── backend\        # FastAPI 백엔드 (AI/편집 사용 시)
+├── backend\        # FastAPI 백엔드 (AI/편집/번역 사용 시)
 └── ...
 ```
 

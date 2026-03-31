@@ -28,6 +28,7 @@
 - ⚠️ 이 방법은 **개발/테스트 전용**입니다
 - ⚠️ **실제 서비스**에는 [02-INSTALLATION.md](02-INSTALLATION.md)의 Tomcat 방식 사용
 - ⚠️ 서버 재부팅 시 자동으로 시작되지 않음
+- ⚠️ AI 채팅, 번역, 문서 분석(요약/Q&A/마인드맵) 기능은 **백엔드 서버 + Ollama**가 필요합니다 → [03-BACKEND-SETUP.md](03-BACKEND-SETUP.md)
 
 ---
 

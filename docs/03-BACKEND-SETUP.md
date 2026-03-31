@@ -27,7 +27,7 @@
 **백엔드가 제공하는 기능:**
 - AI 채팅 API (`/api/chat`, `/api/search`)
 - 문서 편집 저장 API (`/api/save-document`)
-- Translator API (`/api/translator/*`) — PDF 업로드, PMT 번역, 문서 관리
+- Translator / Notebook API (`/api/translator/*`) — PDF 번역, Markdown 추출, AI 요약, Q&A, 마인드맵, 용어집
 - Compare API (`/api/compare/*`) — 문서 비교, 규칙 검증, AI 의미 분류
 - 관리자 인증 API (`/api/auth/*`) — 업로드/편집/인덱싱은 admin 로그인 필요
 - 관리자 설정 API (`/api/settings`) — 런타임 설정 변경
@@ -49,7 +49,7 @@
 │  - /api/save-document   문서 저장 API (admin)            │
 │  - /api/upload          문서 업로드/변환 API (admin)     │
 │  - /api/reindex         검색 인덱스 재생성 API (admin)   │
-│  - /api/translator/*    Translator PDF 번역 API          │
+│  - /api/translator/*    Translator/Notebook API           │
 │  - /api/compare/*      Compare 문서 비교/검증 API        │
 └─────────────────────────────────────────────────────────┘
                           │
@@ -178,10 +178,13 @@ pydantic-settings==2.13.1
 
 # HTTP / 유틸
 requests==2.32.3
+httpx>=0.27.0
 
 # 검색 / RAG
 faiss-cpu==1.12.0
 sentence-transformers==5.1.2
+rank-bm25==0.2.2
+kiwipiepy>=0.18.0
 
 # Translator (PDF 번역)
 pdf2zh-next==2.8.2
@@ -189,6 +192,7 @@ PyMuPDF==1.25.2
 
 # Explorer (문서 변환)
 python-docx==1.2.0
+openpyxl>=3.1.0
 
 # Ollama 클라이언트
 ollama==0.6.1
@@ -201,7 +205,17 @@ ollama==0.6.1
 
 > **pdf2zh-next**: Translator PDF 번역 엔진(PDFMathTranslate). babeldoc 캐시 필요 (아래 참조).
 
+> **kiwipiepy**: 한국어 형태소 분석 (BM25 토크나이저). 미설치 시 공백 분리 폴백.
+
+> **rank-bm25**: 키워드 검색 BM25 엔진.
+
+> **httpx**: 비동기 HTTP 클라이언트 (LLM 프로바이더 통신).
+
+> **openpyxl**: Excel 파일 처리 (문서 변환).
+
 > **pywin32**: Word 장절번호 자동 평문화용. Word 설치 환경에서만 동작.
+
+> **참고**: `backend/packages/` 폴더에는 위 패키지 외에 pdf2zh-next의 의존성(babeldoc, DocLayout-YOLO 등)과 Notebook 기능에 필요한 패키지(pymupdf4llm 등)가 함께 포함되어 있습니다. `pip download`로 자동 수집됩니다.
 
 ---
 
@@ -310,6 +324,21 @@ UPLOAD_TEMP_DIR = None                # None이면 기본값 (backend/temp/)
 # Word COM 전처리 (장절번호 평문화 + 필드 갱신)
 # pywin32 + Word 설치 필요. DRM 환경에서 COM 임시 파일이 암호화되어 실패 시 False
 WORD_COM_PREPROCESS = True
+
+# Translator 설정
+TRANSLATOR_DATA_DIR = "data/translator"
+TRANSLATOR_PAGE_TIMEOUT = 300         # 페이지별 번역 타임아웃 (5분)
+TRANSLATOR_MAX_CONCURRENT = 4         # 동시 번역 최대 수 (GPU 부하 제한)
+
+# 웹 뷰 (Markdown 추출+번역) 설정
+TRANSLATOR_WEB_TABLE_MODE = "image"   # 테이블 처리 ("image"/"extract"/"off")
+TRANSLATOR_WEB_FORMULA_MODE = "image" # 수식 처리 ("latex"/"image"/"off")
+TRANSLATOR_WEB_IMAGE_DPI = 150        # 이미지 추출 해상도
+
+# AI 요약/Q&A 설정
+TRANSLATOR_AI_SUMMARY_MODEL = ""      # 요약 전용 모델 (빈값 = OLLAMA_MODEL 폴백)
+TRANSLATOR_AI_SUMMARY_THRESHOLD = 0   # 직접/계층적 요약 전환 임계값 (0=12000자)
+TRANSLATOR_AI_QA_THRESHOLD = 0        # 전체/섹션 선별 컨텍스트 전환 임계값
 
 # Translator AI 선택 메뉴 설정
 TRANSLATOR_AI_SELECTION_TIMEOUT = 30  # 번역/요약 타임아웃 (초)

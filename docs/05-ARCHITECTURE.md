@@ -161,6 +161,7 @@ smart-document-platform/
 │   │   ├── settings.py            # 설정 API (GET/POST /api/settings, /api/settings/public)
 │   │   ├── analytics.py           # 통계 API (heartbeat, dashboard)
 │   │   ├── menu.py                # 메뉴 관리 API (GET/POST /api/menu)
+│   │   ├── translator.py          # Translator API (번역, 추출, AI 요약, Q&A, 마킹, 용어집)
 │   │   └── compare.py             # Compare API (업로드/검증/규칙/AI분류)
 │   │
 │   ├── services/                   # 비즈니스 로직
@@ -180,7 +181,12 @@ smart-document-platform/
 │   │   ├── korean_tokenizer.py     # 한국어 형태소 분석 (kiwipiepy/폴백)
 │   │   ├── settings_service.py    # settings.json CRUD, 런타임 config 적용
 │   │   ├── analytics.py           # 접속 통계 서비스
-│   │   └── compare_service.py     # Compare 텍스트 추출, 규칙 엔진, AI 분류
+│   │   ├── compare_service.py     # Compare 텍스트 추출, 규칙 엔진, AI 분류
+│   │   ├── translator_service.py  # 번역/추출/요약 오케스트레이션, 폴더·메타 관리
+│   │   ├── ai_summary.py          # 크기 적응형 AI 요약 + 마인드맵 트리 생성
+│   │   ├── notebook_chat.py       # 문서 Q&A (컨텍스트 폴백, 스트리밍)
+│   │   ├── md_extractor.py        # PDF → Markdown 추출 (PyMuPDF + DocLayout-YOLO)
+│   │   └── md_translator.py       # Markdown 블록 번역 + 병합
 │   │
 │   └── packages/                   # 오프라인 설치용 wheel 파일
 │       └── (pip download 결과물)
@@ -224,11 +230,19 @@ smart-document-platform/
 │   ├── app.js                     # Explorer 코어 (로딩, 스크롤, 설정)
 │   ├── auth.js                    # 3-role RBAC, 로그인 리다이렉트
 │   ├── config.js                  # DISPLAY/AI/EDITOR/UPLOAD/AUTH_CONFIG
-│   ├── translator.js              # Translator 뷰어 로직 (PDF.js, 마킹, AI 선택)
+│   ├── translator.js              # Translator 뷰어 로직 (PDF.js, 마킹, AI 분석, 용어집)
+│   ├── editor-core.js             # 공통 Markdown 편집기 코어 (Monaco 래퍼, Strategy 패턴)
+│   ├── toast.js                   # 공통 토스트 알림 (Translator/Compare용)
+│   ├── lib/pdfjs/                 # PDF.js v3.11.174
+│   ├── lib/markmap/               # Markmap 마인드맵 (d3.min.js, markmap-view.js)
 │   └── ...                        # (기타 Explorer 모듈)
 │
 ├── css/
 │   ├── tokens.css                 # 디자인 토큰 (CSS 변수, 리셋, 글로벌 focus-visible)
+│   ├── scrollbar.css              # 공통 스크롤바 스타일
+│   ├── toast.css                  # 공통 토스트 알림 스타일
+│   ├── components.css             # 공통 컴포넌트 (버튼, 입력, 배지, 스피너)
+│   ├── modal.css                  # 공통 모달 스타일
 │   ├── platform-header.css        # 공통 헤더 스타일
 │   ├── platform-footer.css        # 공통 푸터 스타일
 │   ├── admin-settings.css         # 관리자 설정 스타일
@@ -470,6 +484,27 @@ POST /api/compare/ai-classify  — AI 의미 분류 (Ollama 구조화 출력)
 
 > **상세**: [11-COMPARE-SYSTEM.md](11-COMPARE-SYSTEM.md) 참조
 
+### 4.10 Translator / Notebook API
+
+Translator 시스템은 PDF 번역 외에 문서 분석(추출/요약/마인드맵), Q&A 챗봇, Markdown 편집 기능을 제공합니다.
+
+| 카테고리 | 주요 엔드포인트 | 설명 |
+|----------|----------------|------|
+| 폴더 관리 | `GET/POST/PUT/DELETE /api/translator/folders` | 개인 폴더 CRUD |
+| 문서 관리 | `POST /upload`, `GET /documents`, `PUT/DELETE /document/{id}` | PDF 업로드, 목록, 이름변경, 삭제 |
+| PDF 번역 | `POST /translate/{id}/page/{n}`, `/pages` | pdf2zh 페이지별/범위 번역 |
+| 웹 뷰 번역 | `POST /web-translate/{id}/page/{n}` | Markdown 추출+번역 |
+| 문서 추출 | `POST /extract/{id}`, `GET /extracted-view/{id}/*` | 번역 없이 Markdown 추출 |
+| AI 요약 | `POST/GET /document/{id}/summary` | 크기 적응형 AI 요약 생성/조회 |
+| 마인드맵 | `GET /document/{id}/mindmap` | Markmap INode 트리 |
+| Q&A 챗봇 | `POST /document/{id}/chat/stream` | NDJSON 스트리밍 Q&A |
+| 편집 | `PUT /web-view/{id}/page/{n}` | Markdown 편집 저장 |
+| 마킹 | `GET/POST/PUT/DELETE /document/{id}/annotations` | 형광펜 마킹 CRUD |
+| 용어집 | `GET/PUT /glossary` | 개인 용어집 관리 |
+| 다운로드 | `GET /document/{id}/download/zip` | ZIP 일괄 다운로드 |
+
+> **상세**: [07-TRANSLATOR-SYSTEM.md](07-TRANSLATOR-SYSTEM.md#4-백엔드-api) 참조
+
 ---
 
 ## 5. 배포 절차
@@ -649,6 +684,8 @@ requestViaOllama() → Ollama /api/generate 직접 호출
 | Phase 3 | ✅ 완료 | 하이브리드 검색, 리랭킹, 멀티턴 대화, 구조 보존 인덱싱 |
 | Phase 4 | ✅ 완료 | 질문 라우팅, 쿼리 분해, Agentic RAG, LLM 프로바이더 추상화 |
 | Phase 5-6 | ✅ 완료 | Compare 시스템 (듀얼 diff, AI 의미 분류, 규칙 검증, 검토 리포트, 미니맵) |
+| Phase 7 | ✅ 완료 | Translator 기반 구축 (PDF 뷰어, 페이지별 번역, 마킹, 폴더, 트리 패널) |
+| Phase 8 | ✅ 완료 | Notebook 플랫폼 (웹 뷰 번역, MD 추출, AI 요약, 마인드맵, Q&A, 편집기, 용어집) |
 
 **Phase 3 세부 항목:**
 - FAISS + bge-m3 하이브리드 검색 (RRF 병합, keyword 30% + vector 70%)
@@ -1271,8 +1308,9 @@ Word OOXML (paragraph._element)
 
 | 파일 | 역할 |
 |------|------|
-| `js/app.js` | `showToast(message, type)` — 공용 함수 |
-| `css/main.css` | `.toast` 스타일 (위치, 애니메이션, 타입별 색상) |
+| `js/app.js` | `showToast(message, type)` — Explorer용 공용 함수 |
+| `js/toast.js` | `showToast(message, type)` — Translator/Compare용 독립 모듈 |
+| `css/toast.css` | `.toast` 스타일 (위치, 애니메이션, 타입별 색상) |
 
 ### 16.2 API
 
