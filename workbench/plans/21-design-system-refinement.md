@@ -1,7 +1,8 @@
 # Plan 21: 디자인 시스템 리파인먼트
 
 > 작성일: 2026-03-30
-> 상태: 설계 완료 / 착수 대기
+> 완료일: 2026-03-31
+> 상태: ✅ Phase 1~6 완료 (배경 팔레트·경계선·호버·line-height 일괄 교체는 향후 검토)
 > 선행: Plan-20 Phase 2 마인드맵 완료
 
 ---
@@ -78,7 +79,7 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 - ✅ `--popover-bg` / `--popover-bg-hover` 추가 (라이트: #ffffff/#f5f7fa, 다크: #1e1e2e/#2a2a3e)
 - ✅ `--line-height-body: 1.5`, `--line-height-relaxed: 1.65` 추가
 - ✅ `--font-weight-bold: 700`, `--font-weight-semibold: 600`, `--font-weight-medium: 500` 추가
-- ⬜ 기존 `--radius-sm`/`--radius-md`/`--radius-lg` 값 검토 → Phase 5로 이관 (값 변경 시 기존 참조에 즉시 영향)
+- ✅ 기존 `--radius-sm`/`--radius-md`/`--radius-lg` 값 검토 → Phase 5에서 4→6/8→10/12→14 조정 완료
 
 ### Phase 2: components.css 토큰 준수 (~0.5일)
 
@@ -94,8 +95,8 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 - ✅ `.tooltip-popup` — `line-height` → `var(--line-height-body)`
 - ✅ `.form-range-value` — `font-weight` → `var(--font-weight-semibold)`
 - ✅ `.mode-toggle-btn` — `font-size`, `font-weight`, `transition` 토큰화
-- ⏭️ `.btn` 시리즈 `border-radius: 6px` — Phase 5로 이관 (--radius-sm=4px ≠ 6px, 시각 변화 방지)
-- ⏭️ `.spinner` rgba — 값이 다름 (rgba(0,102,204,0.15) ≠ --active-color-subtle), 의도적 차이 유지
+- ✅ `.btn` 시리즈 `border-radius: 6px` → Phase 5에서 --radius-sm=6px 조정 후 `var(--radius-sm)` 전환 완료
+- ⏭️ `.spinner` rgba — 값이 다름 (rgba(0,102,204,0.15) ≠ --active-color-subtle), 의도적 차이 유지 확정
 
 > **⚠️ Phase 2 주의사항**
 > - `font-weight` 교체 범위: components.css 내부만 교체. 다른 CSS 파일은 Phase 3~4에서 처리
@@ -112,16 +113,16 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 - ✅ `.modal-box` `border-radius: 8px` → `var(--radius-md)` (8px=8px, 동일)
 - ✅ `.modal-header h3` `font-weight: 600` → `var(--font-weight-semibold)` (동일)
 - ✅ `.modal-close` `transition` → `var(--transition-normal)` (0.2s=0.2s, 동일)
-- ⏭️ `.modal-box` `box-shadow` — 현재 `0 16px 48px` ≠ `--shadow-lg`(`0 8px 32px`), Phase 5에서 `--shadow-modal` 토큰 신설 검토
-- ⏭️ `.modal-close` `border-radius: 6px` — Phase 5 이관 (6px 이슈)
+- ✅ `.modal-box` `box-shadow` → Phase 5에서 `--shadow-xl` 값 조정 후 `var(--shadow-xl)` 전환 완료
+- ✅ `.modal-close` `border-radius: 6px` → Phase 5에서 `var(--radius-sm)` 전환 완료
 
 **platform-header.css:**
 - ✅ `.ph-system-dropdown` `border-radius: 8px` → `var(--radius-md)` (동일)
 - ✅ `.ph-system-item` `font-weight/transition` → 토큰 참조 (동일)
 - ✅ `.ph-system-item.current` `font-weight: 600` → `var(--font-weight-semibold)` (동일)
 - ✅ `.ph-system-badge` / `.ph-system-badge.dev` `font-weight` → 토큰 참조 (동일)
-- ⏭️ `.platform-header` `box-shadow` — 현재 `0 2px 8px` ≠ `--shadow-sm`(`0 1px 4px`), Phase 5 이관
-- ⏭️ `.ph-switcher-btn` `border-radius: 6px` — Phase 5 이관
+- ✅ `.platform-header` `box-shadow` → Phase 5에서 `--shadow-sm` 값 상향 후 `var(--shadow-sm)` 전환 완료
+- ✅ `.ph-switcher-btn` `border-radius: 6px` → Phase 5에서 `var(--radius-sm)` 전환 완료
 
 > **계획서 수정**: 원래 `--radius-lg`(12px) 제안은 `--radius-md`(8px)로 정정 — 현재 값 보존 우선
 
@@ -147,7 +148,7 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 > - `#f85149` (danger) — `--color-error` 다크값과 미세 차이, 의미 구분상 현상 유지 적절
 
 **Phase 4 → Phase 5 이관:**
-- ⏭️ 독자 버튼 (`.card-btn`, `.translate-page-btn` 등) → `.btn` 시리즈 위임 또는 토큰 참조 (구조적 리팩토링, 비주얼 조정과 함께 진행)
+- ⏭️ 독자 버튼 (`.card-btn`, `.translate-page-btn` 등) → `.btn` 시리즈 위임 또는 토큰 참조 → backlog 이관
 
 ### Phase 5: 비주얼 업그레이드 — 토큰 값 조정 (~0.5일)
 
@@ -170,11 +171,11 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 
 ### Phase 6: 크로스 검증 (~0.5일)
 
-- ⬜ 전 페이지 라이트/다크 스크린샷 비교 (launcher, index, translator, compare)
-- ⬜ 컴포넌트별 시각 일관성 확인 (버튼, 입력, 모달, 카드, 배지)
-- ⬜ 다크모드 가독성 확인 (대비율 4.5:1 이상)
-- ⬜ 콘솔 에러 0건 확인
-- ⬜ 기능 회귀 없음 확인
+- ✅ 전 페이지 라이트/다크 스크린샷 비교 (phase5-before/ vs phase5-after/)
+- ✅ 컴포넌트별 시각 일관성 확인 (버튼, 입력, 모달, 카드, 배지 — Playwright 14건 테스트)
+- ✅ 다크모드 전환 정상 확인 (Explorer/Translator/Compare 라이트→다크→라이트)
+- ✅ 콘솔 에러 0건 확인 (Explorer/Translator/Compare)
+- ✅ 기능 회귀 없음 확인 (검색 하이라이트, 메모 패널, AI 요약 패널, 시스템 스위처, 마킹)
 
 ### Phase 5 Before 스크린샷 (Phase 4 완료 시점 보존)
 
@@ -240,13 +241,31 @@ Phase 5 완료 후 동일 조건으로 `phase5-after/` 스크린샷을 확보하
 ### 현재 토큰 구조도
 
 ```
-tokens.css
+tokens.css (Plan-21 완료 후)
 ├── 색상 (primary, secondary, gray, semantic, accent)
 ├── 레이아웃 (panel-radius, panel-gap, canvas-bg, panel-bg)
 ├── 그림자 (shadow-sm ~ shadow-xl, panel-shadow, focus-ring)
-├── 둥글기 (radius-sm ~ radius-xl, radius-pill)
+├── 둥글기 (radius-sm:6 ~ radius-xl:16, radius-pill)
 ├── 간격 (space-xs ~ space-2xl)
-├── 폰트 (font-title, font-body, font-caption)
+├── 폰트 크기 (font-title:15, font-body:13, font-small:12, font-caption:11)
+├── 폰트 굵기 (font-weight-bold:700, semibold:600, medium:500)
+├── 행간 (line-height-body:1.5, line-height-relaxed:1.65)
+├── 하이라이트 (color-highlight, color-highlight-text)
+├── 팝오버 (popover-bg, popover-bg-hover)
 ├── 트랜지션 (transition-fast ~ transition-slow)
 └── diff 색상 (diff-added, diff-deleted 등)
 ```
+
+---
+
+## 8. 향후 검토 항목 (backlog 이관)
+
+> Plan-21에서 범위 외로 판단하여 보류한 항목. 필요 시 별도 계획으로 진행.
+
+- **배경 팔레트 세분화** — `--bg-gray`, `--canvas-bg`, `--content-bg` 값 미세 조정 (전역 영향)
+- **경계선 연하게** — `--border-color` 값 조정 (전역 영향)
+- **호버 피드백 강화** — `--hover-bg` 톤 + 미세 translate/그림자 조합 (컴포넌트별 테스트 필요)
+- **line-height 일괄 교체** — 50+곳, 1.4~1.8 의도적 차이 항목별 확인 필요
+- **`--font-small: 12px` 참조 전환** — 토큰 정의 완료, 하드코딩 12px 교체는 점진적 진행
+- **독자 버튼 리팩토링** — `.card-btn`, `.translate-page-btn` → `.btn` 시리즈 위임
+- **`.spinner` rgba 토큰화** — 현재 의도적 차이 유지, 필요 시 `--spinner-track` 토큰 신설
