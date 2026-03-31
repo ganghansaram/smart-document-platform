@@ -28,6 +28,7 @@ body[data-theme="dark"] .platform-footer {
 /* ── Translator: .view-list(padding 32px) 안에서 전체 폭 확보 ────────────── */
 #translator-footer {
     margin-top: auto;
+    padding-top: 24px;
 }
 
 #translator-footer .platform-footer {
