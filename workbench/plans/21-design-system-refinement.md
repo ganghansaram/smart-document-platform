@@ -129,19 +129,25 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 
 > 가장 큰 영역. 다크모드 하드코딩 색상을 토큰 참조로 교체.
 
-- ⬜ range-dialog — `#2d2d2d`, `#444`, `#333` → `--content-bg`, `--border-color`, `--bg-secondary`
-- ⬜ 팝오버/컨텍스트메뉴 — `#1e1e2e`, `#2a2a3e`, `#353550` → `--popover-bg` 시리즈
-- ⬜ 트리패널 다크 배경 — `--panel-bg` 통일
-- ⬜ 검색 하이라이트 — `#ffe066` → `var(--color-highlight)`
-- ⬜ title-edit 관련 — GitHub 팔레트 → 토큰 참조
+- ✅ 검색 하이라이트 — `#ffe066`/`#665500` → `var(--color-highlight)`/`var(--color-highlight-text)` (7곳, keyframes 포함)
+- ✅ 팝오버/컨텍스트메뉴 — `#1e1e2e` → `var(--popover-bg)`, `#2a2a3e` → `var(--popover-bg-hover)` (marking, ai-result, action-bar, 트리트리거, 드롭다운, 컨텍스트메뉴, 폴더피커 — 13곳)
+- ✅ 텍스트 색상 — `#e0e0e0` → `var(--text-primary)` (7곳)
+- ✅ range-dialog — `#2d2d2d`/`#444`/`#333` → `--content-bg`/`--border-color`/`--bg-secondary`
+- ✅ title-edit — `#8b949e` → `--text-secondary`, `#21262d`/`#e6edf3` → `--content-bg`/`--text-primary`
+- ✅ body[dark] 전역 — `#121218`/`#e0e0e0` → `--bg-gray`/`--text-primary`
+- ✅ Markmap — `#e2e8f0` → `var(--text-primary)` (미세 색상 차이: #e2e8f0→#e0e0e0)
+- ✅ fp-cancel — `#333`/`#ccc` → `--bg-secondary`/`--text-secondary`
+- ⏭️ 스켈레톤 gradient (`#2a2a3e 25%, #353550 50%, #2a2a3e 75%`) — 3색 의도적 조합, 유지
 
 > **⚠️ Phase 4 주의사항**
 > - `--popover-bg`와 `--white`는 라이트/다크 모두 동일 값. 팝오버·컨텍스트메뉴·드롭다운 등
 >   **떠 있는 레이어 전용**으로 `--popover-bg`를 사용하고, 일반 배경은 `--white`/`--bg-primary` 유지
 >   → Phase 5에서 팝오버 배경만 별도 조정할 수 있는 여지 확보
 > - `--color-highlight` 교체는 안전 — 5개 파일 17곳 모두 동일 패턴 (`#ffe066`/`#665500`)
-- ⬜ Markmap `#e2e8f0` → `var(--text-primary)`
-- ⬜ 독자 버튼 (`.card-btn`, `.translate-page-btn` 등) → `.btn` 시리즈 위임 또는 토큰 참조
+> - `#f85149` (danger) — `--color-error` 다크값과 미세 차이, 의미 구분상 현상 유지 적절
+
+**Phase 4 → Phase 5 이관:**
+- ⏭️ 독자 버튼 (`.card-btn`, `.translate-page-btn` 등) → `.btn` 시리즈 위임 또는 토큰 참조 (구조적 리팩토링, 비주얼 조정과 함께 진행)
 
 ### Phase 5: 비주얼 업그레이드 — 토큰 값 조정 (~0.5일)
 
@@ -155,7 +161,10 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 - ⬜ **곡선 부드럽게** — `--radius-sm: 6px`, `--radius-md: 10px`, `--radius-lg: 14px`
   - ⚠️ `--radius-sm` 4→6 변경 시 기존 47곳 참조에 영향 (배지·소형 입력 등 4px→6px)
   - 변경 전 전 페이지 스크린샷 비교 필수
-  - 변경 후 `.btn` 시리즈 `border-radius: 6px` → `var(--radius-sm)` 일괄 교체 (Phase 2 이관분)
+  - 변경 후 `border-radius: 6px` 하드코딩 일괄 교체 → `var(--radius-sm)`:
+    - `.btn`, `.btn-icon`, `.form-input`, `.form-textarea`, `.form-select` (Phase 2 이관분)
+    - `.modal-close`, `.ph-switcher-btn` (Phase 3 이관분)
+  - `.ph-system-badge` `border-radius: 3px` — 배지 전용 소형 radius, 토큰화 불필요. 유지
 - ⬜ **그림자 강화** — `--shadow-sm/md/lg` 값 미세 조정 (현재보다 약간 더 visible)
   - `.modal-box` shadow (`0 16px 48px`)가 `--shadow-lg`(`0 8px 32px`)보다 큼 → `--shadow-modal` 신설 또는 `--shadow-xl` 조정
   - `.platform-header` shadow (`0 2px 8px`)가 `--shadow-sm`(`0 1px 4px`)보다 큼 → `--shadow-sm` 값 상향 검토
@@ -170,6 +179,23 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 - ⬜ 다크모드 가독성 확인 (대비율 4.5:1 이상)
 - ⬜ 콘솔 에러 0건 확인
 - ⬜ 기능 회귀 없음 확인
+
+### Phase 5 Before 스크린샷 (Phase 4 완료 시점 보존)
+
+> 디렉토리: `workbench/screenshots/phase5-before/`
+
+| 파일명 | 페이지 | 테마 |
+|--------|--------|------|
+| `launcher-light.png` | Launcher | 라이트 |
+| `launcher-dark.png` | Launcher | 다크 |
+| `explorer-light.png` | Explorer (홈) | 라이트 |
+| `explorer-dark.png` | Explorer (홈) | 다크 |
+| `translator-light.png` | Translator (카드 목록) | 라이트 |
+| `translator-dark.png` | Translator (카드 목록) | 다크 |
+| `compare-light.png` | Compare (초기 상태) | 라이트 |
+| `compare-dark.png` | Compare (초기 상태) | 다크 |
+
+Phase 5 완료 후 동일 조건으로 `phase5-after/` 스크린샷을 확보하여 비교.
 
 ---
 

@@ -639,8 +639,8 @@ body[data-theme="dark"] .tree-item .item-icon.icon-settings {
 
 /* 검색어 하이라이트 */
 body[data-theme="dark"] .search-highlight {
-    background-color: #665500;
-    color: #ffe066;
+    background-color: var(--color-highlight);
+    color: var(--color-highlight-text);
 }
 
 /* 업로드 오버레이 */

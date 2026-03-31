@@ -366,7 +366,7 @@ body.resizing img {
 
 /* 검색어 하이라이트 효과 */
 .search-term-highlight {
-    background-color: #ffe066;
+    background-color: var(--color-highlight);
     padding: 1px 2px;
     border-radius: 2px;
     animation: highlightFadeIn 0.3s ease;
@@ -381,13 +381,13 @@ body.resizing img {
         background-color: transparent;
     }
     to {
-        background-color: #ffe066;
+        background-color: var(--color-highlight);
     }
 }
 
 @keyframes highlightFadeOut {
     from {
-        background-color: #ffe066;
+        background-color: var(--color-highlight);
     }
     to {
         background-color: transparent;
@@ -422,8 +422,8 @@ body[data-theme="dark"] .search-container {
 }
 
 body[data-theme="dark"] .search-term-highlight {
-    background-color: #665500;
-    color: #ffe066;
+    background-color: var(--color-highlight);
+    color: var(--color-highlight-text);
 }
 
 body[data-theme="dark"] .show-panel-btn {
