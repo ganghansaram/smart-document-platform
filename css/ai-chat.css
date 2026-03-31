@@ -130,7 +130,7 @@
     height: 28px;
     border: none;
     background: rgba(255, 255, 255, 0.15);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -683,7 +683,7 @@ html[data-theme="dark"] .ai-chat-confidence-low {
     background-color: var(--dark-gray);
     color: var(--light-gray);
     padding: 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     overflow-x: auto;
     margin: 8px 0;
     font-family: 'Consolas', 'Monaco', monospace;

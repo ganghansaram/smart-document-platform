@@ -8,7 +8,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-sm);
     flex-shrink: 0;
     z-index: 10;
 }
@@ -134,14 +134,14 @@ body[data-theme="dark"] .platform-header .theme-toggle-btn .icon-moon {
 
 /* 다크 모드 — 그라디언트는 --primary-navy/--secondary-navy 자동 해결 */
 body[data-theme="dark"] .platform-header {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-sm);
 }
 
 /* ── 시스템 스위처 ── */
 .ph-switcher-btn {
     background: none;
     border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     padding: 5px;
     color: rgba(255,255,255,0.6);
@@ -162,7 +162,7 @@ body[data-theme="dark"] .platform-header {
     position: fixed;
     z-index: 10000;
     background: var(--white);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
     padding: 6px 0;
     min-width: 180px;
@@ -184,8 +184,8 @@ body[data-theme="dark"] .platform-header {
     color: var(--text-dark);
     text-decoration: none;
     font-size: 14px;
-    font-weight: 500;
-    transition: background 0.15s;
+    font-weight: var(--font-weight-medium);
+    transition: background var(--transition-fast);
 }
 
 .ph-system-item:hover {
@@ -195,7 +195,7 @@ body[data-theme="dark"] .platform-header {
 .ph-system-item.current {
     background: var(--hover-bg);
     color: var(--active-color);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
 }
 
 .ph-system-icon {
@@ -220,7 +220,7 @@ body[data-theme="dark"] .platform-header {
 .ph-system-badge {
     margin-left: auto;
     font-size: 10px;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     color: var(--text-light);
     background: var(--light-gray);
     border-radius: 3px;
@@ -231,7 +231,7 @@ body[data-theme="dark"] .platform-header {
 .ph-system-badge.dev {
     background: rgba(245, 158, 11, 0.85);
     color: #fff;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
 }
 
 .ph-system-separator {

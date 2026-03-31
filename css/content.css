@@ -713,7 +713,7 @@ body[data-theme="dark"] .section-nav a.active {
 }
 
 .search-result-snippet mark {
-    background-color: #ffe066;
+    background-color: var(--color-highlight);
     padding: 2px 4px;
     border-radius: 2px;
     font-weight: 500;
@@ -1145,8 +1145,8 @@ body[data-theme="dark"] .main-content code {
 
 /* 검색 결과 하이라이트 */
 body[data-theme="dark"] .search-result-snippet mark {
-    background-color: #665500;
-    color: #ffe066;
+    background-color: var(--color-highlight);
+    color: var(--color-highlight-text);
 }
 
 /* 배너 슬라이드쇼 */

@@ -74,53 +74,99 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 
 > tokens.css에 누락 변수 추가. 기존 하드코딩 참조는 아직 수정하지 않음.
 
-- ⬜ `--color-highlight` / `--color-highlight-dark` 추가
-- ⬜ `--popover-bg` / `--popover-bg-hover` 추가
-- ⬜ `--line-height-body: 1.5`, `--line-height-relaxed: 1.65` 추가
-- ⬜ `--font-weight-bold: 700`, `--font-weight-semibold: 600`, `--font-weight-medium: 500` 추가
-- ⬜ 기존 `--radius-sm`/`--radius-md`/`--radius-lg` 값 검토 (현행 유지 또는 조정)
+- ✅ `--color-highlight` / `--color-highlight-text` 추가 (라이트: #ffe066/#2c3e50, 다크: #665500/#ffe066)
+- ✅ `--popover-bg` / `--popover-bg-hover` 추가 (라이트: #ffffff/#f5f7fa, 다크: #1e1e2e/#2a2a3e)
+- ✅ `--line-height-body: 1.5`, `--line-height-relaxed: 1.65` 추가
+- ✅ `--font-weight-bold: 700`, `--font-weight-semibold: 600`, `--font-weight-medium: 500` 추가
+- ⬜ 기존 `--radius-sm`/`--radius-md`/`--radius-lg` 값 검토 → Phase 5로 이관 (값 변경 시 기존 참조에 즉시 영향)
 
 ### Phase 2: components.css 토큰 준수 (~0.5일)
 
 > 핵심 공통 컴포넌트의 하드코딩을 토큰 참조로 교체.
 
-- ⬜ `.btn` 시리즈 — `border-radius` → `var(--radius-sm)`, `font-size` → `var(--font-body)`
-- ⬜ `.form-input`, `.form-select` — `border-radius`, `font-size` 토큰화
-- ⬜ `.badge` — `font-size` → `var(--font-caption)`
-- ⬜ `.spinner` — rgba 색상 → `var(--active-color-subtle)`
-- ⬜ `.tooltip-popup` — `line-height` → `var(--line-height-body)`
+- ✅ `.btn` — `font-size` → `var(--font-body)`, `font-weight` → `var(--font-weight-medium)`, `transition` → `var(--transition-fast)`
+- ✅ `.btn-icon-sm` — `border-radius: 4px` → `var(--radius-sm)`
+- ✅ `.btn-lg` — `font-size` → `var(--font-title)`
+- ✅ `.form-input`, `.form-select` — `font-size` → `var(--font-body)`, `transition` → `var(--transition-fast)`
+- ✅ `.form-group label` — `font-size` → `var(--font-body)`, `font-weight` → `var(--font-weight-medium)`
+- ✅ `.form-input-sm`, `.form-select-sm` — `border-radius` → `var(--radius-sm)`
+- ✅ `.badge` — `font-size` → `var(--font-caption)`, `font-weight` → `var(--font-weight-semibold)`, `border-radius` → `var(--radius-sm)`
+- ✅ `.tooltip-popup` — `line-height` → `var(--line-height-body)`
+- ✅ `.form-range-value` — `font-weight` → `var(--font-weight-semibold)`
+- ✅ `.mode-toggle-btn` — `font-size`, `font-weight`, `transition` 토큰화
+- ⏭️ `.btn` 시리즈 `border-radius: 6px` — Phase 5로 이관 (--radius-sm=4px ≠ 6px, 시각 변화 방지)
+- ⏭️ `.spinner` rgba — 값이 다름 (rgba(0,102,204,0.15) ≠ --active-color-subtle), 의도적 차이 유지
+
+> **⚠️ Phase 2 주의사항**
+> - `font-weight` 교체 범위: components.css 내부만 교체. 다른 CSS 파일은 Phase 3~4에서 처리
+> - `line-height` 교체 시 주의: 현재 1.4~1.8까지 **의도적으로 다른 값**이 혼용됨
+>   - `1.4` = 밀도 높은 UI (배지, 메뉴 항목) → 교체하지 않음
+>   - `1.5` = 일반 본문 → `var(--line-height-body)`
+>   - `1.6~1.7` = 긴 텍스트 → `var(--line-height-relaxed)` 또는 유지
+>   - `1.8` = 읽기 전용 콘텐츠 → 유지 (토큰 범위 밖)
+>   - **일괄 교체 금지** — 항목별로 의도를 확인 후 개별 판단
 
 ### Phase 3: modal.css + platform-header.css 토큰 준수 (~0.5일)
 
-- ⬜ `.modal-box` — `box-shadow` → `var(--shadow-lg)`, `border-radius` → `var(--radius-lg)`
-- ⬜ `.platform-header` — `box-shadow` → `var(--shadow-sm)`
-- ⬜ `.ph-system-dropdown` — 검토 및 토큰 교체
+**modal.css:**
+- ✅ `.modal-box` `border-radius: 8px` → `var(--radius-md)` (8px=8px, 동일)
+- ✅ `.modal-header h3` `font-weight: 600` → `var(--font-weight-semibold)` (동일)
+- ✅ `.modal-close` `transition` → `var(--transition-normal)` (0.2s=0.2s, 동일)
+- ⏭️ `.modal-box` `box-shadow` — 현재 `0 16px 48px` ≠ `--shadow-lg`(`0 8px 32px`), Phase 5에서 `--shadow-modal` 토큰 신설 검토
+- ⏭️ `.modal-close` `border-radius: 6px` — Phase 5 이관 (6px 이슈)
+
+**platform-header.css:**
+- ✅ `.ph-system-dropdown` `border-radius: 8px` → `var(--radius-md)` (동일)
+- ✅ `.ph-system-item` `font-weight/transition` → 토큰 참조 (동일)
+- ✅ `.ph-system-item.current` `font-weight: 600` → `var(--font-weight-semibold)` (동일)
+- ✅ `.ph-system-badge` / `.ph-system-badge.dev` `font-weight` → 토큰 참조 (동일)
+- ⏭️ `.platform-header` `box-shadow` — 현재 `0 2px 8px` ≠ `--shadow-sm`(`0 1px 4px`), Phase 5 이관
+- ⏭️ `.ph-switcher-btn` `border-radius: 6px` — Phase 5 이관
+
+> **계획서 수정**: 원래 `--radius-lg`(12px) 제안은 `--radius-md`(8px)로 정정 — 현재 값 보존 우선
 
 ### Phase 4: translator.css 하드코딩 정리 (~1일)
 
 > 가장 큰 영역. 다크모드 하드코딩 색상을 토큰 참조로 교체.
 
-- ⬜ range-dialog — `#2d2d2d`, `#444`, `#333` → `--content-bg`, `--border-color`, `--bg-secondary`
-- ⬜ 팝오버/컨텍스트메뉴 — `#1e1e2e`, `#2a2a3e`, `#353550` → `--popover-bg` 시리즈
-- ⬜ 트리패널 다크 배경 — `--panel-bg` 통일
-- ⬜ 검색 하이라이트 — `#ffe066` → `var(--color-highlight)`
-- ⬜ title-edit 관련 — GitHub 팔레트 → 토큰 참조
-- ⬜ Markmap `#e2e8f0` → `var(--text-primary)`
-- ⬜ 독자 버튼 (`.card-btn`, `.translate-page-btn` 등) → `.btn` 시리즈 위임 또는 토큰 참조
+- ✅ 검색 하이라이트 — `#ffe066`/`#665500` → `var(--color-highlight)`/`var(--color-highlight-text)` (7곳, keyframes 포함)
+- ✅ 팝오버/컨텍스트메뉴 — `#1e1e2e` → `var(--popover-bg)`, `#2a2a3e` → `var(--popover-bg-hover)` (marking, ai-result, action-bar, 트리트리거, 드롭다운, 컨텍스트메뉴, 폴더피커 — 13곳)
+- ✅ 텍스트 색상 — `#e0e0e0` → `var(--text-primary)` (7곳)
+- ✅ range-dialog — `#2d2d2d`/`#444`/`#333` → `--content-bg`/`--border-color`/`--bg-secondary`
+- ✅ title-edit — `#8b949e` → `--text-secondary`, `#21262d`/`#e6edf3` → `--content-bg`/`--text-primary`
+- ✅ body[dark] 전역 — `#121218`/`#e0e0e0` → `--bg-gray`/`--text-primary`
+- ✅ Markmap — `#e2e8f0` → `var(--text-primary)` (미세 색상 차이: #e2e8f0→#e0e0e0)
+- ✅ fp-cancel — `#333`/`#ccc` → `--bg-secondary`/`--text-secondary`
+- ⏭️ 스켈레톤 gradient (`#2a2a3e 25%, #353550 50%, #2a2a3e 75%`) — 3색 의도적 조합, 유지
+
+> **⚠️ Phase 4 주의사항**
+> - `--popover-bg`와 `--white`는 라이트/다크 모두 동일 값. 팝오버·컨텍스트메뉴·드롭다운 등
+>   **떠 있는 레이어 전용**으로 `--popover-bg`를 사용하고, 일반 배경은 `--white`/`--bg-primary` 유지
+>   → Phase 5에서 팝오버 배경만 별도 조정할 수 있는 여지 확보
+> - `--color-highlight` 교체는 안전 — 5개 파일 17곳 모두 동일 패턴 (`#ffe066`/`#665500`)
+> - `#f85149` (danger) — `--color-error` 다크값과 미세 차이, 의미 구분상 현상 유지 적절
+
+**Phase 4 → Phase 5 이관:**
+- ⏭️ 독자 버튼 (`.card-btn`, `.translate-page-btn` 등) → `.btn` 시리즈 위임 또는 토큰 참조 (구조적 리팩토링, 비주얼 조정과 함께 진행)
 
 ### Phase 5: 비주얼 업그레이드 — 토큰 값 조정 (~0.5일)
 
 > Phase 1~4가 완료되어 모든 코드가 토큰을 참조하는 상태에서,
 > tokens.css 값만 변경하여 전체 시각 품질을 일괄 업그레이드.
 
-- ⬜ **배경 팔레트 세분화**
-  - 라이트: `--white` 유지, `--bg-gray: #f8f9fb` (약간 따뜻하게), `--canvas-bg: #f0f2f5` 조정
-  - 다크: `--bg-primary: #1a1a2e`, `--content-bg: #24243c` (깊이 차이 강화)
-- ⬜ **경계선 연하게** — `--border-color: #e8ecf0` (라이트), 주장 줄임
-- ⬜ **곡선 부드럽게** — `--radius-sm: 6px`, `--radius-md: 10px`, `--radius-lg: 14px`
-- ⬜ **그림자 강화** — `--shadow-sm/md/lg` 값 미세 조정 (현재보다 약간 더 visible)
-- ⬜ **호버 피드백 강화** — `--hover-bg` 톤 조정, `--transition-fast: 0.15s`로 변경 검토
-- ⬜ **line-height 토큰 적용** — body 1.5, relaxed 1.65 통일
+- ⏭️ **배경 팔레트 세분화** — 향후 검토 (전역 영향 범위 큼, 충분한 테스트 필요)
+- ⏭️ **경계선 연하게** — 향후 검토 (동일 사유)
+- ✅ **곡선 부드럽게** — `--radius-sm: 6px`, `--radius-md: 10px`, `--radius-lg: 14px`
+  - `border-radius: 6px` 하드코딩 19곳 → `var(--radius-sm)` 일괄 전환 완료 (9개 파일)
+  - 전 CSS에서 `border-radius: 6px` 잔존 0건
+- ✅ **그림자 조정**
+  - `--shadow-sm`: `0 1px 4px 0.08` → `0 2px 6px 0.10` (라이트), `0.15` → `0.18` (다크)
+  - `--shadow-xl`: `0 20px 60px 0.30` → `0 16px 48px 0.25` (라이트), `0.50` → `0.45` (다크)
+  - `.platform-header` `box-shadow` → `var(--shadow-sm)` 전환 (라이트+다크)
+  - `.modal-box` `box-shadow` → `var(--shadow-xl)` 전환 (라이트+다크)
+- ⏭️ **호버 피드백 강화** — 향후 검토 (개별 컴포넌트별 테스트 필요)
+- ⏭️ **line-height 일괄 교체** — 향후 검토 (50+곳, 항목별 의도 확인 필요)
+- ✅ **`--font-small: 12px` 토큰 추가** — tokens.css에 정의 완료 (12px 하드코딩 교체는 점진적 진행)
 
 ### Phase 6: 크로스 검증 (~0.5일)
 
@@ -129,6 +175,23 @@ tokens.css에 정의되지 않았으나 반복 사용되는 값:
 - ⬜ 다크모드 가독성 확인 (대비율 4.5:1 이상)
 - ⬜ 콘솔 에러 0건 확인
 - ⬜ 기능 회귀 없음 확인
+
+### Phase 5 Before 스크린샷 (Phase 4 완료 시점 보존)
+
+> 디렉토리: `workbench/screenshots/phase5-before/`
+
+| 파일명 | 페이지 | 테마 |
+|--------|--------|------|
+| `launcher-light.png` | Launcher | 라이트 |
+| `launcher-dark.png` | Launcher | 다크 |
+| `explorer-light.png` | Explorer (홈) | 라이트 |
+| `explorer-dark.png` | Explorer (홈) | 다크 |
+| `translator-light.png` | Translator (카드 목록) | 라이트 |
+| `translator-dark.png` | Translator (카드 목록) | 다크 |
+| `compare-light.png` | Compare (초기 상태) | 라이트 |
+| `compare-dark.png` | Compare (초기 상태) | 다크 |
+
+Phase 5 완료 후 동일 조건으로 `phase5-after/` 스크린샷을 확보하여 비교.
 
 ---
 

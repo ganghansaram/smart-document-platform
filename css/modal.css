@@ -22,8 +22,8 @@
 /* ── 컨테이너 ── */
 .modal-box {
     background-color: var(--white);
-    border-radius: 8px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xl);
     max-width: 500px;
     width: 90%;
     max-height: 85vh;
@@ -44,7 +44,7 @@
 
 .modal-header h3 {
     font-size: 16px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--text-dark);
 }
 
@@ -73,9 +73,9 @@
     color: var(--medium-gray);
     font-size: 24px;
     line-height: 1;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     padding: 4px;
-    transition: all 0.2s ease;
+    transition: all var(--transition-normal);
 }
 
 .modal-close:hover {
@@ -89,7 +89,7 @@ body[data-theme="dark"] .modal-overlay {
 }
 
 body[data-theme="dark"] .modal-box {
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-xl);
 }
 
 body[data-theme="dark"] .modal-close:hover {
