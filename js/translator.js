@@ -89,7 +89,6 @@
         var $docCount       = document.getElementById('doc-count');
         var $btnViewList    = document.getElementById('btn-view-list');
         var $btnViewTile    = document.getElementById('btn-view-tile');
-        var $translatorFooter = document.getElementById('translator-footer');
         var $uploadZone     = document.getElementById('upload-zone');
         var $fileInput      = document.getElementById('file-input');
         var $pageInfo       = document.getElementById('page-info');
@@ -522,7 +521,6 @@
         function showViewer() {
             $viewList.style.display = 'none';
             $viewViewer.style.display = 'flex';
-            if ($translatorFooter) $translatorFooter.style.display = 'none';
             header.nav['back-list'].style.display = '';
             updatePageNav();
         }
@@ -530,7 +528,6 @@
         function showList() {
             $viewViewer.style.display = 'none';
             $viewList.style.display = 'flex';
-            if ($translatorFooter) $translatorFooter.style.display = '';
             header.nav['back-list'].style.display = 'none';
             currentDocId = null;
             annotationsCache = null;

@@ -25,9 +25,16 @@ body[data-theme="dark"] .platform-footer {
     color: inherit;
 }
 
-/* ── Translator: body 레벨 푸터 ─────────────────────────────────────────── */
+/* ── Translator: .view-list(padding 32px) 안에서 전체 폭 확보 ────────────── */
 #translator-footer {
-    flex-shrink: 0;
+    margin-top: auto;
+}
+
+#translator-footer .platform-footer {
+    margin-left: -32px;
+    margin-right: -32px;
+    padding-left: 32px;
+    padding-right: 32px;
 }
 
 /* ── Launcher 전용 (투명 배경, 밝은 텍스트) ──────────────────────────────────── */
