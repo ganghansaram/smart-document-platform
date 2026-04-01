@@ -33,6 +33,7 @@ body {
     align-items: center;
     gap: 8px;
     padding: 6px 16px;
+    min-height: 44px;
     background: var(--white);
     border-radius: var(--panel-radius);
     box-shadow: var(--panel-shadow);
@@ -486,8 +487,9 @@ body.cp-resizing {
 
 /* ── 허브 모드 (빈 상태) ── */
 .mode-hub .compare-toolbar .toolbar-sep,
-.mode-hub .compare-toolbar .toolbar-btn {
-    display: none;
+.mode-hub .compare-toolbar .toolbar-btn,
+.mode-hub .compare-toolbar .sim-check-btn {
+    display: none !important;
 }
 
 .mode-hub .compare-main {

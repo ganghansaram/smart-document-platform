@@ -737,6 +737,41 @@
                 }
             });
 
+            // ── 툴바 구분자 동적 제어 ──
+            function updateToolbarSeps() {
+                var toolbar = document.getElementById('compare-toolbar');
+                var seps = toolbar.querySelectorAll('.toolbar-sep');
+
+                seps.forEach(function(sep) {
+                    // 구분자 앞뒤로 보이는 요소가 있는지 확인
+                    var hasPrev = false;
+                    var hasNext = false;
+
+                    var prev = sep.previousElementSibling;
+                    while (prev) {
+                        if (prev.classList.contains('toolbar-sep') || prev.classList.contains('toolbar-spacer')) break;
+                        if (_isToolbarItemVisible(prev)) { hasPrev = true; break; }
+                        prev = prev.previousElementSibling;
+                    }
+
+                    var next = sep.nextElementSibling;
+                    while (next) {
+                        if (next.classList.contains('toolbar-sep') || next.classList.contains('toolbar-spacer')) break;
+                        if (_isToolbarItemVisible(next)) { hasNext = true; break; }
+                        next = next.nextElementSibling;
+                    }
+
+                    sep.style.display = (hasPrev && hasNext) ? '' : 'none';
+                });
+            }
+
+            function _isToolbarItemVisible(el) {
+                if (!el) return false;
+                // display:none 이거나 !important로 숨겨진 경우
+                var style = getComputedStyle(el);
+                return style.display !== 'none' && el.offsetWidth > 0;
+            }
+
             // ── 그리드 레이아웃 갱신 ──
             function updateGrid() {
                 if (currentMode === 'hub') {
@@ -779,6 +814,7 @@
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     showDiffUI(false);
+                    requestAnimationFrame(updateToolbarSeps);
                     return;
                 }
 
@@ -851,6 +887,8 @@
                 }
 
                 updateGrid();
+                // 구분자 동적 갱신 (다음 프레임에서, CSS 적용 후)
+                requestAnimationFrame(updateToolbarSeps);
             }
 
             btnSimilarity.addEventListener('click', function() { setMode('similarity'); });
