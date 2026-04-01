@@ -189,8 +189,13 @@
                     <div class="cp-panel-header">
                         <span class="cp-panel-label" id="panel-label-a">
                             <span class="cp-label-text" id="label-text-a">원본</span>
-                            <button class="cp-file-remove" id="file-remove-a" title="파일 제거">&times;</button>
                         </span>
+                        <span class="cp-panel-spacer"></span>
+                        <span id="cp-toolbar-slot"></span>
+                        <span class="cp-header-sep cp-tb-sep"></span>
+                        <span id="cp-mode-slot-panel"></span>
+                        <span class="cp-header-sep"></span>
+                        <button class="cp-file-remove" id="file-remove-a" title="파일 제거">&times;</button>
                     </div>
                     <div class="cp-panel-body-wrap">
                     <div class="cp-panel-body" id="panel-body-a">
@@ -266,6 +271,12 @@
                     <div class="cp-sidebar-empty" id="cp-sidebar-empty">
                         비교 결과가 여기에 표시됩니다
                     </div>
+                </div>
+                <div class="cp-sidebar-footer" id="cp-sidebar-footer" style="display:none">
+                    <button class="sim-run-btn" id="sim-check-btn-footer" disabled title="유사도 검사 실행">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        유사도 검사
+                    </button>
                 </div>
             </div>
 
@@ -739,8 +750,13 @@
 
             // ── 툴바 구분자 동적 제어 ──
             function updateToolbarSeps() {
-                var toolbar = document.getElementById('compare-toolbar');
-                var seps = toolbar.querySelectorAll('.toolbar-sep');
+                var slot = document.getElementById('cp-toolbar-slot');
+                if (!slot) return;
+                var seps = slot.querySelectorAll('.toolbar-sep');
+                // 슬롯 내 버튼이 하나도 안 보이면 모드탭 앞 구분선도 숨김
+                var tbSep = document.querySelector('.cp-tb-sep');
+                var anyVisible = slot.querySelector('.toolbar-btn:not([style*="none"]), .cp-nav-group:not([style*="none"]), .cp-filter-group:not([style*="none"])');
+                if (tbSep) tbSep.style.display = anyVisible ? '' : 'none';
 
                 seps.forEach(function(sep) {
                     // 구분자 앞뒤로 보이는 요소가 있는지 확인
@@ -798,6 +814,18 @@
                 btnSimilarity.classList.toggle('active', mode === 'similarity');
                 btnCompare.classList.toggle('active', mode === 'compare');
                 btnVerify.classList.toggle('active', mode === 'verify');
+
+                // 패널 헤더 모드 탭 동기화
+                if (panelTabSim) {
+                    panelTabSim.classList.toggle('active', mode === 'similarity');
+                    panelTabCompare.classList.toggle('active', mode === 'compare');
+                    panelTabVerify.classList.toggle('active', mode === 'verify');
+                }
+
+                // 사이드바 footer (유사도 모드에서만)
+                if (sidebarFooter) {
+                    sidebarFooter.style.display = mode === 'similarity' ? '' : 'none';
+                }
 
                 // Home 버튼: 허브에서 숨김, 작업 모드에서 표시
                 if ($homeBtn) {
@@ -1048,6 +1076,58 @@
             var modeSlot = document.getElementById('cp-mode-slot');
             modeSlot.appendChild(modeToggle);
 
+            // 패널 헤더용 모드 탭 (유사도 모드에서 표시)
+            var panelModeSlot = document.getElementById('cp-mode-slot-panel');
+            var panelModeTabs = document.createElement('div');
+            panelModeTabs.className = 'cp-mode-tabs-panel';
+
+            var panelTabSim = document.createElement('button');
+            panelTabSim.className = 'cp-mode-tab-panel';
+            panelTabSim.type = 'button';
+            panelTabSim.textContent = '유사도';
+
+            var panelTabCompare = document.createElement('button');
+            panelTabCompare.className = 'cp-mode-tab-panel';
+            panelTabCompare.type = 'button';
+            panelTabCompare.textContent = '비교';
+
+            var panelTabVerify = document.createElement('button');
+            panelTabVerify.className = 'cp-mode-tab-panel';
+            panelTabVerify.type = 'button';
+            panelTabVerify.textContent = '검증';
+
+            panelModeTabs.appendChild(panelTabSim);
+            panelModeTabs.appendChild(panelTabCompare);
+            panelModeTabs.appendChild(panelTabVerify);
+            panelModeSlot.appendChild(panelModeTabs);
+
+            panelTabSim.addEventListener('click', function() { setMode('similarity'); });
+            panelTabCompare.addEventListener('click', function() { setMode('compare'); });
+            panelTabVerify.addEventListener('click', function() { setMode('verify'); });
+
+            // 사이드바 footer 검사 버튼 연동
+            var simFooterBtn = document.getElementById('sim-check-btn-footer');
+            var sidebarFooter = document.getElementById('cp-sidebar-footer');
+
+            simFooterBtn.addEventListener('click', function() {
+                simCheckBtn.click(); // 기존 로직 재사용
+            });
+
+            // ── 툴바 버튼을 패널 헤더 슬롯으로 이동 ──
+            (function moveToolbarToPanel() {
+                var slot = document.getElementById('cp-toolbar-slot');
+                var toolbar = document.getElementById('compare-toolbar');
+                if (!slot || !toolbar) return;
+
+                // 이동할 요소: 구분자, 버튼, 그룹 (모드슬롯, spacer, hint 제외)
+                var toMove = toolbar.querySelectorAll(
+                    '.toolbar-sep, .toolbar-btn, .cp-nav-group, .cp-filter-group'
+                );
+                toMove.forEach(function(el) {
+                    slot.appendChild(el);
+                });
+            })();
+
             // 테마 토글 이벤트
             if (headerResult.themeToggle) {
                 headerResult.themeToggle.addEventListener('click', toggleTheme);
@@ -1287,7 +1367,9 @@
             }
 
             function simUpdateCheckBtn() {
-                simCheckBtn.disabled = !(simState.a.loaded && simState.b.loaded);
+                var ready = simState.a.loaded && simState.b.loaded;
+                simCheckBtn.disabled = !ready;
+                if (simFooterBtn) simFooterBtn.disabled = !ready;
             }
 
             function simClearSide(side) {

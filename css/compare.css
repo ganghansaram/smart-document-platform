@@ -27,17 +27,9 @@ body {
 
 /* ── 모드 토글: components.css 로 이동 ── */
 
-/* ── 서브 헤더 (툴바) ── */
+/* ── 서브 헤더 (툴바) — 숨김, 패널 헤더로 이관 ── */
 .compare-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 16px;
-    min-height: 44px;
-    background: var(--white);
-    border-radius: var(--panel-radius);
-    box-shadow: var(--panel-shadow);
-    flex-shrink: 0;
+    display: none !important;
 }
 
 .toolbar-spacer {
@@ -81,13 +73,29 @@ body {
     min-width: 0;
 }
 
-/* ── 패널 헤더 (고정, 스크롤 안 됨) ── */
+/* ── 패널 헤더 (Notebook .panel-header 패턴) ── */
 .cp-panel-header {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    padding: 6px 12px;
-    min-height: 28px;
+    padding: 0 12px;
+    height: 38px;
+    background: var(--panel-bg);
+    border-bottom: 1px solid var(--border-color);
+    gap: 6px;
+    font-size: var(--font-body);
+    border-radius: var(--panel-radius) var(--panel-radius) 0 0;
+}
+
+.cp-panel-spacer { flex: 1; }
+
+.cp-header-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--border-color);
+    margin: 0 2px;
+    opacity: 0.5;
+    flex-shrink: 0;
 }
 
 /* ── 패널 바디 래퍼 (미니맵 기준점) ── */
@@ -147,16 +155,15 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     box-shadow: 0 0 0 1px var(--white), 0 0 6px rgba(0,0,0,0.5);
 }
 
-/* ── 패널 라벨 (탭 패턴: 이름 + 닫기) ── */
+/* ── 패널 라벨 (Notebook .panel-title 패턴) ── */
 .cp-panel-label {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
-    color: var(--text-light);
-    background: color-mix(in srgb, var(--white) 80%, transparent);
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
+    font-size: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-dark);
+    white-space: nowrap;
     max-width: calc(100% - 24px);
     white-space: nowrap;
 }
@@ -171,15 +178,16 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    width: 16px;
-    height: 16px;
+    width: 26px;
+    height: 26px;
     border: none;
     background: transparent;
     cursor: pointer;
     color: var(--text-light);
-    border-radius: 3px;
-    font-size: 13px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-title);
     line-height: 1;
+    transition: background var(--transition-fast);
     padding: 0;
     transition: background 0.15s ease, color 0.15s ease;
 }
@@ -387,11 +395,12 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px;
+    padding: 0 12px;
+    height: 38px;
     border-bottom: 1px solid var(--border-color);
-    background-color: var(--light-gray);
+    background: var(--panel-bg);
     border-radius: var(--panel-radius) var(--panel-radius) 0 0;
-    font-size: 16px;
+    font-size: var(--font-body);
     font-weight: 600;
     color: var(--text-dark);
     flex-shrink: 0;
@@ -673,6 +682,164 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
     display: none;
 }
 
+/* 모드 탭 (패널 헤더 내) — 모든 모드에서 표시 */
+#cp-mode-slot-panel {
+    display: flex;
+}
+
+/* 패널 헤더 내 툴바 슬롯 */
+#cp-toolbar-slot {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 툴바 슬롯 내 버튼: 패널 헤더 크기에 맞춤 */
+#cp-toolbar-slot .toolbar-btn,
+#cp-toolbar-slot .cp-nav-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--text-light);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    flex-shrink: 0;
+}
+
+#cp-toolbar-slot .toolbar-btn:hover,
+#cp-toolbar-slot .cp-nav-btn:hover {
+    background: var(--hover-bg);
+    color: var(--text-dark);
+}
+
+#cp-toolbar-slot .toolbar-btn.active {
+    background: var(--active-color-subtle);
+    color: var(--active-color);
+}
+
+#cp-toolbar-slot .toolbar-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+#cp-toolbar-slot .toolbar-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--border-color);
+    margin: 0 2px;
+    opacity: 0.5;
+    flex-shrink: 0;
+}
+
+#cp-toolbar-slot .cp-nav-indicator {
+    font-size: var(--font-caption);
+    color: var(--text-light);
+    min-width: 32px;
+    text-align: center;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+#cp-toolbar-slot .cp-nav-group {
+    display: none;
+    align-items: center;
+    gap: 2px;
+}
+
+#cp-toolbar-slot .cp-filter-group {
+    position: relative;
+}
+
+/* 툴바-모드탭 사이 구분선: 보이는 버튼이 없으면 숨김 */
+.cp-tb-sep {
+    display: none;
+}
+
+/* 허브 모드: 모드 탭 포함 전체 패널 헤더 요소 숨김 */
+.mode-hub #cp-toolbar-slot,
+.mode-hub .cp-tb-sep,
+.mode-similarity #cp-toolbar-slot,
+.mode-similarity .cp-tb-sep {
+    display: none !important;
+}
+
+.cp-mode-tabs-panel {
+    display: flex;
+    gap: 1px;
+    background: var(--border-color);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.cp-mode-tab-panel {
+    padding: 3px 10px;
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-medium);
+    border: none;
+    background: var(--content-bg);
+    color: var(--text-light);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.cp-mode-tab-panel:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.cp-mode-tab-panel:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.cp-mode-tab-panel:hover { color: var(--text-dark); }
+
+.cp-mode-tab-panel.active {
+    background: var(--active-color);
+    color: #fff;
+    font-weight: var(--font-weight-semibold);
+}
+
+/* 유사도 모드 — 기존 툴바 내 검사 버튼 숨기고 사이드바 footer 표시 */
+.mode-similarity .sim-check-btn {
+    display: none !important;
+}
+
+/* 사이드바 footer */
+.cp-sidebar-footer {
+    padding: var(--space-sm) 12px;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.sim-run-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    font-size: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    background: var(--active-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.sim-run-btn:hover { background: var(--active-color-hover); }
+.sim-run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.sim-run-btn svg { width: 14px; height: 14px; }
+
+body[data-theme="dark"] .cp-mode-tab-panel {
+    background: var(--content-bg);
+}
+
+body[data-theme="dark"] .cp-mode-tab-panel.active {
+    background: var(--active-color);
+}
+
 .verify-hub-coming-soon {
     display: none;
     flex-direction: column;
@@ -681,35 +848,37 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
     text-align: center;
 }
 
-/* 유사도 모드: MD 웹뷰 렌더링 */
+/* 유사도 모드: MD 웹뷰 렌더링 (토큰 기반) */
 .sim-md-view {
     padding: var(--space-md) var(--space-lg);
-    font-size: 14px;
-    line-height: 1.7;
+    font-size: var(--font-body);
+    line-height: var(--line-height-relaxed);
     color: var(--text-dark);
     overflow-y: auto;
     height: 100%;
 }
 
 .sim-md-view h1, .sim-md-view h2, .sim-md-view h3 {
-    margin: 1.2em 0 0.5em;
-    font-weight: 700;
+    margin: 1.2em 0 0.4em;
+    font-weight: var(--font-weight-bold);
     color: var(--text-dark);
 }
 
-.sim-md-view h1 { font-size: 20px; }
-.sim-md-view h2 { font-size: 17px; }
-.sim-md-view h3 { font-size: 15px; }
+.sim-md-view h1 { font-size: 18px; }
+.sim-md-view h2 { font-size: var(--font-title); }
+.sim-md-view h3 { font-size: var(--font-body); }
+
+.sim-md-view h2:first-child, .sim-md-view h3:first-child { margin-top: 0; }
 
 .sim-md-view p {
-    margin: 0.4em 0;
+    margin: 0.25em 0;
 }
 
 .sim-md-view table {
     border-collapse: collapse;
     width: 100%;
-    margin: 0.8em 0;
-    font-size: 13px;
+    margin: 0.6em 0;
+    font-size: var(--font-small);
 }
 
 .sim-md-view th, .sim-md-view td {
@@ -848,20 +1017,7 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
     opacity: 0.8;
 }
 
-.mode-similarity #scroll-sync-btn,
-.mode-similarity #swap-btn,
-.mode-similarity #edit-toggle-btn,
-.mode-similarity #download-btn,
-.mode-similarity #paragraph-num-btn,
-.mode-similarity #ai-classify-btn,
-.mode-similarity #vd-settings-btn,
-.mode-similarity #vd-revalidate-btn,
-.mode-similarity #cp-nav-group,
-.mode-similarity #vd-nav-group,
-.mode-similarity #cp-filter-group,
-.mode-similarity #vd-filter-group {
-    display: none !important;
-}
+/* (유사도 모드 버튼 숨김 — #cp-toolbar-slot 자체를 숨겨서 처리) */
 
 .verify-hub-coming-soon-icon {
     width: 56px;
@@ -930,7 +1086,7 @@ body[data-theme="dark"] .cp-sidebar {
 }
 
 body[data-theme="dark"] .cp-sidebar-header {
-    background: var(--secondary-navy);
+    background: var(--panel-bg);
 }
 
 body[data-theme="dark"] .cp-sidebar-collapse:hover {
