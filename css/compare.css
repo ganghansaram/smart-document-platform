@@ -695,7 +695,7 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
 }
 
 /* 툴바 슬롯 내 버튼: 패널 헤더 크기에 맞춤 */
-#cp-toolbar-slot .toolbar-btn,
+#cp-toolbar-slot > .toolbar-btn,
 #cp-toolbar-slot .cp-nav-btn {
     width: 26px;
     height: 26px;
@@ -712,18 +712,18 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
     flex-shrink: 0;
 }
 
-#cp-toolbar-slot .toolbar-btn:hover,
+#cp-toolbar-slot > .toolbar-btn:hover,
 #cp-toolbar-slot .cp-nav-btn:hover {
     background: var(--hover-bg);
     color: var(--text-dark);
 }
 
-#cp-toolbar-slot .toolbar-btn.active {
+#cp-toolbar-slot > .toolbar-btn.active {
     background: var(--active-color-subtle);
     color: var(--active-color);
 }
 
-#cp-toolbar-slot .toolbar-btn svg {
+#cp-toolbar-slot > .toolbar-btn svg {
     width: 14px;
     height: 14px;
 }
