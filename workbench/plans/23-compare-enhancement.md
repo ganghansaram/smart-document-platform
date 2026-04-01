@@ -2,7 +2,7 @@
 
 > **작성일**: 2026-04-01
 > **최종 갱신**: 2026-04-01
-> **상태**: 계획 수립
+> **상태**: 표면 리브랜딩 완료 · Phase 1 착수 대기
 > **관련**: `compare.html` (→ 향후 `verify.html`), `backend/api/compare.py`, `backend/services/compare_service.py`
 > **선행 문서**: `docs/11-COMPARE-SYSTEM.md`, `docs/research-semantic-comparison.md`
 
@@ -377,15 +377,21 @@ Phase 4 (세션 관리)   ← 실사용 피드백 후 판단
 
 ## 리브랜딩 계획 (Compare → Verify)
 
-| 항목 | 현재 | 변경 | 시점 |
-|------|------|------|------|
-| 런처 카드 제목 | "Compare" | "Verify" | Phase 1 착수 시 |
-| 런처 카드 설명 | "문서 비교 · 규칙 검증" | "문서 비교 · 유사도 검사 · 규칙 검증" | Phase 1 착수 시 |
-| HTML 파일명 | `compare.html` | `verify.html` (+ 리다이렉트) | Phase 1 완료 시 |
-| API prefix | `/api/compare/` | `/api/verify/` (+ 호환 유지) | Phase 1 완료 시 |
-| CSS 파일 | `css/compare.css` | `css/verify.css` | Phase 1 완료 시 |
-| config 변수 | `COMPARE_*` | `VERIFY_*` (+ 별칭) | Phase 1 완료 시 |
-| 개발중 배지 | 표시 | 제거 | Phase 1 착수 시 |
+| 항목 | 현재 | 변경 | 시점 | 상태 |
+|------|------|------|------|:----:|
+| 런처 카드 제목 | "Compare" | "Verify" | Phase 1 착수 전 | ✅ |
+| 런처 카드 설명 | "문서 비교 · 규칙 검증" | "문서 비교 · 유사도 검증" | Phase 1 착수 전 | ✅ |
+| 시스템 헤더 타이틀 | "Document Compare" | "Document Verify" | Phase 1 착수 전 | ✅ |
+| 시스템 스위처 라벨 | "Compare" | "Verify" | Phase 1 착수 전 | ✅ |
+| `<title>` 태그 | "Compare — ..." | "Verify — ..." | Phase 1 착수 전 | ✅ |
+| HTML 파일명 | `compare.html` | `verify.html` (+ 리다이렉트) | Phase 1 완료 시 | — |
+| API prefix | `/api/compare/` | `/api/verify/` (+ 호환 유지) | Phase 1 완료 시 | — |
+| CSS 파일 | `css/compare.css` | `css/verify.css` | Phase 1 완료 시 | — |
+| config 변수 | `COMPARE_*` | `VERIFY_*` (+ 별칭) | Phase 1 완료 시 | — |
+| 개발중 배지 | 표시 | 제거 | Phase 1 완료 시 | — |
+
+> 표면 리브랜딩(사용자 노출 텍스트)은 Translator→Notebook 선례를 따라 선 완료.
+> 내부 rename(파일명, API, CSS, 변수)은 Phase 1 기능 추가와 함께 진행 예정.
 
 ---
 

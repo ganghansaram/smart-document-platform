@@ -9,7 +9,7 @@
 
         // ── Platform Header ──
         var header = initPlatformHeader({
-            title: 'Notebook',
+            title: 'Research Notebook',
             currentSystem: 'translator',
             navItems: [
                 { id: 'back-list', label: 'Home', hidden: true },

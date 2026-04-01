@@ -154,6 +154,10 @@
             background: rgba(245, 158, 11, 0.7);
         }
 
+        .system-card-badge.badge-info {
+            background: rgba(44, 82, 130, 0.75);
+        }
+
         /* ── 푸터 투명 오버라이드 ── */
         .platform-footer {
             position: relative;
@@ -207,9 +211,14 @@
                 <div class="system-card-desc">문서 번역 · 지식 관리</div>
             </a>
             <a class="system-card" id="card-compare" href="compare.html">
-                <h3>Compare</h3>
-                <div class="system-card-desc">문서 비교 · 규칙 검증</div>
+                <h3>Verify</h3>
+                <div class="system-card-desc">문서 비교 · 유사도 검증</div>
                 <span class="badge badge-warning system-card-badge dev">개발중</span>
+            </a>
+            <a class="system-card disabled" id="card-author" href="#">
+                <h3>Author</h3>
+                <div class="system-card-desc">문서 작성 · 구조화 합성</div>
+                <span class="badge badge-info system-card-badge">개발 예정</span>
             </a>
         </div>
     </div>
@@ -247,6 +256,11 @@
             e.preventDefault();
             document.body.classList.add('fade-out');
             setTimeout(function() { window.location.href = 'compare.html'; }, 400);
+        });
+
+        // Author 카드는 disabled — 클릭 무시
+        document.getElementById('card-author').addEventListener('click', function(e) {
+            e.preventDefault();
         });
 
         // 푸터

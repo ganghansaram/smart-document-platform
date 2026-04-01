@@ -234,6 +234,12 @@ body[data-theme="dark"] .platform-header {
     font-weight: var(--font-weight-semibold);
 }
 
+.ph-system-badge.planned {
+    background: var(--active-color);
+    color: #fff;
+    font-weight: var(--font-weight-semibold);
+}
+
 .ph-system-separator {
     height: 1px;
     background: var(--border-color);
