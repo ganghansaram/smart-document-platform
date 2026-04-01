@@ -792,7 +792,7 @@
                     return;
                 }
                 if (sidebarOpen) {
-                    compareMain.style.gridTemplateColumns = '2fr 4px 1fr';
+                    compareMain.style.gridTemplateColumns = '2fr var(--panel-gap) 1fr';
                     resizeHandle.style.display = '';
                 } else {
                     compareMain.style.gridTemplateColumns = '1fr 0 0';

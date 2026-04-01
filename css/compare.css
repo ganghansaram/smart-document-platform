@@ -47,7 +47,7 @@ body {
 .compare-main {
     flex: 1;
     display: grid;
-    grid-template-columns: 2fr 4px 1fr;
+    grid-template-columns: 2fr var(--panel-gap) 1fr;
     overflow: hidden;
     position: relative;
     margin-bottom: var(--panel-gap);
