@@ -1,12 +1,15 @@
 """
-Compare API — 문서 업로드, 텍스트 추출, 검증, AI 의미 분류, 유사도 추출
+Compare API — 문서 업로드, 텍스트 추출, 검증, AI 의미 분류, 유사도 검사
 """
+import logging
 import os
 
 from fastapi import APIRouter, File, Form, UploadFile, Depends, HTTPException, Request
 from typing import Optional
 
 import config
+
+logger = logging.getLogger(__name__)
 from dependencies import get_current_user, require_admin
 from services.compare_service import (
     extract_text,
@@ -16,6 +19,7 @@ from services.compare_service import (
     classify_changes,
 )
 from services.document_extractor import extract_document
+from services.similarity_engine import run_similarity
 
 router = APIRouter(prefix="/compare", tags=["compare"])
 
@@ -187,3 +191,46 @@ async def api_extract_document(
         "page_count": result["page_count"],
         "is_scanned": result["is_scanned"],
     }
+
+
+# ══════════════════════════════════════════
+# 유사도 모드 — 유사도 검사 실행
+# ══════════════════════════════════════════
+
+@router.post("/similarity")
+async def api_similarity(
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """두 문서의 유사도를 비교한다.
+
+    입력 (JSON):
+        target_text: 검사 대상 plain text
+        reference_text: 참조 원문 plain text
+        threshold_high: 높은 유사 임계값 (선택, 기본 0.85)
+        threshold_medium: 중간 유사 임계값 (선택, 기본 0.70)
+    """
+    body = await request.json()
+    target_text = body.get("target_text", "")
+    reference_text = body.get("reference_text", "")
+
+    if not target_text.strip():
+        raise HTTPException(status_code=400, detail="검사 대상 텍스트가 비어 있습니다")
+    if not reference_text.strip():
+        raise HTTPException(status_code=400, detail="참조 원문 텍스트가 비어 있습니다")
+
+    threshold_high = body.get("threshold_high")
+    threshold_medium = body.get("threshold_medium")
+
+    try:
+        result = run_similarity(
+            target_text=target_text,
+            reference_text=reference_text,
+            threshold_high=threshold_high,
+            threshold_medium=threshold_medium,
+        )
+    except Exception as e:
+        logger.exception("유사도 검사 실패")
+        raise HTTPException(status_code=502, detail=f"유사도 검사 실패: {e}")
+
+    return result
