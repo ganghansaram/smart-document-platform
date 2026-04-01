@@ -192,9 +192,6 @@
                         </span>
                         <span class="cp-panel-spacer"></span>
                         <span id="cp-toolbar-slot"></span>
-                        <span class="cp-header-sep cp-tb-sep"></span>
-                        <span id="cp-mode-slot-panel"></span>
-                        <span class="cp-header-sep"></span>
                         <button class="cp-file-remove" id="file-remove-a" title="파일 제거">&times;</button>
                     </div>
                     <div class="cp-panel-body-wrap">
@@ -260,7 +257,9 @@
             <div class="resize-handle" id="resize-handle"></div>
             <div class="cp-sidebar" id="cp-sidebar">
                 <div class="cp-sidebar-header">
+                    <span id="cp-sidebar-mode-slot"></span>
                     <span class="cp-sidebar-title" id="cp-sidebar-title">Changes</span>
+                    <span class="cp-panel-spacer"></span>
                     <button class="cp-sidebar-collapse" id="cp-sidebar-collapse" title="접기">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"/>
@@ -793,7 +792,7 @@
                     return;
                 }
                 if (sidebarOpen) {
-                    compareMain.style.gridTemplateColumns = '1fr 4px ' + sidebarWidth + 'px';
+                    compareMain.style.gridTemplateColumns = '2fr 4px 1fr';
                     resizeHandle.style.display = '';
                 } else {
                     compareMain.style.gridTemplateColumns = '1fr 0 0';
@@ -1074,8 +1073,8 @@
             var modeSlot = document.getElementById('cp-mode-slot');
             modeSlot.appendChild(modeToggle);
 
-            // 패널 헤더용 모드 탭 (유사도 모드에서 표시)
-            var panelModeSlot = document.getElementById('cp-mode-slot-panel');
+            // 사이드바 헤더에 모드 탭 배치
+            var sidebarModeSlot = document.getElementById('cp-sidebar-mode-slot');
             var panelModeTabs = document.createElement('div');
             panelModeTabs.className = 'cp-mode-tabs-panel';
 
@@ -1097,7 +1096,10 @@
             panelModeTabs.appendChild(panelTabSim);
             panelModeTabs.appendChild(panelTabCompare);
             panelModeTabs.appendChild(panelTabVerify);
-            panelModeSlot.appendChild(panelModeTabs);
+            sidebarModeSlot.appendChild(panelModeTabs);
+
+            // 모드 탭이 사이드바에 있으므로 기존 타이틀 숨김
+            sidebarTitle.style.display = 'none';
 
             panelTabSim.addEventListener('click', function() { setMode('similarity'); });
             panelTabCompare.addEventListener('click', function() { setMode('compare'); });

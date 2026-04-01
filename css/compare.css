@@ -47,7 +47,7 @@ body {
 .compare-main {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 4px 360px;
+    grid-template-columns: 2fr 4px 1fr;
     overflow: hidden;
     position: relative;
     margin-bottom: var(--panel-gap);
@@ -682,8 +682,8 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
     display: none;
 }
 
-/* 모드 탭 (패널 헤더 내) — 모든 모드에서 표시 */
-#cp-mode-slot-panel {
+/* 모드 탭 (사이드바 헤더 내) */
+#cp-sidebar-mode-slot {
     display: flex;
 }
 
