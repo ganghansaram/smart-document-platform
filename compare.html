@@ -740,6 +740,11 @@
                 btnCompare.classList.toggle('active', mode === 'compare');
                 btnVerify.classList.toggle('active', mode === 'verify');
 
+                // Home 버튼: 허브에서 숨김, 작업 모드에서 표시
+                if ($homeBtn) {
+                    $homeBtn.style.display = mode === 'hub' ? 'none' : '';
+                }
+
                 // 허브 모드는 별도 처리
                 if (mode === 'hub') {
                     var hint = document.getElementById('toolbar-hint');
@@ -900,14 +905,69 @@
                 if (saved) applyTheme(saved);
             } catch(e) {}
 
+            // ── 작업 중 여부 판단 ──
+            function hasActiveWork() {
+                return !!(docState.a.file || docState.b.file || docState.a.text || docState.b.text);
+            }
+
+            // ── 확인 모달 ──
+            function showConfirmModal(message, onConfirm) {
+                var overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.innerHTML =
+                    '<div class="modal-box">' +
+                        '<div class="modal-header"><h3>확인</h3></div>' +
+                        '<div class="modal-body"><p>' + message + '</p></div>' +
+                        '<div class="modal-footer">' +
+                            '<button class="btn btn-secondary" data-action="cancel">취소</button>' +
+                            '<button class="btn btn-primary" data-action="confirm">계속</button>' +
+                        '</div>' +
+                    '</div>';
+                document.body.appendChild(overlay);
+                requestAnimationFrame(function() { overlay.classList.add('open'); });
+
+                overlay.addEventListener('click', function(e) {
+                    var action = e.target.getAttribute('data-action');
+                    if (action === 'cancel' || e.target === overlay) {
+                        overlay.classList.remove('open');
+                        setTimeout(function() { overlay.remove(); }, 200);
+                    } else if (action === 'confirm') {
+                        overlay.remove();
+                        onConfirm();
+                    }
+                });
+            }
+
+            // ── 허브로 복귀 (파일 리셋) ──
+            function goHome() {
+                restorePlaceholder('a');
+                restorePlaceholder('b');
+                setMode('hub');
+            }
+
             // ── 헤더 초기화 ──
             var headerResult = initPlatformHeader({
                 title: 'Document Verify',
                 currentSystem: 'compare',
-                navItems: [],
+                navItems: [
+                    { id: 'home-btn', label: 'Home', hidden: true }
+                ],
                 showThemeToggle: true,
                 onAuth: function(user) {
                     document.body.style.visibility = 'visible';
+                }
+            });
+
+            // Home 버튼 이벤트
+            var $homeBtn = headerResult.nav['home-btn'];
+            $homeBtn.addEventListener('click', function() {
+                if (hasActiveWork()) {
+                    showConfirmModal(
+                        '현재 작업이 초기화됩니다.<br>새 작업을 시작하시겠습니까?',
+                        goHome
+                    );
+                } else {
+                    goHome();
                 }
             });
 
@@ -919,6 +979,30 @@
             if (headerResult.themeToggle) {
                 headerResult.themeToggle.addEventListener('click', toggleTheme);
             }
+
+            // ── 이탈 방지 ──
+            // 1. 브라우저 새로고침/닫기/뒤로가기
+            window.addEventListener('beforeunload', function(e) {
+                if (hasActiveWork()) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+
+            // 2. 시스템 스위처 링크 인터셉트 (캡처 단계)
+            document.addEventListener('click', function(e) {
+                var item = e.target.closest('.ph-system-item');
+                if (!item || item.classList.contains('current') || item.classList.contains('disabled')) return;
+                if (!hasActiveWork()) return;
+                e.preventDefault();
+                e.stopPropagation();
+                var href = item.getAttribute('href');
+                if (!href || href === '#' || href === 'javascript:void(0)') return;
+                showConfirmModal(
+                    '현재 작업이 초기화됩니다.<br>다른 시스템으로 이동하시겠습니까?',
+                    function() { window.location.href = href; }
+                );
+            }, true);
 
             // ── 스크롤 동기화 ──
             scrollSyncBtn.addEventListener('click', function() {
