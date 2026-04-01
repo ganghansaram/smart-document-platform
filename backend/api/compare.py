@@ -223,7 +223,9 @@ async def api_similarity(
     threshold_medium = body.get("threshold_medium")
 
     try:
-        result = run_similarity(
+        import asyncio
+        result = await asyncio.to_thread(
+            run_similarity,
             target_text=target_text,
             reference_text=reference_text,
             threshold_high=threshold_high,

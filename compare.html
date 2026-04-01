@@ -112,6 +112,11 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
 
+            <button class="sim-check-btn" id="sim-check-btn" disabled title="유사도 검사 실행">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                유사도 검사
+            </button>
+
             <span class="toolbar-spacer"></span>
             <span class="toolbar-label" id="toolbar-hint">작업 모드를 선택하거나, 파일을 드래그하세요</span>
         </div>
@@ -287,6 +292,12 @@
                 b: { file: null, text: null, paragraphs: [], filename: '' }
             };
 
+            // ── 유사도 모드 전용 상태 ──
+            var simState = {
+                a: { markdown: '', plain_text: '', filename: '', loaded: false },
+                b: { markdown: '', plain_text: '', filename: '', loaded: false }
+            };
+
             // ── DOM 참조 ──
             var compareMain = document.getElementById('compare-main');
             var cpPanels = document.getElementById('cp-panels');
@@ -379,8 +390,9 @@
             var PLACEHOLDER_SVG = '<svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>';
 
             function getDefaultLabel(side) {
-                if (side === 'a') return currentMode === 'verify' ? '검증 문서' : '원본';
-                return '수정본';
+                if (currentMode === 'verify') return side === 'a' ? '검증 문서' : '수정본';
+                if (currentMode === 'similarity') return side === 'a' ? '검사 대상' : '참조 원문';
+                return side === 'a' ? '원본' : '수정본';
             }
 
             var UPLOAD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
@@ -445,6 +457,8 @@
                 if (paste) paste.remove();
                 var oldPh = panel.querySelector('.panel-placeholder');
                 if (oldPh) oldPh.remove();
+                var oldMd = panel.querySelector('.sim-md-view');
+                if (oldMd) oldMd.remove();
 
                 // placeholder 삽입
                 panel.insertAdjacentHTML('beforeend', makePlaceholderHTML(side));
@@ -452,6 +466,8 @@
 
                 // 상태 초기화
                 docState[side] = { file: null, text: null, paragraphs: [], filename: '' };
+                // 유사도 모드 상태도 리셋
+                if (simState[side]) simClearSide(side);
                 label.textContent = getDefaultLabel(side);
                 label.title = '';
                 removeBtn.classList.remove('visible');
@@ -516,6 +532,8 @@
             // ── 파일 업로드 처리 ──
             function uploadFile(side, file) {
                 if (!file) return;
+                // 유사도 모드 → 전용 업로드 경로
+                if (currentMode === 'similarity') { simUploadFile(side, file); return; }
 
                 var ext = file.name.split('.').pop().toLowerCase();
                 if (ext !== 'docx' && ext !== 'pdf') {
@@ -581,6 +599,12 @@
                 var text = textarea.value.trim();
                 if (!text) {
                     showToast('텍스트를 입력해주세요.', 'warning');
+                    return;
+                }
+
+                // 유사도 모드 → 전용 처리
+                if (currentMode === 'similarity') {
+                    simPasteText(side, text);
                     return;
                 }
 
@@ -765,7 +789,7 @@
                 } else if (mode === 'verify') {
                     hint.textContent = '문서를 업로드하여 규칙을 검증하세요';
                 } else if (mode === 'similarity') {
-                    hint.textContent = '유사도 검사 — 준비 중입니다';
+                    hint.textContent = '검사 대상과 참조 원문을 업로드하세요';
                 }
 
                 // 라벨 변경 (파일이 로드된 경우 파일명 유지)
@@ -782,17 +806,19 @@
                     phTextA.textContent = getDefaultLabel('a');
                 }
 
-                // 사이드바 타이틀/빈 메시지 변경
+                // 사이드바 타이틀/빈 메시지 변경 (sidebarBody 리셋 포함)
+                var sidebarBody = document.getElementById('cp-sidebar-body');
                 if (mode === 'compare') {
                     sidebarTitle.textContent = 'Changes';
-                    sidebarEmpty.textContent = '비교 결과가 여기에 표시됩니다';
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">비교 결과가 여기에 표시됩니다</div>';
                 } else if (mode === 'verify') {
                     sidebarTitle.textContent = 'Validation';
-                    sidebarEmpty.textContent = '검증 결과가 여기에 표시됩니다';
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">검증 결과가 여기에 표시됩니다</div>';
                 } else if (mode === 'similarity') {
                     sidebarTitle.textContent = 'Similarity';
-                    sidebarEmpty.textContent = '유사도 검사 결과가 여기에 표시됩니다';
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">유사도 검사 결과가 여기에 표시됩니다</div>';
                 }
+                sidebarEmpty = document.getElementById('cp-sidebar-empty');
 
                 // 비교 모드 전용 UI (scrollSync만 항상 표시, swap/edit는 diff 결과에 따라)
                 scrollSyncBtn.style.display = mode === 'compare' ? '' : 'none';
@@ -801,13 +827,21 @@
                 if (mode === 'verify') {
                     clearDiff();
                     showDiffUI(false);
-                    // 검증 모드 전용 UI 표시
                     vdSettingsBtn.style.display = '';
                     vdRevalidateBtn.style.display = '';
                     tryRunValidation();
+                } else if (mode === 'similarity') {
+                    clearDiff();
+                    clearValidation();
+                    showDiffUI(false);
+                    vdNavGroup.style.display = 'none';
+                    vdFilterGroup.style.display = 'none';
+                    vdSettingsBtn.style.display = 'none';
+                    vdRevalidateBtn.style.display = 'none';
+                    // 유사도 모드 패널 복원
+                    simRestorePanels();
                 } else {
                     clearValidation();
-                    // 검증 모드 전용 UI 숨기기
                     vdNavGroup.style.display = 'none';
                     vdFilterGroup.style.display = 'none';
                     vdSettingsBtn.style.display = 'none';
@@ -907,7 +941,8 @@
 
             // ── 작업 중 여부 판단 ──
             function hasActiveWork() {
-                return !!(docState.a.file || docState.b.file || docState.a.text || docState.b.text);
+                return !!(docState.a.file || docState.b.file || docState.a.text || docState.b.text
+                    || simState.a.loaded || simState.b.loaded);
             }
 
             // ── 확인 모달 ──
@@ -1003,6 +1038,319 @@
                     function() { window.location.href = href; }
                 );
             }, true);
+
+            // ══════════════════════════════════════════
+            // 유사도 모드 전용 로직
+            // ══════════════════════════════════════════
+
+            var simCheckBtn = document.getElementById('sim-check-btn');
+
+            function simRestorePanels() {
+                // 유사도 모드 진입 시 패널 상태 복원
+                ['a', 'b'].forEach(function(side) {
+                    if (simState[side].loaded) {
+                        // 이미 로드된 문서가 있으면 MD 렌더링 복원
+                        var panel = getPanel(side);
+                        var label = getLabel(side);
+                        label.textContent = simState[side].filename;
+                        label.title = simState[side].filename;
+                        getRemoveBtn(side).classList.add('visible');
+                        simRenderMd(panel, simState[side].markdown);
+                    } else {
+                        restorePlaceholder(side);
+                        var label = getLabel(side);
+                        label.textContent = getDefaultLabel(side);
+                    }
+                });
+                simUpdateCheckBtn();
+            }
+
+            function simUploadFile(side, file) {
+                if (!file || currentMode !== 'similarity') return;
+                var ext = file.name.split('.').pop().toLowerCase();
+                if (ext !== 'docx' && ext !== 'pdf') {
+                    showToast('지원하지 않는 형식입니다. 허용: .docx, .pdf', 'warning');
+                    return;
+                }
+                var panel = getPanel(side);
+                showLoading(panel);
+
+                var formData = new FormData();
+                formData.append('file', file);
+
+                fetch(API_BASE + '/compare/extract-document', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                })
+                .then(function(res) {
+                    if (!res.ok) return res.json().then(function(e) { throw new Error(e.detail || '추출 실패'); });
+                    return res.json();
+                })
+                .then(function(data) {
+                    simOnDocLoaded(side, data.filename, data.markdown, data.plain_text);
+                })
+                .catch(function(err) {
+                    restorePlaceholder(side);
+                    getLabel(side).textContent = getDefaultLabel(side);
+                    showToast('추출 오류: ' + err.message, 'error');
+                });
+            }
+
+            function simPasteText(side, text) {
+                if (!text.trim() || currentMode !== 'similarity') return;
+
+                fetch(API_BASE + '/compare/extract-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'text=' + encodeURIComponent(text),
+                    credentials: 'include'
+                })
+                .then(function(res) {
+                    if (!res.ok) return res.json().then(function(e) { throw new Error(e.detail || '추출 실패'); });
+                    return res.json();
+                })
+                .then(function(data) {
+                    simOnDocLoaded(side, data.filename, data.markdown, data.plain_text);
+                })
+                .catch(function(err) {
+                    restorePlaceholder(side);
+                    showToast('텍스트 처리 오류: ' + err.message, 'error');
+                });
+            }
+
+            function simOnDocLoaded(side, filename, markdown, plainText) {
+                simState[side] = {
+                    markdown: markdown,
+                    plain_text: plainText,
+                    filename: filename,
+                    loaded: true
+                };
+                // 기존 docState도 동기화 (hasActiveWork 등에서 참조)
+                docState[side].filename = filename;
+                docState[side].text = plainText;
+
+                var panel = getPanel(side);
+                var label = getLabel(side);
+                var removeBtn = getRemoveBtn(side);
+
+                label.textContent = filename;
+                label.title = filename;
+                removeBtn.classList.add('visible');
+
+                simRenderMd(panel, markdown);
+                simUpdateCheckBtn();
+            }
+
+            function simRenderMd(panel, markdown) {
+                // 기존 콘텐츠 제거
+                var ph = panel.querySelector('.panel-placeholder');
+                if (ph) ph.remove();
+                var paste = panel.querySelector('.cp-paste-container');
+                if (paste) paste.remove();
+                var loading = panel.querySelector('.cp-upload-loading');
+                if (loading) loading.remove();
+                var old = panel.querySelector('.cp-text-content');
+                if (old) old.remove();
+                var oldMd = panel.querySelector('.sim-md-view');
+                if (oldMd) oldMd.remove();
+
+                // MD → HTML 변환 (간이 변환기)
+                var html = simMdToHtml(markdown);
+                var div = document.createElement('div');
+                div.className = 'sim-md-view';
+                div.innerHTML = html;
+                panel.appendChild(div);
+            }
+
+            function simMdToHtml(md) {
+                // 간이 Markdown → HTML 변환
+                var lines = md.split('\n');
+                var html = '';
+                var inTable = false;
+                var tableRows = [];
+
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i];
+
+                    // 빈 줄
+                    if (!line.trim()) {
+                        if (inTable) { html += simTableToHtml(tableRows); inTable = false; tableRows = []; }
+                        continue;
+                    }
+
+                    // 수평선
+                    if (/^---+$/.test(line.trim())) {
+                        if (inTable) { html += simTableToHtml(tableRows); inTable = false; tableRows = []; }
+                        html += '<hr>';
+                        continue;
+                    }
+
+                    // 테이블 행
+                    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+                        // 구분선 행 (|---|---|) 스킵하지 않고 수집
+                        tableRows.push(line);
+                        inTable = true;
+                        continue;
+                    }
+
+                    // 테이블 종료
+                    if (inTable) {
+                        html += simTableToHtml(tableRows);
+                        inTable = false;
+                        tableRows = [];
+                    }
+
+                    // 헤딩
+                    var hMatch = line.match(/^(#{1,6})\s+(.+)/);
+                    if (hMatch) {
+                        var level = hMatch[1].length;
+                        html += '<h' + level + '>' + simInline(hMatch[2]) + '</h' + level + '>';
+                        continue;
+                    }
+
+                    // 일반 단락
+                    html += '<p>' + simInline(line) + '</p>';
+                }
+
+                if (inTable) html += simTableToHtml(tableRows);
+
+                return html;
+            }
+
+            function simInline(text) {
+                // 인라인 마크업: 볼드, 이탤릭, 코드
+                text = escapeHTML(text);
+                text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+                text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+                return text;
+            }
+
+            function simTableToHtml(rows) {
+                if (rows.length < 2) return '';
+                var html = '<table>';
+                for (var i = 0; i < rows.length; i++) {
+                    var row = rows[i];
+                    // 구분선 행 (|---|---|) 스킵
+                    if (/^\|[\s\-:]+\|$/.test(row.trim())) continue;
+                    var cells = row.split('|').filter(function(c, idx, arr) {
+                        return idx > 0 && idx < arr.length - 1;
+                    });
+                    var tag = i === 0 ? 'th' : 'td';
+                    html += '<tr>';
+                    for (var j = 0; j < cells.length; j++) {
+                        html += '<' + tag + '>' + simInline(cells[j].trim()) + '</' + tag + '>';
+                    }
+                    html += '</tr>';
+                }
+                html += '</table>';
+                return html;
+            }
+
+            function simUpdateCheckBtn() {
+                simCheckBtn.disabled = !(simState.a.loaded && simState.b.loaded);
+            }
+
+            function simClearSide(side) {
+                simState[side] = { markdown: '', plain_text: '', filename: '', loaded: false };
+                docState[side].filename = '';
+                docState[side].text = null;
+                simUpdateCheckBtn();
+            }
+
+            // 유사도 검사 실행
+            simCheckBtn.addEventListener('click', function() {
+                if (!simState.a.loaded || !simState.b.loaded) return;
+                simCheckBtn.disabled = true;
+                simCheckBtn.textContent = '분석 중...';
+
+                var hint = document.getElementById('toolbar-hint');
+                hint.textContent = '유사도 분석 중...';
+
+                fetch(API_BASE + '/compare/similarity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target_text: simState.a.plain_text,
+                        reference_text: simState.b.plain_text
+                    }),
+                    credentials: 'include'
+                })
+                .then(function(res) {
+                    if (!res.ok) return res.json().then(function(e) { throw new Error(e.detail || '검사 실패'); });
+                    return res.json();
+                })
+                .then(function(data) {
+                    // 결과를 사이드바에 표시 (Step 4에서 하이라이트 추가)
+                    simShowResults(data);
+                })
+                .catch(function(err) {
+                    showToast('유사도 검사 오류: ' + err.message, 'error');
+                    hint.textContent = '검사 대상과 참조 원문을 업로드하세요';
+                })
+                .finally(function() {
+                    simCheckBtn.disabled = false;
+                    simCheckBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> 유사도 검사';
+                });
+            });
+
+            function simShowResults(data) {
+                var summary = data.summary;
+                var matches = data.matches;
+                var hint = document.getElementById('toolbar-hint');
+                hint.textContent = '유사율 ' + summary.similarity_score + '% — ' +
+                    '높은 유사 ' + summary.high_count + '건, 중간 유사 ' + summary.medium_count + '건';
+
+                // 사이드바에 매칭 목록 표시
+                var sidebarBody = document.getElementById('cp-sidebar-body');
+                var html = '<div class="sim-results">';
+                html += '<div class="sim-summary">';
+                html += '<div class="sim-score">' + summary.similarity_score + '%</div>';
+                html += '<div class="sim-stats">전체 ' + summary.total_sentences + '문장 · ';
+                html += '<span style="color:var(--color-error)">높은 ' + summary.high_count + '</span> · ';
+                html += '<span style="color:var(--color-warning)">중간 ' + summary.medium_count + '</span> · ';
+                html += '정상 ' + summary.clean_count + '</div>';
+                html += '</div>';
+
+                if (matches.length === 0) {
+                    html += '<div class="cp-sidebar-empty">유사 구간이 발견되지 않았습니다</div>';
+                } else {
+                    for (var i = 0; i < matches.length; i++) {
+                        var m = matches[i];
+                        var levelColor = m.level === 'high' ? 'var(--color-error)' : 'var(--color-warning)';
+                        var levelLabel = m.level === 'high' ? '높은 유사' : '중간 유사';
+                        html += '<div class="sim-match-item" data-idx="' + i + '">';
+                        html += '<div class="sim-match-header">';
+                        html += '<span class="sim-match-badge" style="background:' + levelColor + '">' + (m.similarity * 100).toFixed(1) + '%</span>';
+                        html += '<span class="sim-match-level">' + levelLabel + '</span>';
+                        if (m.method === 'semantic+term') html += '<span class="sim-match-method">규격 매칭</span>';
+                        html += '</div>';
+                        html += '<div class="sim-match-text-a">' + escapeHTML(m.target_text.substring(0, 80)) + (m.target_text.length > 80 ? '...' : '') + '</div>';
+                        html += '<div class="sim-match-text-b">' + escapeHTML(m.ref_text.substring(0, 80)) + (m.ref_text.length > 80 ? '...' : '') + '</div>';
+                        html += '</div>';
+                    }
+                }
+                html += '</div>';
+                sidebarBody.innerHTML = html;
+            }
+
+            // 유사도 모드에서 파일 업로드/붙여넣기 인터셉트
+            function handleUploadForMode(side, file) {
+                if (currentMode === 'similarity') {
+                    simUploadFile(side, file);
+                } else {
+                    uploadFile(side, file);
+                }
+            }
+
+            function handlePasteForMode(side, text) {
+                if (currentMode === 'similarity') {
+                    simPasteText(side, text);
+                } else {
+                    submitPastedText(side, text);
+                }
+            }
 
             // ── 스크롤 동기화 ──
             scrollSyncBtn.addEventListener('click', function() {

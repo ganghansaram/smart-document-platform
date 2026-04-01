@@ -181,11 +181,16 @@ def compute_similarity_matrix(target_sents: list, ref_sents: list) -> np.ndarray
     """
     from services.embedding_client import get_embeddings
 
-    # 배치 임베딩 (한 번의 Ollama 호출로 전체 처리)
     all_texts = target_sents + ref_sents
     logger.info(f"임베딩 요청: {len(all_texts)}개 문장 ({len(target_sents)} + {len(ref_sents)})")
 
-    all_embeddings = get_embeddings(all_texts)
+    # Ollama 배치 크기 제한 대응: 청크 분할
+    BATCH_SIZE = getattr(config, "VERIFY_SIMILARITY_BATCH_SIZE", 2)
+    all_embeddings = []
+    for i in range(0, len(all_texts), BATCH_SIZE):
+        chunk = all_texts[i:i + BATCH_SIZE]
+        all_embeddings.extend(get_embeddings(chunk))
+
     all_vecs = np.array(all_embeddings, dtype=np.float32)
 
     target_vecs = all_vecs[:len(target_sents)]
