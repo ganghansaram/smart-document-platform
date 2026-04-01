@@ -268,7 +268,7 @@
                 </div>
                 <div class="cp-sidebar-body" id="cp-sidebar-body">
                     <div class="cp-sidebar-empty" id="cp-sidebar-empty">
-                        비교 결과가 여기에 표시됩니다
+                        결과가 여기에 표시됩니다
                     </div>
                 </div>
                 <div class="cp-sidebar-footer" id="cp-sidebar-footer" style="display:none">
@@ -871,13 +871,13 @@
                 var sidebarBody = document.getElementById('cp-sidebar-body');
                 if (mode === 'compare') {
                     sidebarTitle.textContent = 'Changes';
-                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">비교 결과가 여기에 표시됩니다</div>';
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">결과가 여기에 표시됩니다</div>';
                 } else if (mode === 'verify') {
                     sidebarTitle.textContent = 'Validation';
-                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">검증 결과가 여기에 표시됩니다</div>';
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">결과가 여기에 표시됩니다</div>';
                 } else if (mode === 'similarity') {
                     sidebarTitle.textContent = 'Similarity';
-                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">유사도 검사 결과가 여기에 표시됩니다</div>';
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">결과가 여기에 표시됩니다</div>';
                 }
                 sidebarEmpty = document.getElementById('cp-sidebar-empty');
 
@@ -1892,7 +1892,7 @@
                     sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">'
                         + (docState.a.paragraphs.length > 0 && docState.b.paragraphs.length > 0
                             ? '변경점이 없습니다'
-                            : '비교 결과가 여기에 표시됩니다')
+                            : '결과가 여기에 표시됩니다')
                         + '</div>';
                     return;
                 }
@@ -3038,7 +3038,7 @@
 
                 // 사이드바 빈 상태
                 if (currentMode === 'verify') {
-                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">검증 결과가 여기에 표시됩니다</div>';
+                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">결과가 여기에 표시됩니다</div>';
                 }
             }
 
@@ -3132,7 +3132,7 @@
 
                 if (issues.length === 0) {
                     sidebarBody.innerHTML = '<div class="cp-sidebar-empty">'
-                        + (docState.a.paragraphs.length > 0 ? '이슈가 없습니다' : '검증 결과가 여기에 표시됩니다')
+                        + (docState.a.paragraphs.length > 0 ? '이슈가 없습니다' : '결과가 여기에 표시됩니다')
                         + '</div>';
                     return;
                 }
