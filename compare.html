@@ -113,11 +113,68 @@
             </button>
 
             <span class="toolbar-spacer"></span>
-            <span class="toolbar-label" id="toolbar-hint">원본과 수정본을 업로드하세요</span>
+            <span class="toolbar-label" id="toolbar-hint">작업 모드를 선택하거나, 파일을 드래그하세요</span>
         </div>
 
         <!-- 메인: Grid (패널영역 | 사이드바) -->
         <div class="compare-main" id="compare-main">
+            <!-- 허브 빈 상태 (모드 선택 카드) -->
+            <div class="verify-hub" id="verify-hub">
+                <div class="verify-hub-title">
+                    <h2>문서를 검증합니다</h2>
+                    <p>작업 모드를 선택하거나, 파일을 드래그하여 시작하세요.</p>
+                </div>
+                <div class="verify-hub-cards">
+                    <a class="verify-hub-card" data-hub-mode="similarity">
+                        <div class="verify-hub-card-icon type-similarity">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                        </div>
+                        <h3>유사도 검사</h3>
+                        <div class="verify-hub-card-desc">참조 원문과의 유사 구간을<br>식별하여 표절 리스크 점검</div>
+                        <div class="verify-hub-card-tags">
+                            <span class="verify-hub-card-tag">한↔영</span>
+                            <span class="verify-hub-card-tag">AI 임베딩</span>
+                            <span class="verify-hub-card-tag">규격 매칭</span>
+                        </div>
+                    </a>
+                    <a class="verify-hub-card" data-hub-mode="compare">
+                        <div class="verify-hub-card-icon type-compare">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
+                        </div>
+                        <h3>문서 비교</h3>
+                        <div class="verify-hub-card-desc">원본과 수정본의 변경점을<br>단어 수준으로 식별</div>
+                        <div class="verify-hub-card-tags">
+                            <span class="verify-hub-card-tag">Diff</span>
+                            <span class="verify-hub-card-tag">AI 분류</span>
+                            <span class="verify-hub-card-tag">수락/거절</span>
+                        </div>
+                    </a>
+                    <a class="verify-hub-card" data-hub-mode="verify">
+                        <div class="verify-hub-card-icon type-validate">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        </div>
+                        <h3>규칙 검증</h3>
+                        <div class="verify-hub-card-desc">작성 규칙을 자동 점검하고<br>위반 항목을 리포트</div>
+                        <div class="verify-hub-card-tags">
+                            <span class="verify-hub-card-tag">6종 규칙</span>
+                            <span class="verify-hub-card-tag">프리셋</span>
+                            <span class="verify-hub-card-tag">커스텀</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="verify-hub-coming-soon">
+                    <div class="verify-hub-coming-soon-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                    </div>
+                    <h3>유사도 검사</h3>
+                    <p>참조 원문과의 유사 구간을 식별하여<br>표절 리스크를 점검하는 기능입니다.<br>현재 개발 중이며 곧 사용할 수 있습니다.</p>
+                </div>
+                <div class="verify-hub-hint">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    .docx, .pdf 파일을 화면에 드래그하면 비교 모드로 바로 시작합니다
+                </div>
+            </div>
+
             <!-- 패널 컨테이너 (Translator viewer-panels 패턴) -->
             <div class="cp-panels" id="cp-panels">
                 <input type="file" id="file-input-a" accept=".docx,.pdf" style="display:none">
@@ -217,7 +274,7 @@
         (function() {
             'use strict';
 
-            var currentMode = 'compare'; // 'compare' | 'verify'
+            var currentMode = 'hub'; // 'hub' | 'compare' | 'verify' | 'similarity'
             var sidebarOpen = true;
             var sidebarWidth = 360; // px, 리사이즈 가능
             var SIDEBAR_MIN = 280;
@@ -259,8 +316,13 @@
             var modeToggle = document.createElement('div');
             modeToggle.className = 'mode-toggle';
 
+            var btnSimilarity = document.createElement('button');
+            btnSimilarity.className = 'mode-toggle-btn';
+            btnSimilarity.type = 'button';
+            btnSimilarity.textContent = '유사도';
+
             var btnCompare = document.createElement('button');
-            btnCompare.className = 'mode-toggle-btn active';
+            btnCompare.className = 'mode-toggle-btn';
             btnCompare.type = 'button';
             btnCompare.textContent = '비교';
 
@@ -269,6 +331,7 @@
             btnVerify.type = 'button';
             btnVerify.textContent = '검증';
 
+            modeToggle.appendChild(btnSimilarity);
             modeToggle.appendChild(btnCompare);
             modeToggle.appendChild(btnVerify);
 
@@ -638,8 +701,24 @@
             bindPanelDragDrop('a');
             bindPanelDragDrop('b');
 
+            // 허브에서 파일 드래그 → 자동으로 비교 모드 전환
+            var verifyHub = document.getElementById('verify-hub');
+            verifyHub.addEventListener('dragover', function(e) { e.preventDefault(); });
+            verifyHub.addEventListener('drop', function(e) {
+                e.preventDefault();
+                var files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    setMode('compare');
+                    uploadFile('a', files[0]);
+                }
+            });
+
             // ── 그리드 레이아웃 갱신 ──
             function updateGrid() {
+                if (currentMode === 'hub') {
+                    compareMain.style.gridTemplateColumns = '';
+                    return;
+                }
                 if (sidebarOpen) {
                     compareMain.style.gridTemplateColumns = '1fr 4px ' + sidebarWidth + 'px';
                     resizeHandle.style.display = '';
@@ -657,15 +736,31 @@
                 var body = document.getElementById('compare-body');
                 body.className = 'compare-body mode-' + mode;
 
+                btnSimilarity.classList.toggle('active', mode === 'similarity');
                 btnCompare.classList.toggle('active', mode === 'compare');
                 btnVerify.classList.toggle('active', mode === 'verify');
+
+                // 허브 모드는 별도 처리
+                if (mode === 'hub') {
+                    var hint = document.getElementById('toolbar-hint');
+                    hint.textContent = '작업 모드를 선택하거나, 파일을 드래그하세요';
+                    scrollSyncBtn.style.display = 'none';
+                    vdNavGroup.style.display = 'none';
+                    vdFilterGroup.style.display = 'none';
+                    vdSettingsBtn.style.display = 'none';
+                    vdRevalidateBtn.style.display = 'none';
+                    showDiffUI(false);
+                    return;
+                }
 
                 // 툴바 힌트 변경
                 var hint = document.getElementById('toolbar-hint');
                 if (mode === 'compare') {
                     hint.textContent = '원본과 수정본을 업로드하세요';
-                } else {
+                } else if (mode === 'verify') {
                     hint.textContent = '문서를 업로드하여 규칙을 검증하세요';
+                } else if (mode === 'similarity') {
+                    hint.textContent = '유사도 검사 — 준비 중입니다';
                 }
 
                 // 라벨 변경 (파일이 로드된 경우 파일명 유지)
@@ -686,9 +781,12 @@
                 if (mode === 'compare') {
                     sidebarTitle.textContent = 'Changes';
                     sidebarEmpty.textContent = '비교 결과가 여기에 표시됩니다';
-                } else {
+                } else if (mode === 'verify') {
                     sidebarTitle.textContent = 'Validation';
                     sidebarEmpty.textContent = '검증 결과가 여기에 표시됩니다';
+                } else if (mode === 'similarity') {
+                    sidebarTitle.textContent = 'Similarity';
+                    sidebarEmpty.textContent = '유사도 검사 결과가 여기에 표시됩니다';
                 }
 
                 // 비교 모드 전용 UI (scrollSync만 항상 표시, swap/edit는 diff 결과에 따라)
@@ -710,17 +808,27 @@
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     if (editMode) toggleEditMode();
-                    tryRunDiff();
+                    if (mode === 'compare') tryRunDiff();
                 }
 
                 updateGrid();
             }
 
+            btnSimilarity.addEventListener('click', function() { setMode('similarity'); });
             btnCompare.addEventListener('click', function() { setMode('compare'); });
             btnVerify.addEventListener('click', function() { setMode('verify'); });
 
-            // 초기 모드 적용
-            document.getElementById('compare-body').classList.add('mode-compare');
+            // 허브 카드 클릭 → 모드 전환
+            document.querySelectorAll('.verify-hub-card').forEach(function(card) {
+                card.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var mode = card.getAttribute('data-hub-mode');
+                    if (mode) setMode(mode);
+                });
+            });
+
+            // 초기 모드: 허브 (빈 상태)
+            document.getElementById('compare-body').classList.add('mode-hub');
 
             // ── 사이드바 접기/펼치기 ──
             function collapseSidebar() {
