@@ -1,9 +1,10 @@
 """
-Compare API — 문서 업로드, 텍스트 추출, 검증, AI 의미 분류
+Compare API — 문서 업로드, 텍스트 추출, 검증, AI 의미 분류, 유사도 추출
 """
 import os
 
-from fastapi import APIRouter, File, UploadFile, Depends, HTTPException, Request
+from fastapi import APIRouter, File, Form, UploadFile, Depends, HTTPException, Request
+from typing import Optional
 
 import config
 from dependencies import get_current_user, require_admin
@@ -14,6 +15,7 @@ from services.compare_service import (
     save_rules,
     classify_changes,
 )
+from services.document_extractor import extract_document
 
 router = APIRouter(prefix="/compare", tags=["compare"])
 
@@ -121,3 +123,67 @@ async def api_compare_ai_classify(
         )
 
     return {"classifications": classifications}
+
+
+# ══════════════════════════════════════════
+# 유사도 모드 — 문서 추출 (듀얼 포맷)
+# ══════════════════════════════════════════
+
+@router.post("/extract-document")
+async def api_extract_document(
+    file: Optional[UploadFile] = File(None),
+    text: Optional[str] = Form(None),
+    user: dict = Depends(get_current_user),
+):
+    """문서 추출 → 듀얼 포맷 (MD + plain text) 반환
+
+    입력: 파일 업로드 또는 텍스트 붙여넣기 (둘 중 하나)
+    스캔 PDF는 OCR 자동 폴백.
+    """
+    if file is None and text is None:
+        raise HTTPException(status_code=400, detail="파일 또는 텍스트를 입력하세요")
+
+    if file is not None and text is not None:
+        raise HTTPException(status_code=400, detail="파일과 텍스트 중 하나만 입력하세요")
+
+    if text is not None:
+        result = extract_document(text=text)
+        return {
+            "filename": "(텍스트 붙여넣기)",
+            "markdown": result["markdown"],
+            "plain_text": result["plain_text"],
+            "page_count": result["page_count"],
+            "is_scanned": result["is_scanned"],
+        }
+
+    # 파일 업로드
+    filename = file.filename or ""
+    ext = os.path.splitext(filename)[1].lower()
+
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"지원하지 않는 형식입니다. 허용: {', '.join(ALLOWED_EXTENSIONS)}",
+        )
+
+    contents = await file.read()
+
+    if len(contents) > MAX_FILE_SIZE:
+        size_mb = len(contents) / 1024 / 1024
+        raise HTTPException(
+            status_code=400,
+            detail=f"파일 크기 초과: {size_mb:.1f}MB (최대 50MB)",
+        )
+
+    try:
+        result = extract_document(file_bytes=contents, ext=ext)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"문서 추출 실패: {e}")
+
+    return {
+        "filename": filename,
+        "markdown": result["markdown"],
+        "plain_text": result["plain_text"],
+        "page_count": result["page_count"],
+        "is_scanned": result["is_scanned"],
+    }
