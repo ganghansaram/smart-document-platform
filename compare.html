@@ -3747,17 +3747,17 @@
 
                             // 용어 일관성 그룹 편집 패널
                             if (ruleId === 'inconsistent_terms') {
-                                var groups = (rule.params && rule.params.groups) || [];
+                                var termGroups = (rule.params && rule.params.groups) || [];
                                 html += '<div class="vd-terms-panel" data-terms-for="inconsistent_terms">';
                                 html += '<div class="vd-terms-list">';
-                                if (groups.length === 0) {
+                                if (termGroups.length === 0) {
                                     html += '<div class="vd-terms-empty">등록된 용어 그룹이 없습니다</div>';
                                 } else {
-                                    for (var gi2 = 0; gi2 < groups.length; gi2++) {
+                                    for (var gi2 = 0; gi2 < termGroups.length; gi2++) {
                                         html += '<div class="vd-term-row" data-group-index="' + gi2 + '">'
                                             + '<div class="vd-group-tags">';
-                                        for (var gti = 0; gti < groups[gi2].length; gti++) {
-                                            html += '<span class="vd-group-tag">' + escapeHTML(groups[gi2][gti]) + '</span>';
+                                        for (var gti = 0; gti < termGroups[gi2].length; gti++) {
+                                            html += '<span class="vd-group-tag">' + escapeHTML(termGroups[gi2][gti]) + '</span>';
                                         }
                                         html += '</div>'
                                             + '<button class="vd-term-remove" data-remove-group="' + gi2 + '" title="삭제">&times;</button>'
