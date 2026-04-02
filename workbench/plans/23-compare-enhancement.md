@@ -2,7 +2,7 @@
 
 > **작성일**: 2026-04-01
 > **최종 갱신**: 2026-04-02
-> **상태**: Phase 1 진행 중 (Step 1~5 완료, Step 6~9 잔여)
+> **상태**: Phase 1 진행 중 (1a~1e+1R 완료, 1f 임베딩 인프라 전환 착수 대기)
 > **관련**: `compare.html` (→ 향후 `verify.html`), `backend/api/compare.py`, `backend/services/compare_service.py`
 > **선행 문서**: `docs/11-COMPARE-SYSTEM.md`, `docs/research-semantic-comparison.md`
 
@@ -13,7 +13,7 @@
 | Phase | 설명 | 태스크 | 완료 | 상태 |
 |:-----:|------|:------:|:----:|:----:|
 | 0 | 모드 선택 허브 + 이탈 방지 | 7 | 7 | ✅ 완료 |
-| 1 | 유사도 검사 (핵심) | 9 | 5 | 🔵 진행 중 |
+| 1 | 유사도 검사 (핵심) | 12 | 6 | 🔵 1R 완료, 1f 착수 대기 |
 | 2 | 내보내기 확장 | 미정 | 0 | 대기 |
 | 3 | 규칙 검증 고도화 + 인텔리전스 패널 | 9 | 0 | 대기 |
 | 4 | 세션 관리 + 이력 | 8 | 0 | Step 1: Phase 1 후 착수 |
@@ -190,6 +190,10 @@ Verify 진입 시 **모드 선택 허브**를 먼저 표시:
 
 ### 1.5 파이프라인 아키텍처
 
+> **⚠️ 재설계 예정**: 아래 아키텍처는 MVP(1a~1e) 기준의 단층 임베딩 파이프라인이다.
+> Phase 1R 조사 완료 후, 다층 파이프라인(정확 매칭 → 통계 → 의미)으로 재설계하여 이 섹션을 교체한다.
+> 또한 임베딩 인프라를 Ollama HTTP → 로컬 sentence-transformers로 전환한다.
+
 > 업계 표준은 2단계(Source Retrieval → Detailed Analysis)이나, **1:1 비교에서는 Stage 1이 불필요**하므로 정밀 비교만 수행한다. 향후 1:N 확장 시 Stage 1을 앞에 추가하면 된다.
 
 ```
@@ -356,6 +360,8 @@ threshold_medium: 0.70 (선택)
 
 ### 1.10 기술 구현
 
+> **⚠️ 재설계 예정**: Phase 1R 조사 후 다층 파이프라인 반영하여 갱신.
+
 - **문장 분리**: 한국어 kss, 영어 nltk.sent_tokenize (또는 정규식 폴백)
 - **규격 번호 매칭**: 정규식 패턴 (`MIL-STD-\d+`, `AS\d+`, `EN\s?\d+`, `KS\s?\w+` 등)
   - `js/config.js`에 이미 정의 예정 (backlog: 규격 번호 자동 링크)
@@ -422,13 +428,16 @@ threshold_medium: 0.70 (선택)
 
 ### 1.13 설계 결정
 
-- **듀얼 포맷** — 표시(MD 웹뷰)와 연산(plain text)을 분리. 업계 표준 패턴.
-- **유사도 모드 우선** — OCR + 듀얼 포맷을 유사도에서 먼저 구현/검증. 비교/검증 확장은 검증 후.
-- **공통 함수 설계** — OCR/추출 로직을 공통 함수로 구현하여 향후 비교/검증에서도 호출 가능하게.
-- **세션 휘발성 유지** — 참조 원문도 매번 업로드. Verify의 무상태 원칙 유지.
-- **임베딩 캐시 없음 (초기)** — 문서 크기가 수백 문장 수준이면 실시간 계산 충분.
-- **하이브리드 접근** — embedding 단독이 아닌, 규격 번호 exact match와 결합. 기술문서 도메인에 최적.
-- **파일럿 임계값 튜닝** — MVP 후 실제 문서 50~100쌍으로 ROC 곡선 그려 최적화.
+> **⚠️ 일부 재설계 예정**: Phase 1R 조사 후 임베딩 인프라·파이프라인 관련 결정을 갱신한다.
+
+- **듀얼 포맷** — 표시(MD 웹뷰)와 연산(plain text)을 분리. 업계 표준 패턴. ← 유지
+- **유사도 모드 우선** — OCR + 듀얼 포맷을 유사도에서 먼저 구현/검증. ← 유지
+- **공통 함수 설계** — OCR/추출 로직을 공통 함수로 구현. ← 유지
+- **세션 휘발성 유지** — 참조 원문도 매번 업로드. ← 유지
+- ~~**임베딩 캐시 없음 (초기)**~~ — 다층 파이프라인에서 Layer 1이 fast-reject하므로 재검토
+- ~~**하이브리드 접근 (규격 번호 + embedding)**~~ — 다층 파이프라인으로 확장 (Layer 1 정확 매칭 + Layer 2 통계 + Layer 3 의미)
+- **파일럿 임계값 튜닝** — 다층 파이프라인 완성 후 수행. ← 유지, 시점 조정
+- **임베딩 인프라 전환** — Ollama HTTP → 로컬 sentence-transformers (Phase 1R-b에서 설계)
 
 ### 1.14 구현 순서
 
@@ -439,10 +448,369 @@ threshold_medium: 0.70 (선택)
 | 1c | 백엔드: 문장 분리 + 규격 번호 매칭 + bge-m3 임베딩 | 중 | ✅ |
 | 1d | 백엔드: 정밀 비교 파이프라인 (유사도 행렬 → 정렬 → 구간 병합) + API | 상 | ✅ |
 | 1e | 프론트: 유사도 모드 좌/우 패널 UI (MD 웹뷰 + 파일 업로드 + 텍스트 붙여넣기) + 사이드바 결과 | 중 | ✅ |
-| 1f | 프론트: 유사 구간 하이라이트 + 매칭 클릭 네비게이션 + 에러 핸들링 | 중 | ← 다음 |
-| 1g | 프론트: 보조 도구 (유사율 게이지 시각화, 네비게이션, 필터, 미니맵) | 중 | — |
-| 1h | 설정: 임계값 + OCR config + 관리자 설정 UI | 하 | — |
-| 1i | 파일럿: 실제 스캔 문서로 OCR 품질 + 테이블 정확도 + 임계값 튜닝 | 하 | — |
+| 1R | **조사·설계 (아래 Phase 1R 섹션)** | — | ✅ 완료 |
+| 1f | 백엔드: 임베딩 인프라 전환 (Ollama → 로컬 sentence-transformers) | 중 | ← 다음 |
+| 1g | 백엔드: 다층 파이프라인 (Winnowing L1 + Semantic L3 + 정형구문 필터 + 분류) | 상 | — |
+| 1h | 프론트: UI 전면 개편 (6종 하이라이트 + 사이드바 카드 + 통계 대시보드) | 상 | — |
+| 1i | 프론트: 보조 도구 (필터, 미니맵, 게이지, 이전/다음 네비게이션) | 중 | — |
+| 1j | 설정: 임계값 + 허용 목록 관리 + 관리자 UI | 하 | — |
+| 1k | 파일럿: 실제 문서 검증 + 임계값 튜닝 + 성능 벤치마크 | 하 | — |
+
+### Phase 1R: 표절 검사 파이프라인 조사·재설계
+
+> 1a~1e에서 구현한 MVP(임베딩 단층 파이프라인)를 운영하면서 발견된 구조적 문제를 해결한다.
+> 구현 전 업계 표준을 심층 조사하고, 조사 결과를 바탕으로 파이프라인·인프라·UI를 재설계한다.
+
+#### 발견된 문제
+
+| # | 문제 | 영향 |
+|---|------|------|
+| P1 | **단층 파이프라인** — 의미 임베딩(Layer 3)만 존재, 정확 매칭(Layer 1)/통계 매칭(Layer 2) 없음 | 확실한 복사도 비싼 연산으로 판별, "동일" vs "유사" 구분 불가 |
+| P2 | **Ollama 임베딩 의존** — 임베딩을 Ollama HTTP API로 수행 (업계 비표준) | 콜드 스타트 502, BATCH_SIZE=2 제약, 5~20배 성능 저하, 단일 장애점 |
+| P3 | **결과 표현 미설계** — 매칭 유형(동일/패러프레이즈/용어 일치)별 시각 구분 없음 | 사용자가 "왜 유사한지" 판단 불가 |
+
+#### 1R-a: 업계 표준 심층 조사 ✅ 완료
+
+> 조사 수행일: 2026-04-02. 7개 항목 병렬 조사 완료.
+
+**R1 결과 — Layer 1 정확/근사 매칭**:
+
+| 기법 | 1:1 적합도 | 위치 추적 | 구현 난이도 | 채택 |
+|------|:---------:|:--------:|:---------:|:----:|
+| **Winnowing** (Rabin-Karp rolling hash) | 최적 | O | 낮음 | ✅ |
+| MinHash LSH | 과잉 (대규모 코퍼스용) | X | 중간 | ❌ |
+| N-gram Jaccard | 보조 지표 | X | 낮음 | ⚠️ 보조 |
+
+- **채택**: Winnowing + Rabin-Karp. 파라미터: character k=25, window w=4
+- **도메인 보정**: 정형 구문 stop-fingerprint 세트 구축 (200~300개) → 매칭에서 제외
+- 시간복잡도 O(n), 공간 O(n/w). 1:1에서는 직접 비교가 LSH보다 빠름
+
+**R2 결과 — Layer 2 통계적 유사도**:
+
+- TF-IDF+Cosine: 기술 스펙에서 도메인 용어 빈도 편향 심함, 보정 비용 대비 효과 낮음
+- BM25: 문장 수준에서 TF-IDF 대비 이점 없음
+- **결론: Layer 2 생략**. L1(정확) → L3(의미) 직행. 업계 최신 시스템도 이 패턴 (Layer 2는 dead zone)
+
+**R3 결과 — 임베딩 인프라**:
+
+| 방식 | 배치 성능 (100문장) | 안정성 | 폐쇄망 적합 |
+|------|:-----------------:|:------:|:----------:|
+| Ollama HTTP (현재, BATCH=2) | ~2-5 sent/sec | 낮음 (502, 콜드스타트) | △ |
+| **로컬 sentence-transformers** | ~30-80 (CPU) / ~500-2000 (GPU) | 높음 (인프로세스) | ◎ |
+| HF TEI | 고성능 | 중간 (별도 서버) | ○ |
+
+- **채택**: 로컬 sentence-transformers (`SentenceTransformer('BAAI/bge-m3')`)
+- 이미 reranker에서 sentence-transformers 설치됨, 추가 의존성 없음
+- 싱글턴 lazy 로딩, CUDA 자동 감지, `EMBEDDING_BACKEND` config 토글로 Ollama 폴백 유지
+- BATCH_SIZE: 2 → 64. 벡터 인덱스/RAG/유사도 전부 자동 개선
+
+**R4 결과 — 파이프라인 조합**:
+
+- **업계 주류**: Sequential filtering + Fast-accept/Fast-reject (Turnitin, Copyleaks 패턴)
+- L1 score >0.85 → **즉시 "Identical" 확정** (L3 스킵) — fast-accept
+- L1 score <0.05 → **L3만 실행** (패러프레이즈 후보) — L2 스킵
+- L1 0.05~0.85 → L3 실행, L1 점수를 사전 정보로 활용
+- **성능 이점**: fast-accept/reject로 L3 호출량 70~85% 감소 (250K쌍 → 40~75K)
+
+**R5 결과 — 분류 체계**:
+
+| 분류 | 코드 | 검출 Layer | 심각도 | 정의 |
+|------|------|-----------|:------:|------|
+| **동일** | `identical` | L1 fingerprint >0.85 | Critical | 원문 그대로 또는 1~2단어 변경 |
+| **수정 복사** | `near-copy` | L1(0.4~0.85) + L3 보강 | High | 단어 치환/재배열, 구조 유지 |
+| **의역** | `paraphrase` | L1 <0.15, L3 >0.88 | Medium | 의미 동일, 표현 상이 |
+| **번역 매칭** | `translation` | L3 >0.82 + 언어 상이 | Medium | 크로스링구얼 의미 일치 |
+| **낮은 유사** | `low-sim` | L3 0.65~0.80 | Low | 관련 가능성, 검토 필요 |
+| **정형 구문** | `boilerplate` | 허용 목록 매칭 | None | 도메인 표준 문구 ("shall comply with" 등) |
+
+**R6 결과 — UI 표현**:
+
+- **색상 체계**: 동일=`--color-error`(빨강), 수정복사=`--color-warning`(주황), 의역=새 토큰 `--color-match-paraphrase`(보라 #7c3aed/#a78bfa), 참조/낮은유사=`--color-info`(파랑), 정형구문=회색
+- **본문 하이라이트**: 배경색 20% 불투명도, 호버 시 40%. (비교 모드의 취소선+삽입 패턴과 시각적으로 구분)
+- **사이드바 카드**: 유형 배지 + 유사도 % + 발췌 + 위치(대상 p.X / 참조 p.Y) + 확장/축소
+- **통계**: 큰 숫자(%) + 얇은 도넛/아크 게이지 + 수평 누적 바(유형별 비율)
+- **필터**: 유형별 on/off 토글, 심각도 범위 슬라이더
+
+**R7 결과 — 도메인 특수성**:
+
+| 이슈 | 대응 |
+|------|------|
+| 정형 구문 (15~25% 차지) | 200~300개 허용 목록, 표시는 하되 점수에서 제외, 회색 |
+| 규격 번호 밀도 | 번호 마스킹 후 재비교: 유사도 40% 이상이면 실질 매칭, 미만이면 "공유 참조" |
+| 테이블/목록 | 테이블은 행 단위 비교, 번호 목록은 번호 제거 후 비교 |
+| 정당한 유사 vs 우려 유사 | 3-tier: 정형구문(제외) / 파생(표시, 별도 집계) / 실질 매칭(주 점수) |
+| 전처리 | 머리말·꼬리말·목차·약어표·용어집 제거, 부록(분석 내용) 포함, 분류표시 제거 |
+
+**점수 산출 구조**:
+```
+원시 유사도
+  - 정형 구문 (Tier 1) 제외
+  - 공유 참조 전용 매칭 제외
+  = 조정 유사도
+    ├─ 파생 콘텐츠 (Tier 2) — 별도 표시
+    └─ 실질 매칭 (Tier 3) — 핵심 지표
+```
+
+---
+
+#### 1R-b: 파이프라인 재설계 (조사 기반 확정)
+
+##### D1. 다층 파이프라인 아키텍처
+
+```
+[대상 문서] → 전처리 → 문장 분리 ─┐
+                                    │
+[참조 원문] → 전처리 → 문장 분리 ─┤
+                                    ▼
+                    ┌─ 정형 구문 필터 (허용 목록) ──┐
+                    │  매칭 → boilerplate 분류       │
+                    │  비매칭 → Layer 1로 전달       │
+                    └────────────────────────────────┘
+                                    │
+                    ┌─ Layer 1: Winnowing ───────────┐
+                    │  character k-gram fingerprint   │
+                    │  Jaccard/Containment 산출       │
+                    │                                 │
+                    │  >0.85 → "동일" (fast-accept)  │
+                    │  <0.05 → Layer 3 직행           │
+                    │  0.05~0.85 → Layer 3 + L1 사전정보 │
+                    └─────────────────────────────────┘
+                                    │
+                    ┌─ Layer 3: Semantic Embedding ───┐
+                    │  bge-m3 로컬 (sentence-transformers) │
+                    │  코사인 유사도 행렬                │
+                    │  L1 점수와 결합하여 최종 분류     │
+                    │                                    │
+                    │  L1 high + L3 high → near-copy     │
+                    │  L1 low + L3 high → paraphrase     │
+                    │  L3 >0.82 + 언어 상이 → translation │
+                    │  L3 0.65~0.80 → low-sim            │
+                    │  L3 <0.65 → no match               │
+                    └────────────────────────────────────┘
+                                    │
+                    ┌─ 후처리 ──────────────────────────┐
+                    │  규격 번호 마스킹 재비교           │
+                    │  인접 구간 병합 (gap tolerance 1~2) │
+                    │  3-tier 점수 산출                   │
+                    └────────────────────────────────────┘
+                                    │
+                                    ▼
+                    결과 JSON (분류별 매칭 + 통계 + 위치)
+```
+
+**Layer 2(통계) 생략 근거**: L1이 정확 매칭을, L3이 의미 매칭을 각각 커버하므로, 그 사이의 통계적 유사도는 추가 가치가 낮다. 구현 복잡도 대비 검출력 향상이 미미하며, 업계 최신 시스템도 L1→L3 직행 패턴을 채택하고 있다.
+
+##### D2. 임베딩 인프라 전환 설계
+
+**변경 파일**: `embedding_client.py` 1개 (내부 구현만 변경, API 유지)
+
+```python
+# 핵심 구조 (상세 구현은 구현 단계에서)
+_model = None  # 싱글턴
+
+def _load_model():
+    # lazy 로딩, CUDA 자동 감지
+    # config.EMBEDDING_LOCAL_MODEL 경로에서 로드
+    # TRANSFORMERS_OFFLINE=1 설정
+
+def get_embeddings(texts):
+    if config.EMBEDDING_BACKEND == "local":
+        return _local_encode(texts)   # batch_size=64, normalize=True
+    return _ollama_encode(texts)       # 기존 HTTP 경로 유지
+```
+
+**모델 파일**: `models/bge-m3/` (~570MB), 사전 다운로드 후 배치
+**config 추가**: `EMBEDDING_LOCAL_MODEL`, `EMBEDDING_BACKEND` ("local"/"ollama"), `EMBEDDING_BATCH_SIZE` (64)
+**영향**: `vector_search.py`, `similarity_engine.py`, `build-vector-index.py` — 변경 없음 (동일 `get_embeddings` API)
+
+##### D3. 결과 데이터 구조 (API 응답)
+
+```json
+{
+  "summary": {
+    "total_sentences": 120,
+    "raw_similarity": 72.5,
+    "adjusted_similarity": 52.3,
+    "breakdown": {
+      "identical": { "count": 5, "percentage": 4.2 },
+      "near_copy": { "count": 8, "percentage": 6.7 },
+      "paraphrase": { "count": 12, "percentage": 10.0 },
+      "translation": { "count": 0, "percentage": 0.0 },
+      "low_sim": { "count": 7, "percentage": 5.8 },
+      "boilerplate": { "count": 15, "percentage": 12.5 }
+    },
+    "tiers": {
+      "substantive": 20.9,
+      "derived": 12.5,
+      "boilerplate": 12.5
+    }
+  },
+  "matches": [
+    {
+      "id": 1,
+      "type": "identical",
+      "severity": "critical",
+      "target_idx": 3, "target_idx_end": 3,
+      "target_text": "The shielding effectiveness shall exceed 40dB",
+      "ref_idx": 42, "ref_idx_end": 42,
+      "ref_text": "The shielding effectiveness shall exceed 40dB",
+      "scores": {
+        "fingerprint": 0.97,
+        "semantic": null
+      },
+      "detection_layer": "L1"
+    },
+    {
+      "id": 2,
+      "type": "paraphrase",
+      "severity": "medium",
+      "target_idx": 15, "target_idx_end": 16,
+      "target_text": "Environmental testing must follow the procedures outlined in the referenced standard",
+      "ref_idx": 8, "ref_idx_end": 8,
+      "ref_text": "Tests shall be conducted in accordance with the methods specified herein",
+      "scores": {
+        "fingerprint": 0.08,
+        "semantic": 0.91
+      },
+      "detection_layer": "L3"
+    }
+  ],
+  "target_sentences": [...],
+  "reference_sentences": [...]
+}
+```
+
+##### D4. 영향 범위
+
+| 파일 | 변경 | 영향 |
+|------|------|------|
+| `embedding_client.py` | 내부 구현 전환 (API 유지) | Explorer RAG, 벡터 인덱스 빌드 자동 개선 |
+| `similarity_engine.py` | 다층 파이프라인으로 재구성 | 핵심 변경 |
+| `compare.py` | 응답 스키마 변경 | API 호환성 주의 |
+| `compare.html` | 프론트 결과 파싱 + UI 전면 개편 | 대규모 변경 |
+| `compare.css` | 매칭 유형별 색상 + 사이드바 카드 | 토큰 추가 |
+| `tokens.css` | `--color-match-paraphrase` 등 신규 토큰 | 소규모 |
+| `config.py` | 임베딩/유사도 설정 변수 등록 | 소규모 |
+
+##### D5. 성능 목표
+
+| 시나리오 | 목표 | 비고 |
+|---------|------|------|
+| 100문장 × 100문장 (일반) | **5초 이내** | L1 fast-accept로 L3 호출 70% 감소 |
+| 500문장 × 500문장 (대형) | **30초 이내** | GPU 기준 |
+| 메모리 | **+2GB 이내** (모델 상주) | CPU: RAM, GPU: VRAM |
+| 동시 요청 | **3건** | FastAPI 스레드풀 기본값 |
+
+---
+
+#### 1R-c: UI 표현 설계 (조사 기반 확정)
+
+##### U1. 매칭 유형별 시각 구분
+
+| 유형 | 코드 | 색상 토큰 | 배지 라벨 | 배경 불투명도 |
+|------|------|----------|----------|:----------:|
+| 동일 | `identical` | `--color-error` (빨강) | Identical | 20% / 40% hover |
+| 수정 복사 | `near-copy` | `--color-warning` (주황) | Modified | 20% / 40% hover |
+| 의역 | `paraphrase` | `--color-match-paraphrase` (보라, 신규) | Paraphrase | 20% / 40% hover |
+| 번역 매칭 | `translation` | `--color-match-paraphrase` (보라) | Translation | 20% / 40% hover |
+| 낮은 유사 | `low-sim` | `--color-info` (파랑) | Low Sim | 15% / 30% hover |
+| 정형 구문 | `boilerplate` | `--text-muted` (회색) | Standard | 10%, 기본 접힘 |
+
+> 비교 모드(Comparison)와의 구분: 비교 모드는 초록/빨강 + 취소선(diff 패턴), 유사도 모드는 심각도별 배경 하이라이트(표절 검사 패턴). 시각적으로 즉시 구분 가능.
+
+신규 토큰 (`tokens.css` 추가):
+```css
+--color-match-paraphrase: #7c3aed;       /* light */
+--color-match-paraphrase-dark: #a78bfa;  /* dark */
+```
+
+##### U2. 사이드바 매칭 카드
+
+```
+┌─ Match Card ─────────────────────────┐
+│ [#1] ● Identical              94%    │  ← 좌측 컬러 보더 + 유형 배지 + 점수
+│ "The shielding effectiveness..."     │  ← 대상 문장 발췌 (2줄 truncate)
+│ → "The shielding effectiveness..."   │  ← 참조 문장 발췌
+│ 대상 ¶12  ↔  참조 ¶8   [L1]         │  ← 위치 + 검출 Layer
+│ ▸ 상세 보기                          │  ← 확장: 전문 + 점수 상세
+└──────────────────────────────────────┘
+```
+
+- 심각도순 정렬 (Identical → Modified → Paraphrase → Low)
+- 활성 카드: `--active-color` 좌측 보더
+- 클릭 → 양쪽 패널 동기 스크롤 + 하이라이트 강조 flash (0.5초)
+
+##### U3. 통계 대시보드 (사이드바 상단)
+
+```
+┌─ 유사도 요약 ────────────────────────┐
+│        ┌───┐                         │
+│        │52%│  ← 조정 유사도 (큰 숫자) │
+│        └───┘                         │
+│  ■■■■■■■░░░░░░░░  3-tier 누적 바     │
+│  실질 20.9% | 파생 12.5% | 정형 12.5% │
+│                                       │
+│  ● 5 동일  ● 8 수정  ● 12 의역       │
+│  총 120문장 중 25건 매칭              │
+└──────────────────────────────────────┘
+```
+
+##### U4. 하이라이트 + 네비게이션
+
+- 양쪽 패널 본문에 `<mark class="sim-hl sim-hl-{type}">` 래핑
+- `data-match-id`로 사이드바↔본문 연결
+- ◀▶ 이전/다음 매칭 버튼 (툴바, 기존 비교 모드 패턴)
+- 미니맵에 유형별 컬러 마커
+
+##### U5. 필터링
+
+- 유형별 토글: `[Identical ✓] [Modified ✓] [Paraphrase ✓] [Low ○] [Boilerplate ○]`
+- 기본: Identical + Modified + Paraphrase ON, Low + Boilerplate OFF
+- 필터 변경 시 사이드바 + 본문 하이라이트 동시 업데이트
+
+---
+
+#### 1R-d: 구현 단계 확정
+
+##### S1. 구현 순서
+
+| # | 단계 | 선행 조건 | 검증 기준 |
+|---|------|----------|----------|
+| **1f** | 임베딩 인프라 전환 (`embedding_client.py`) | 모델 파일 배치 (`models/bge-m3/`) | `get_embeddings()` 동일 결과 + 10배 이상 성능 개선 |
+| **1g-1** | 다층 파이프라인 백엔드 (`similarity_engine.py` 재구성) | 1f 완료 | API 응답 스키마 검증 + L1 fast-accept 동작 확인 |
+| **1g-2** | 정형 구문 허용 목록 + 규격 번호 마스킹 | 1g-1 완료 | boilerplate 분류 + 점수 제외 동작 확인 |
+| **1h** | 프론트 UI 전면 개편 (하이라이트 + 사이드바 카드 + 통계) | 1g 완료 | 6종 매칭 유형 시각 구분 + 클릭 네비게이션 |
+| **1i** | 보조 도구 (필터, 미니맵, 게이지, 이전/다음) | 1h 완료 | 필터 동작 + 미니맵 마커 |
+| **1j** | 설정: 임계값 + 허용 목록 관리 + 관리자 UI | 1h 완료 | 설정 변경 → 재검사 반영 |
+| **1k** | 파일럿: 실제 문서 검증 + 임계값 튜닝 + 성능 벤치마크 | 1j 완료 | 목표 성능 달성 + 오탐/미탐 허용 범위 |
+
+##### S2. 영향 범위 (변경 파일)
+
+| 파일 | 단계 | 변경 유형 |
+|------|------|----------|
+| `backend/services/embedding_client.py` | 1f | 내부 구현 전환 |
+| `backend/config.py` | 1f | 설정 변수 추가 |
+| `backend/services/similarity_engine.py` | 1g | 전면 재구성 |
+| `backend/api/compare.py` | 1g | 응답 스키마 변경 |
+| `data/boilerplate-phrases.json` | 1g-2 | 신규 (허용 목록) |
+| `css/tokens.css` | 1h | 토큰 추가 |
+| `css/compare.css` | 1h | 스타일 추가 |
+| `compare.html` | 1h~1i | UI 전면 개편 |
+
+##### S3. 롤백 전략
+
+- `EMBEDDING_BACKEND` config 토글: `"local"` ↔ `"ollama"` 전환 가능
+- 자동 폴백은 하지 않음 (무음 성능 저하 방지). 실패 시 명시적 에러 + 관리자 수동 전환
+- 파이프라인은 기존 `similarity_engine.py`를 `similarity_engine_v1.py`로 백업 후 진행
+
+##### S4. 검증 기준
+
+| 단계 | 검증 항목 |
+|------|----------|
+| 1f | `get_embeddings([100문장])` — Ollama 대비 10배+ 빠른가? 동일 벡터(코사인 >0.99)인가? |
+| 1g | 알려진 복사 문서 → "동일" 검출, 패러프레이즈 문서 → "의역" 검출, 무관 문서 → <10% 유사 |
+| 1h | Playwright 스크린샷: 6종 유형 색상 구분, 클릭 네비게이션, 통계 대시보드 |
+| 1k | 실 문서 5~10쌍: 오탐률 <15%, 미탐률 <10%, 100×100 응답 <5초 |
 
 > **구현 완료 파일**: `document_extractor.py` (추출 공통), `similarity_engine.py` (비교 엔진), `compare.py` (API 2개 추가: `/extract-document`, `/similarity`), `compare.html` (유사도 UI), `compare.css` (유사도 스타일)
 > **현재 상태 (2026-04-02)**: 1a~1e 완료. 유사도 검사 실행 → 사이드바에 매칭 목록 표시까지 동작함. 단, 패널 본문에 유사 구간 하이라이트 없음 (주석: "Step 4에서 하이라이트 추가"), 사이드바 항목 클릭 네비게이션 미구현, 미니맵에 유사도 마커 미연동.
@@ -465,12 +833,25 @@ threshold_medium: 0.70 (선택)
 | 허브 최근 작업 이력 (localStorage, 최대 10건 텍스트 표시) | 미커밋 | ✅ |
 | 계획서: 주 시나리오 영:영 반영, Phase 3 인텔리전스 패널 설계, Phase 4 이력+재열람 3단계 | `ee32122`, `9517795` | ✅ |
 
+### 완료 (2026-04-02 세션 2)
+
+| 항목 | 커밋 | 상태 |
+|------|------|:----:|
+| 미커밋 항목 통합 커밋 (규칙 프리셋 기본값 조정) | `e438420` | ✅ |
+| 검증 모드 톱니바퀴(⚙) 버튼 미표시 버그 — `buildBody()` 변수 섀도잉 수정 (`groups` → `termGroups`) | `851383a` | ✅ |
+| sentence_length 기본값 상향 (80→120자 기술, 100→150자 일반) | `1e1b720` | ✅ |
+
 ### 다음 세션 TODO
 
-1. **미커밋 항목 통합 커밋** — 규칙 모달 저장, 점수 산출, 이력 섹션 (compare.html + compare.css + compare_service.py)
-2. **검증 모드 톱니바퀴(⚙) 버튼 표시 확인** — 현재 패널 A 헤더 `#cp-toolbar-slot` 안에 있음. 검증 모드 진입 + 파일 업로드 후에도 안 보이면 CSS 디버깅 필요
-3. **sentence_length 기본값 검토** — 현재 80자, 영문 스펙 기준 120~150자가 적정. 기본값 상향 검토
-4. **Phase 1f 착수** — 유사 구간 하이라이트 + 클릭 네비게이션 (본격 개발)
+1. **Phase 1f 착수** — 임베딩 인프라 전환 (`embedding_client.py` → 로컬 sentence-transformers)
+   - 모델 파일 배치 (`models/bge-m3/`)
+   - `config.py` 설정 추가 (`EMBEDDING_BACKEND`, `EMBEDDING_LOCAL_MODEL`, `EMBEDDING_BATCH_SIZE`)
+   - `embedding_client.py` 싱글턴 구현 + Ollama 폴백 토글
+   - 검증: 기존 대비 동일 벡터 + 10배 성능
+2. **Phase 1g 착수** — 다층 파이프라인 (`similarity_engine.py` 재구성)
+   - Winnowing (L1) + Semantic (L3) + 정형구문 필터 + 6종 분류
+   - `boilerplate-phrases.json` 허용 목록 초기 구축
+   - API 응답 스키마 변경
 
 ---
 
@@ -775,7 +1156,13 @@ library/
 ```
 Phase 0 (모드 선택 허브) ✅ 완료
     ↓
-Phase 1 (유사도 검사)    ← 진행 중 (하이라이트/보조도구/설정 잔여)
+Phase 1 (유사도 검사)
+    ├─ 1a~1e ✅ 완료 (MVP 단층 파이프라인)
+    ├─ 1R ✅ 완료 (업계 표준 조사 + 다층 파이프라인 설계 + UI 설계)
+    ├─ 1f ← 다음 (임베딩 인프라 전환: Ollama → 로컬)
+    ├─ 1g (다층 파이프라인: Winnowing L1 + Semantic L3 + 분류)
+    ├─ 1h~1i (프론트 UI + 보조 도구)
+    └─ 1j~1k (설정 + 파일럿 검증)
     ↓
 Phase 4 Step 1 (이력 텍스트) ← Phase 1 완료 직후, 허브 개선
     ↓
