@@ -19,8 +19,11 @@ LLM_API_KEY = ""                  # API 키 (필요 시)
 LLM_MODEL_ID = ""                 # 엔드포인트의 모델 ID
 
 # 임베딩 설정
-EMBEDDING_MODEL = "bge-m3"  # Ollama 임베딩 모델
+EMBEDDING_BACKEND = "local"  # "local" (sentence-transformers) | "ollama" (HTTP API)
+EMBEDDING_LOCAL_MODEL = str(Path(__file__).parent.parent / "models" / "bge-m3")
+EMBEDDING_MODEL = "bge-m3"  # Ollama 임베딩 모델 (EMBEDDING_BACKEND="ollama" 시 사용)
 EMBEDDING_DIMENSION = 1024  # bge-m3 출력 차원
+EMBEDDING_BATCH_SIZE = 64   # 로컬 추론 배치 크기
 
 # 검색 설정
 SEARCH_INDEX_PATH = "../data/search-index.json"

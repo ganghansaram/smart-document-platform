@@ -807,7 +807,7 @@
                     return;
                 }
                 if (sidebarOpen) {
-                    compareMain.style.gridTemplateColumns = '1fr var(--panel-gap) 360px';
+                    compareMain.style.gridTemplateColumns = '1fr var(--panel-gap) ' + sidebarWidth + 'px';
                     resizeHandle.style.display = '';
                 } else {
                     compareMain.style.gridTemplateColumns = '1fr 0 0';
@@ -1517,10 +1517,16 @@
             simCheckBtn.addEventListener('click', function() {
                 if (!simState.a.loaded || !simState.b.loaded) return;
                 simCheckBtn.disabled = true;
-                simCheckBtn.textContent = '분석 중...';
+                if (simFooterBtn) simFooterBtn.disabled = true;
 
                 var hint = document.getElementById('toolbar-hint');
                 hint.textContent = '유사도 분석 중...';
+
+                // 사이드바에 로딩 스피너 표시
+                var sidebarBody = document.getElementById('cp-sidebar-body');
+                sidebarBody.innerHTML = '<div class="vd-loading">'
+                    + '<div class="spinner cp-upload-spinner"></div>'
+                    + '<span>유사도 분석 중...</span></div>';
 
                 fetch(API_BASE + '/compare/similarity', {
                     method: 'POST',
@@ -1545,6 +1551,7 @@
                 })
                 .finally(function() {
                     simCheckBtn.disabled = false;
+                    if (simFooterBtn) simFooterBtn.disabled = false;
                     simCheckBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> 유사도 검사';
                 });
             });
