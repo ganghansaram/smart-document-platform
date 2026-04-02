@@ -1556,40 +1556,71 @@
                 });
             });
 
+            // 매칭 유형 → UI 매핑
+            var SIM_TYPE_MAP = {
+                identical:  { label: 'Identical',  badge: 'badge-error',   color: 'var(--color-error)' },
+                near_copy:  { label: 'Modified',   badge: 'badge-warning', color: 'var(--color-warning)' },
+                paraphrase: { label: 'Paraphrase', badge: 'badge-info',    color: 'var(--color-info)' },
+                translation:{ label: 'Translation',badge: 'badge-info',    color: 'var(--color-info)' },
+                low_sim:    { label: 'Low Sim',    badge: 'badge-info',    color: 'var(--text-muted)' },
+                boilerplate:{ label: 'Standard',   badge: '',              color: 'var(--text-muted)' }
+            };
+
             function simShowResults(data) {
                 var summary = data.summary;
                 var matches = data.matches;
+                var bd = summary.breakdown || {};
+                var tiers = summary.tiers || {};
                 var hint = document.getElementById('toolbar-hint');
-                hint.textContent = '유사율 ' + summary.similarity_score + '% — ' +
-                    '높은 유사 ' + summary.high_count + '건, 중간 유사 ' + summary.medium_count + '건';
 
-                // 사이드바에 매칭 목록 표시
+                // 3-tier 요약이 있으면 활용
+                if (tiers.adjusted !== undefined) {
+                    hint.textContent = '유사율 ' + tiers.adjusted + '% (실질 ' + tiers.substantive + '% · 파생 ' + tiers.derived + '%)';
+                } else {
+                    hint.textContent = '유사율 ' + summary.similarity_score + '%';
+                }
+
                 var sidebarBody = document.getElementById('cp-sidebar-body');
                 var html = '<div class="sim-results">';
+
+                // 요약 통계
                 html += '<div class="sim-summary">';
-                html += '<div class="sim-score">' + summary.similarity_score + '%</div>';
-                html += '<div class="sim-stats">전체 ' + summary.total_sentences + '문장 · ';
-                html += '<span style="color:var(--color-error)">높은 ' + summary.high_count + '</span> · ';
-                html += '<span style="color:var(--color-warning)">중간 ' + summary.medium_count + '</span> · ';
-                html += '정상 ' + summary.clean_count + '</div>';
-                html += '</div>';
+                html += '<div class="sim-score">' + (tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score) + '%</div>';
+                html += '<div class="sim-stats">전체 ' + summary.total_sentences + '문장';
+
+                if (bd.identical) {
+                    var types = ['identical', 'near_copy', 'paraphrase', 'low_sim'];
+                    for (var ti = 0; ti < types.length; ti++) {
+                        var t = types[ti];
+                        if (bd[t] && bd[t].count > 0) {
+                            var info = SIM_TYPE_MAP[t] || {};
+                            html += ' · <span style="color:' + (info.color || '') + '">' + (info.label || t) + ' ' + bd[t].count + '</span>';
+                        }
+                    }
+                } else {
+                    // 호환: breakdown 없으면 기존 필드 사용
+                    html += ' · <span style="color:var(--color-error)">높은 ' + summary.high_count + '</span>';
+                    html += ' · <span style="color:var(--color-warning)">중간 ' + summary.medium_count + '</span>';
+                }
+                html += '</div></div>';
 
                 if (matches.length === 0) {
                     html += '<div class="cp-sidebar-empty">유사 구간이 발견되지 않았습니다</div>';
                 } else {
                     for (var i = 0; i < matches.length; i++) {
                         var m = matches[i];
-                        var levelColor = m.level === 'high' ? 'var(--color-error)' : 'var(--color-warning)';
-                        var levelLabel = m.level === 'high' ? '높은 유사' : '중간 유사';
+                        var typeKey = m.type || (m.level === 'high' ? 'identical' : 'paraphrase');
+                        var typeInfo = SIM_TYPE_MAP[typeKey] || SIM_TYPE_MAP.low_sim;
+                        var simPct = m.similarity ? (m.similarity * 100).toFixed(1) : '—';
+
                         html += '<div class="sim-match-item" data-idx="' + i + '">';
                         html += '<div class="sim-match-header">';
-                        var badgeClass = m.level === 'high' ? 'badge-error' : 'badge-warning';
-                        html += '<span class="badge ' + badgeClass + ' sim-match-badge">' + (m.similarity * 100).toFixed(1) + '%</span>';
-                        html += '<span class="sim-match-level">' + levelLabel + '</span>';
-                        if (m.method === 'semantic+term') html += '<span class="sim-match-method">규격 매칭</span>';
+                        html += '<span class="badge ' + typeInfo.badge + ' sim-match-badge">' + simPct + '%</span>';
+                        html += '<span class="sim-match-level">' + typeInfo.label + '</span>';
+                        if (m.detection_layer) html += '<span class="sim-match-method">' + m.detection_layer + '</span>';
                         html += '</div>';
-                        html += '<div class="sim-match-text-a">' + escapeHTML(m.target_text.substring(0, 80)) + (m.target_text.length > 80 ? '...' : '') + '</div>';
-                        html += '<div class="sim-match-text-b">' + escapeHTML(m.ref_text.substring(0, 80)) + (m.ref_text.length > 80 ? '...' : '') + '</div>';
+                        html += '<div class="sim-match-text-a">' + escapeHTML(m.target_text.substring(0, 100)) + (m.target_text.length > 100 ? '...' : '') + '</div>';
+                        html += '<div class="sim-match-text-b">' + escapeHTML(m.ref_text.substring(0, 100)) + (m.ref_text.length > 100 ? '...' : '') + '</div>';
                         html += '</div>';
                     }
                 }
