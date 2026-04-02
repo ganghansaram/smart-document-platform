@@ -3604,7 +3604,7 @@
                 figure_caption: '그림(Figure) 아래에 "그림 N." 형식의 캡션이 없으면 경고합니다.',
                 forbidden_terms: '아래 등록된 금지 용어가 문서에 사용되면 대체어와 함께 표시합니다. 예: "비행기" → "항공기"',
                 inconsistent_terms: '같은 의미의 용어가 문서 내에서 혼용되면 가장 많이 쓰인 용어로 통일을 권장합니다. 예: "서버"와 "Server" 혼용',
-                sentence_length: '설정한 글자 수를 초과하는 문장을 표시합니다. 기술문서는 80자 이내 권장.'
+                sentence_length: '설정한 글자 수를 초과하는 문장을 표시합니다. 기술문서 120자, 일반문서 150자 권장.'
             };
 
             var SEVERITY_LABELS = { error: '오류', warning: '경고', suggestion: '제안' };
@@ -3706,7 +3706,7 @@
                             // 파라미터 표시
                             if (ruleId === 'sentence_length' && rule.params) {
                                 html += '<div class="vd-rule-param">'
-                                    + '최대 <input type="number" class="form-input form-input-sm" data-rule-param="sentence_length.max_chars" value="' + (rule.params.max_chars || 80) + '"> 자'
+                                    + '최대 <input type="number" class="form-input form-input-sm" data-rule-param="sentence_length.max_chars" value="' + (rule.params.max_chars || 120) + '"> 자'
                                     + '</div>';
                             }
 

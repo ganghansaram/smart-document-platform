@@ -345,7 +345,7 @@ def _check_inconsistent_terms(paragraphs, severity, params):
 def _check_sentence_length(paragraphs, severity, params):
     """문장 길이 초과 감지"""
     issues = []
-    max_chars = params.get("max_chars", 80)
+    max_chars = params.get("max_chars", 120)
     sentence_split = re.compile(r"(?<=[.!?。])\s*")
 
     for i, para in enumerate(paragraphs):
