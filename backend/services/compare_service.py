@@ -114,7 +114,14 @@ def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dic
         if sev in summary:
             summary[sev] += 1
 
-    score = max(0, 100 - (summary["error"] * 10 + summary["warning"] * 3 + summary["suggestion"] * 1))
+    # 가중 밀도 방식: 문서 크기에 비례하여 점수 산출
+    # 감점 = error×10 + warning×3 + suggestion×1
+    # 밀도 = 감점 / 단락 수 (단락 0일 때 만점)
+    # 점수 = 100 - 밀도 × 스케일링 계수(10)
+    total_paragraphs = max(len(paragraphs), 1)
+    penalty = summary["error"] * 10 + summary["warning"] * 3 + summary["suggestion"] * 1
+    density = penalty / total_paragraphs
+    score = max(0, round(100 - density * 10))
     return {"score": score, "summary": summary, "issues": issues}
 
 

@@ -449,6 +449,29 @@ threshold_medium: 0.70 (선택)
 > **발견 이슈**: Ollama 콜드 스타트 시 502 → `asyncio.to_thread` + 배치 분할(BATCH_SIZE=2)로 완화. 에러 재시도 로직은 1f에서 추가 예정.
 > **설정**: `config.py`에 `VERIFY_SIMILARITY_*` 변수 미등록 — `similarity_engine.py`가 `getattr(config, ..., DEFAULT)` 폴백으로 동작 중.
 
+### 금일 완료 (2026-04-02) — Phase 1 외 횡단 개선
+
+아래 항목은 Phase 1f 착수 전 GUI 안정화 + UX 개선으로 수행됨.
+
+| 항목 | 커밋 | 상태 |
+|------|------|:----:|
+| CSS 디자인 토큰 통일 (60건+) — 버튼·모달·배지·스피너·shadow·transition 등 | `b4d9692` | ✅ |
+| 모드 전환 시 문서 유실 버그 수정 (`showPlaceholderDOM`, `restoreDocPanels`) | `b4d9692` | ✅ |
+| 모드 전환 버튼 → 헤더 네비게이션 이동 (Home / Similarity / Comparison / Verification) | `dc7eed4`, `30c10c4` | ✅ |
+| 비교/검증 자동 실행 → 명시적 버튼 실행 (유사도 패턴 통일) | `0ffe68d` | ✅ |
+| 규칙 설정 모달 "적용 + 재검증" → "저장" (명시적 실행 분리) | 미커밋 | ✅ |
+| 검증 점수 산출: 절대 감점 → 가중 밀도 방식 (`penalty / paragraphs × k`) | 미커밋 | ✅ |
+| 검증 스코어카드 색상 임계값 통일 (80/60) | 미커밋 | ✅ |
+| 허브 최근 작업 이력 (localStorage, 최대 10건 텍스트 표시) | 미커밋 | ✅ |
+| 계획서: 주 시나리오 영:영 반영, Phase 3 인텔리전스 패널 설계, Phase 4 이력+재열람 3단계 | `ee32122`, `9517795` | ✅ |
+
+### 다음 세션 TODO
+
+1. **미커밋 항목 통합 커밋** — 규칙 모달 저장, 점수 산출, 이력 섹션 (compare.html + compare.css + compare_service.py)
+2. **검증 모드 톱니바퀴(⚙) 버튼 표시 확인** — 현재 패널 A 헤더 `#cp-toolbar-slot` 안에 있음. 검증 모드 진입 + 파일 업로드 후에도 안 보이면 CSS 디버깅 필요
+3. **sentence_length 기본값 검토** — 현재 80자, 영문 스펙 기준 120~150자가 적정. 기본값 상향 검토
+4. **Phase 1f 착수** — 유사 구간 하이라이트 + 클릭 네비게이션 (본격 개발)
+
 ---
 
 ## Phase 2: 내보내기 확장

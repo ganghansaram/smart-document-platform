@@ -167,6 +167,13 @@
                         </div>
                     </a>
                 </div>
+                <div class="verify-hub-history" id="verify-hub-history" style="display:none">
+                    <div class="verify-hub-history-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        최근 작업
+                    </div>
+                    <div class="verify-hub-history-list" id="verify-hub-history-list"></div>
+                </div>
                 <div class="verify-hub-coming-soon">
                     <div class="verify-hub-coming-soon-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
@@ -852,6 +859,7 @@
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     showDiffUI(false);
+                    renderHistory();
                     requestAnimationFrame(updateToolbarSeps);
                     return;
                 }
@@ -945,6 +953,7 @@
 
             // 초기 모드: 허브 (빈 상태)
             document.getElementById('compare-body').classList.add('mode-hub');
+            renderHistory();
 
             // ── 사이드바 접기/펼치기 ──
             function collapseSidebar() {
@@ -1048,6 +1057,63 @@
                         onConfirm();
                     }
                 });
+            }
+
+            // ── 최근 작업 이력 (localStorage, Phase 4 Step 2에서 백엔드 이관) ──
+            var HISTORY_KEY = 'verify-history';
+            var HISTORY_MAX = 10;
+
+            function getHistory() {
+                try {
+                    return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+                } catch(e) { return []; }
+            }
+
+            function addHistory(entry) {
+                var list = getHistory();
+                list.unshift(entry);
+                if (list.length > HISTORY_MAX) list = list.slice(0, HISTORY_MAX);
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+            }
+
+            function formatTimeAgo(ts) {
+                var diff = Date.now() - new Date(ts).getTime();
+                var min = Math.floor(diff / 60000);
+                if (min < 1) return '방금';
+                if (min < 60) return min + '분 전';
+                var hr = Math.floor(min / 60);
+                if (hr < 24) return hr + '시간 전';
+                var day = Math.floor(hr / 24);
+                if (day < 7) return day + '일 전';
+                return new Date(ts).toLocaleDateString();
+            }
+
+            function renderHistory() {
+                var historySection = document.getElementById('verify-hub-history');
+                var historyList = document.getElementById('verify-hub-history-list');
+                var list = getHistory();
+                if (list.length === 0) {
+                    historySection.style.display = 'none';
+                    return;
+                }
+                historySection.style.display = '';
+
+                var modeLabels = { similarity: 'Similarity', compare: 'Comparison', verify: 'Verification' };
+                var html = '';
+                for (var i = 0; i < list.length; i++) {
+                    var h = list[i];
+                    var modeClass = 'type-' + h.mode;
+                    var files = escapeHTML(h.files.a || '');
+                    if (h.files.b) files += ' <span class="arrow">↔</span> ' + escapeHTML(h.files.b);
+
+                    html += '<div class="verify-hub-history-item">'
+                        + '<span class="verify-hub-history-mode ' + modeClass + '">' + (modeLabels[h.mode] || h.mode) + '</span>'
+                        + '<span class="verify-hub-history-files">' + files + '</span>'
+                        + '<span class="verify-hub-history-score" style="color:' + (h.scoreColor || 'var(--text-dark)') + '">' + escapeHTML(h.score) + '</span>'
+                        + '<span class="verify-hub-history-time">' + formatTimeAgo(h.timestamp) + '</span>'
+                        + '</div>';
+                }
+                historyList.innerHTML = html;
             }
 
             // ── 허브로 복귀 (파일 리셋) ──
@@ -1522,6 +1588,17 @@
                 }
                 html += '</div>';
                 sidebarBody.innerHTML = html;
+
+                // 이력 저장
+                var simScoreColor = summary.similarity_score >= 70 ? 'var(--color-error)' :
+                                    summary.similarity_score >= 40 ? 'var(--color-warning)' : 'var(--color-success-btn)';
+                addHistory({
+                    timestamp: new Date().toISOString(),
+                    mode: 'similarity',
+                    files: { a: simState.a.filename, b: simState.b.filename },
+                    score: summary.similarity_score + '%',
+                    scoreColor: simScoreColor
+                });
             }
 
             // 유사도 모드에서 파일 업로드/붙여넣기 인터셉트
@@ -1742,6 +1819,22 @@
                 renderSidebar(diffState.changes);
                 showDiffUI(true);
                 updateNavigation();
+
+                // 이력 저장
+                var added = 0, deleted = 0, modified = 0;
+                for (var ci = 0; ci < diffState.changes.length; ci++) {
+                    var t = diffState.changes[ci].type;
+                    if (t === 'added') added++;
+                    else if (t === 'deleted') deleted++;
+                    else modified++;
+                }
+                addHistory({
+                    timestamp: new Date().toISOString(),
+                    mode: 'compare',
+                    files: { a: docState.a.filename, b: docState.b.filename },
+                    score: '+' + added + ' −' + deleted + ' ~' + modified,
+                    scoreColor: 'var(--active-color)'
+                });
             }
 
             function clearDiff() {
@@ -3083,6 +3176,17 @@
                     renderValidationSidebar();
                     showValidationUI(true);
                     updateValidationNavigation();
+
+                    // 이력 저장
+                    var scoreColor = data.score >= 80 ? 'var(--color-success-btn)' :
+                                     data.score >= 60 ? 'var(--color-warning)' : 'var(--color-error)';
+                    addHistory({
+                        timestamp: new Date().toISOString(),
+                        mode: 'verify',
+                        files: { a: docState.a.filename },
+                        score: data.score + '점',
+                        scoreColor: scoreColor
+                    });
                 })
                 .catch(function(err) {
                     validateState.isLoading = false;
@@ -3211,8 +3315,8 @@
                 var colorGood = cs.getPropertyValue('--color-success').trim() || '#22c55e';
                 var colorWarn = cs.getPropertyValue('--color-warning').trim() || '#f59e0b';
                 var colorBad = cs.getPropertyValue('--color-error').trim() || '#ef4444';
-                var scoreColor = score >= 90 ? colorGood : (score >= 70 ? colorWarn : colorBad);
-                var scoreBg = score >= 90 ? 'color-mix(in srgb, ' + colorGood + ' 10%, transparent)' : (score >= 70 ? 'color-mix(in srgb, ' + colorWarn + ' 10%, transparent)' : 'color-mix(in srgb, ' + colorBad + ' 10%, transparent)');
+                var scoreColor = score >= 80 ? colorGood : (score >= 60 ? colorWarn : colorBad);
+                var scoreBg = score >= 80 ? 'color-mix(in srgb, ' + colorGood + ' 10%, transparent)' : (score >= 60 ? 'color-mix(in srgb, ' + colorWarn + ' 10%, transparent)' : 'color-mix(in srgb, ' + colorBad + ' 10%, transparent)');
 
                 // SVG 도넛 링
                 var circumference = 2 * Math.PI * 14;
@@ -3706,7 +3810,7 @@
                     + '</div>'
                     + '<div class="modal-footer vd-modal-footer">'
                     + '<button class="btn btn-secondary" id="vd-modal-cancel">취소</button>'
-                    + '<button class="btn btn-primary" id="vd-modal-apply">적용 + 재검증</button>'
+                    + '<button class="btn btn-primary" id="vd-modal-apply">저장</button>'
                     + '</div></div>';
 
                 overlay.innerHTML = modalHTML;
@@ -4103,7 +4207,7 @@
                     reader.readAsText(jsonFileInput.files[0]);
                 });
 
-                // 적용 + 재검증
+                // 규칙 저장
                 overlay.querySelector('#vd-modal-apply').addEventListener('click', function() {
                     // 현재 수정사항을 presets에 반영
                     presets[activePreset] = currentRules;
@@ -4119,9 +4223,6 @@
                         if (!res.ok) throw new Error('저장 실패');
                         closeModal();
                         showToast('규칙이 저장되었습니다', 'success');
-                        if (docState.a.paragraphs.length > 0) {
-                            runValidation();
-                        }
                     })
                     .catch(function(err) {
                         showToast('규칙 저장 실패: ' + err.message, 'error');

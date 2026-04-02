@@ -642,6 +642,108 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
     background: color-mix(in srgb, var(--color-success-btn) 12%, transparent);
 }
 
+/* ── 허브: 최근 작업 이력 ── */
+.verify-hub-history {
+    width: 100%;
+    max-width: 780px;
+}
+
+.verify-hub-history-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    font-size: var(--font-small);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-light);
+}
+
+.verify-hub-history-header svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0.5;
+}
+
+.verify-hub-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.verify-hub-history-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    transition: background var(--transition-fast);
+}
+
+.verify-hub-history-item:hover {
+    background: var(--hover-bg);
+}
+
+.verify-hub-history-mode {
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    min-width: 84px;
+    text-align: center;
+}
+
+.verify-hub-history-mode.type-similarity {
+    background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+    color: var(--color-warning);
+}
+.verify-hub-history-mode.type-compare {
+    background: color-mix(in srgb, var(--active-color) 10%, transparent);
+    color: var(--active-color);
+}
+.verify-hub-history-mode.type-verify {
+    background: color-mix(in srgb, var(--color-success-btn) 10%, transparent);
+    color: var(--color-success-btn);
+}
+
+.verify-hub-history-files {
+    flex: 1;
+    font-size: var(--font-body);
+    color: var(--text-dark);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.verify-hub-history-files .arrow {
+    color: var(--text-light);
+    margin: 0 4px;
+}
+
+.verify-hub-history-score {
+    font-size: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    min-width: 70px;
+    text-align: right;
+}
+
+.verify-hub-history-time {
+    font-size: var(--font-small);
+    color: var(--text-light);
+    min-width: 60px;
+    text-align: right;
+}
+
+body[data-theme="dark"] .verify-hub-history-mode.type-similarity {
+    background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+}
+body[data-theme="dark"] .verify-hub-history-mode.type-compare {
+    background: color-mix(in srgb, var(--active-color) 12%, transparent);
+}
+body[data-theme="dark"] .verify-hub-history-mode.type-verify {
+    background: color-mix(in srgb, var(--color-success-btn) 12%, transparent);
+}
+
 /* ── 유사도 모드 ── */
 .mode-similarity .verify-hub {
     display: none;
