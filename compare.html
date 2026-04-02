@@ -812,11 +812,11 @@
                 btnCompare.classList.toggle('active', mode === 'compare');
                 btnVerify.classList.toggle('active', mode === 'verify');
 
-                // 패널 헤더 모드 탭 동기화
-                if (panelTabSim) {
-                    panelTabSim.classList.toggle('active', mode === 'similarity');
-                    panelTabCompare.classList.toggle('active', mode === 'compare');
-                    panelTabVerify.classList.toggle('active', mode === 'verify');
+                // 헤더 모드 버튼 active 동기화
+                if ($navSim) {
+                    $navSim.classList.toggle('active', mode === 'similarity');
+                    $navCompare.classList.toggle('active', mode === 'compare');
+                    $navVerify.classList.toggle('active', mode === 'verify');
                 }
 
                 // 사이드바 footer (유사도 모드에서만)
@@ -824,10 +824,12 @@
                     sidebarFooter.style.display = mode === 'similarity' ? '' : 'none';
                 }
 
-                // Home 버튼: 허브에서 숨김, 작업 모드에서 표시
-                if ($homeBtn) {
-                    $homeBtn.style.display = mode === 'hub' ? 'none' : '';
-                }
+                // 헤더 버튼: 허브에서 숨김, 작업 모드에서 표시
+                var headerNavVisible = mode === 'hub' ? 'none' : '';
+                if ($homeBtn) $homeBtn.style.display = headerNavVisible;
+                if ($navSim) $navSim.style.display = headerNavVisible;
+                if ($navCompare) $navCompare.style.display = headerNavVisible;
+                if ($navVerify) $navVerify.style.display = headerNavVisible;
 
                 // 허브 모드는 별도 처리
                 if (mode === 'hub') {
@@ -1052,7 +1054,10 @@
                 title: 'Document Verify',
                 currentSystem: 'compare',
                 navItems: [
-                    { id: 'home-btn', label: 'Home', hidden: true }
+                    { id: 'home-btn', label: 'Home', hidden: true },
+                    { id: 'nav-similarity', label: 'Similarity', hidden: true },
+                    { id: 'nav-compare', label: 'Compare', hidden: true },
+                    { id: 'nav-verify', label: 'Verify', hidden: true }
                 ],
                 showThemeToggle: true,
                 onAuth: function(user) {
@@ -1073,41 +1078,24 @@
                 }
             });
 
-            // 모드 토글을 툴바 좌측 슬롯에 삽입
+            // 헤더 모드 전환 버튼
+            var $navSim = headerResult.nav['nav-similarity'];
+            var $navCompare = headerResult.nav['nav-compare'];
+            var $navVerify = headerResult.nav['nav-verify'];
+
+            $navSim.addEventListener('click', function() { setMode('similarity'); });
+            $navCompare.addEventListener('click', function() { setMode('compare'); });
+            $navVerify.addEventListener('click', function() { setMode('verify'); });
+
+            // 모드 토글을 툴바 좌측 슬롯에 삽입 (기존 호환용, 숨김 처리)
             var modeSlot = document.getElementById('cp-mode-slot');
+            modeToggle.style.display = 'none';
             modeSlot.appendChild(modeToggle);
 
-            // 사이드바 헤더에 모드 탭 배치
-            var sidebarModeSlot = document.getElementById('cp-sidebar-mode-slot');
-            var panelModeTabs = document.createElement('div');
-            panelModeTabs.className = 'cp-mode-tabs-panel';
-
-            var panelTabSim = document.createElement('button');
-            panelTabSim.className = 'cp-mode-tab-panel';
-            panelTabSim.type = 'button';
-            panelTabSim.textContent = '유사도';
-
-            var panelTabCompare = document.createElement('button');
-            panelTabCompare.className = 'cp-mode-tab-panel';
-            panelTabCompare.type = 'button';
-            panelTabCompare.textContent = '비교';
-
-            var panelTabVerify = document.createElement('button');
-            panelTabVerify.className = 'cp-mode-tab-panel';
-            panelTabVerify.type = 'button';
-            panelTabVerify.textContent = '검증';
-
-            panelModeTabs.appendChild(panelTabSim);
-            panelModeTabs.appendChild(panelTabCompare);
-            panelModeTabs.appendChild(panelTabVerify);
-            sidebarModeSlot.appendChild(panelModeTabs);
-
-            // 모드 탭이 사이드바에 있으므로 기존 타이틀 숨김
-            sidebarTitle.style.display = 'none';
-
-            panelTabSim.addEventListener('click', function() { setMode('similarity'); });
-            panelTabCompare.addEventListener('click', function() { setMode('compare'); });
-            panelTabVerify.addEventListener('click', function() { setMode('verify'); });
+            // panelTab 변수 — setMode() 참조 호환을 위해 헤더 버튼으로 연결
+            var panelTabSim = $navSim;
+            var panelTabCompare = $navCompare;
+            var panelTabVerify = $navVerify;
 
             // 사이드바 footer 검사 버튼 연동
             var simFooterBtn = document.getElementById('sim-check-btn-footer');

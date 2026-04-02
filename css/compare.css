@@ -648,9 +648,7 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
 }
 
 /* 모드 탭 (사이드바 헤더 내) */
-#cp-sidebar-mode-slot {
-    display: flex;
-}
+/* #cp-sidebar-mode-slot → 헤더로 이동됨 */
 
 /* 패널 헤더 내 툴바 슬롯 */
 #cp-toolbar-slot {
@@ -734,35 +732,7 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
     display: none !important;
 }
 
-.cp-mode-tabs-panel {
-    display: flex;
-    gap: 1px;
-    background: var(--border-color);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-}
-
-.cp-mode-tab-panel {
-    padding: 3px 10px;
-    font-size: var(--font-caption);
-    font-weight: var(--font-weight-medium);
-    border: none;
-    background: var(--content-bg);
-    color: var(--text-light);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    white-space: nowrap;
-}
-
-.cp-mode-tab-panel:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
-.cp-mode-tab-panel:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
-.cp-mode-tab-panel:hover { color: var(--text-dark); }
-
-.cp-mode-tab-panel.active {
-    background: var(--active-color);
-    color: var(--white);
-    font-weight: var(--font-weight-semibold);
-}
+/* 사이드바 모드탭 → 헤더 navItems로 이동됨 (CSS 제거) */
 
 /* 유사도 모드 — 기존 툴바 내 검사 버튼 숨기고 사이드바 footer 표시 */
 .mode-similarity .sim-check-btn {
@@ -782,13 +752,7 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
 }
 .sim-run-btn svg { width: 14px; height: 14px; }
 
-body[data-theme="dark"] .cp-mode-tab-panel {
-    background: var(--content-bg);
-}
-
-body[data-theme="dark"] .cp-mode-tab-panel.active {
-    background: var(--active-color);
-}
+/* 사이드바 모드탭 다크 → 헤더로 이동됨 (CSS 제거) */
 
 .verify-hub-coming-soon {
     display: none;

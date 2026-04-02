@@ -76,6 +76,11 @@
     background-color: rgba(255,255,255,0.15);
 }
 
+.platform-header-nav button.ph-link.active {
+    background-color: rgba(255,255,255,0.22);
+    font-weight: 600;
+}
+
 /* auth group: username | Logout (Explorer .auth-nav-item 동일) */
 .ph-auth-group {
     display: flex;
