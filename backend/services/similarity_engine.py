@@ -486,12 +486,19 @@ def _merge_adjacent(matches: list) -> list:
     return merged
 
 
+def _match_sentence_count(m: dict) -> int:
+    """병합된 매칭이 커버하는 target 문장 수를 반환한다."""
+    start = m["target_idx"]
+    end = m.get("target_idx_end", start)
+    return end - start + 1
+
+
 def _compute_summary(matches: list, bp_matches: list, target_sents: list) -> dict:
     """통계를 산출한다. 기존 필드 + 신규 breakdown/tiers 필드."""
     total = len(target_sents)
     type_counts = {}
     for t in (TYPE_IDENTICAL, TYPE_NEAR_COPY, TYPE_PARAPHRASE, TYPE_TRANSLATION, TYPE_LOW_SIM):
-        type_counts[t] = sum(1 for m in matches if m["type"] == t)
+        type_counts[t] = sum(_match_sentence_count(m) for m in matches if m["type"] == t)
     bp_count = len(bp_matches)
 
     matched_count = sum(type_counts.values())
