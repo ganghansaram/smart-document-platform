@@ -2,7 +2,7 @@
 
 > **작성일**: 2026-04-01
 > **최종 갱신**: 2026-04-02
-> **상태**: Phase 1 진행 중 (1a~1f+1R 완료, 1g 다층 파이프라인 착수 대기)
+> **상태**: Phase 1 진행 중 (1a~1g+1R 완료, 1h UI 개편 착수 대기)
 > **관련**: `compare.html` (→ 향후 `verify.html`), `backend/api/compare.py`, `backend/services/compare_service.py`
 > **선행 문서**: `docs/11-COMPARE-SYSTEM.md`, `docs/research-semantic-comparison.md`
 
@@ -13,7 +13,7 @@
 | Phase | 설명 | 태스크 | 완료 | 상태 |
 |:-----:|------|:------:|:----:|:----:|
 | 0 | 모드 선택 허브 + 이탈 방지 | 7 | 7 | ✅ 완료 |
-| 1 | 유사도 검사 (핵심) | 12 | 7 | 🔵 1f 완료, 1g 착수 대기 |
+| 1 | 유사도 검사 (핵심) | 12 | 8 | 🔵 1g 완료, 1h 착수 대기 |
 | 2 | 내보내기 확장 | 미정 | 0 | 대기 |
 | 3 | 규칙 검증 고도화 + 인텔리전스 패널 | 9 | 0 | 대기 |
 | 4 | 세션 관리 + 이력 | 8 | 0 | Step 1: Phase 1 후 착수 |
@@ -450,8 +450,8 @@ threshold_medium: 0.70 (선택)
 | 1e | 프론트: 유사도 모드 좌/우 패널 UI (MD 웹뷰 + 파일 업로드 + 텍스트 붙여넣기) + 사이드바 결과 | 중 | ✅ |
 | 1R | **조사·설계 (아래 Phase 1R 섹션)** | — | ✅ 완료 |
 | 1f | 백엔드: 임베딩 인프라 전환 (Ollama → 로컬 sentence-transformers) | 중 | ✅ |
-| 1g | 백엔드: 다층 파이프라인 (Winnowing L1 + Semantic L3 + 정형구문 필터 + 분류) | 상 | ← 다음 |
-| 1h | 프론트: UI 전면 개편 (6종 하이라이트 + 사이드바 카드 + 통계 대시보드) | 상 | — |
+| 1g | 백엔드: 다층 파이프라인 (Winnowing L1 + Semantic L3 + 정형구문 필터 + 분류) | 상 | ✅ |
+| 1h | 프론트: UI 전면 개편 (6종 하이라이트 + 사이드바 카드 + 통계 대시보드) | 상 | ← 다음 |
 | 1i | 프론트: 보조 도구 (필터, 미니맵, 게이지, 이전/다음 네비게이션) | 중 | — |
 | 1j | 설정: 임계값 + 허용 목록 관리 + 관리자 UI | 하 | — |
 | 1k | 파일럿: 실제 문서 검증 + 임계값 튜닝 + 성능 벤치마크 | 하 | — |
@@ -846,19 +846,25 @@ def get_embeddings(texts):
 | 항목 | 커밋 | 상태 |
 |------|------|:----:|
 | Phase 1R 조사·설계 완료 (7개 항목 병렬 조사, 파이프라인·UI·구현단계 확정) | `091dfb9` | ✅ |
-| Phase 1f 임베딩 인프라 전환 — `embedding_client.py` 로컬 sentence-transformers 재작성 | 미커밋 | ✅ |
-| `config.py` — `EMBEDDING_BACKEND`, `EMBEDDING_LOCAL_MODEL`, `EMBEDDING_BATCH_SIZE` 추가 | 미커밋 | ✅ |
-| `similarity_engine.py` — Ollama BATCH 분할 루프 제거 → 단일 호출 | 미커밋 | ✅ |
+| Phase 1f 임베딩 인프라 전환 — `embedding_client.py` 로컬 sentence-transformers 재작성 | `7c82945` | ✅ |
+| `config.py` — `EMBEDDING_BACKEND`, `EMBEDDING_LOCAL_MODEL`, `EMBEDDING_BATCH_SIZE` 추가 | `7c82945` | ✅ |
+| `similarity_engine.py` — Ollama BATCH 분할 루프 제거 → 단일 호출 | `7c82945` | ✅ |
 | `models/bge-m3/` 모델 파일 배치 (~2.1GB) | .gitignore 대상 | ✅ |
-| 검증: 3문장 0.52초 (warm), 102문장 52 sent/sec (CPU), 502 에러 해소 | — | ✅ |
+| 사이드바 리사이즈 핸들 — `updateGrid()` 하드코딩 360px → sidebarWidth (전 모드 공통) | `7c82945` | ✅ |
+| 유사도 검사 로딩 스피너 — 사이드바에 스피너 표시 (검증 모드 패턴 통일) | `7c82945` | ✅ |
+| Phase 1g 다층 파이프라인 — Winnowing L1 + Semantic L3 + 정형구문 필터 + 6종 분류 | `800711a` | ✅ |
+| `boilerplate-phrases.json` — 정형 구문 허용 목록 55개 초기 구축 | `800711a` | ✅ |
+| 프론트 `SIM_TYPE_MAP` — 새 분류 체계 배지/라벨/breakdown/tiers 표시 | `800711a` | ✅ |
+| 유사도 통계 병합 카운트 버그 수정 — `_match_sentence_count()` 추가 | `c1dcc52` | ✅ |
 
 ### 다음 세션 TODO
 
-1. **1f 커밋** — `.gitignore`에 `models/bge-m3/` 추가 후 커밋
-2. **Phase 1g 착수** — 다층 파이프라인 (`similarity_engine.py` 재구성)
-   - Winnowing (L1) + Semantic (L3) + 정형구문 필터 + 6종 분류
-   - `boilerplate-phrases.json` 허용 목록 초기 구축
-   - API 응답 스키마 변경
+1. **Phase 1h 착수** — 프론트 UI 전면 개편
+   - 본문 하이라이트 (유형별 배경색 20%/40% hover)
+   - 사이드바↔본문 클릭 네비게이션 + 동기 스크롤
+   - 통계 대시보드 (도넛/바 게이지)
+   - `tokens.css` 신규 토큰 (`--color-match-paraphrase`)
+2. **Phase 1i** — 보조 도구 (필터, 미니맵 마커, 이전/다음 네비게이션)
 
 ---
 
@@ -1167,7 +1173,7 @@ Phase 1 (유사도 검사)
     ├─ 1a~1e ✅ 완료 (MVP 단층 파이프라인)
     ├─ 1R ✅ 완료 (업계 표준 조사 + 다층 파이프라인 설계 + UI 설계)
     ├─ 1f ✅ 완료 (임베딩 인프라 전환: Ollama → 로컬 sentence-transformers)
-    ├─ 1g ← 다음 (다층 파이프라인: Winnowing L1 + Semantic L3 + 분류)
+    ├─ 1g ✅ 완료 (다층 파이프라인: Winnowing L1 + Semantic L3 + 6종 분류 + 정형구문)
     ├─ 1h~1i (프론트 UI + 보조 도구)
     └─ 1j~1k (설정 + 파일럿 검증)
     ↓
