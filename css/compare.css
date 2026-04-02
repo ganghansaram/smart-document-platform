@@ -148,11 +148,11 @@ body {
 
 .cp-minimap-mark.active {
     opacity: 1;
-    box-shadow: 0 0 0 1px var(--white), 0 0 4px rgba(0,0,0,0.3);
+    box-shadow: 0 0 0 1px var(--white), var(--shadow-sm);
 }
 
 body[data-theme="dark"] .cp-minimap-mark.active {
-    box-shadow: 0 0 0 1px var(--white), 0 0 6px rgba(0,0,0,0.5);
+    box-shadow: 0 0 0 1px var(--white), var(--shadow-sm);
 }
 
 /* ── 패널 라벨 (Notebook .panel-title 패턴) ── */
@@ -187,13 +187,12 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     border-radius: var(--radius-sm);
     font-size: var(--font-title);
     line-height: 1;
-    transition: background var(--transition-fast);
     padding: 0;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .cp-file-remove:hover {
-    background: rgba(0,0,0,0.08);
+    background: var(--hover-bg);
     color: var(--color-error);
 }
 
@@ -212,7 +211,7 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     height: 100%;
     border: 2px dashed transparent;
     border-radius: var(--radius-md);
-    transition: border-color 0.2s ease, background 0.2s ease;
+    transition: border-color var(--transition-normal), background var(--transition-normal);
 }
 
 .panel-placeholder:hover {
@@ -265,7 +264,7 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     font-size: 13px;
     cursor: pointer;
     text-decoration: none;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--transition-fast);
 }
 
 .placeholder-paste-link:hover {
@@ -306,30 +305,7 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     flex: 1;
 }
 
-.cp-paste-btn {
-    padding: 5px 14px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    background: var(--white);
-    color: var(--text-dark);
-    font-size: 13px;
-    cursor: pointer;
-    transition: border-color 0.15s ease;
-}
-
-.cp-paste-btn:hover {
-    border-color: var(--active-color);
-}
-
-.cp-paste-btn.primary {
-    background: var(--active-color);
-    border-color: var(--active-color);
-    color: #fff;
-}
-
-.cp-paste-btn.primary:hover {
-    opacity: 0.9;
-}
+/* .cp-paste-btn — .btn .btn-secondary / .btn .btn-primary 기반, compare 전용 override 제거 */
 
 /* .cp-paste-textarea — .form-textarea 기반, compare 전용 override만 유지 */
 .cp-paste-textarea {
@@ -367,18 +343,7 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     font-size: 14px;
 }
 
-.cp-upload-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border-color);
-    border-top-color: var(--active-color);
-    border-radius: 50%;
-    animation: cp-spin 0.8s linear infinite;
-}
-
-@keyframes cp-spin {
-    to { transform: rotate(360deg); }
-}
+/* .cp-upload-spinner — .spinner 기반 (components.css), 독자 CSS 제거 */
 
 /* ── 사이드바 ── */
 .cp-sidebar {
@@ -401,7 +366,7 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     background: var(--panel-bg);
     border-radius: var(--panel-radius) var(--panel-radius) 0 0;
     font-size: var(--font-body);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--text-dark);
     flex-shrink: 0;
 }
@@ -417,7 +382,7 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     cursor: pointer;
     color: var(--text-light);
     border-radius: var(--radius-sm);
-    transition: background 0.15s ease;
+    transition: background var(--transition-fast);
 }
 
 .cp-sidebar-collapse:hover {
@@ -464,7 +429,7 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     color: var(--medium-gray);
     line-height: 1;
     z-index: 999;
-    transition: all 0.15s ease;
+    transition: all var(--transition-fast);
 }
 
 .cp-sidebar-restore:hover {
@@ -592,17 +557,17 @@ body.cp-resizing {
 }
 
 .verify-hub-card-icon.type-similarity {
-    background: rgba(245, 158, 11, 0.10);
+    background: color-mix(in srgb, var(--color-warning) 10%, transparent);
     color: var(--color-warning);
 }
 
 .verify-hub-card-icon.type-compare {
-    background: rgba(44, 82, 130, 0.10);
+    background: color-mix(in srgb, var(--active-color) 10%, transparent);
     color: var(--active-color);
 }
 
 .verify-hub-card-icon.type-validate {
-    background: rgba(34, 197, 94, 0.10);
+    background: color-mix(in srgb, var(--color-success-btn) 10%, transparent);
     color: var(--color-success-btn);
 }
 
@@ -657,7 +622,7 @@ body[data-theme="dark"] .verify-hub-card {
 
 body[data-theme="dark"] .verify-hub-card:hover {
     background: rgba(255,255,255,0.08);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow-md);
 }
 
 body[data-theme="dark"] .verify-hub-card-tag {
@@ -666,15 +631,15 @@ body[data-theme="dark"] .verify-hub-card-tag {
 }
 
 body[data-theme="dark"] .verify-hub-card-icon.type-similarity {
-    background: rgba(245, 158, 11, 0.12);
+    background: color-mix(in srgb, var(--color-warning) 12%, transparent);
 }
 
 body[data-theme="dark"] .verify-hub-card-icon.type-compare {
-    background: rgba(99, 160, 224, 0.12);
+    background: color-mix(in srgb, var(--active-color) 12%, transparent);
 }
 
 body[data-theme="dark"] .verify-hub-card-icon.type-validate {
-    background: rgba(34, 197, 94, 0.12);
+    background: color-mix(in srgb, var(--color-success-btn) 12%, transparent);
 }
 
 /* ── 유사도 모드 ── */
@@ -795,7 +760,7 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
 
 .cp-mode-tab-panel.active {
     background: var(--active-color);
-    color: #fff;
+    color: var(--white);
     font-weight: var(--font-weight-semibold);
 }
 
@@ -811,25 +776,10 @@ body[data-theme="dark"] .verify-hub-card-icon.type-validate {
     flex-shrink: 0;
 }
 
+/* .sim-run-btn — .btn .btn-primary 기반, 폭만 override */
 .sim-run-btn {
     width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px;
-    font-size: var(--font-body);
-    font-weight: var(--font-weight-semibold);
-    background: var(--active-color);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background var(--transition-fast);
 }
-
-.sim-run-btn:hover { background: var(--active-color-hover); }
-.sim-run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .sim-run-btn svg { width: 14px; height: 14px; }
 
 body[data-theme="dark"] .cp-mode-tab-panel {
@@ -898,36 +848,12 @@ body[data-theme="dark"] .cp-mode-tab-panel.active {
     margin: 1em 0;
 }
 
-/* 유사도 검사 버튼 (툴바) */
+/* .sim-check-btn — .btn .btn-primary .btn-sm 기반, display override만 유지 */
 .sim-check-btn {
     display: none;
-    gap: 5px;
-    padding: 5px 14px;
-    font-size: 13px;
-    font-weight: var(--font-weight-semibold, 600);
-    background: var(--active-color);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background var(--transition-fast);
     white-space: nowrap;
-    align-items: center;
 }
-
-.sim-check-btn:hover {
-    background: var(--active-color-hover);
-}
-
-.sim-check-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.sim-check-btn svg {
-    width: 14px;
-    height: 14px;
-}
+.sim-check-btn svg { width: 14px; height: 14px; }
 
 .mode-similarity .sim-check-btn {
     display: inline-flex;
@@ -977,14 +903,7 @@ body[data-theme="dark"] .cp-mode-tab-panel.active {
     margin-bottom: 6px;
 }
 
-.sim-match-badge {
-    display: inline-block;
-    padding: 1px 7px;
-    border-radius: var(--radius-sm);
-    color: #fff;
-    font-size: var(--font-caption);
-    font-weight: var(--font-weight-semibold);
-}
+/* .sim-match-badge — .badge .badge-error/.badge-warning 기반 */
 
 .sim-match-level {
     font-size: var(--font-small);
@@ -1023,7 +942,7 @@ body[data-theme="dark"] .cp-mode-tab-panel.active {
     width: 56px;
     height: 56px;
     border-radius: var(--radius-lg);
-    background: rgba(245, 158, 11, 0.10);
+    background: color-mix(in srgb, var(--color-warning) 10%, transparent);
     color: var(--color-warning);
     display: flex;
     align-items: center;
@@ -1048,7 +967,7 @@ body[data-theme="dark"] .cp-mode-tab-panel.active {
 }
 
 body[data-theme="dark"] .verify-hub-coming-soon-icon {
-    background: rgba(245, 158, 11, 0.12);
+    background: color-mix(in srgb, var(--color-warning) 12%, transparent);
 }
 
 /* ── 검증 모드 ── */
@@ -1074,7 +993,7 @@ body[data-theme="dark"] .compare-panel {
 
 body[data-theme="dark"] .cp-panel-label {
     background: color-mix(in srgb, var(--secondary-navy) 80%, transparent);
-    color: rgba(255,255,255,0.55);
+    color: var(--text-secondary);
 }
 
 body[data-theme="dark"] .cp-file-remove:hover {
@@ -1225,8 +1144,8 @@ body[data-theme="dark"] .cp-paste-btn {
 }
 
 .cp-stat {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--font-small);
+    font-weight: var(--font-weight-semibold);
     padding: 2px 8px;
     border-radius: var(--radius-lg);
 }
@@ -1249,7 +1168,7 @@ body[data-theme="dark"] .cp-paste-btn {
     padding: 6px 8px;
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background var(--transition-fast);
     border-left: 3px solid transparent;
 }
 .cp-change-item:hover { background: var(--light-gray); }
@@ -1260,10 +1179,10 @@ body[data-theme="dark"] .cp-paste-btn {
 .cp-change-item.cp-change-modified { border-left-color: var(--diff-modified-border); }
 
 .cp-change-badge {
-    font-size: 11px;
-    font-weight: 600;
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
     padding: 1px 5px;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     white-space: nowrap;
     flex-shrink: 0;
     margin-top: 1px;
@@ -1309,7 +1228,7 @@ body[data-theme="dark"] .cp-paste-btn {
     color: var(--text-light);
 }
 .cp-ai-summary-title {
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     display: flex;
     align-items: center;
     gap: 4px;
@@ -1334,7 +1253,7 @@ body[data-theme="dark"] .cp-paste-btn {
     border: none;
     border-radius: var(--radius-sm);
     font-size: 11px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition: opacity var(--transition-fast);
 }
@@ -1377,7 +1296,7 @@ body[data-theme="dark"] .cp-paste-btn {
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--text-dark);
 }
 
@@ -1428,7 +1347,7 @@ body[data-theme="dark"] .cp-paste-btn {
 .cp-ai-summary-label {
     width: 36px;
     text-align: right;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     flex-shrink: 0;
 }
 .cp-ai-summary-bar {
@@ -1528,9 +1447,9 @@ body[data-theme="dark"] .cp-paste-btn {
 }
 .cp-ai-detail-tag {
     font-size: 10px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     padding: 1px 5px;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     border: 1px solid transparent;
 }
 /* 태그 색상 (상세 패널 + 드롭다운 공유) */
@@ -1599,7 +1518,7 @@ body[data-theme="dark"] .cp-paste-btn {
     background: var(--white);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    box-shadow: var(--shadow-md);
     padding: 4px;
     display: flex;
     flex-direction: column;
@@ -1614,10 +1533,10 @@ body[data-theme="dark"] .cp-paste-btn {
     background: none;
     cursor: pointer;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     text-align: left;
     border-radius: var(--radius-sm);
-    transition: background 0.15s ease;
+    transition: background var(--transition-fast);
 }
 .cp-ai-tag-option:hover { background: var(--hover-bg); }
 .cp-ai-tag-option.cp-ai-tag-current {
@@ -1628,7 +1547,7 @@ body[data-theme="dark"] .cp-paste-btn {
 /* AI 필터 섹션 */
 .cp-ai-filter-header {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--text-light);
     padding: 2px 0;
 }
@@ -1642,13 +1561,13 @@ body[data-theme="dark"] .cp-paste-btn {
     cursor: pointer;
     font-size: 11px;
     color: var(--text-dark);
-    transition: background 0.15s ease;
+    transition: background var(--transition-fast);
     text-align: center;
 }
 .cp-ai-filter-preset:hover { background: var(--hover-bg); }
 .cp-ai-filter-preset.active {
     background: var(--active-color);
-    color: #fff;
+    color: var(--white);
     border-color: var(--active-color);
 }
 .cp-ai-filter-preset.active:hover {
@@ -1680,7 +1599,7 @@ body[data-theme="dark"] .cp-ai-detail {
 body[data-theme="dark"] .cp-ai-tag-dropdown {
     background: var(--white);
     border-color: rgba(255,255,255,0.12);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+    box-shadow: var(--shadow-md);
 }
 body[data-theme="dark"] .cp-ai-tag-option.cp-ai-tag-current {
     background: rgba(255,255,255,0.08);
@@ -1694,9 +1613,9 @@ body[data-theme="dark"] .cp-ai-retag-btn {
 .cp-paragraph.cp-editable {
     outline: 1px dashed var(--border-color);
     outline-offset: 2px;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     min-height: 1.8em;
-    transition: outline-color 0.15s ease, background 0.15s ease;
+    transition: outline-color var(--transition-fast), background var(--transition-fast);
 }
 .cp-paragraph.cp-editable:focus {
     outline-color: var(--active-color);
@@ -1710,7 +1629,7 @@ body[data-theme="dark"] .cp-change-item.active { background: var(--active-color-
 body[data-theme="dark"] .cp-filter-dropdown {
     background: var(--white);
     border-color: rgba(255,255,255,0.12);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    box-shadow: var(--shadow-lg);
 }
 
 body[data-theme="dark"] .cp-nav-btn {
@@ -1737,7 +1656,7 @@ body[data-theme="dark"] .cp-paragraph.cp-editable:focus {
     text-decoration-thickness: 2px;
     text-underline-offset: 2px;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background var(--transition-fast);
 }
 .validate-mark.severity-error   { text-decoration-color: var(--color-error); }
 .validate-mark.severity-warning { text-decoration-color: var(--color-warning); }
@@ -1788,7 +1707,7 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
 }
 .vd-score-stat.stat-error   { color: var(--color-error); }
 .vd-score-stat.stat-warning { color: var(--color-warning); }
@@ -1806,7 +1725,7 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
     padding: 6px 4px;
     cursor: pointer;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--text-dark);
     user-select: none;
 }
@@ -1814,7 +1733,7 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
 
 .vd-category-arrow {
     font-size: 10px;
-    transition: transform 0.15s ease;
+    transition: transform var(--transition-fast);
     color: var(--text-light);
 }
 .vd-category.collapsed .vd-category-arrow {
@@ -1843,7 +1762,7 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
     padding: 6px 8px;
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background var(--transition-fast);
     border-left: 3px solid transparent;
 }
 .vd-issue-item:hover { background: var(--light-gray); }
@@ -1855,19 +1774,7 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
 
 .vd-issue-item.vd-issue-hidden { display: none; }
 
-.vd-issue-badge {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 1px 5px;
-    border-radius: 3px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    margin-top: 1px;
-}
-
-.severity-error .vd-issue-badge   { background: rgba(239,68,68,0.12); color: var(--color-error); }
-.severity-warning .vd-issue-badge { background: rgba(245,158,11,0.12); color: var(--color-warning); }
-.severity-suggestion .vd-issue-badge { background: rgba(59,130,246,0.12); color: var(--color-info); }
+/* .vd-issue-badge — .badge .badge-error/.badge-warning/.badge-info 기반 */
 
 .vd-issue-text {
     font-size: 12px;
@@ -1892,85 +1799,13 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
     font-size: 13px;
 }
 
-/* ── 규칙 설정 모달 ── */
-.vd-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(4px);
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
+/* ── 규칙 설정 모달 — .modal-overlay + .modal-box (modal.css) 기반 ── */
+/* vd-modal-overlay/vd-modal 은 HTML에서 .modal-overlay/.modal-box 로 전환 */
+/* 여기에는 Verify 전용 width override만 유지 */
 .vd-modal {
-    background: var(--white);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     width: 520px;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
 }
-
-.vd-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 15px;
-    font-weight: 600;
-}
-
-.vd-modal-close {
-    width: 28px;
-    height: 28px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    color: var(--text-light);
-    border-radius: var(--radius-sm);
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.vd-modal-close:hover { background: var(--light-gray); color: var(--text-dark); }
-
-.vd-modal-body {
-    flex: 1;
-    overflow: auto;
-    padding: 16px 20px;
-}
-
-.vd-modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 12px 20px;
-    border-top: 1px solid var(--border-color);
-}
-
-.vd-modal-btn {
-    padding: 7px 18px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    background: var(--white);
-    color: var(--text-dark);
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-.vd-modal-btn:hover { border-color: var(--active-color); }
-.vd-modal-btn.primary {
-    background: var(--active-color);
-    border-color: var(--active-color);
-    color: #fff;
-}
-.vd-modal-btn.primary:hover { opacity: 0.9; }
+/* .vd-modal-btn — .btn .btn-secondary / .btn .btn-primary 로 전환, CSS 제거 */
 
 /* 프리셋 선택 */
 .vd-preset-row {
@@ -1993,7 +1828,7 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
 
 .vd-rule-group-title {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--text-dark);
     margin-bottom: 6px;
     padding-bottom: 4px;
@@ -2025,7 +1860,7 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
     background: var(--medium-gray);
     border-radius: 9px;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--transition-normal);
     border: none;
     padding: 0;
     flex-shrink: 0;
@@ -2039,8 +1874,8 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: white;
-    transition: transform 0.2s ease;
+    background: var(--toggle-knob, #ffffff);
+    transition: transform var(--transition-normal);
 }
 .vd-rule-toggle.on::after { transform: translateX(16px); }
 
@@ -2114,16 +1949,16 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
     background: transparent;
     cursor: pointer;
     color: var(--text-light);
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     font-size: 14px;
     line-height: 1;
     padding: 0;
     flex-shrink: 0;
     opacity: 0;
-    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+    transition: opacity var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
 }
 .vd-term-row:hover .vd-term-remove { opacity: 1; }
-.vd-term-remove:hover { background: rgba(239,68,68,0.1); color: var(--color-error); }
+.vd-term-remove:hover { background: color-mix(in srgb, var(--color-error) 10%, transparent); color: var(--color-error); }
 
 .vd-term-add {
     display: flex;
@@ -2155,12 +1990,12 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
     font-size: 16px;
     font-weight: 500;
     flex-shrink: 0;
-    transition: all 0.15s ease;
+    transition: all var(--transition-fast);
 }
 .vd-term-add-btn:hover {
     background: var(--active-color);
     border-color: var(--active-color);
-    color: #fff;
+    color: var(--white);
 }
 
 .vd-terms-empty {
@@ -2184,7 +2019,7 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
     align-items: center;
     padding: 1px 6px;
     background: var(--hover-bg);
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     font-size: 11px;
     color: var(--text-dark);
     white-space: nowrap;
@@ -2194,7 +2029,7 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
 body[data-theme="dark"] .vd-score-card { background: rgba(255,255,255,0.05); }
 body[data-theme="dark"] .vd-issue-item:hover { background: rgba(255,255,255,0.05); }
 body[data-theme="dark"] .vd-issue-item.active { background: var(--active-color-subtle); }
-body[data-theme="dark"] .vd-modal { background: var(--white); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+body[data-theme="dark"] .vd-modal { background: var(--white); box-shadow: var(--shadow-xl); }
 body[data-theme="dark"] .vd-modal-header { border-bottom-color: rgba(255,255,255,0.08); }
 body[data-theme="dark"] .vd-modal-footer { border-top-color: rgba(255,255,255,0.08); }
 body[data-theme="dark"] .vd-modal-close:hover { background: rgba(255,255,255,0.1); }
@@ -2295,7 +2130,7 @@ body[data-theme="dark"] .vd-group-tag { background: rgba(255,255,255,0.08); }
     padding: 4px 8px;
     background: var(--light-gray);
     color: var(--text-dark);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     text-align: left;
     border-bottom: 1px solid var(--border-color);
 }
@@ -2355,7 +2190,7 @@ body[data-theme="dark"] .vd-group-tag { background: rgba(255,255,255,0.08); }
 .vd-csv-preview-actions button.primary {
     background: var(--active-color);
     border-color: var(--active-color);
-    color: #fff;
+    color: var(--white);
 }
 .vd-csv-preview-actions button.primary:hover {
     background: var(--active-color-hover);
@@ -2423,7 +2258,7 @@ body[data-theme="dark"] .vd-header-btn:hover { background: rgba(255,255,255,0.08
 .cp-accept-btn,
 .cp-reject-btn {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--text-light);
     transition: all var(--transition-fast);
 }
@@ -2477,7 +2312,7 @@ body[data-theme="dark"] .vd-header-btn:hover { background: rgba(255,255,255,0.08
     background: transparent;
     cursor: pointer;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--text-light);
     transition: all var(--transition-fast);
 }

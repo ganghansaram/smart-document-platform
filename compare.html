@@ -112,7 +112,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
 
-            <button class="sim-check-btn" id="sim-check-btn" disabled title="유사도 검사 실행">
+            <button class="btn btn-primary btn-sm sim-check-btn" id="sim-check-btn" disabled title="유사도 검사 실행">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 유사도 검사
             </button>
@@ -272,7 +272,7 @@
                     </div>
                 </div>
                 <div class="cp-sidebar-footer" id="cp-sidebar-footer" style="display:none">
-                    <button class="sim-run-btn" id="sim-check-btn-footer" disabled title="유사도 검사 실행">
+                    <button class="btn btn-primary sim-run-btn" id="sim-check-btn-footer" disabled title="유사도 검사 실행">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         유사도 검사
                     </button>
@@ -588,8 +588,8 @@
                 var html = '<div class="cp-paste-container">'
                     + '<div class="cp-paste-header">'
                     + '<span class="cp-paste-hint">텍스트를 붙여넣으세요 (Ctrl+V)</span>'
-                    + '<button class="cp-paste-btn" data-paste-cancel="' + side + '">취소</button>'
-                    + '<button class="cp-paste-btn primary" data-paste-confirm="' + side + '">확인</button>'
+                    + '<button class="btn btn-secondary btn-sm" data-paste-cancel="' + side + '">취소</button>'
+                    + '<button class="btn btn-primary btn-sm" data-paste-confirm="' + side + '">확인</button>'
                     + '</div>'
                     + '<textarea class="form-textarea cp-paste-textarea" id="paste-textarea-' + side + '" placeholder="여기에 텍스트를 붙여넣으세요..."></textarea>'
                     + '</div>';
@@ -884,12 +884,14 @@
                 // 비교 모드 전용 UI (scrollSync만 항상 표시, swap/edit는 diff 결과에 따라)
                 scrollSyncBtn.style.display = mode === 'compare' ? '' : 'none';
 
-                // 모드 전환 시 하이라이트 정리 + 재실행
+                // 모드 전환 시 하이라이트 정리 + 패널 복원
                 if (mode === 'verify') {
                     clearDiff();
                     showDiffUI(false);
                     vdSettingsBtn.style.display = '';
                     vdRevalidateBtn.style.display = '';
+                    // docState에서 패널 복원
+                    restoreDocPanels();
                     tryRunValidation();
                 } else if (mode === 'similarity') {
                     clearDiff();
@@ -899,7 +901,7 @@
                     vdFilterGroup.style.display = 'none';
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
-                    // 유사도 모드 패널 복원
+                    // 유사도 모드 패널 복원 (docState 보존)
                     simRestorePanels();
                 } else {
                     clearValidation();
@@ -908,6 +910,8 @@
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     if (editMode) toggleEditMode();
+                    // docState에서 패널 복원 후 diff 재실행
+                    restoreDocPanels();
                     if (mode === 'compare') tryRunDiff();
                 }
 
@@ -1160,11 +1164,55 @@
                 );
             }, true);
 
+            // ── 비교/검증 모드 복귀 시 docState에서 패널 복원 ──
+            function restoreDocPanels() {
+                ['a', 'b'].forEach(function(side) {
+                    if (docState[side].paragraphs.length > 0) {
+                        var panel = getPanel(side);
+                        var label = getLabel(side);
+                        var removeBtn = getRemoveBtn(side);
+                        label.textContent = docState[side].filename;
+                        label.title = docState[side].filename;
+                        removeBtn.classList.add('visible');
+                        renderParagraphs(panel, docState[side].paragraphs);
+                    } else {
+                        showPlaceholderDOM(side);
+                    }
+                });
+            }
+
             // ══════════════════════════════════════════
             // 유사도 모드 전용 로직
             // ══════════════════════════════════════════
 
             var simCheckBtn = document.getElementById('sim-check-btn');
+
+            // DOM만 placeholder로 교체 (상태 보존 — 모드 전환용)
+            function showPlaceholderDOM(side) {
+                var panel = getPanel(side);
+                var label = getLabel(side);
+                var removeBtn = getRemoveBtn(side);
+
+                // 기존 콘텐츠 DOM만 제거
+                var content = panel.querySelector('.cp-text-content');
+                if (content) content.remove();
+                var loading = panel.querySelector('.cp-upload-loading');
+                if (loading) loading.remove();
+                var paste = panel.querySelector('.cp-paste-container');
+                if (paste) paste.remove();
+                var oldMd = panel.querySelector('.sim-md-view');
+                if (oldMd) oldMd.remove();
+                var oldPh = panel.querySelector('.panel-placeholder');
+                if (oldPh) oldPh.remove();
+
+                // placeholder 삽입
+                panel.insertAdjacentHTML('beforeend', makePlaceholderHTML(side));
+                bindPlaceholderEvents(side);
+
+                label.textContent = getDefaultLabel(side);
+                label.title = '';
+                removeBtn.classList.remove('visible');
+            }
 
             function simRestorePanels() {
                 // 유사도 모드 진입 시 패널 상태 복원
@@ -1178,9 +1226,8 @@
                         getRemoveBtn(side).classList.add('visible');
                         simRenderMd(panel, simState[side].markdown);
                     } else {
-                        restorePlaceholder(side);
-                        var label = getLabel(side);
-                        label.textContent = getDefaultLabel(side);
+                        // DOM만 교체, docState는 보존
+                        showPlaceholderDOM(side);
                     }
                 });
                 simUpdateCheckBtn();
@@ -1212,8 +1259,8 @@
                     simOnDocLoaded(side, data.filename, data.markdown, data.plain_text);
                 })
                 .catch(function(err) {
-                    restorePlaceholder(side);
-                    getLabel(side).textContent = getDefaultLabel(side);
+                    showPlaceholderDOM(side);
+                    simClearSide(side);
                     showToast('추출 오류: ' + err.message, 'error');
                 });
             }
@@ -1235,7 +1282,8 @@
                     simOnDocLoaded(side, data.filename, data.markdown, data.plain_text);
                 })
                 .catch(function(err) {
-                    restorePlaceholder(side);
+                    showPlaceholderDOM(side);
+                    simClearSide(side);
                     showToast('텍스트 처리 오류: ' + err.message, 'error');
                 });
             }
@@ -1377,8 +1425,7 @@
 
             function simClearSide(side) {
                 simState[side] = { markdown: '', plain_text: '', filename: '', loaded: false };
-                docState[side].filename = '';
-                docState[side].text = null;
+                // docState는 건드리지 않음 — 모드 전환 시 비교/검증 데이터 보존
                 simUpdateCheckBtn();
             }
 
@@ -1445,7 +1492,8 @@
                         var levelLabel = m.level === 'high' ? '높은 유사' : '중간 유사';
                         html += '<div class="sim-match-item" data-idx="' + i + '">';
                         html += '<div class="sim-match-header">';
-                        html += '<span class="sim-match-badge" style="background:' + levelColor + '">' + (m.similarity * 100).toFixed(1) + '%</span>';
+                        var badgeClass = m.level === 'high' ? 'badge-error' : 'badge-warning';
+                        html += '<span class="badge ' + badgeClass + ' sim-match-badge">' + (m.similarity * 100).toFixed(1) + '%</span>';
                         html += '<span class="sim-match-level">' + levelLabel + '</span>';
                         if (m.method === 'semantic+term') html += '<span class="sim-match-method">규격 매칭</span>';
                         html += '</div>';
@@ -3202,8 +3250,9 @@
                         var sevLabel = iss.severity === 'error' ? '오류' : (iss.severity === 'warning' ? '경고' : '제안');
                         var hidden = !validateState.filter[iss.severity] ? ' vd-issue-hidden' : '';
 
+                        var issBadgeClass = iss.severity === 'error' ? 'badge-error' : (iss.severity === 'warning' ? 'badge-warning' : 'badge-info');
                         html += '<div class="vd-issue-item severity-' + iss.severity + hidden + '" data-vd-issue-index="' + gIdx + '">'
-                            + '<span class="vd-issue-badge">' + sevLabel + '</span>'
+                            + '<span class="badge ' + issBadgeClass + '">' + sevLabel + '</span>'
                             + '<span class="vd-issue-text">' + escapeHTML(iss.message) + '</span>'
                             + '</div>';
                     }
@@ -3489,7 +3538,7 @@
 
             function showRulesModal(rulesData) {
                 var overlay = document.createElement('div');
-                overlay.className = 'vd-modal-overlay';
+                overlay.className = 'modal-overlay vd-modal-overlay';
 
                 var presets = rulesData.presets || {};
                 var activePreset = rulesData.active_preset || 'technical';
@@ -3614,8 +3663,8 @@
                     return html;
                 }
 
-                var modalHTML = '<div class="vd-modal">'
-                    + '<div class="vd-modal-header"><span>검증 규칙 설정</span>'
+                var modalHTML = '<div class="modal-box vd-modal">'
+                    + '<div class="modal-header vd-modal-header"><span>검증 규칙 설정</span>'
                     + '<div class="vd-modal-header-actions">'
                     + '<button class="vd-header-btn" id="vd-json-export" title="규칙 세트 내보내기 (JSON)">'
                     + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>'
@@ -3623,8 +3672,8 @@
                     + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>'
                     + '<input type="file" accept=".json" id="vd-json-file" style="display:none">'
                     + '</div>'
-                    + '<button class="vd-modal-close">&times;</button></div>'
-                    + '<div class="vd-modal-body">'
+                    + '<button class="vd-modal-close modal-close">&times;</button></div>'
+                    + '<div class="modal-body vd-modal-body">'
                     + '<div class="vd-preset-row">'
                     + '<span>프리셋:</span>'
                     + '<select class="form-select form-select-sm vd-preset-select" id="vd-preset-select">';
@@ -3637,9 +3686,9 @@
                 modalHTML += '</select></div>'
                     + '<div id="vd-rules-body">' + buildBody() + '</div>'
                     + '</div>'
-                    + '<div class="vd-modal-footer">'
-                    + '<button class="vd-modal-btn" id="vd-modal-cancel">취소</button>'
-                    + '<button class="vd-modal-btn primary" id="vd-modal-apply">적용 + 재검증</button>'
+                    + '<div class="modal-footer vd-modal-footer">'
+                    + '<button class="btn btn-secondary" id="vd-modal-cancel">취소</button>'
+                    + '<button class="btn btn-primary" id="vd-modal-apply">적용 + 재검증</button>'
                     + '</div></div>';
 
                 overlay.innerHTML = modalHTML;
