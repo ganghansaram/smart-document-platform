@@ -271,10 +271,18 @@
                         결과가 여기에 표시됩니다
                     </div>
                 </div>
-                <div class="cp-sidebar-footer" id="cp-sidebar-footer" style="display:none">
-                    <button class="btn btn-primary sim-run-btn" id="sim-check-btn-footer" disabled title="유사도 검사 실행">
+                <div class="cp-sidebar-footer" id="cp-sidebar-footer">
+                    <button class="btn btn-primary sim-run-btn" id="sim-check-btn-footer" disabled title="유사도 검사 실행" style="display:none">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         유사도 검사
+                    </button>
+                    <button class="btn btn-primary sim-run-btn" id="cp-diff-run-btn" disabled title="문서 비교 실행" style="display:none">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v14"/><path d="m5 10 7 7 7-7"/></svg>
+                        문서 비교
+                    </button>
+                    <button class="btn btn-primary sim-run-btn" id="cp-validate-run-btn" disabled title="규칙 검증 실행" style="display:none">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        규칙 검증
                     </button>
                 </div>
             </div>
@@ -481,6 +489,7 @@
                 removeBtn.classList.remove('visible');
                 clearDiff();
                 clearValidation();
+                updateActionButtons();
             }
 
             // ── Diff 상태 ──
@@ -533,8 +542,7 @@
                 label.title = filename;
                 removeBtn.classList.add('visible');
                 renderParagraphs(panel, paragraphs);
-                tryRunDiff();
-                tryRunValidation();
+                updateActionButtons();
             }
 
             // ── 파일 업로드 처리 ──
@@ -819,9 +827,12 @@
                     $navVerify.classList.toggle('active', mode === 'verify');
                 }
 
-                // 사이드바 footer (유사도 모드에서만)
+                // 사이드바 footer — 모드별 버튼 전환 (허브에서만 숨김)
                 if (sidebarFooter) {
-                    sidebarFooter.style.display = mode === 'similarity' ? '' : 'none';
+                    sidebarFooter.style.display = mode === 'hub' ? 'none' : '';
+                    simFooterBtn.style.display = mode === 'similarity' ? '' : 'none';
+                    diffRunBtn.style.display = mode === 'compare' ? '' : 'none';
+                    validateRunBtn.style.display = mode === 'verify' ? '' : 'none';
                 }
 
                 // 헤더 버튼: 허브에서 숨김, 작업 모드에서 표시
@@ -892,9 +903,7 @@
                     showDiffUI(false);
                     vdSettingsBtn.style.display = '';
                     vdRevalidateBtn.style.display = '';
-                    // docState에서 패널 복원
                     restoreDocPanels();
-                    tryRunValidation();
                 } else if (mode === 'similarity') {
                     clearDiff();
                     clearValidation();
@@ -903,7 +912,6 @@
                     vdFilterGroup.style.display = 'none';
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
-                    // 유사도 모드 패널 복원 (docState 보존)
                     simRestorePanels();
                 } else {
                     clearValidation();
@@ -912,10 +920,10 @@
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     if (editMode) toggleEditMode();
-                    // docState에서 패널 복원 후 diff 재실행
                     restoreDocPanels();
-                    if (mode === 'compare') tryRunDiff();
                 }
+
+                updateActionButtons();
 
                 updateGrid();
                 // 구분자 동적 갱신 (다음 프레임에서, CSS 적용 후)
@@ -1100,10 +1108,32 @@
             // 사이드바 footer 검사 버튼 연동
             var simFooterBtn = document.getElementById('sim-check-btn-footer');
             var sidebarFooter = document.getElementById('cp-sidebar-footer');
+            var diffRunBtn = document.getElementById('cp-diff-run-btn');
+            var validateRunBtn = document.getElementById('cp-validate-run-btn');
 
             simFooterBtn.addEventListener('click', function() {
                 simCheckBtn.click(); // 기존 로직 재사용
             });
+
+            diffRunBtn.addEventListener('click', function() {
+                if (currentMode === 'compare') tryRunDiff();
+            });
+
+            validateRunBtn.addEventListener('click', function() {
+                if (currentMode === 'verify') tryRunValidation();
+            });
+
+            // 모드별 실행 버튼 활성화 상태 갱신
+            function updateActionButtons() {
+                // 비교: 양쪽 파일 있을 때
+                var diffReady = docState.a.paragraphs.length > 0 && docState.b.paragraphs.length > 0;
+                diffRunBtn.disabled = !diffReady;
+                // 검증: A파일 있을 때
+                var validateReady = docState.a.paragraphs.length > 0;
+                validateRunBtn.disabled = !validateReady;
+                // 유사도: 기존 simUpdateCheckBtn()에서 처리
+                simUpdateCheckBtn();
+            }
 
             // ── 툴바 버튼을 패널 헤더 슬롯으로 이동 ──
             (function moveToolbarToPanel() {
