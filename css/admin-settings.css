@@ -388,6 +388,12 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
     padding-bottom: 10px;
     border-bottom: 1px solid var(--as-border-light);
 }
+.admin-section-desc {
+    font-size: var(--font-small);
+    color: var(--text-muted);
+    margin: -10px 0 16px 0;
+    line-height: 1.5;
+}
 
 /* ── 필드 공통 ──────────────────────────────────────────────────────────────── */
 .admin-fields {

@@ -652,9 +652,13 @@ function _renderSystemContent(sys) {
     // 탭 패널
     sys.tabs.forEach(function(tab, idx) {
         html += '<div class="admin-tab-panel' + (idx === 0 ? ' active' : '') + '" id="' + tab.tabId + '">';
+        if (tab.sections.length === 0) {
+            html += '<div class="admin-section"><p class="admin-section-desc" style="text-align:center;padding:40px 0;color:var(--text-muted)">향후 추가 예정입니다.</p></div>';
+        }
         tab.sections.forEach(function(section) {
             html += '<div class="admin-section">';
             html += '<h3 class="admin-section-title">' + _escHtml(section.title) + '</h3>';
+            if (section.desc) html += '<p class="admin-section-desc">' + _escHtml(section.desc) + '</p>';
 
             if (section.subtabs) {
                 // 서브탭 렌더링
