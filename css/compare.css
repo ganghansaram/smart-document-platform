@@ -534,8 +534,8 @@ body.cp-resizing {
 .verify-hub-card:hover {
     border-color: var(--active-color);
     background: var(--white);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    transform: translateY(-4px);
 }
 
 .verify-hub-card:active {
@@ -621,8 +621,8 @@ body[data-theme="dark"] .verify-hub-card {
 }
 
 body[data-theme="dark"] .verify-hub-card:hover {
-    background: rgba(255,255,255,0.08);
-    box-shadow: var(--shadow-md);
+    background: rgba(255,255,255,0.10);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 
 body[data-theme="dark"] .verify-hub-card-tag {
@@ -828,9 +828,7 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 
 /* 허브 모드: 모드 탭 포함 전체 패널 헤더 요소 숨김 */
 .mode-hub #cp-toolbar-slot,
-.mode-hub .cp-tb-sep,
-.mode-similarity #cp-toolbar-slot,
-.mode-similarity .cp-tb-sep {
+.mode-hub .cp-tb-sep {
     display: none !important;
 }
 
@@ -943,6 +941,15 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
     font-weight: var(--font-weight-bold);
     color: var(--active-color);
 }
+
+.sim-verdict {
+    font-size: var(--font-small);
+    font-weight: var(--font-weight-semibold);
+    margin-top: 2px;
+}
+.sim-verdict-good { color: var(--color-success-btn); }
+.sim-verdict-moderate { color: var(--color-warning); }
+.sim-verdict-warning { color: var(--color-error); }
 
 .sim-stats {
     font-size: var(--font-small);

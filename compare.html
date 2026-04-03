@@ -284,7 +284,7 @@
             <div class="cp-sidebar" id="cp-sidebar">
                 <div class="cp-sidebar-header">
                     <span id="cp-sidebar-mode-slot"></span>
-                    <span class="cp-sidebar-title" id="cp-sidebar-title">Changes</span>
+                    <span class="cp-sidebar-title" id="cp-sidebar-title">변경 사항</span>
                     <span class="cp-panel-spacer"></span>
                     <button class="cp-sidebar-collapse" id="cp-sidebar-collapse" title="접기">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -914,13 +914,13 @@
                 // 사이드바 타이틀/빈 메시지 변경 (sidebarBody 리셋 포함)
                 var sidebarBody = document.getElementById('cp-sidebar-body');
                 if (mode === 'compare') {
-                    sidebarTitle.textContent = 'Changes';
+                    sidebarTitle.textContent = '변경 사항';
                     sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">결과가 여기에 표시됩니다</div>';
                 } else if (mode === 'verify') {
-                    sidebarTitle.textContent = 'Validation';
+                    sidebarTitle.textContent = '검증 결과';
                     sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">결과가 여기에 표시됩니다</div>';
                 } else if (mode === 'similarity') {
-                    sidebarTitle.textContent = 'Similarity';
+                    sidebarTitle.textContent = '유사도 결과';
                     sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">결과가 여기에 표시됩니다</div>';
                 }
                 sidebarEmpty = document.getElementById('cp-sidebar-empty');
@@ -1171,7 +1171,15 @@
             // Home 버튼 이벤트
             var $homeBtn = headerResult.nav['home-btn'];
             $homeBtn.addEventListener('click', function() {
-                if (hasActiveWork()) {
+                if (currentMode === 'hub') return;
+                // 현재 모드에서 실제로 작업 중인지 판단
+                var modeHasWork = false;
+                if (currentMode === 'similarity') {
+                    modeHasWork = simState.a.loaded || simState.b.loaded;
+                } else {
+                    modeHasWork = !!(docState.a.file || docState.b.file || docState.a.text || docState.b.text);
+                }
+                if (modeHasWork) {
                     showConfirmModal(
                         '현재 작업이 초기화됩니다.<br>새 작업을 시작하시겠습니까?',
                         goHome
@@ -1530,6 +1538,13 @@
                 return html;
             }
 
+            var SIM_BTN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> ';
+
+            function simSetBtnLabel(text) {
+                simCheckBtn.innerHTML = SIM_BTN_SVG + text;
+                if (simFooterBtn) simFooterBtn.innerHTML = SIM_BTN_SVG + text;
+            }
+
             function simUpdateCheckBtn() {
                 var ready = simState.a.loaded && simState.b.loaded;
                 simCheckBtn.disabled = !ready;
@@ -1540,6 +1555,7 @@
                 simState[side] = { markdown: '', plain_text: '', filename: '', loaded: false };
                 // docState는 건드리지 않음 — 모드 전환 시 비교/검증 데이터 보존
                 simUpdateCheckBtn();
+                simSetBtnLabel('유사도 검사');
             }
 
             // 유사도 검사 실행
@@ -1571,21 +1587,28 @@
                     return res.json();
                 })
                 .then(function(data) {
-                    // 결과를 사이드바에 표시 (Step 4에서 하이라이트 추가)
                     simShowResults(data);
+                    simSetBtnLabel('재검사');
                 })
                 .catch(function(err) {
                     showToast('유사도 검사 오류: ' + err.message, 'error');
                     hint.textContent = '검사 대상과 참조 원문을 업로드하세요';
+                    simSetBtnLabel('유사도 검사');
                 })
                 .finally(function() {
                     simCheckBtn.disabled = false;
                     if (simFooterBtn) simFooterBtn.disabled = false;
-                    simCheckBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> 유사도 검사';
                 });
             });
 
             // 매칭 유형 → UI 매핑
+            // 검출 레이어 → 사용자 라벨 매핑
+            var DETECTION_LAYER_MAP = {
+                'L1':    '텍스트 매칭',
+                'L3':    'AI 분석',
+                'L1+L3': '복합 분석'
+            };
+
             var SIM_TYPE_MAP = {
                 identical:  { label: '일치',   tooltip: '단어가 동일한 구간',           badge: 'badge-error',   color: 'var(--color-error)' },
                 near_copy:  { label: '유사',   tooltip: '일부 단어가 변경된 구간',       badge: 'badge-warning', color: 'var(--color-warning)' },
@@ -1614,7 +1637,15 @@
 
                 // 요약 통계
                 html += '<div class="sim-summary">';
-                html += '<div class="sim-score">' + (tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score) + '%</div>';
+                var scoreVal = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
+                html += '<div class="sim-score">' + scoreVal + '%</div>';
+                // 판정 라벨
+                var verdictLabel, verdictClass;
+                var verdictTip;
+                if (scoreVal >= 60) { verdictLabel = '주의'; verdictClass = 'sim-verdict-warning'; verdictTip = '유사도 60% 이상'; }
+                else if (scoreVal >= 30) { verdictLabel = '보통'; verdictClass = 'sim-verdict-moderate'; verdictTip = '유사도 30~60% 구간'; }
+                else { verdictLabel = '양호'; verdictClass = 'sim-verdict-good'; verdictTip = '유사도 30% 미만'; }
+                html += '<div class="sim-verdict ' + verdictClass + '">' + verdictLabel + ' <span class="tooltip-icon" data-tooltip="' + verdictTip + '">?</span></div>';
                 html += '<div class="sim-stats">전체 ' + summary.total_sentences + '문장';
 
                 if (bd.identical) {
@@ -1661,7 +1692,7 @@
                         html += '<div class="sim-match-header">';
                         html += '<span class="badge ' + typeInfo.badge + ' sim-match-badge">' + simPct + '%</span>';
                         html += '<span class="sim-match-level" title="' + escapeHTML(typeInfo.tooltip || '') + '">' + typeInfo.label + '</span>';
-                        if (m.detection_layer) html += '<span class="sim-match-method">' + m.detection_layer + '</span>';
+                        if (m.detection_layer) html += '<span class="sim-match-method">' + (DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer) + '</span>';
                         html += '</div>';
                         html += '<div class="sim-match-text-a">' + escapeHTML(m.target_text.substring(0, 100)) + (m.target_text.length > 100 ? '...' : '') + '</div>';
                         html += '<div class="sim-match-text-b">' + escapeHTML(m.ref_text.substring(0, 100)) + (m.ref_text.length > 100 ? '...' : '') + '</div>';
@@ -1676,11 +1707,10 @@
                 simActiveIdx = -1;
                 simApplyHighlights(data);
 
-                // 네비게이션 + 필터 UI 표시
+                // 네비게이션 + 필터 UI 표시 → 필터 즉시 적용 (초기 체크 상태 반영)
                 document.getElementById('sim-nav-group').style.display = '';
                 document.getElementById('sim-filter-group').style.display = '';
-                simUpdateNavIndicator();
-                simRenderMinimap();
+                simApplyFilter();
 
                 // 이력 저장
                 var simScoreColor = summary.similarity_score >= 70 ? 'var(--color-error)' :
