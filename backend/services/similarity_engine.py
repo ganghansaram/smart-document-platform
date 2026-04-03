@@ -68,9 +68,12 @@ SPEC_PATTERNS = [
 ]
 _spec_regex = re.compile("|".join(SPEC_PATTERNS), re.IGNORECASE)
 
-# ── Winnowing 파라미터 ──
-WINNOW_K = 25       # character k-gram 크기
-WINNOW_WINDOW = 4   # sliding window 크기
+# ── Winnowing 파라미터 (config에서 런타임 오버라이드 가능) ──
+def _winnow_k():
+    return getattr(config, "VERIFY_SIMILARITY_WINNOW_K", 25)
+
+def _winnow_window():
+    return getattr(config, "VERIFY_SIMILARITY_WINNOW_WINDOW", 4)
 
 # ── 정형 구문 허용 목록 (lazy load) ──
 _boilerplate_phrases = None
@@ -353,15 +356,17 @@ def _winnow(text: str) -> set:
     4. sliding window에서 최솟값 선택
     """
     # 정규화
+    k = _winnow_k()
+    w = _winnow_window()
     normalized = re.sub(r'\s+', '', text.lower())
-    if len(normalized) < WINNOW_K:
+    if len(normalized) < k:
         # 너무 짧으면 전체를 하나의 fingerprint로
         return {hash(normalized)} if normalized else set()
 
     # k-gram hash 생성
     hashes = []
-    for i in range(len(normalized) - WINNOW_K + 1):
-        kgram = normalized[i:i + WINNOW_K]
+    for i in range(len(normalized) - k + 1):
+        kgram = normalized[i:i + k]
         hashes.append(hash(kgram))
 
     if not hashes:
@@ -369,8 +374,8 @@ def _winnow(text: str) -> set:
 
     # sliding window minimum selection
     fingerprints = set()
-    for i in range(len(hashes) - WINNOW_WINDOW + 1):
-        window = hashes[i:i + WINNOW_WINDOW]
+    for i in range(len(hashes) - w + 1):
+        window = hashes[i:i + w]
         fingerprints.add(min(window))
 
     return fingerprints

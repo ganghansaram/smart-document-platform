@@ -412,6 +412,8 @@
                             aiClassifyBtn.style.display = '';
                         }
                     }
+                    if (pub.verify_verdict_low != null) verdictBoundLow = pub.verify_verdict_low;
+                    if (pub.verify_verdict_high != null) verdictBoundHigh = pub.verify_verdict_high;
                 })
                 .catch(function() { /* 무시 — AI 버튼 숨김 유지 */ });
 
@@ -541,6 +543,8 @@
             var aiFilterSection = document.getElementById('cp-ai-filter-section');
             var showParagraphNumbers = false;
             var compareAiEnabled = false; // /api/settings/public에서 로드
+            var verdictBoundLow = 30;    // 양호/보통 경계 (관리자 설정에서 오버라이드)
+            var verdictBoundHigh = 60;   // 보통/주의 경계
 
             // ── 문서 로드 완료 처리 ──
             function onDocumentLoaded(side, filename, paragraphs) {
@@ -1630,9 +1634,9 @@
                 // 판정 라벨
                 var verdictLabel, verdictClass;
                 var verdictTip;
-                if (scoreVal >= 60) { verdictLabel = '주의'; verdictClass = 'sim-verdict-warning'; verdictTip = '유사도 60% 이상'; }
-                else if (scoreVal >= 30) { verdictLabel = '보통'; verdictClass = 'sim-verdict-moderate'; verdictTip = '유사도 30~60% 구간'; }
-                else { verdictLabel = '양호'; verdictClass = 'sim-verdict-good'; verdictTip = '유사도 30% 미만'; }
+                if (scoreVal >= verdictBoundHigh) { verdictLabel = '주의'; verdictClass = 'sim-verdict-warning'; verdictTip = '유사도 ' + verdictBoundHigh + '% 이상'; }
+                else if (scoreVal >= verdictBoundLow) { verdictLabel = '보통'; verdictClass = 'sim-verdict-moderate'; verdictTip = '유사도 ' + verdictBoundLow + '~' + verdictBoundHigh + '% 구간'; }
+                else { verdictLabel = '양호'; verdictClass = 'sim-verdict-good'; verdictTip = '유사도 ' + verdictBoundLow + '% 미만'; }
                 html += '<div class="sim-verdict ' + verdictClass + '">' + verdictLabel + ' <span class="tooltip-icon" data-tooltip="' + verdictTip + '">?</span></div>';
                 html += '<div class="sim-stats">전체 ' + summary.total_sentences + '문장';
 

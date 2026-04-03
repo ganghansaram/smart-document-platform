@@ -90,6 +90,15 @@ DEFAULT_SETTINGS: dict = {
         "ai_timeout": 60,
         "ai_system_prompt": "",
     },
+    "verify": {
+        "sim_threshold_high": 0.85,
+        "sim_threshold_medium": 0.70,
+        "sim_winnow_k": 25,
+        "sim_winnow_window": 4,
+        "sim_verdict_low": 30,
+        "sim_verdict_high": 60,
+        "sim_embedding_batch": 64,
+    },
     "upload": {
         "word_com_preprocess": False,
         "upload_temp_dir": None,
@@ -140,6 +149,10 @@ _NO_RESTART = {
     "session.max_sessions", "session.max_idle_minutes",
     "compare.ai_enabled", "compare.ai_model", "compare.ai_temperature",
     "compare.ai_batch_size", "compare.ai_timeout", "compare.ai_system_prompt",
+    "verify.sim_threshold_high", "verify.sim_threshold_medium",
+    "verify.sim_winnow_k", "verify.sim_winnow_window",
+    "verify.sim_verdict_low", "verify.sim_verdict_high",
+    "verify.sim_embedding_batch",
     "upload.word_com_preprocess", "upload.upload_temp_dir",
     "translator.translation_model",
     "translator.custom_prompt", "translator.disable_rich_text",
@@ -200,6 +213,10 @@ def get_public_settings() -> dict:
     result = dict(s.get("frontend", DEFAULT_SETTINGS["frontend"]))
     # Compare AI 활성화 상태를 프론트엔드에 노출
     result["compare_ai_enabled"] = s.get("compare", {}).get("ai_enabled", True)
+    # Verify 유사도 판정 경계 (프론트엔드 판정 라벨에 사용)
+    vfy = s.get("verify", DEFAULT_SETTINGS.get("verify", {}))
+    result["verify_verdict_low"] = vfy.get("sim_verdict_low", 30)
+    result["verify_verdict_high"] = vfy.get("sim_verdict_high", 60)
     return result
 
 
@@ -282,6 +299,15 @@ def apply_to_config(settings: dict) -> list[str]:
     _set(cmp, "ai_batch_size",    "COMPARE_AI_BATCH_SIZE",     restart_needed, immediate=True)
     _set(cmp, "ai_timeout",       "COMPARE_AI_TIMEOUT",        restart_needed, immediate=True)
     _set(cmp, "ai_system_prompt", "COMPARE_AI_SYSTEM_PROMPT",  restart_needed, immediate=True)
+
+    vfy = settings.get("verify", {})
+    _set(vfy, "sim_threshold_high",   "VERIFY_SIMILARITY_THRESHOLD_HIGH",  restart_needed, immediate=True)
+    _set(vfy, "sim_threshold_medium", "VERIFY_SIMILARITY_THRESHOLD_MEDIUM", restart_needed, immediate=True)
+    _set(vfy, "sim_winnow_k",        "VERIFY_SIMILARITY_WINNOW_K",         restart_needed, immediate=True)
+    _set(vfy, "sim_winnow_window",   "VERIFY_SIMILARITY_WINNOW_WINDOW",    restart_needed, immediate=True)
+    _set(vfy, "sim_verdict_low",     "VERIFY_SIMILARITY_VERDICT_LOW",      restart_needed, immediate=True)
+    _set(vfy, "sim_verdict_high",    "VERIFY_SIMILARITY_VERDICT_HIGH",     restart_needed, immediate=True)
+    _set(vfy, "sim_embedding_batch", "EMBEDDING_BATCH_SIZE",               restart_needed, immediate=True)
 
     upl = settings.get("upload", {})
     _set(upl, "word_com_preprocess", "WORD_COM_PREPROCESS", restart_needed, immediate=True)

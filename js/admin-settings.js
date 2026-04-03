@@ -365,13 +365,13 @@ var SETTINGS_SCHEMA = {
             ]
         },
         {
-            id: 'compare',
-            label: 'Compare',
+            id: 'verify',
+            label: 'Verify',
             group: '시스템 설정',
             tabs: [
                 {
-                    tabId: 'tab-compare-ai',
-                    tabLabel: 'AI 분석',
+                    tabId: 'tab-verify-compare',
+                    tabLabel: '비교',
                     sections: [
                         {
                             title: 'AI 의미 분류',
@@ -402,6 +402,56 @@ var SETTINGS_SCHEMA = {
                             ]
                         }
                     ]
+                },
+                {
+                    tabId: 'tab-verify-similarity',
+                    tabLabel: '유사도 검사',
+                    sections: [
+                        {
+                            title: '분류 임계값',
+                            desc: '유사도 검사 엔진의 분류 기준. 값을 높이면 판정이 엄격해지고, 낮추면 더 많은 구간이 검출됩니다.',
+                            fields: [
+                                { group: 'verify', key: 'sim_threshold_high', label: '동일 판정 기준 (L1)', type: 'range',
+                                  restart: false, min: 0.5, max: 1.0, step: 0.05,
+                                  desc: 'Winnowing 지문 일치율이 이 값 이상이면 "동일(identical)"로 판정. 기본 0.85' },
+                                { group: 'verify', key: 'sim_threshold_medium', label: '유사 판정 하한 (L3)', type: 'range',
+                                  restart: false, min: 0.3, max: 0.9, step: 0.05,
+                                  desc: '의미 유사도(임베딩)가 이 값 이상이면 매칭 후보로 포함. 기본 0.70' },
+                            ]
+                        },
+                        {
+                            title: '판정 라벨 경계',
+                            desc: '전체 유사율(%)에 따라 표시되는 판정 라벨(양호/보통/주의)의 경계값.',
+                            fields: [
+                                { group: 'verify', key: 'sim_verdict_low', label: '양호/보통 경계 (%)', type: 'number',
+                                  restart: false, min: 0, max: 100, step: 5, placeholder: '30',
+                                  desc: '유사율이 이 값 미만이면 "양호", 이상이면 "보통". 기본 30%' },
+                                { group: 'verify', key: 'sim_verdict_high', label: '보통/주의 경계 (%)', type: 'number',
+                                  restart: false, min: 0, max: 100, step: 5, placeholder: '60',
+                                  desc: '유사율이 이 값 이상이면 "주의". 기본 60%' },
+                            ]
+                        },
+                        {
+                            title: '엔진 파라미터',
+                            desc: '검색 엔진 내부 파라미터. 변경 시 결과 품질에 영향을 줄 수 있으므로 주의.',
+                            fields: [
+                                { group: 'verify', key: 'sim_winnow_k', label: 'Winnowing k-gram 크기', type: 'number',
+                                  restart: false, min: 10, max: 50, step: 5, placeholder: '25',
+                                  desc: '텍스트 지문 생성 시 k-gram 크기. 작을수록 민감, 클수록 관대. 기본 25' },
+                                { group: 'verify', key: 'sim_winnow_window', label: 'Winnowing 윈도우 크기', type: 'number',
+                                  restart: false, min: 2, max: 10, step: 1, placeholder: '4',
+                                  desc: 'sliding window 크기. 작을수록 더 많은 지문 보존. 기본 4' },
+                                { group: 'verify', key: 'sim_embedding_batch', label: '임베딩 배치 크기', type: 'number',
+                                  restart: false, min: 8, max: 256, step: 8, placeholder: '64',
+                                  desc: '한 번에 인코딩할 문장 수. GPU 메모리에 맞게 조정. 기본 64' },
+                            ]
+                        }
+                    ]
+                },
+                {
+                    tabId: 'tab-verify-rules',
+                    tabLabel: '규칙 검증',
+                    sections: []
                 }
             ]
         }
