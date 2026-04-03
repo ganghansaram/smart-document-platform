@@ -116,6 +116,18 @@
     --diff-modified-border: #f59e0b;
     --diff-added-word: #86efac;
     --diff-deleted-word: #fca5a5;
+
+    /* 유사도 매칭 색상 */
+    --sim-identical: rgba(239,68,68,0.15);
+    --sim-identical-border: #ef4444;
+    --sim-near-copy: rgba(245,158,11,0.15);
+    --sim-near-copy-border: #f59e0b;
+    --sim-paraphrase: rgba(124,58,237,0.15);
+    --sim-paraphrase-border: #7c3aed;
+    --sim-low: rgba(59,130,246,0.1);
+    --sim-low-border: #3b82f6;
+    --sim-boilerplate: rgba(128,128,128,0.08);
+    --sim-boilerplate-border: #9ca3af;
 }
 
 /* 다크 테마 변수 오버라이드 */
@@ -183,6 +195,18 @@ body[data-theme="dark"] {
     --diff-modified-border: #d29922;
     --diff-added-word: rgba(46,160,67,0.4);
     --diff-deleted-word: rgba(248,81,73,0.4);
+
+    /* 유사도 매칭 색상 (다크) */
+    --sim-identical: rgba(248,113,113,0.2);
+    --sim-identical-border: #f87171;
+    --sim-near-copy: rgba(251,191,36,0.2);
+    --sim-near-copy-border: #fbbf24;
+    --sim-paraphrase: rgba(167,139,250,0.2);
+    --sim-paraphrase-border: #a78bfa;
+    --sim-low: rgba(96,165,250,0.12);
+    --sim-low-border: #60a5fa;
+    --sim-boilerplate: rgba(156,163,175,0.1);
+    --sim-boilerplate-border: #6b7280;
 }
 
 /* 글로벌 키보드 포커스 링 */

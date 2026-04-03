@@ -270,6 +270,8 @@ def run_similarity(
         "matches": merged,
         "target_sentences": target_sents,
         "reference_sentences": ref_sents,
+        "display_html_a": _build_tagged_html(target_sents),
+        "display_html_b": _build_tagged_html(ref_sents),
     }
 
 
@@ -545,6 +547,19 @@ def _compute_summary(matches: list, bp_matches: list, target_sents: list) -> dic
     }
 
 
+def _build_tagged_html(sentences: list) -> str:
+    """문장 배열을 data-sent-idx 태깅된 HTML로 변환한다.
+
+    백엔드에서 확정적으로 태깅하므로 프론트에서 매핑 불필요.
+    """
+    import html as html_mod
+    parts = []
+    for i, sent in enumerate(sentences):
+        escaped = html_mod.escape(sent)
+        parts.append(f'<p data-sent-idx="{i}" class="sim-sent">{escaped}</p>')
+    return "\n".join(parts)
+
+
 def _empty_result(target_sents, ref_sents):
     """빈 결과"""
     total = len(target_sents) if target_sents else 0
@@ -562,4 +577,6 @@ def _empty_result(target_sents, ref_sents):
         "matches": [],
         "target_sentences": target_sents or [],
         "reference_sentences": ref_sents or [],
+        "display_html_a": _build_tagged_html(target_sents or []),
+        "display_html_b": _build_tagged_html(ref_sents or []),
     }

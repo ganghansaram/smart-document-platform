@@ -1002,6 +1002,62 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
     opacity: 0.8;
 }
 
+/* ── 유사도 문장 (백엔드 태깅) ── */
+.sim-sent {
+    margin: 2px 0;
+    padding: 3px 0;
+    line-height: 1.6;
+}
+
+/* ── 유사도 본문 하이라이트 ── */
+.sim-hl {
+    border-radius: 2px;
+    transition: background var(--transition-fast), box-shadow var(--transition-fast);
+    scroll-margin-top: 20px;
+}
+.sim-hl-identical  { background: var(--sim-identical); border-left: 3px solid var(--sim-identical-border); padding-left: 6px; }
+.sim-hl-near_copy  { background: var(--sim-near-copy); border-left: 3px solid var(--sim-near-copy-border); padding-left: 6px; }
+.sim-hl-paraphrase { background: var(--sim-paraphrase); border-left: 3px solid var(--sim-paraphrase-border); padding-left: 6px; }
+.sim-hl-low_sim    { background: var(--sim-low); border-left: 3px solid var(--sim-low-border); padding-left: 6px; }
+.sim-hl-boilerplate { background: var(--sim-boilerplate); border-left: 2px dashed var(--sim-boilerplate-border); padding-left: 6px; opacity: 0.6; }
+
+.sim-hl:hover { filter: brightness(0.95); }
+.sim-hl.sim-active {
+    box-shadow: 0 0 0 2px var(--active-color);
+    filter: brightness(0.92);
+}
+
+/* ── 유사도 사이드바 카드 활성 ── */
+.sim-match-item.sim-item-active {
+    background: var(--hover-bg);
+    border-left: 3px solid var(--active-color);
+    padding-left: 9px;
+}
+
+/* ── 유사도 통계 바 ── */
+.sim-tier-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0 4px;
+    background: var(--border-color);
+}
+.sim-tier-seg { height: 100%; min-width: 2px; transition: width var(--transition-normal); }
+.sim-tier-seg-substantive { background: var(--color-error); }
+.sim-tier-seg-derived { background: var(--sim-paraphrase-border); }
+.sim-tier-seg-boilerplate { background: var(--sim-boilerplate-border); }
+
+.sim-tier-labels {
+    display: flex;
+    gap: var(--space-sm);
+    font-size: var(--font-caption);
+    color: var(--text-light);
+    flex-wrap: wrap;
+}
+.sim-tier-label { display: flex; align-items: center; gap: 3px; }
+.sim-tier-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
 /* (유사도 모드 버튼 숨김 — #cp-toolbar-slot 자체를 숨겨서 처리) */
 
 .verify-hub-coming-soon-icon {
