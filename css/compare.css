@@ -951,6 +951,31 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 .sim-verdict-moderate { color: var(--color-warning); }
 .sim-verdict-warning { color: var(--color-error); }
 
+.sim-filter-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+.sim-filter-chip {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: var(--font-caption);
+    color: var(--text-light);
+    cursor: pointer;
+    user-select: none;
+}
+.sim-filter-chip input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+.sim-filter-chip:hover {
+    color: var(--text-dark);
+}
+
 .sim-stats {
     font-size: var(--font-small);
     color: var(--text-light);

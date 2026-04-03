@@ -43,18 +43,7 @@
                 <button class="cp-nav-btn" id="sim-nav-next" title="다음 매칭 (↓)">&#9660;</button>
             </div>
 
-            <div class="cp-filter-group" id="sim-filter-group" style="display:none">
-                <button class="toolbar-btn" id="sim-filter-btn" title="유형 필터">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                </button>
-                <div class="cp-filter-dropdown" id="sim-filter-dropdown" style="display:none">
-                    <label><input type="checkbox" checked data-sim-filter="identical"> 일치</label>
-                    <label><input type="checkbox" checked data-sim-filter="near_copy"> 유사</label>
-                    <label><input type="checkbox" checked data-sim-filter="paraphrase"> 의역</label>
-                    <label><input type="checkbox" data-sim-filter="low_sim"> 참고</label>
-                    <label><input type="checkbox" data-sim-filter="boilerplate"> 공통</label>
-                </div>
-            </div>
+            <!-- 유사도 필터: 사이드바 통계 아래로 이동 (simShowResults에서 렌더링) -->
 
             <button class="toolbar-btn" id="swap-btn" style="display:none" title="원본 ↔ 수정본 바꾸기">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
@@ -880,7 +869,7 @@
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     document.getElementById('sim-nav-group').style.display = 'none';
-                    document.getElementById('sim-filter-group').style.display = 'none';
+                    // sim-filter는 사이드바 innerHTML 내부에 렌더링됨 (별도 제어 불필요)
                     showDiffUI(false);
                     renderHistory();
                     requestAnimationFrame(updateToolbarSeps);
@@ -935,7 +924,7 @@
                     vdSettingsBtn.style.display = '';
                     vdRevalidateBtn.style.display = '';
                     document.getElementById('sim-nav-group').style.display = 'none';
-                    document.getElementById('sim-filter-group').style.display = 'none';
+                    // sim-filter는 사이드바 innerHTML 내부에 렌더링됨 (별도 제어 불필요)
                     restoreDocPanels();
                 } else if (mode === 'similarity') {
                     clearDiff();
@@ -946,7 +935,6 @@
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     document.getElementById('sim-nav-group').style.display = simLastResult ? '' : 'none';
-                    document.getElementById('sim-filter-group').style.display = simLastResult ? '' : 'none';
                     simRestorePanels();
                 } else {
                     clearValidation();
@@ -955,7 +943,7 @@
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     document.getElementById('sim-nav-group').style.display = 'none';
-                    document.getElementById('sim-filter-group').style.display = 'none';
+                    // sim-filter는 사이드바 innerHTML 내부에 렌더링됨 (별도 제어 불필요)
                     if (editMode) toggleEditMode();
                     restoreDocPanels();
                 }
@@ -1679,6 +1667,27 @@
                 }
                 html += '</div>';
 
+                // 인라인 필터 체크박스
+                html += '<div class="sim-filter-inline" id="sim-filter-inline">';
+                var filterTypes = [
+                    { key: 'identical',  label: '일치',  checked: true },
+                    { key: 'near_copy',  label: '유사',  checked: true },
+                    { key: 'paraphrase', label: '의역',  checked: true },
+                    { key: 'low_sim',    label: '참고',  checked: false },
+                    { key: 'boilerplate',label: '공통',  checked: false }
+                ];
+                for (var fi = 0; fi < filterTypes.length; fi++) {
+                    var ft = filterTypes[fi];
+                    var count = bd[ft.key] ? bd[ft.key].count : 0;
+                    if (count > 0 || ft.checked) {
+                        html += '<label class="sim-filter-chip">';
+                        html += '<input type="checkbox"' + (ft.checked ? ' checked' : '') + ' data-sim-filter="' + ft.key + '"> ';
+                        html += ft.label + (count > 0 ? ' ' + count : '');
+                        html += '</label>';
+                    }
+                }
+                html += '</div>';
+
                 if (matches.length === 0) {
                     html += '<div class="cp-sidebar-empty">유사 구간이 발견되지 않았습니다</div>';
                 } else {
@@ -1707,9 +1716,8 @@
                 simActiveIdx = -1;
                 simApplyHighlights(data);
 
-                // 네비게이션 + 필터 UI 표시 → 필터 즉시 적용 (초기 체크 상태 반영)
+                // 네비게이션 표시 + 필터 즉시 적용 (인라인 체크 상태 반영)
                 document.getElementById('sim-nav-group').style.display = '';
-                document.getElementById('sim-filter-group').style.display = '';
                 simApplyFilter();
 
                 // 이력 저장
@@ -1864,24 +1872,14 @@
                 indicator.textContent = (curPos >= 0 ? curPos + 1 : 0) + '/' + visible.length;
             }
 
-            // ── 유사도 필터 ──
+            // ── 유사도 필터 (사이드바 인라인 — change 이벤트 위임) ──
             (function() {
-                var filterBtn = document.getElementById('sim-filter-btn');
-                var dropdown = document.getElementById('sim-filter-dropdown');
-
-                filterBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    dropdown.style.display = dropdown.style.display === 'none' ? '' : 'none';
-                });
-
-                document.addEventListener('click', function() {
-                    dropdown.style.display = 'none';
-                });
-
-                dropdown.addEventListener('click', function(e) { e.stopPropagation(); });
-
-                dropdown.addEventListener('change', function() {
-                    simApplyFilter();
+                var sidebar = document.getElementById('cp-sidebar-body');
+                if (!sidebar) return;
+                sidebar.addEventListener('change', function(e) {
+                    if (e.target.hasAttribute('data-sim-filter')) {
+                        simApplyFilter();
+                    }
                 });
             })();
 
