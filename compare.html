@@ -116,9 +116,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
             </button>
 
-            <button class="toolbar-btn" id="download-btn" style="display:none" title="검토 리포트 저장">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </button>
+            <!-- download-btn: 사이드바 헤더(sidebar-export-btn)로 이동 -->
 
             <button class="btn btn-primary btn-sm sim-check-btn" id="sim-check-btn" disabled title="유사도 검사 실행">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -268,6 +266,9 @@
                     <span id="cp-sidebar-mode-slot"></span>
                     <span class="cp-sidebar-title" id="cp-sidebar-title">변경 사항</span>
                     <span class="cp-panel-spacer"></span>
+                    <button class="cp-sidebar-action" id="sidebar-export-btn" style="display:none" title="리포트 내보내기">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </button>
                     <button class="cp-sidebar-collapse" id="cp-sidebar-collapse" title="접기">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"/>
@@ -528,7 +529,7 @@
             var filterBtn = document.getElementById('filter-btn');
             var filterDropdown = document.getElementById('cp-filter-dropdown');
             var sidebarBody = document.getElementById('cp-sidebar-body');
-            var downloadBtn = document.getElementById('download-btn');
+            var downloadBtn = document.getElementById('sidebar-export-btn');
             var paragraphNumBtn = document.getElementById('paragraph-num-btn');
             // 벌크 버튼은 renderSidebar()에서 동적 생성 → 이벤트 위임 처리
             var aiClassifyBtn = document.getElementById('ai-classify-btn');

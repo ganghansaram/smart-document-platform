@@ -371,6 +371,7 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     flex-shrink: 0;
 }
 
+.cp-sidebar-action,
 .cp-sidebar-collapse {
     display: flex;
     align-items: center;
@@ -385,6 +386,7 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     transition: background var(--transition-fast);
 }
 
+.cp-sidebar-action:hover,
 .cp-sidebar-collapse:hover {
     background: var(--border-color);
     color: var(--text-dark);
@@ -1145,6 +1147,7 @@ body[data-theme="dark"] .cp-sidebar-header {
     background: var(--panel-bg);
 }
 
+body[data-theme="dark"] .cp-sidebar-action:hover,
 body[data-theme="dark"] .cp-sidebar-collapse:hover {
     background: rgba(255,255,255,0.1);
 }
