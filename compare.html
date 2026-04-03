@@ -3483,8 +3483,8 @@
                             decision: dec === 'accepted' ? '수락' : dec === 'rejected' ? '거절' : '미처리',
                             ai_tag: aiTag,
                             summary: c.summary || '',
-                            old_text: c.oldText || '',
-                            new_text: c.newText || ''
+                            old_text: c.textA || '',
+                            new_text: c.textB || ''
                         });
                     }
                     // 집계
