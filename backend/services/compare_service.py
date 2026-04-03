@@ -122,7 +122,144 @@ def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dic
     penalty = summary["error"] * 10 + summary["warning"] * 3 + summary["suggestion"] * 1
     density = penalty / total_paragraphs
     score = max(0, round(100 - density * 10))
-    return {"score": score, "summary": summary, "issues": issues}
+
+    # 인텔리전스 데이터 (구조 분석 + 요구사항 분류)
+    structure = _analyze_structure(paragraphs)
+    requirements = _classify_requirements(paragraphs)
+
+    return {
+        "score": score,
+        "summary": summary,
+        "issues": issues,
+        "structure": structure,
+        "requirements": requirements,
+    }
+
+
+# ══════════════════════════════════════════
+# 인텔리전스 분석 함수
+# ══════════════════════════════════════════
+
+# 헤딩 패턴: "1. Title", "1.2 Title", "1.2.3 Title" 등
+_HEADING_PATTERN = re.compile(r"^(\d+(?:\.\d+)*)\.\s+(.+)")
+
+# 표/그림 패턴
+_TABLE_PATTERN = re.compile(r"(?:표|Table)\s*(\d+)[.:\s]*(.*)", re.IGNORECASE)
+_FIGURE_PATTERN = re.compile(r"(?:그림|Figure)\s*(\d+)[.:\s]*(.*)", re.IGNORECASE)
+
+
+def _analyze_structure(paragraphs: list[str]) -> dict:
+    """문서 구조 분석 — 헤딩 트리, 섹션 분량, 표/그림 목록"""
+    headings = []
+    tables = []
+    figures = []
+
+    for i, para in enumerate(paragraphs):
+        text = para.strip()
+        if not text:
+            continue
+
+        # 헤딩 감지
+        m = _HEADING_PATTERN.match(text)
+        if m:
+            num_str = m.group(1)
+            title = m.group(2).strip()
+            level = len(num_str.split("."))
+            headings.append({
+                "level": level,
+                "number": num_str,
+                "text": title,
+                "paragraph_index": i,
+            })
+
+        # 표 감지
+        tm = _TABLE_PATTERN.match(text)
+        if tm:
+            tables.append({
+                "number": int(tm.group(1)),
+                "caption": tm.group(2).strip()[:80],
+                "paragraph_index": i,
+            })
+
+        # 그림 감지
+        fm = _FIGURE_PATTERN.match(text)
+        if fm:
+            figures.append({
+                "number": int(fm.group(1)),
+                "caption": fm.group(2).strip()[:80],
+                "paragraph_index": i,
+            })
+
+    # 섹션별 분량 계산 (헤딩 사이 단락 수)
+    sections = []
+    for hi, h in enumerate(headings):
+        start = h["paragraph_index"]
+        end = headings[hi + 1]["paragraph_index"] if hi + 1 < len(headings) else len(paragraphs)
+        para_count = end - start
+        # 문장 수 추정 (마침표 기준)
+        section_text = " ".join(paragraphs[start:end])
+        sentence_count = max(1, len(re.findall(r"[.!?。]\s", section_text)) + 1)
+        sections.append({
+            "heading": f"{h['number']}. {h['text']}",
+            "paragraph_count": para_count,
+            "sentence_count": sentence_count,
+        })
+
+    return {
+        "headings": headings,
+        "sections": sections,
+        "tables": tables,
+        "figures": figures,
+        "total_paragraphs": len(paragraphs),
+        "total_sentences": sum(
+            max(1, len(re.findall(r"[.!?。]\s", p)) + 1)
+            for p in paragraphs if p.strip()
+        ),
+    }
+
+
+# 요구사항 분류 패턴 (영어 우선)
+_REQ_PATTERNS = [
+    ("shall", re.compile(r"\bshall\b|\bmust\b|\bis required to\b", re.IGNORECASE)),
+    ("should", re.compile(r"\bshould\b|\bis recommended\b", re.IGNORECASE)),
+    ("may", re.compile(r"\bmay\b|\bis permitted\b", re.IGNORECASE)),
+    ("test_condition", re.compile(
+        r"\bunder the condition\b|\btest at\b|\btest environment\b|\btested at\b|\btesting shall\b",
+        re.IGNORECASE,
+    )),
+]
+
+
+def _classify_requirements(paragraphs: list[str]) -> dict:
+    """요구사항 문장 분류 — shall/should/may/test_condition/information"""
+    counts = {"shall": 0, "should": 0, "may": 0, "test_condition": 0, "information": 0}
+    details = []
+
+    sentence_split = re.compile(r"(?<=[.!?。])\s+")
+
+    for pi, para in enumerate(paragraphs):
+        sentences = sentence_split.split(para.strip())
+        for sent in sentences:
+            sent = sent.strip()
+            if len(sent) < 5:
+                continue
+
+            classified = False
+            for req_type, pattern in _REQ_PATTERNS:
+                if pattern.search(sent):
+                    counts[req_type] += 1
+                    details.append({
+                        "type": req_type,
+                        "text": sent[:120],
+                        "paragraph_index": pi,
+                    })
+                    classified = True
+                    break  # 첫 매칭만
+
+            if not classified:
+                counts["information"] += 1
+
+    return {"counts": counts, "details": details}
 
 
 # ── 규칙 구현 ──

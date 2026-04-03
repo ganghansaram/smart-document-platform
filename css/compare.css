@@ -1335,6 +1335,76 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 .intel-rule-warn .intel-rule-count { color: var(--color-warning); }
 .intel-rule-fail .intel-rule-count { color: var(--color-error); }
 
+/* 문서 요약 카드 */
+.intel-doc-summary {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.intel-summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 50px;
+    padding: var(--space-sm);
+    background: var(--panel-bg);
+    border-radius: var(--radius-sm);
+}
+
+.intel-summary-value {
+    font-size: var(--font-title);
+    font-weight: var(--font-weight-bold);
+    color: var(--active-color);
+}
+
+.intel-summary-label {
+    font-size: var(--font-caption);
+    color: var(--text-secondary);
+}
+
+/* 헤딩 트리 */
+.intel-heading-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.intel-heading-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-body);
+    transition: background var(--transition-fast);
+}
+
+.intel-heading-item:hover {
+    background: var(--hover-bg);
+}
+
+.intel-heading-num {
+    color: var(--active-color);
+    font-weight: var(--font-weight-semibold);
+    flex-shrink: 0;
+}
+
+.intel-heading-text {
+    color: var(--text-dark);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.intel-heading-count {
+    font-size: var(--font-caption);
+    color: var(--text-light);
+    flex-shrink: 0;
+}
+
 /* 다크 모드 */
 body[data-theme="dark"] .intel-score-hero { background: rgba(255,255,255,0.04); }
 

@@ -4013,6 +4013,135 @@
                 container.innerHTML = html;
             }
 
+            // ── 인텔리전스 구조 탭 렌더링 ──
+            function renderIntelStructure() {
+                var container = document.getElementById('intel-tab-structure');
+                if (!container) return;
+
+                var st = validateState.structure;
+                var rq = validateState.requirements;
+
+                if (!st) {
+                    container.innerHTML = '<div class="intel-placeholder">검증을 실행하면 문서 구조가 표시됩니다.</div>';
+                    return;
+                }
+
+                var html = '';
+
+                // 1. 문서 요약
+                html += '<div class="intel-section"><div class="intel-section-title">문서 요약</div>';
+                html += '<div class="intel-doc-summary">'
+                    + '<div class="intel-summary-item"><span class="intel-summary-value">' + st.total_paragraphs + '</span><span class="intel-summary-label">단락</span></div>'
+                    + '<div class="intel-summary-item"><span class="intel-summary-value">' + st.total_sentences + '</span><span class="intel-summary-label">문장</span></div>'
+                    + '<div class="intel-summary-item"><span class="intel-summary-value">' + st.headings.length + '</span><span class="intel-summary-label">섹션</span></div>'
+                    + '<div class="intel-summary-item"><span class="intel-summary-value">' + st.tables.length + '</span><span class="intel-summary-label">표</span></div>'
+                    + '<div class="intel-summary-item"><span class="intel-summary-value">' + st.figures.length + '</span><span class="intel-summary-label">그림</span></div>'
+                    + '</div></div>';
+
+                // 2. 헤딩 트리
+                if (st.headings.length > 0) {
+                    html += '<div class="intel-section"><div class="intel-section-title">문서 구조</div>';
+                    html += '<div class="intel-heading-tree">';
+                    for (var i = 0; i < st.headings.length; i++) {
+                        var h = st.headings[i];
+                        var indent = (h.level - 1) * 16;
+                        html += '<div class="intel-heading-item" style="padding-left:' + indent + 'px" data-para-idx="' + h.paragraph_index + '">'
+                            + '<span class="intel-heading-num">' + h.number + '.</span> '
+                            + '<span class="intel-heading-text">' + escapeHTML(h.text) + '</span>';
+                        // 섹션 분량 표시
+                        if (st.sections[i]) {
+                            html += '<span class="intel-heading-count">' + st.sections[i].paragraph_count + '단락</span>';
+                        }
+                        html += '</div>';
+                    }
+                    html += '</div></div>';
+                }
+
+                // 3. 섹션별 분량 바
+                if (st.sections.length > 0) {
+                    var maxParas = Math.max.apply(null, st.sections.map(function(s) { return s.paragraph_count; }));
+                    html += '<div class="intel-section"><div class="intel-section-title">섹션별 분량</div>';
+                    for (var i = 0; i < st.sections.length; i++) {
+                        var s = st.sections[i];
+                        var pct = maxParas > 0 ? (s.paragraph_count / maxParas * 100) : 0;
+                        html += '<div class="intel-cat-row">'
+                            + '<span class="intel-cat-label" style="width:auto;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHTML(s.heading) + '">' + escapeHTML(s.heading.substring(0, 15)) + '</span>'
+                            + '<div class="intel-cat-bar-wrap"><div class="intel-cat-bar" style="width:' + pct + '%;background:var(--active-color)"></div></div>'
+                            + '<span class="intel-cat-score">' + s.paragraph_count + '</span>'
+                            + '</div>';
+                    }
+                    html += '</div>';
+                }
+
+                // 4. 요구사항 분류
+                if (rq && rq.counts) {
+                    var reqLabels = { shall: '필수 (shall)', should: '권고 (should)', may: '허용 (may)', test_condition: '시험 조건', information: '정보 서술' };
+                    var reqColors = { shall: 'var(--color-error)', should: 'var(--color-warning)', may: 'var(--color-info)', test_condition: 'var(--active-color)', information: 'var(--text-light)' };
+                    var reqOrder = ['shall', 'should', 'may', 'test_condition', 'information'];
+                    var reqTotal = 0;
+                    for (var ri = 0; ri < reqOrder.length; ri++) reqTotal += (rq.counts[reqOrder[ri]] || 0);
+
+                    html += '<div class="intel-section"><div class="intel-section-title">요구사항 분류</div>';
+                    if (reqTotal > 0) {
+                        // 누적 바
+                        html += '<div class="intel-severity-bar" style="margin-bottom:var(--space-sm)">';
+                        for (var ri = 0; ri < reqOrder.length; ri++) {
+                            var rt = reqOrder[ri];
+                            var rc = rq.counts[rt] || 0;
+                            if (rc > 0) {
+                                html += '<div class="intel-sev-seg" style="width:' + (rc / reqTotal * 100) + '%;background:' + reqColors[rt] + '" title="' + reqLabels[rt] + ' ' + rc + '"></div>';
+                            }
+                        }
+                        html += '</div>';
+                        // 항목별
+                        for (var ri = 0; ri < reqOrder.length; ri++) {
+                            var rt = reqOrder[ri];
+                            var rc = rq.counts[rt] || 0;
+                            if (rc > 0) {
+                                html += '<div class="intel-rule-item">'
+                                    + '<span class="intel-sev-dot" style="background:' + reqColors[rt] + '"></span>'
+                                    + '<span class="intel-rule-name">' + reqLabels[rt] + '</span>'
+                                    + '<span class="intel-rule-count">' + rc + '건</span>'
+                                    + '</div>';
+                            }
+                        }
+                    } else {
+                        html += '<div class="intel-placeholder" style="min-height:40px">요구사항 문장이 감지되지 않았습니다.</div>';
+                    }
+                    html += '</div>';
+                }
+
+                // 5. 표/그림 목록
+                if (st.tables.length > 0 || st.figures.length > 0) {
+                    html += '<div class="intel-section"><div class="intel-section-title">표/그림 목록</div>';
+                    for (var ti = 0; ti < st.tables.length; ti++) {
+                        html += '<div class="intel-rule-item">'
+                            + '<span class="intel-rule-icon" style="color:var(--text-secondary)">T</span>'
+                            + '<span class="intel-rule-name">표 ' + st.tables[ti].number + (st.tables[ti].caption ? ': ' + escapeHTML(st.tables[ti].caption) : '') + '</span>'
+                            + '</div>';
+                    }
+                    for (var fi = 0; fi < st.figures.length; fi++) {
+                        html += '<div class="intel-rule-item">'
+                            + '<span class="intel-rule-icon" style="color:var(--text-secondary)">F</span>'
+                            + '<span class="intel-rule-name">그림 ' + st.figures[fi].number + (st.figures[fi].caption ? ': ' + escapeHTML(st.figures[fi].caption) : '') + '</span>'
+                            + '</div>';
+                    }
+                    html += '</div>';
+                }
+
+                container.innerHTML = html;
+
+                // 헤딩 클릭 → 좌측 패널 이동
+                container.querySelectorAll('[data-para-idx]').forEach(function(el) {
+                    el.style.cursor = 'pointer';
+                    el.addEventListener('click', function() {
+                        var idx = parseInt(this.getAttribute('data-para-idx'), 10);
+                        var target = panelBodyA.querySelector('.cp-paragraph[data-index="' + idx + '"]');
+                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    });
+                });
+            }
+
             // ══════════════════════════════════════════
             // Phase 3: 검증 모드 (Validation Mode)
             // ══════════════════════════════════════════
@@ -4024,7 +4153,9 @@
                 issues: [],
                 currentIndex: -1,
                 filter: { error: true, warning: true, suggestion: true },
-                isLoading: false
+                isLoading: false,
+                structure: null,
+                requirements: null
             };
 
             // ── 검증 DOM 참조 ──
@@ -4076,11 +4207,14 @@
                     validateState.score = data.score;
                     validateState.summary = data.summary;
                     validateState.issues = data.issues;
+                    validateState.structure = data.structure || null;
+                    validateState.requirements = data.requirements || null;
                     validateState.isLoading = false;
 
                     renderValidationHighlights(data.issues);
                     renderValidationSidebar();
                     renderIntelScorecard();
+                    renderIntelStructure();
                     showValidationUI(true);
                     updateValidationNavigation();
 
@@ -4108,6 +4242,8 @@
                 validateState.issues = [];
                 validateState.currentIndex = -1;
                 validateState.isLoading = false;
+                validateState.structure = null;
+                validateState.requirements = null;
 
                 // 인라인 하이라이트 제거: 원래 텍스트로 복원
                 if (docState.a.paragraphs.length > 0) {
@@ -4115,7 +4251,8 @@
                 }
 
                 showValidationUI(false);
-                renderIntelScorecard(); // 평가표 초기화 (placeholder 복원)
+                renderIntelScorecard();
+                renderIntelStructure();
 
                 // 사이드바 빈 상태
                 if (currentMode === 'verify') {
