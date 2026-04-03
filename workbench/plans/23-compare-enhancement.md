@@ -2,7 +2,7 @@
 
 > **작성일**: 2026-04-01
 > **최종 갱신**: 2026-04-04
-> **상태**: Phase 1 진행 중 (1a~1i+1R+1UX 완료, 1j 설정 착수 대기)
+> **상태**: Phase 1 진행 중 (1a~1j+1R+1UX 완료, 1k 파일럿 대기)
 > **관련**: `compare.html` (→ 향후 `verify.html`), `backend/api/compare.py`, `backend/services/compare_service.py`
 > **선행 문서**: `docs/11-COMPARE-SYSTEM.md`, `docs/research-semantic-comparison.md`
 
@@ -13,7 +13,7 @@
 | Phase | 설명 | 태스크 | 완료 | 상태 |
 |:-----:|------|:------:|:----:|:----:|
 | 0 | 모드 선택 허브 + 이탈 방지 | 7 | 7 | ✅ 완료 |
-| 1 | 유사도 검사 (핵심) | 13 | 11 | 🔵 1UX 완료, 1j 착수 대기 |
+| 1 | 유사도 검사 (핵심) | 13 | 12 | 🔵 1j 완료, 1k 파일럿 대기 |
 | 2 | 내보내기 확장 | 미정 | 0 | 대기 |
 | 3 | 규칙 검증 고도화 + 인텔리전스 패널 | 9 | 0 | 대기 |
 | 4 | 세션 관리 + 이력 | 8 | 0 | Step 1: Phase 1 후 착수 |
@@ -454,7 +454,7 @@ threshold_medium: 0.70 (선택)
 | 1h | 프론트: UI 전면 개편 (백엔드 태깅 HTML + 하이라이트 + 통계 + 한국어 라벨) | 상 | ✅ |
 | 1i | 프론트: 보조 도구 (필터, 미니맵, 이전/다음 네비게이션) | 중 | ✅ |
 | 1UX | 프론트: UX 리파인먼트 (아래 1UX 섹션) | 하 | ✅ |
-| 1j | 설정: 임계값 + 허용 목록 관리 + 관리자 UI | 하 | ← 다음 |
+| 1j | 설정: 관리자 UI (Verify 리브랜딩 + 3탭 + 유사도 설정 7종 + 섹션 설명문) | 하 | ✅ |
 | 1k | 파일럿: 실제 문서 검증 + 임계값 튜닝 + 성능 벤치마크 | 하 | — |
 
 ### Phase 1UX: UX 리파인먼트 (2026-04-03 완료)
@@ -484,6 +484,34 @@ threshold_medium: 0.70 (선택)
 - Playwright 전체 플로우 테스트 (허브→유사도→결과→필터→모드전환→허브복귀)
 - 다크 모드, 768px 반응형, 콘솔 에러 0건
 - 비교/검증 모드 회귀 없음 확인
+
+---
+
+### Phase 1j: 관리자 설정 (2026-04-04 완료)
+
+> 유사도 검사의 임계값·엔진 파라미터를 관리자 설정 UI에서 조정 가능하게 구현.
+> Compare → Verify 리브랜딩을 관리자 설정에도 반영.
+
+#### 구현 내용
+
+| # | 항목 | 상세 |
+|---|------|------|
+| 1 | 사이드바 리브랜딩 | Compare → **Verify** |
+| 2 | 3탭 구조 | 비교 (기존 AI 분류) / 유사도 검사 (신규) / 규칙 검증 (예약) |
+| 3 | 유사도 설정 7종 | 분류 임계값(L1/L3 슬라이더), 판정 경계(양호/보통/주의), 엔진(Winnowing k/w, 배치) |
+| 4 | 백엔드 연동 | `config.py` 변수 → `settings_service.py` CRUD → `similarity_engine.py` 동적 로드 |
+| 5 | 프론트 연동 | 판정 경계값을 `/api/settings/public`에서 로드, 하드코딩 제거 |
+| 6 | 섹션 설명문 | `section.desc` 지원 추가 — 섹션 타이틀 아래 안내 문구 표시 |
+| 7 | 빈 탭 안내 | `sections: []` 탭에 "향후 추가 예정입니다" 안내 |
+
+#### 변경 파일
+
+- `backend/config.py` — `VERIFY_SIMILARITY_*` 변수 7개
+- `backend/services/settings_service.py` — verify 그룹, apply_to_config, public 노출
+- `backend/services/similarity_engine.py` — Winnowing 파라미터 config 동적 로드
+- `js/admin-settings.js` — Verify 3탭 스키마 + 섹션 desc 렌더링 + 빈 탭 안내
+- `css/admin-settings.css` — `.admin-section-desc` 스타일
+- `compare.html` — 판정 경계 public settings 연동
 
 ---
 
