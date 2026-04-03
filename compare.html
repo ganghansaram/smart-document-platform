@@ -3881,6 +3881,138 @@
                 }
             })();
 
+            // ── 규칙 ID → 카테고리 매핑 (RULE_LABELS는 규칙 설정 모달 섹션에 정의) ──
+            var RULE_CATEGORY = {
+                numbering_continuity: 'structure',
+                table_caption: 'structure',
+                figure_caption: 'structure',
+                forbidden_terms: 'terminology',
+                inconsistent_terms: 'terminology',
+                sentence_length: 'readability'
+            };
+
+            // ── 인텔리전스 평가표 탭 렌더링 ──
+            function renderIntelScorecard() {
+                var container = document.getElementById('intel-tab-scorecard');
+                if (!container) return;
+
+                var score = validateState.score;
+                var summary = validateState.summary;
+                var issues = validateState.issues;
+
+                if (score < 0) {
+                    container.innerHTML = '<div class="intel-placeholder">검증을 실행하면 평가표가 표시됩니다.</div>';
+                    return;
+                }
+
+                // 등급
+                var grade = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 60 ? 'C' : 'D';
+                var cs = getComputedStyle(document.documentElement);
+                var colorGood = cs.getPropertyValue('--color-success').trim() || '#22c55e';
+                var colorWarn = cs.getPropertyValue('--color-warning').trim() || '#f59e0b';
+                var colorBad = cs.getPropertyValue('--color-error').trim() || '#ef4444';
+                var scoreColor = score >= 80 ? colorGood : (score >= 60 ? colorWarn : colorBad);
+
+                // SVG 도넛 링 (확대)
+                var circumference = 2 * Math.PI * 40;
+                var offset = circumference - (score / 100) * circumference;
+
+                var html = '<div class="intel-score-hero">'
+                    + '<svg class="intel-score-ring" width="100" height="100" viewBox="0 0 100 100">'
+                    + '<circle cx="50" cy="50" r="40" fill="none" stroke="' + scoreColor + '" stroke-opacity="0.15" stroke-width="6"/>'
+                    + '<circle cx="50" cy="50" r="40" fill="none" stroke="' + scoreColor + '" stroke-width="6" stroke-linecap="round"'
+                    + ' stroke-dasharray="' + circumference.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '"'
+                    + ' transform="rotate(-90 50 50)"/>'
+                    + '<text x="50" y="46" text-anchor="middle" dominant-baseline="central" font-size="24" font-weight="700" fill="' + scoreColor + '">' + score + '</text>'
+                    + '<text x="50" y="64" text-anchor="middle" font-size="10" fill="var(--text-light)">/ 100</text>'
+                    + '</svg>'
+                    + '<div class="intel-score-meta">'
+                    + '<span class="intel-grade" style="color:' + scoreColor + '">등급 ' + grade + '</span>'
+                    + '<div class="intel-score-stats">';
+                if (summary.error > 0) html += '<span class="vd-score-stat stat-error">오류 ' + summary.error + '</span>';
+                if (summary.warning > 0) html += '<span class="vd-score-stat stat-warning">경고 ' + summary.warning + '</span>';
+                if (summary.suggestion > 0) html += '<span class="vd-score-stat stat-suggestion">제안 ' + summary.suggestion + '</span>';
+                html += '</div></div></div>';
+
+                // 심각도 분포 바
+                var total = (summary.error || 0) + (summary.warning || 0) + (summary.suggestion || 0);
+                if (total > 0) {
+                    html += '<div class="intel-section"><div class="intel-section-title">심각도 분포</div>';
+                    html += '<div class="intel-severity-bar">';
+                    if (summary.error > 0) html += '<div class="intel-sev-seg intel-sev-error" style="width:' + (summary.error / total * 100) + '%" title="오류 ' + summary.error + '"></div>';
+                    if (summary.warning > 0) html += '<div class="intel-sev-seg intel-sev-warning" style="width:' + (summary.warning / total * 100) + '%" title="경고 ' + summary.warning + '"></div>';
+                    if (summary.suggestion > 0) html += '<div class="intel-sev-seg intel-sev-suggestion" style="width:' + (summary.suggestion / total * 100) + '%" title="제안 ' + summary.suggestion + '"></div>';
+                    html += '</div>';
+                    html += '<div class="intel-sev-legend">'
+                        + '<span><span class="intel-sev-dot" style="background:var(--color-error)"></span>오류 ' + summary.error + '</span>'
+                        + '<span><span class="intel-sev-dot" style="background:var(--color-warning)"></span>경고 ' + summary.warning + '</span>'
+                        + '<span><span class="intel-sev-dot" style="background:var(--color-info)"></span>제안 ' + summary.suggestion + '</span>'
+                        + '</div></div>';
+                }
+
+                // 카테고리별 점수
+                var catLabels = { structure: '구조', terminology: '용어', readability: '가독성' };
+                var catOrder = ['structure', 'terminology', 'readability'];
+                var catPenalty = { structure: 0, terminology: 0, readability: 0 };
+                var catCount = { structure: 0, terminology: 0, readability: 0 };
+                for (var i = 0; i < issues.length; i++) {
+                    var cat = issues[i].category || 'etc';
+                    if (catPenalty[cat] === undefined) continue;
+                    var sevW = issues[i].severity === 'error' ? 10 : issues[i].severity === 'warning' ? 3 : 1;
+                    catPenalty[cat] += sevW;
+                    catCount[cat]++;
+                }
+
+                html += '<div class="intel-section"><div class="intel-section-title">카테고리별 평가</div>';
+                for (var ci = 0; ci < catOrder.length; ci++) {
+                    var c = catOrder[ci];
+                    var catScore = Math.max(0, 100 - catPenalty[c] * 5);
+                    var barColor = catScore >= 80 ? 'var(--color-success)' : catScore >= 60 ? 'var(--color-warning)' : 'var(--color-error)';
+                    html += '<div class="intel-cat-row">'
+                        + '<span class="intel-cat-label">' + catLabels[c] + '</span>'
+                        + '<div class="intel-cat-bar-wrap"><div class="intel-cat-bar" style="width:' + catScore + '%;background:' + barColor + '"></div></div>'
+                        + '<span class="intel-cat-score">' + catScore + '</span>'
+                        + '</div>';
+                }
+                html += '</div>';
+
+                // 규칙별 체크리스트
+                html += '<div class="intel-section"><div class="intel-section-title">규칙별 검사 결과</div>';
+                var ruleIds = Object.keys(RULE_LABELS);
+                var ruleIssueCount = {};
+                var ruleMaxSev = {};
+                for (var i = 0; i < issues.length; i++) {
+                    var rid = issues[i].rule_id;
+                    if (!rid) continue;
+                    ruleIssueCount[rid] = (ruleIssueCount[rid] || 0) + 1;
+                    var curMax = ruleMaxSev[rid] || 'suggestion';
+                    if (issues[i].severity === 'error') ruleMaxSev[rid] = 'error';
+                    else if (issues[i].severity === 'warning' && curMax !== 'error') ruleMaxSev[rid] = 'warning';
+                    else if (!ruleMaxSev[rid]) ruleMaxSev[rid] = 'suggestion';
+                }
+
+                for (var ri = 0; ri < ruleIds.length; ri++) {
+                    var rid = ruleIds[ri];
+                    var count = ruleIssueCount[rid] || 0;
+                    var icon, statusClass;
+                    if (count === 0) {
+                        icon = '&#10003;'; statusClass = 'intel-rule-pass';
+                    } else {
+                        var maxSev = ruleMaxSev[rid] || 'warning';
+                        icon = maxSev === 'error' ? '&#10007;' : '&#9888;';
+                        statusClass = maxSev === 'error' ? 'intel-rule-fail' : 'intel-rule-warn';
+                    }
+                    html += '<div class="intel-rule-item ' + statusClass + '">'
+                        + '<span class="intel-rule-icon">' + icon + '</span>'
+                        + '<span class="intel-rule-name">' + RULE_LABELS[rid] + '</span>'
+                        + '<span class="intel-rule-count">' + (count > 0 ? count + '건' : '통과') + '</span>'
+                        + '</div>';
+                }
+                html += '</div>';
+
+                container.innerHTML = html;
+            }
+
             // ══════════════════════════════════════════
             // Phase 3: 검증 모드 (Validation Mode)
             // ══════════════════════════════════════════
@@ -3948,6 +4080,7 @@
 
                     renderValidationHighlights(data.issues);
                     renderValidationSidebar();
+                    renderIntelScorecard();
                     showValidationUI(true);
                     updateValidationNavigation();
 
@@ -3982,6 +4115,7 @@
                 }
 
                 showValidationUI(false);
+                renderIntelScorecard(); // 평가표 초기화 (placeholder 복원)
 
                 // 사이드바 빈 상태
                 if (currentMode === 'verify') {
@@ -4085,33 +4219,8 @@
                     return;
                 }
 
-                // 스코어 색상 — CSS 변수에서 런타임 읽기 (다크 모드 대응)
-                var cs = getComputedStyle(document.documentElement);
-                var colorGood = cs.getPropertyValue('--color-success').trim() || '#22c55e';
-                var colorWarn = cs.getPropertyValue('--color-warning').trim() || '#f59e0b';
-                var colorBad = cs.getPropertyValue('--color-error').trim() || '#ef4444';
-                var scoreColor = score >= 80 ? colorGood : (score >= 60 ? colorWarn : colorBad);
-                var scoreBg = score >= 80 ? 'color-mix(in srgb, ' + colorGood + ' 10%, transparent)' : (score >= 60 ? 'color-mix(in srgb, ' + colorWarn + ' 10%, transparent)' : 'color-mix(in srgb, ' + colorBad + ' 10%, transparent)');
-
-                // SVG 도넛 링
-                var circumference = 2 * Math.PI * 14;
-                var offset = circumference - (score / 100) * circumference;
-
-                var html = '<div class="vd-score-card" style="background:' + scoreBg + '">'
-                    + '<svg class="vd-score-ring" width="40" height="40" viewBox="0 0 36 36">'
-                    + '<circle cx="18" cy="18" r="14" fill="none" stroke="' + scoreColor + '" stroke-opacity="0.2" stroke-width="3"/>'
-                    + '<circle cx="18" cy="18" r="14" fill="none" stroke="' + scoreColor + '" stroke-width="3" stroke-linecap="round"'
-                    + ' stroke-dasharray="' + circumference.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '"'
-                    + ' transform="rotate(-90 18 18)"/>'
-                    + '<text x="18" y="18" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="700" fill="' + scoreColor + '">' + score + '</text>'
-                    + '</svg>'
-                    + '<div class="vd-score-details">';
-
-                if (summary.error > 0) html += '<span class="vd-score-stat stat-error">오류 ' + summary.error + '</span>';
-                if (summary.warning > 0) html += '<span class="vd-score-stat stat-warning">경고 ' + summary.warning + '</span>';
-                if (summary.suggestion > 0) html += '<span class="vd-score-stat stat-suggestion">제안 ' + summary.suggestion + '</span>';
-
-                html += '</div></div>';
+                // 스코어 카드 → 인텔리전스 패널 평가표 탭으로 이동됨
+                var html = '';
 
                 // 카테고리별 그룹화
                 var categories = {};

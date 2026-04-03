@@ -1187,7 +1187,157 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
     font-size: var(--font-body);
 }
 
+/* ── 평가표 탭 ── */
+.intel-score-hero {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    padding: var(--space-md);
+    background: var(--panel-bg);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+}
+
+.intel-score-ring { flex-shrink: 0; }
+
+.intel-score-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.intel-grade {
+    font-size: var(--font-title);
+    font-weight: var(--font-weight-bold);
+}
+
+.intel-score-stats {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.intel-section {
+    margin-bottom: var(--space-lg);
+}
+
+.intel-section-title {
+    font-size: var(--font-small);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--space-sm);
+}
+
+/* 심각도 분포 바 */
+.intel-severity-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--border-color);
+    margin-bottom: var(--space-xs);
+}
+
+.intel-sev-seg { min-width: 4px; }
+.intel-sev-error { background: var(--color-error); }
+.intel-sev-warning { background: var(--color-warning); }
+.intel-sev-suggestion { background: var(--color-info); }
+
+.intel-sev-legend {
+    display: flex;
+    gap: var(--space-md);
+    font-size: var(--font-small);
+    color: var(--text-secondary);
+}
+
+.intel-sev-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+/* 카테고리별 점수 바 */
+.intel-cat-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xs);
+}
+
+.intel-cat-label {
+    width: 48px;
+    font-size: var(--font-small);
+    color: var(--text-dark);
+    flex-shrink: 0;
+}
+
+.intel-cat-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.intel-cat-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width var(--transition-normal);
+}
+
+.intel-cat-score {
+    width: 28px;
+    text-align: right;
+    font-size: var(--font-small);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-dark);
+}
+
+/* 규칙 체크리스트 */
+.intel-rule-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) 0;
+    font-size: var(--font-body);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.intel-rule-item:last-child { border-bottom: none; }
+
+.intel-rule-icon {
+    width: 20px;
+    text-align: center;
+    font-size: var(--font-body);
+    flex-shrink: 0;
+}
+
+.intel-rule-pass .intel-rule-icon { color: var(--color-success); }
+.intel-rule-warn .intel-rule-icon { color: var(--color-warning); }
+.intel-rule-fail .intel-rule-icon { color: var(--color-error); }
+
+.intel-rule-name {
+    flex: 1;
+    color: var(--text-dark);
+}
+
+.intel-rule-count {
+    font-size: var(--font-small);
+    color: var(--text-secondary);
+}
+
+.intel-rule-pass .intel-rule-count { color: var(--color-success); }
+.intel-rule-warn .intel-rule-count { color: var(--color-warning); }
+.intel-rule-fail .intel-rule-count { color: var(--color-error); }
+
 /* 다크 모드 */
+body[data-theme="dark"] .intel-score-hero { background: rgba(255,255,255,0.04); }
+
 body[data-theme="dark"] .intel-panel-header {
     background: var(--panel-bg);
 }
