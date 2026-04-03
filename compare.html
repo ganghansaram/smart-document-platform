@@ -182,13 +182,6 @@
                     </div>
                     <div class="verify-hub-history-list" id="verify-hub-history-list"></div>
                 </div>
-                <div class="verify-hub-coming-soon">
-                    <div class="verify-hub-coming-soon-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                    </div>
-                    <h3>유사도 검사</h3>
-                    <p>참조 원문과의 유사 구간을 식별하여<br>표절 리스크를 점검하는 기능입니다.<br>현재 개발 중이며 곧 사용할 수 있습니다.</p>
-                </div>
                 <div class="verify-hub-hint">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     .docx, .pdf 파일을 화면에 드래그하면 비교 모드로 바로 시작합니다
@@ -1723,6 +1716,7 @@
                 // 네비게이션 표시 + 필터 즉시 적용 (인라인 체크 상태 반영)
                 document.getElementById('sim-nav-group').style.display = '';
                 simApplyFilter();
+                updateExportBtn();
 
                 // 이력 저장
                 var simScoreColor = summary.similarity_score >= 70 ? 'var(--color-error)' :
@@ -2256,10 +2250,19 @@
                 swapBtn.style.display = show ? '' : 'none';
                 editToggleBtn.style.display = show ? '' : 'none';
                 filterGroup.style.display = show ? '' : 'none';
-                downloadBtn.style.display = show ? '' : 'none';
                 paragraphNumBtn.style.display = show ? '' : 'none';
                 aiClassifyBtn.style.display = (show && compareAiEnabled) ? '' : 'none';
                 if (!show && editMode) toggleEditMode();
+                updateExportBtn();
+            }
+
+            // ── 내보내기 버튼 표시 제어 (모드 공통) ──
+            function updateExportBtn() {
+                var hasData = false;
+                if (currentMode === 'compare') hasData = diffState.changes.length > 0;
+                else if (currentMode === 'verify') hasData = validateState.issues.length > 0;
+                else if (currentMode === 'similarity') hasData = !!simLastResult;
+                downloadBtn.style.display = hasData ? '' : 'none';
             }
 
             // ── 2-2. Diff 시각화 ──
@@ -3135,24 +3138,104 @@
                 updateDecisionProgress();
             });
 
-            // ── 4-2. 내보내기 ──
+            // ── 4-2. 내보내기 (모드 공통) ──
             downloadBtn.addEventListener('click', function() {
-                if (editMode || diffState.changes.length === 0) return;
+                if (editMode) return;
+                // 모드별 데이터 유무 확인
+                if (currentMode === 'compare' && diffState.changes.length === 0) return;
+                if (currentMode === 'verify' && validateState.issues.length === 0) return;
+                if (currentMode === 'similarity' && !simLastResult) return;
 
-                // 미처리 항목 확인
-                var undecided = 0;
-                for (var i = 0; i < diffState.decisions.length; i++) {
-                    if (!diffState.decisions[i]) undecided++;
-                }
-
-                if (undecided > 0) {
-                    showExportConfirm(undecided, doExport);
-                } else {
-                    doExport();
-                }
+                showExportFormatModal();
             });
 
-            function doExport() {
+            // ── 포맷 선택 모달 ──
+            function showExportFormatModal() {
+                // 비교 모드: 미처리 경고 포함
+                var warnHtml = '';
+                if (currentMode === 'compare') {
+                    var undecided = 0;
+                    for (var i = 0; i < diffState.decisions.length; i++) {
+                        if (!diffState.decisions[i]) undecided++;
+                    }
+                    if (undecided > 0) {
+                        warnHtml = '<p style="font-size:var(--font-small);color:var(--color-warning);margin:0 0 var(--space-sm)">'
+                            + '미처리 <strong>' + undecided + '</strong>건은 "미처리"로 표시됩니다.</p>';
+                    }
+                }
+
+                var overlay = document.createElement('div');
+                overlay.className = 'modal-overlay blur';
+                overlay.innerHTML = '<div class="modal-box" style="max-width:380px">'
+                    + '<div class="modal-header"><h3>리포트 내보내기</h3>'
+                    + '<button class="modal-close" id="export-fmt-close">&times;</button></div>'
+                    + '<div class="modal-body">'
+                    + warnHtml
+                    + '<p style="font-size:var(--font-body);color:var(--text-secondary);margin:0 0 var(--space-md)">내보내기 형식을 선택하세요.</p>'
+                    + '<div class="export-format-list">'
+                    + '<button class="btn btn-secondary export-fmt-btn" data-fmt="xlsx">'
+                    + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18M3 15h18"/></svg>'
+                    + ' Excel (.xlsx)</button>'
+                    + '<button class="btn btn-secondary export-fmt-btn" data-fmt="html">'
+                    + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'
+                    + ' HTML (인쇄용)</button>'
+                    + '<button class="btn btn-secondary export-fmt-btn" data-fmt="txt">'
+                    + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
+                    + ' 텍스트 (.txt)</button>'
+                    + '</div>'
+                    + '</div></div>';
+                document.body.appendChild(overlay);
+
+                function close() { overlay.remove(); }
+                overlay.querySelector('#export-fmt-close').addEventListener('click', close);
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay) close();
+                });
+
+                var btns = overlay.querySelectorAll('.export-fmt-btn');
+                for (var i = 0; i < btns.length; i++) {
+                    btns[i].addEventListener('click', function() {
+                        var fmt = this.getAttribute('data-fmt');
+                        close();
+                        runExport(fmt);
+                    });
+                }
+            }
+
+            // ── 내보내기 분기 ──
+            function runExport(fmt) {
+                if (fmt === 'txt') {
+                    if (currentMode === 'compare') doExportCompareTxt();
+                    else if (currentMode === 'similarity') doExportSimilarityTxt();
+                    else if (currentMode === 'verify') doExportVerifyTxt();
+                } else if (fmt === 'xlsx') {
+                    doExportExcel();
+                } else if (fmt === 'html') {
+                    doExportHtml();
+                }
+            }
+
+            // ── 파일 다운로드 헬퍼 ──
+            function downloadBlob(blob, filename) {
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            // ── 기본 파일명 생성 ──
+            function getExportFilename(ext) {
+                var base = '';
+                if (currentMode === 'compare') base = (docState.a.filename || 'document').replace(/\.[^.]+$/, '') + '_review';
+                else if (currentMode === 'similarity') base = (simState.a.filename || 'document').replace(/\.[^.]+$/, '') + '_similarity';
+                else if (currentMode === 'verify') base = (docState.a.filename || 'document').replace(/\.[^.]+$/, '') + '_verify';
+                return base + '.' + ext;
+            }
+
+            // ── 비교 모드 TXT 내보내기 (기존 doExport) ──
+            function doExportCompareTxt() {
                 var changes = diffState.changes;
                 var decisions = diffState.decisions;
                 var lines = [];
@@ -3245,41 +3328,303 @@
 
                 // 6. Blob 다운로드
                 var text = lines.join('\n');
-                var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-                var url = URL.createObjectURL(blob);
-                var a = document.createElement('a');
-                a.href = url;
-                a.download = (docState.a.filename || 'document').replace(/\.[^.]+$/, '') + '_review.txt';
-                a.click();
-                URL.revokeObjectURL(url);
+                downloadBlob(new Blob([text], { type: 'text/plain;charset=utf-8' }), getExportFilename('txt'));
             }
 
-            function showExportConfirm(undecided, onConfirm) {
-                var overlay = document.createElement('div');
-                overlay.className = 'modal-overlay blur';
-                overlay.innerHTML = '<div class="modal-box" style="max-width:400px">'
-                    + '<div class="modal-header"><h3>리포트 내보내기</h3>'
-                    + '<button class="modal-close" id="export-modal-close">&times;</button></div>'
-                    + '<div class="modal-body">'
-                    + '<p style="font-size:var(--font-body);color:var(--text-dark);margin:0">'
-                    + '미처리 <strong>' + undecided + '</strong>건은 리포트에 "미처리"로 표시됩니다.</p>'
-                    + '</div>'
-                    + '<div class="modal-footer">'
-                    + '<button class="btn btn-secondary" id="export-modal-cancel">취소</button>'
-                    + '<button class="btn btn-primary" id="export-modal-ok">리포트 저장</button>'
-                    + '</div></div>';
-                document.body.appendChild(overlay);
+            // ── 유사도 모드 TXT 내보내기 ──
+            function doExportSimilarityTxt() {
+                if (!simLastResult) return;
+                var summary = simLastResult.summary;
+                var matches = simLastResult.matches;
+                var tiers = summary.tiers || {};
+                var bd = summary.breakdown || {};
+                var lines = [];
 
-                function close() { overlay.remove(); }
-                overlay.querySelector('#export-modal-close').addEventListener('click', close);
-                overlay.querySelector('#export-modal-cancel').addEventListener('click', close);
-                overlay.querySelector('#export-modal-ok').addEventListener('click', function() {
-                    close();
-                    onConfirm();
+                lines.push('=== 유사도 검사 리포트 ===');
+                lines.push('검사 대상: ' + (simState.a.filename || '(없음)'));
+                lines.push('참조 원문: ' + (simState.b.filename || '(없음)'));
+                lines.push('검토일: ' + new Date().toISOString().slice(0, 10));
+                lines.push('');
+
+                var scoreVal = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
+                var verdictLabel = scoreVal >= verdictBoundHigh ? '주의' : (scoreVal >= verdictBoundLow ? '보통' : '양호');
+                lines.push('── 요약 ─────────────────────────────────────────');
+                lines.push('유사율: ' + scoreVal + '% (' + verdictLabel + ')');
+                lines.push('전체 문장: ' + summary.total_sentences + '문장');
+                if (tiers.substantive !== undefined) {
+                    lines.push('실질 유사: ' + tiers.substantive + '% · 의역: ' + tiers.derived + '% · 공통: ' + tiers.boilerplate + '%');
+                }
+                var types = ['identical', 'near_copy', 'paraphrase', 'low_sim', 'boilerplate'];
+                var typeParts = [];
+                for (var ti = 0; ti < types.length; ti++) {
+                    var t = types[ti];
+                    if (bd[t] && bd[t].count > 0) {
+                        var info = SIM_TYPE_MAP[t] || {};
+                        typeParts.push((info.label || t) + ' ' + bd[t].count + '건');
+                    }
+                }
+                if (typeParts.length > 0) lines.push('유형별: ' + typeParts.join(' · '));
+                lines.push('');
+
+                lines.push('── 매칭 목록 (' + matches.length + '건) ────────────────────────');
+                for (var i = 0; i < matches.length; i++) {
+                    var m = matches[i];
+                    var typeKey = m.type || 'low_sim';
+                    var typeInfo = SIM_TYPE_MAP[typeKey] || {};
+                    var simPct = m.similarity ? (m.similarity * 100).toFixed(1) + '%' : '—';
+                    var layer = DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer || '';
+                    var num = ' #' + (i + 1);
+                    while (num.length < 5) num = ' ' + num;
+                    lines.push(num + '  [' + (typeInfo.label || typeKey) + ' ' + simPct + '] ' + layer);
+                    lines.push('      대상: ' + m.target_text.substring(0, 120) + (m.target_text.length > 120 ? '…' : ''));
+                    lines.push('      참조: ' + m.ref_text.substring(0, 120) + (m.ref_text.length > 120 ? '…' : ''));
+                }
+                lines.push('');
+
+                downloadBlob(new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' }), getExportFilename('txt'));
+            }
+
+            // ── 규칙 검증 모드 TXT 내보내기 ──
+            function doExportVerifyTxt() {
+                if (validateState.issues.length === 0) return;
+                var issues = validateState.issues;
+                var score = validateState.score;
+                var summary = validateState.summary;
+                var lines = [];
+
+                lines.push('=== 규칙 검증 리포트 ===');
+                lines.push('문서: ' + (docState.a.filename || '(없음)'));
+                lines.push('검토일: ' + new Date().toISOString().slice(0, 10));
+                lines.push('');
+
+                var grade = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 60 ? 'C' : 'D';
+                lines.push('── 요약 ─────────────────────────────────────────');
+                lines.push('점수: ' + score + '점 (등급 ' + grade + ')');
+                lines.push('오류: ' + summary.error + '건 · 경고: ' + summary.warning + '건 · 제안: ' + summary.suggestion + '건');
+                lines.push('');
+
+                var severityOrder = ['error', 'warning', 'suggestion'];
+                var severityLabels = { error: '오류', warning: '경고', suggestion: '제안' };
+                lines.push('── 이슈 목록 (' + issues.length + '건) ──────────────────────────');
+                for (var si = 0; si < severityOrder.length; si++) {
+                    var sev = severityOrder[si];
+                    var sevIssues = [];
+                    for (var i = 0; i < issues.length; i++) {
+                        if (issues[i].severity === sev) sevIssues.push(issues[i]);
+                    }
+                    if (sevIssues.length === 0) continue;
+                    lines.push('');
+                    lines.push('▸ ' + severityLabels[sev] + ' (' + sevIssues.length + '건)');
+                    for (var j = 0; j < sevIssues.length; j++) {
+                        var iss = sevIssues[j];
+                        var loc = iss.paragraph_index !== undefined ? '단락 ' + (iss.paragraph_index + 1) : '';
+                        lines.push('  - [' + (iss.rule || '') + '] ' + (iss.message || '') + (loc ? ' (' + loc + ')' : ''));
+                    }
+                }
+                lines.push('');
+
+                downloadBlob(new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' }), getExportFilename('txt'));
+            }
+
+            // ── Excel 내보내기 (백엔드 API 호출) ──
+            function doExportExcel() {
+                var payload = buildExportPayload();
+                downloadBtn.classList.add('loading');
+                fetch(API_BASE + '/compare/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    credentials: 'include'
+                })
+                .then(function(res) {
+                    if (!res.ok) throw new Error('Excel 생성 실패');
+                    return res.blob();
+                })
+                .then(function(blob) {
+                    downloadBlob(blob, getExportFilename('xlsx'));
+                })
+                .catch(function(err) {
+                    showToast(err.message, 'error');
+                })
+                .finally(function() {
+                    downloadBtn.classList.remove('loading');
                 });
-                overlay.addEventListener('click', function(e) {
-                    if (e.target === overlay) close();
-                });
+            }
+
+            // ── HTML 리포트 내보내기 (프론트엔드 생성) ──
+            function doExportHtml() {
+                var html = buildHtmlReport();
+                downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), getExportFilename('html'));
+            }
+
+            // ── 내보내기 페이로드 빌드 (Excel/HTML 공통 데이터) ──
+            function buildExportPayload() {
+                var payload = {
+                    mode: currentMode,
+                    timestamp: new Date().toISOString(),
+                    reviewer: (typeof currentUser !== 'undefined' && currentUser) ? currentUser.username : ''
+                };
+
+                if (currentMode === 'compare') {
+                    payload.files = { a: docState.a.filename || '', b: docState.b.filename || '' };
+                    payload.changes = [];
+                    for (var i = 0; i < diffState.changes.length; i++) {
+                        var c = diffState.changes[i];
+                        var dec = diffState.decisions[i] || 'undecided';
+                        var aiTag = '';
+                        if (diffState.aiClassifications && diffState.aiClassifications[i]) {
+                            aiTag = diffState.aiClassifications[i].userOverride || diffState.aiClassifications[i].tag || '';
+                            if (aiTag !== 'UNKNOWN') {
+                                aiTag = (AI_TAG_META[aiTag] || {}).label || aiTag;
+                            } else { aiTag = ''; }
+                        }
+                        payload.changes.push({
+                            index: i + 1,
+                            decision: dec === 'accepted' ? '수락' : dec === 'rejected' ? '거절' : '미처리',
+                            ai_tag: aiTag,
+                            summary: c.summary || '',
+                            old_text: c.oldText || '',
+                            new_text: c.newText || ''
+                        });
+                    }
+                    // 집계
+                    var acc = 0, rej = 0, und = 0;
+                    for (var i = 0; i < diffState.decisions.length; i++) {
+                        if (diffState.decisions[i] === 'accepted') acc++;
+                        else if (diffState.decisions[i] === 'rejected') rej++;
+                        else und++;
+                    }
+                    payload.summary = { total: diffState.changes.length, accepted: acc, rejected: rej, undecided: und };
+                } else if (currentMode === 'similarity') {
+                    var summary = simLastResult.summary;
+                    var tiers = summary.tiers || {};
+                    payload.files = { a: simState.a.filename || '', b: simState.b.filename || '' };
+                    payload.score = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
+                    var verdictLabel = payload.score >= verdictBoundHigh ? '주의' : (payload.score >= verdictBoundLow ? '보통' : '양호');
+                    payload.verdict = verdictLabel;
+                    payload.tiers = tiers;
+                    payload.breakdown = summary.breakdown || {};
+                    payload.total_sentences = summary.total_sentences;
+                    payload.matches = [];
+                    var matches = simLastResult.matches;
+                    for (var i = 0; i < matches.length; i++) {
+                        var m = matches[i];
+                        var typeKey = m.type || 'low_sim';
+                        var typeInfo = SIM_TYPE_MAP[typeKey] || {};
+                        payload.matches.push({
+                            index: i + 1,
+                            type: typeInfo.label || typeKey,
+                            similarity: m.similarity ? (m.similarity * 100).toFixed(1) + '%' : '—',
+                            method: DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer || '',
+                            target_text: m.target_text,
+                            ref_text: m.ref_text
+                        });
+                    }
+                } else if (currentMode === 'verify') {
+                    payload.files = { a: docState.a.filename || '' };
+                    payload.score = validateState.score;
+                    payload.grade = validateState.score >= 90 ? 'A' : validateState.score >= 80 ? 'B' : validateState.score >= 60 ? 'C' : 'D';
+                    payload.summary = validateState.summary;
+                    payload.issues = [];
+                    for (var i = 0; i < validateState.issues.length; i++) {
+                        var iss = validateState.issues[i];
+                        payload.issues.push({
+                            index: i + 1,
+                            severity: iss.severity === 'error' ? '오류' : iss.severity === 'warning' ? '경고' : '제안',
+                            rule: iss.rule || '',
+                            location: iss.paragraph_index !== undefined ? '단락 ' + (iss.paragraph_index + 1) : '',
+                            message: iss.message || ''
+                        });
+                    }
+                }
+
+                return payload;
+            }
+
+            // ── HTML 리포트 빌드 ──
+            function buildHtmlReport() {
+                var p = buildExportPayload();
+                var modeLabel = currentMode === 'compare' ? '문서 비교' : currentMode === 'similarity' ? '유사도 검사' : '규칙 검증';
+                var h = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">'
+                    + '<title>' + modeLabel + ' 리포트</title>'
+                    + '<style>'
+                    + 'body{font-family:"Malgun Gothic","Segoe UI",sans-serif;max-width:900px;margin:0 auto;padding:24px;color:#1a1a1a;font-size:13px;line-height:1.6}'
+                    + 'h1{font-size:18px;margin:0 0 4px}h2{font-size:14px;margin:24px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px}'
+                    + '.meta{color:#666;font-size:12px;margin-bottom:16px}'
+                    + '.summary-box{background:#f7f8fa;border:1px solid #e0e0e0;border-radius:6px;padding:12px 16px;margin-bottom:16px}'
+                    + '.summary-box .score{font-size:28px;font-weight:700;margin-right:8px}'
+                    + '.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}'
+                    + '.badge-good{background:#d4edda;color:#155724}.badge-moderate{background:#fff3cd;color:#856404}.badge-warning{background:#f8d7da;color:#721c24}'
+                    + 'table{width:100%;border-collapse:collapse;margin-bottom:16px}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;font-size:12px;vertical-align:top}'
+                    + 'th{background:#f0f0f0;font-weight:600;white-space:nowrap}'
+                    + 'tr:nth-child(even){background:#fafafa}'
+                    + '.severity-error{color:#d32f2f;font-weight:600}.severity-warning{color:#ed6c02}.severity-suggestion{color:#1976d2}'
+                    + '.decision-accepted{color:#2e7d32}.decision-rejected{color:#d32f2f}.decision-undecided{color:#757575}'
+                    + '.text-cell{max-width:300px;word-break:break-word}'
+                    + '@media print{body{padding:0;font-size:11px}h1{font-size:16px}.summary-box{border:1px solid #ccc}}'
+                    + '</style></head><body>';
+
+                // 헤더
+                h += '<h1>' + escapeHTML(modeLabel) + ' 리포트</h1>';
+                h += '<div class="meta">';
+                if (p.files.a) h += '문서 A: ' + escapeHTML(p.files.a);
+                if (p.files.b) h += ' &nbsp;|&nbsp; 문서 B: ' + escapeHTML(p.files.b);
+                h += ' &nbsp;|&nbsp; 검토일: ' + p.timestamp.slice(0, 10);
+                if (p.reviewer) h += ' &nbsp;|&nbsp; 검토자: ' + escapeHTML(p.reviewer);
+                h += '</div>';
+
+                if (currentMode === 'compare') {
+                    h += '<div class="summary-box">총 <strong>' + p.summary.total + '</strong>건 &nbsp;|&nbsp; '
+                        + '<span class="decision-accepted">수락 ' + p.summary.accepted + '</span> · '
+                        + '<span class="decision-rejected">거절 ' + p.summary.rejected + '</span> · '
+                        + '<span class="decision-undecided">미처리 ' + p.summary.undecided + '</span></div>';
+                    h += '<h2>변경점 목록</h2><table><thead><tr><th>#</th><th>판정</th><th>AI분류</th><th>원문</th><th>수정문</th></tr></thead><tbody>';
+                    for (var i = 0; i < p.changes.length; i++) {
+                        var c = p.changes[i];
+                        var cls = c.decision === '수락' ? 'decision-accepted' : c.decision === '거절' ? 'decision-rejected' : 'decision-undecided';
+                        h += '<tr><td>' + c.index + '</td><td class="' + cls + '">' + escapeHTML(c.decision) + '</td>'
+                            + '<td>' + escapeHTML(c.ai_tag) + '</td>'
+                            + '<td class="text-cell">' + escapeHTML(c.old_text.substring(0, 200)) + '</td>'
+                            + '<td class="text-cell">' + escapeHTML(c.new_text.substring(0, 200)) + '</td></tr>';
+                    }
+                    h += '</tbody></table>';
+                } else if (currentMode === 'similarity') {
+                    var vCls = p.verdict === '양호' ? 'badge-good' : p.verdict === '보통' ? 'badge-moderate' : 'badge-warning';
+                    h += '<div class="summary-box"><span class="score">' + p.score + '%</span>'
+                        + '<span class="badge ' + vCls + '">' + escapeHTML(p.verdict) + '</span><br>'
+                        + '전체 ' + p.total_sentences + '문장';
+                    if (p.tiers && p.tiers.substantive !== undefined) {
+                        h += ' &nbsp;|&nbsp; 실질 ' + p.tiers.substantive + '% · 의역 ' + p.tiers.derived + '% · 공통 ' + p.tiers.boilerplate + '%';
+                    }
+                    h += '</div>';
+                    h += '<h2>매칭 목록 (' + p.matches.length + '건)</h2><table><thead><tr><th>#</th><th>유형</th><th>유사율</th><th>분석</th><th>대상문장</th><th>참조문장</th></tr></thead><tbody>';
+                    for (var i = 0; i < p.matches.length; i++) {
+                        var m = p.matches[i];
+                        h += '<tr><td>' + m.index + '</td><td>' + escapeHTML(m.type) + '</td>'
+                            + '<td>' + escapeHTML(m.similarity) + '</td><td>' + escapeHTML(m.method) + '</td>'
+                            + '<td class="text-cell">' + escapeHTML(m.target_text.substring(0, 200)) + '</td>'
+                            + '<td class="text-cell">' + escapeHTML(m.ref_text.substring(0, 200)) + '</td></tr>';
+                    }
+                    h += '</tbody></table>';
+                } else if (currentMode === 'verify') {
+                    var grade = p.grade;
+                    var gCls = grade === 'A' ? 'badge-good' : grade === 'B' ? 'badge-moderate' : 'badge-warning';
+                    h += '<div class="summary-box"><span class="score">' + p.score + '점</span>'
+                        + '<span class="badge ' + gCls + '">등급 ' + grade + '</span><br>'
+                        + '오류 ' + p.summary.error + '건 · 경고 ' + p.summary.warning + '건 · 제안 ' + p.summary.suggestion + '건</div>';
+                    h += '<h2>이슈 목록 (' + p.issues.length + '건)</h2><table><thead><tr><th>#</th><th>심각도</th><th>규칙</th><th>위치</th><th>내용</th></tr></thead><tbody>';
+                    for (var i = 0; i < p.issues.length; i++) {
+                        var iss = p.issues[i];
+                        var sCls = iss.severity === '오류' ? 'severity-error' : iss.severity === '경고' ? 'severity-warning' : 'severity-suggestion';
+                        h += '<tr><td>' + iss.index + '</td><td class="' + sCls + '">' + escapeHTML(iss.severity) + '</td>'
+                            + '<td>' + escapeHTML(iss.rule) + '</td><td>' + escapeHTML(iss.location) + '</td>'
+                            + '<td>' + escapeHTML(iss.message) + '</td></tr>';
+                    }
+                    h += '</tbody></table>';
+                }
+
+                h += '</body></html>';
+                return h;
             }
 
             // ── 4-3. 단락 번호 ──
@@ -3605,6 +3950,7 @@
                 vdNavGroup.style.display = show ? '' : 'none';
                 vdFilterGroup.style.display = show ? '' : 'none';
                 paragraphNumBtn.style.display = show ? '' : 'none';
+                updateExportBtn();
             }
 
             // ── 3-2. 인라인 하이라이트 렌더링 ──

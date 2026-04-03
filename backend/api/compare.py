@@ -1,10 +1,11 @@
 """
-Compare API — 문서 업로드, 텍스트 추출, 검증, AI 의미 분류, 유사도 검사
+Compare API — 문서 업로드, 텍스트 추출, 검증, AI 의미 분류, 유사도 검사, 내보내기
 """
 import logging
 import os
 
 from fastapi import APIRouter, File, Form, UploadFile, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from typing import Optional
 
 import config
@@ -236,3 +237,35 @@ async def api_similarity(
         raise HTTPException(status_code=502, detail=f"유사도 검사 실패: {e}")
 
     return result
+
+
+@router.post("/export")
+async def api_export_excel(
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """검토 데이터를 Excel(.xlsx)로 내보낸다.
+
+    입력 (JSON): buildExportPayload() 형식
+        mode: 'compare' | 'similarity' | 'verify'
+        files, summary/score/changes/matches/issues 등
+    """
+    body = await request.json()
+    mode = body.get("mode", "")
+    if mode not in ("compare", "similarity", "verify"):
+        raise HTTPException(status_code=400, detail="지원하지 않는 모드입니다")
+
+    try:
+        from services.export_service import build_excel_report
+        import asyncio
+        buf = await asyncio.to_thread(build_excel_report, body)
+    except Exception as e:
+        logger.exception("Excel 내보내기 실패")
+        raise HTTPException(status_code=500, detail=f"Excel 생성 실패: {e}")
+
+    filename = body.get("filename", "report.xlsx")
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -854,13 +854,7 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 
 /* 사이드바 모드탭 다크 → 헤더로 이동됨 (CSS 제거) */
 
-.verify-hub-coming-soon {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-md);
-    text-align: center;
-}
+/* coming-soon 블록 제거됨 (유사도 검사 완성) */
 
 /* 유사도 모드: MD 웹뷰 렌더링 (토큰 기반) */
 .sim-md-view {
@@ -974,6 +968,25 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 }
 .sim-filter-chip:hover {
     color: var(--text-dark);
+}
+
+/* ── 내보내기 포맷 선택 모달 ── */
+.export-format-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+.export-fmt-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    width: 100%;
+    justify-content: flex-start;
+    font-size: var(--font-body);
+    padding: var(--space-sm) var(--space-md);
+}
+.export-fmt-btn svg {
+    flex-shrink: 0;
 }
 
 .sim-stats {
@@ -1092,37 +1105,7 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 
 /* (유사도 모드 버튼 숨김 — #cp-toolbar-slot 자체를 숨겨서 처리) */
 
-.verify-hub-coming-soon-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: var(--radius-lg);
-    background: color-mix(in srgb, var(--color-warning) 10%, transparent);
-    color: var(--color-warning);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.verify-hub-coming-soon-icon svg {
-    width: 28px;
-    height: 28px;
-}
-
-.verify-hub-coming-soon h3 {
-    font-size: var(--font-title);
-    font-weight: var(--font-weight-bold);
-    color: var(--text-dark);
-}
-
-.verify-hub-coming-soon p {
-    font-size: var(--font-body);
-    color: var(--text-light);
-    line-height: 1.6;
-}
-
-body[data-theme="dark"] .verify-hub-coming-soon-icon {
-    background: color-mix(in srgb, var(--color-warning) 12%, transparent);
-}
+/* coming-soon 스타일 제거됨 */
 
 /* ── 검증 모드 ── */
 .mode-verify .panel-b {
