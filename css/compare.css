@@ -1110,13 +1110,90 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 /* coming-soon 스타일 제거됨 */
 
 /* ── 검증 모드 ── */
-.mode-verify .panel-b {
+.mode-verify #panel-header-b { display: none; }
+.mode-verify #panel-body-wrap-b { display: none; }
+.mode-verify #intel-panel { display: flex !important; flex-direction: column; flex: 1; overflow: hidden; }
+
+/* ── 인텔리전스 패널 ── */
+.intel-panel-header {
+    flex-shrink: 0;
+    padding: 0 var(--space-sm);
+    height: 38px;
+    display: flex;
+    align-items: center;
+    background: var(--panel-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.intel-tabs {
+    display: flex;
+    gap: 2px;
+}
+
+.intel-tab {
+    padding: var(--space-xs) var(--space-md);
+    font-size: var(--font-small);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-light);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    cursor: pointer;
+    transition: color var(--transition-fast), background var(--transition-fast);
+    position: relative;
+}
+
+.intel-tab:hover {
+    color: var(--text-dark);
+    background: var(--hover-bg);
+}
+
+.intel-tab.active {
+    color: var(--active-color);
+    font-weight: var(--font-weight-semibold);
+}
+
+.intel-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: var(--space-sm);
+    right: var(--space-sm);
+    height: 2px;
+    background: var(--active-color);
+    border-radius: 1px;
+}
+
+.intel-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-md);
+}
+
+.intel-tab-content {
     display: none;
 }
 
-.mode-verify .panel-a .cp-text-content {
-    max-width: 900px;
-    margin: 0 auto;
+.intel-tab-content.active {
+    display: block;
+}
+
+.intel-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    color: var(--text-light);
+    font-size: var(--font-body);
+}
+
+/* 다크 모드 */
+body[data-theme="dark"] .intel-panel-header {
+    background: var(--panel-bg);
+}
+
+body[data-theme="dark"] .intel-tab:hover {
+    background: rgba(255,255,255,0.05);
 }
 
 /* ── 다크 모드 ── */

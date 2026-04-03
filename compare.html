@@ -227,13 +227,34 @@
                 </div>
 
                 <div class="compare-panel panel-b" id="panel-b">
-                    <div class="cp-panel-header">
+                    <div class="cp-panel-header" id="panel-header-b">
                         <span class="cp-panel-label" id="panel-label-b">
                             <span class="cp-label-text" id="label-text-b">비교문서</span>
                             <button class="cp-file-remove" id="file-remove-b" title="파일 제거">&times;</button>
                         </span>
                     </div>
-                    <div class="cp-panel-body-wrap">
+                    <!-- 인텔리전스 패널 (verify 모드 전용) -->
+                    <div class="intel-panel" id="intel-panel" style="display:none">
+                        <div class="intel-panel-header">
+                            <div class="intel-tabs">
+                                <button class="intel-tab active" data-intel-tab="scorecard">평가표</button>
+                                <button class="intel-tab" data-intel-tab="structure">구조</button>
+                                <button class="intel-tab" data-intel-tab="terms">용어</button>
+                            </div>
+                        </div>
+                        <div class="intel-panel-body">
+                            <div class="intel-tab-content active" id="intel-tab-scorecard">
+                                <div class="intel-placeholder">검증을 실행하면 평가표가 표시됩니다.</div>
+                            </div>
+                            <div class="intel-tab-content" id="intel-tab-structure">
+                                <div class="intel-placeholder">검증을 실행하면 문서 구조가 표시됩니다.</div>
+                            </div>
+                            <div class="intel-tab-content" id="intel-tab-terms">
+                                <div class="intel-placeholder">검증을 실행하면 용어 분석이 표시됩니다.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cp-panel-body-wrap" id="panel-body-wrap-b">
                     <div class="cp-panel-body" id="panel-body-b">
                         <div class="panel-placeholder" id="placeholder-b">
                             <svg class="panel-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -3838,6 +3859,27 @@
                     document.addEventListener('click', closeFn);
                 }, 0);
             }
+
+            // ══════════════════════════════════════════
+            // 인텔리전스 패널 (검증 모드 우측)
+            // ══════════════════════════════════════════
+
+            // ── 인텔리전스 탭 전환 ──
+            (function() {
+                var tabs = document.querySelectorAll('.intel-tab');
+                var contents = document.querySelectorAll('.intel-tab-content');
+                for (var i = 0; i < tabs.length; i++) {
+                    tabs[i].addEventListener('click', function() {
+                        var target = this.getAttribute('data-intel-tab');
+                        for (var j = 0; j < tabs.length; j++) {
+                            tabs[j].classList.toggle('active', tabs[j].getAttribute('data-intel-tab') === target);
+                        }
+                        for (var k = 0; k < contents.length; k++) {
+                            contents[k].classList.toggle('active', contents[k].id === 'intel-tab-' + target);
+                        }
+                    });
+                }
+            })();
 
             // ══════════════════════════════════════════
             // Phase 3: 검증 모드 (Validation Mode)
