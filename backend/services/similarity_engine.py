@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 # ── 기본 임계값 ──
 DEFAULT_THRESHOLD_HIGH = 0.85
-DEFAULT_THRESHOLD_MEDIUM = 0.70
+DEFAULT_THRESHOLD_MEDIUM = 0.75
 
 # ── 분류 유형 ──
 TYPE_IDENTICAL = "identical"

@@ -121,7 +121,7 @@ COMPARE_AI_SYSTEM_PROMPT = ""   # 빈값이면 기본 내장 프롬프트 사용
 
 # ── Verify: 유사도 검사 ──
 VERIFY_SIMILARITY_THRESHOLD_HIGH = 0.85    # L1 동일 판정 기준
-VERIFY_SIMILARITY_THRESHOLD_MEDIUM = 0.70  # L3 의미 유사 하한
+VERIFY_SIMILARITY_THRESHOLD_MEDIUM = 0.75  # L3 의미 유사 하한
 VERIFY_SIMILARITY_WINNOW_K = 25            # Winnowing k-gram 크기
 VERIFY_SIMILARITY_WINNOW_WINDOW = 4        # Winnowing sliding window
 VERIFY_SIMILARITY_VERDICT_LOW = 30         # 양호/보통 경계 (%)

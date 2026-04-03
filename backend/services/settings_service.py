@@ -92,7 +92,7 @@ DEFAULT_SETTINGS: dict = {
     },
     "verify": {
         "sim_threshold_high": 0.85,
-        "sim_threshold_medium": 0.70,
+        "sim_threshold_medium": 0.75,
         "sim_winnow_k": 25,
         "sim_winnow_window": 4,
         "sim_verdict_low": 30,

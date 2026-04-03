@@ -416,7 +416,7 @@ var SETTINGS_SCHEMA = {
                                   desc: 'Winnowing 지문 일치율이 이 값 이상이면 "동일(identical)"로 판정. 기본 0.85' },
                                 { group: 'verify', key: 'sim_threshold_medium', label: '유사 판정 하한 (L3)', type: 'range',
                                   restart: false, min: 0.3, max: 0.9, step: 0.05,
-                                  desc: '의미 유사도(임베딩)가 이 값 이상이면 매칭 후보로 포함. 기본 0.70' },
+                                  desc: '의미 유사도(임베딩)가 이 값 이상이면 매칭 후보로 포함. 기본 0.75' },
                             ]
                         },
                         {
