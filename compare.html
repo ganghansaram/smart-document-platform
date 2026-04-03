@@ -888,7 +888,7 @@
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     document.getElementById('sim-nav-group').style.display = 'none';
-                    // sim-filter는 사이드바 innerHTML 내부에 렌더링됨 (별도 제어 불필요)
+                    document.querySelectorAll('.sim-minimap-mark').forEach(function(m) { m.remove(); });
                     showDiffUI(false);
                     renderHistory();
                     requestAnimationFrame(updateToolbarSeps);
@@ -937,13 +937,17 @@
                 scrollSyncBtn.style.display = mode === 'compare' ? '' : 'none';
 
                 // 모드 전환 시 하이라이트 정리 + 패널 복원
+                if (mode !== 'similarity') {
+                    // 유사도 미니맵 마커 정리 (모드 전환 시 잔존 방지)
+                    document.querySelectorAll('.sim-minimap-mark').forEach(function(m) { m.remove(); });
+                }
+
                 if (mode === 'verify') {
                     clearDiff();
                     showDiffUI(false);
                     vdSettingsBtn.style.display = '';
                     vdRevalidateBtn.style.display = '';
                     document.getElementById('sim-nav-group').style.display = 'none';
-                    // sim-filter는 사이드바 innerHTML 내부에 렌더링됨 (별도 제어 불필요)
                     restoreDocPanels();
                 } else if (mode === 'similarity') {
                     clearDiff();
