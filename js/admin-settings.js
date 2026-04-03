@@ -249,7 +249,7 @@ var SETTINGS_SCHEMA = {
         },
         {
             id: 'translator',
-            label: 'Translator',
+            label: 'Notebook',
             group: '시스템 설정',
             tabs: [
                 {
