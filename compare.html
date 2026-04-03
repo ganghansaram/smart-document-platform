@@ -37,6 +37,25 @@
                 <button class="cp-nav-btn" id="vd-nav-next" title="다음 이슈 (↓)">&#9660;</button>
             </div>
 
+            <div class="cp-nav-group" id="sim-nav-group" style="display:none">
+                <button class="cp-nav-btn" id="sim-nav-prev" title="이전 매칭 (↑)">&#9650;</button>
+                <span class="cp-nav-indicator" id="sim-nav-indicator">0/0</span>
+                <button class="cp-nav-btn" id="sim-nav-next" title="다음 매칭 (↓)">&#9660;</button>
+            </div>
+
+            <div class="cp-filter-group" id="sim-filter-group" style="display:none">
+                <button class="toolbar-btn" id="sim-filter-btn" title="유형 필터">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                </button>
+                <div class="cp-filter-dropdown" id="sim-filter-dropdown" style="display:none">
+                    <label><input type="checkbox" checked data-sim-filter="identical"> 일치</label>
+                    <label><input type="checkbox" checked data-sim-filter="near_copy"> 유사</label>
+                    <label><input type="checkbox" checked data-sim-filter="paraphrase"> 의역</label>
+                    <label><input type="checkbox" data-sim-filter="low_sim"> 참고</label>
+                    <label><input type="checkbox" data-sim-filter="boilerplate"> 공통</label>
+                </div>
+            </div>
+
             <button class="toolbar-btn" id="swap-btn" style="display:none" title="원본 ↔ 수정본 바꾸기">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             </button>
@@ -860,6 +879,8 @@
                     vdFilterGroup.style.display = 'none';
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
+                    document.getElementById('sim-nav-group').style.display = 'none';
+                    document.getElementById('sim-filter-group').style.display = 'none';
                     showDiffUI(false);
                     renderHistory();
                     requestAnimationFrame(updateToolbarSeps);
@@ -913,6 +934,8 @@
                     showDiffUI(false);
                     vdSettingsBtn.style.display = '';
                     vdRevalidateBtn.style.display = '';
+                    document.getElementById('sim-nav-group').style.display = 'none';
+                    document.getElementById('sim-filter-group').style.display = 'none';
                     restoreDocPanels();
                 } else if (mode === 'similarity') {
                     clearDiff();
@@ -922,6 +945,8 @@
                     vdFilterGroup.style.display = 'none';
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
+                    document.getElementById('sim-nav-group').style.display = simLastResult ? '' : 'none';
+                    document.getElementById('sim-filter-group').style.display = simLastResult ? '' : 'none';
                     simRestorePanels();
                 } else {
                     clearValidation();
@@ -929,6 +954,8 @@
                     vdFilterGroup.style.display = 'none';
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
+                    document.getElementById('sim-nav-group').style.display = 'none';
+                    document.getElementById('sim-filter-group').style.display = 'none';
                     if (editMode) toggleEditMode();
                     restoreDocPanels();
                 }
@@ -1649,6 +1676,12 @@
                 simActiveIdx = -1;
                 simApplyHighlights(data);
 
+                // 네비게이션 + 필터 UI 표시
+                document.getElementById('sim-nav-group').style.display = '';
+                document.getElementById('sim-filter-group').style.display = '';
+                simUpdateNavIndicator();
+                simRenderMinimap();
+
                 // 이력 저장
                 var simScoreColor = summary.similarity_score >= 70 ? 'var(--color-error)' :
                                     summary.similarity_score >= 40 ? 'var(--color-warning)' : 'var(--color-success-btn)';
@@ -1755,6 +1788,171 @@
             function simScrollToElement(el) {
                 if (!el) return;
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // ── 유사도 이전/다음 네비게이션 ──
+            (function() {
+                var prevBtn = document.getElementById('sim-nav-prev');
+                var nextBtn = document.getElementById('sim-nav-next');
+                prevBtn.addEventListener('click', function() {
+                    if (!simLastResult || !simLastResult.matches.length) return;
+                    var visible = simGetVisibleMatches();
+                    if (!visible.length) return;
+                    var curPos = visible.indexOf(simActiveIdx);
+                    var newPos = curPos <= 0 ? visible.length - 1 : curPos - 1;
+                    simNavigateToMatch(visible[newPos]);
+                    simUpdateNavIndicator();
+                });
+                nextBtn.addEventListener('click', function() {
+                    if (!simLastResult || !simLastResult.matches.length) return;
+                    var visible = simGetVisibleMatches();
+                    if (!visible.length) return;
+                    var curPos = visible.indexOf(simActiveIdx);
+                    var newPos = curPos < 0 || curPos >= visible.length - 1 ? 0 : curPos + 1;
+                    simNavigateToMatch(visible[newPos]);
+                    simUpdateNavIndicator();
+                });
+            })();
+
+            function simGetVisibleMatches() {
+                // 필터 적용 후 보이는 매칭 인덱스 배열
+                if (!simLastResult) return [];
+                var items = document.querySelectorAll('.sim-match-item');
+                var visible = [];
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].style.display !== 'none') {
+                        visible.push(parseInt(items[i].getAttribute('data-idx')));
+                    }
+                }
+                return visible;
+            }
+
+            function simUpdateNavIndicator() {
+                var indicator = document.getElementById('sim-nav-indicator');
+                var visible = simGetVisibleMatches();
+                var curPos = visible.indexOf(simActiveIdx);
+                indicator.textContent = (curPos >= 0 ? curPos + 1 : 0) + '/' + visible.length;
+            }
+
+            // ── 유사도 필터 ──
+            (function() {
+                var filterBtn = document.getElementById('sim-filter-btn');
+                var dropdown = document.getElementById('sim-filter-dropdown');
+
+                filterBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdown.style.display = dropdown.style.display === 'none' ? '' : 'none';
+                });
+
+                document.addEventListener('click', function() {
+                    dropdown.style.display = 'none';
+                });
+
+                dropdown.addEventListener('click', function(e) { e.stopPropagation(); });
+
+                dropdown.addEventListener('change', function() {
+                    simApplyFilter();
+                });
+            })();
+
+            function simApplyFilter() {
+                if (!simLastResult) return;
+                // 체크박스 상태 수집
+                var filters = {};
+                var checkboxes = document.querySelectorAll('[data-sim-filter]');
+                for (var i = 0; i < checkboxes.length; i++) {
+                    filters[checkboxes[i].getAttribute('data-sim-filter')] = checkboxes[i].checked;
+                }
+
+                var matches = simLastResult.matches || [];
+                for (var i = 0; i < matches.length; i++) {
+                    var m = matches[i];
+                    var type = m.type || 'low_sim';
+                    var show = filters[type] !== false; // 체크박스 없는 유형은 표시
+
+                    // 사이드바 카드
+                    var card = document.querySelector('.sim-match-item[data-idx="' + i + '"]');
+                    if (card) card.style.display = show ? '' : 'none';
+
+                    // 패널 하이라이트
+                    var hls = document.querySelectorAll('[data-sim-idx="' + i + '"]');
+                    for (var j = 0; j < hls.length; j++) {
+                        hls[j].style.display = show ? '' : 'none';
+                    }
+                }
+
+                simUpdateNavIndicator();
+                simRenderMinimap();
+            }
+
+            // ── 유사도 미니맵 ──
+            function simRenderMinimap() {
+                var minimapA = document.getElementById('cp-minimap-a');
+                var minimapB = document.getElementById('cp-minimap-b');
+                if (!minimapA || !minimapB) return;
+
+                // 기존 유사도 마커 제거 (diff 마커와 공존 가능)
+                minimapA.querySelectorAll('.sim-minimap-mark').forEach(function(m) { m.remove(); });
+                minimapB.querySelectorAll('.sim-minimap-mark').forEach(function(m) { m.remove(); });
+
+                if (!simLastResult) return;
+
+                var panelA = document.getElementById('panel-body-a');
+                var panelB = document.getElementById('panel-body-b');
+                if (!panelA || !panelB) return;
+
+                var ARROW_H = 14;
+                var trackHA = minimapA.clientHeight - ARROW_H * 2;
+                var trackHB = minimapB.clientHeight - ARROW_H * 2;
+                if (trackHA <= 0 || trackHB <= 0) return;
+
+                var matches = simLastResult.matches || [];
+                for (var i = 0; i < matches.length; i++) {
+                    var m = matches[i];
+                    // 필터로 숨겨진 항목은 마커도 숨김
+                    var card = document.querySelector('.sim-match-item[data-idx="' + i + '"]');
+                    if (card && card.style.display === 'none') continue;
+
+                    var type = m.type || 'low_sim';
+                    var colorVar = 'var(--sim-' + type.replace('_', '-') + '-border, var(--color-info))';
+
+                    // A 패널 마커
+                    var elA = panelA.querySelector('[data-sim-idx="' + i + '"]');
+                    if (elA && panelA.scrollHeight > 0) {
+                        var ratioA = elA.offsetTop / panelA.scrollHeight;
+                        var markA = document.createElement('div');
+                        markA.className = 'sim-minimap-mark';
+                        markA.style.cssText = 'position:absolute;left:1px;right:1px;height:4px;border-radius:2px;cursor:pointer;'
+                            + 'top:' + (ARROW_H + ratioA * trackHA) + 'px;background:' + colorVar;
+                        markA.setAttribute('data-sim-idx', i);
+                        minimapA.appendChild(markA);
+                    }
+
+                    // B 패널 마커
+                    var elB = panelB.querySelector('[data-sim-idx="' + i + '"]');
+                    if (elB && panelB.scrollHeight > 0) {
+                        var ratioB = elB.offsetTop / panelB.scrollHeight;
+                        var markB = document.createElement('div');
+                        markB.className = 'sim-minimap-mark';
+                        markB.style.cssText = 'position:absolute;left:1px;right:1px;height:4px;border-radius:2px;cursor:pointer;'
+                            + 'top:' + (ARROW_H + ratioB * trackHB) + 'px;background:' + colorVar;
+                        markB.setAttribute('data-sim-idx', i);
+                        minimapB.appendChild(markB);
+                    }
+                }
+
+                // 미니맵 마커 클릭
+                [minimapA, minimapB].forEach(function(mm) {
+                    mm.addEventListener('click', function(e) {
+                        var mark = e.target.closest('.sim-minimap-mark');
+                        if (!mark) return;
+                        var idx = parseInt(mark.getAttribute('data-sim-idx'));
+                        if (!isNaN(idx)) {
+                            simNavigateToMatch(idx);
+                            simUpdateNavIndicator();
+                        }
+                    });
+                });
             }
 
             // 유사도 모드에서 파일 업로드/붙여넣기 인터셉트
