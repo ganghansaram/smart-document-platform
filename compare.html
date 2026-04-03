@@ -4142,6 +4142,74 @@
                 });
             }
 
+            // ── 인텔리전스 용어 탭 렌더링 ──
+            function renderIntelTerms() {
+                var container = document.getElementById('intel-tab-terms');
+                if (!container) return;
+
+                var terms = validateState.terms;
+                if (!terms) {
+                    container.innerHTML = '<div class="intel-placeholder">검증을 실행하면 용어 분석이 표시됩니다.</div>';
+                    return;
+                }
+
+                var html = '';
+
+                // 1. 규격 번호
+                var specs = terms.specifications || [];
+                html += '<div class="intel-section"><div class="intel-section-title">규격 번호 (' + specs.length + ')</div>';
+                if (specs.length > 0) {
+                    for (var i = 0; i < specs.length; i++) {
+                        var s = specs[i];
+                        html += '<div class="intel-rule-item">'
+                            + '<span class="intel-rule-name" style="font-weight:var(--font-weight-semibold);color:var(--active-color)">' + escapeHTML(s.id) + '</span>'
+                            + '<span class="intel-rule-count">' + s.count + '회</span>'
+                            + '</div>';
+                    }
+                } else {
+                    html += '<div class="intel-placeholder" style="min-height:40px">감지된 규격 번호가 없습니다.</div>';
+                }
+                html += '</div>';
+
+                // 2. 약어
+                var abbrs = terms.abbreviations || [];
+                html += '<div class="intel-section"><div class="intel-section-title">약어 (' + abbrs.length + ')</div>';
+                if (abbrs.length > 0) {
+                    for (var i = 0; i < abbrs.length; i++) {
+                        var a = abbrs[i];
+                        html += '<div class="intel-rule-item">'
+                            + '<span class="intel-rule-name"><strong>' + escapeHTML(a.abbr) + '</strong>'
+                            + (a.definition ? ' — ' + escapeHTML(a.definition) : '')
+                            + '</span>'
+                            + '<span class="intel-rule-count">' + a.count + '회</span>'
+                            + '</div>';
+                    }
+                } else {
+                    html += '<div class="intel-placeholder" style="min-height:40px">감지된 약어가 없습니다.</div>';
+                }
+                html += '</div>';
+
+                // 3. 단위
+                var units = terms.units || [];
+                html += '<div class="intel-section"><div class="intel-section-title">단위 (' + units.length + ')</div>';
+                if (units.length > 0) {
+                    for (var i = 0; i < units.length; i++) {
+                        var u = units[i];
+                        var siIcon = u.si_compliant ? '<span style="color:var(--color-success)">&#10003;</span>' : '<span style="color:var(--color-warning)">&#9888;</span>';
+                        html += '<div class="intel-rule-item">'
+                            + '<span class="intel-rule-icon">' + siIcon + '</span>'
+                            + '<span class="intel-rule-name">' + escapeHTML(u.unit) + '</span>'
+                            + '<span class="intel-rule-count">' + u.count + '회</span>'
+                            + '</div>';
+                    }
+                } else {
+                    html += '<div class="intel-placeholder" style="min-height:40px">감지된 단위가 없습니다.</div>';
+                }
+                html += '</div>';
+
+                container.innerHTML = html;
+            }
+
             // ══════════════════════════════════════════
             // Phase 3: 검증 모드 (Validation Mode)
             // ══════════════════════════════════════════
@@ -4155,7 +4223,8 @@
                 filter: { error: true, warning: true, suggestion: true },
                 isLoading: false,
                 structure: null,
-                requirements: null
+                requirements: null,
+                terms: null
             };
 
             // ── 검증 DOM 참조 ──
@@ -4209,12 +4278,14 @@
                     validateState.issues = data.issues;
                     validateState.structure = data.structure || null;
                     validateState.requirements = data.requirements || null;
+                    validateState.terms = data.terms || null;
                     validateState.isLoading = false;
 
                     renderValidationHighlights(data.issues);
                     renderValidationSidebar();
                     renderIntelScorecard();
                     renderIntelStructure();
+                    renderIntelTerms();
                     showValidationUI(true);
                     updateValidationNavigation();
 
@@ -4244,6 +4315,7 @@
                 validateState.isLoading = false;
                 validateState.structure = null;
                 validateState.requirements = null;
+                validateState.terms = null;
 
                 // 인라인 하이라이트 제거: 원래 텍스트로 복원
                 if (docState.a.paragraphs.length > 0) {
@@ -4253,6 +4325,7 @@
                 showValidationUI(false);
                 renderIntelScorecard();
                 renderIntelStructure();
+                renderIntelTerms();
 
                 // 사이드바 빈 상태
                 if (currentMode === 'verify') {

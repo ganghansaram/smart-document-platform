@@ -123,9 +123,10 @@ def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dic
     density = penalty / total_paragraphs
     score = max(0, round(100 - density * 10))
 
-    # 인텔리전스 데이터 (구조 분석 + 요구사항 분류)
+    # 인텔리전스 데이터
     structure = _analyze_structure(paragraphs)
     requirements = _classify_requirements(paragraphs)
+    terms = _extract_terms(paragraphs)
 
     return {
         "score": score,
@@ -133,6 +134,7 @@ def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dic
         "issues": issues,
         "structure": structure,
         "requirements": requirements,
+        "terms": terms,
     }
 
 
@@ -260,6 +262,107 @@ def _classify_requirements(paragraphs: list[str]) -> dict:
                 counts["information"] += 1
 
     return {"counts": counts, "details": details}
+
+
+# 규격 번호 패턴 (MIL-STD, MIL-DTL, AS, EN, KS, ISO, IEC, ASTM, SAE 등)
+_SPEC_PATTERN = re.compile(
+    r"\b(MIL-STD-\d+[A-Z]?(?:/\d+)?|MIL-DTL-\d+[A-Z]?|MIL-PRF-\d+[A-Z]?"
+    r"|AS\s?\d{4,}[A-Z]?|EN\s?\d{4,}|KS\s?[A-Z]\s?\d{4,}"
+    r"|ISO\s?\d{4,}(?:-\d+)?|IEC\s?\d{4,}(?:-\d+)?|ASTM\s?[A-Z]\d+"
+    r"|SAE\s?(?:AS|AMS|J)\d+|DO-\d+[A-Z]?|RTCA\s?DO-\d+[A-Z]?)"
+)
+
+# 약어 패턴: 대문자 2~6글자 (문맥에서)
+_ABBR_PATTERN = re.compile(r"\b([A-Z]{2,6})\b")
+
+# 약어 정의 패턴: "Full Name (ABBR)" 또는 "ABBR (Full Name)"
+_ABBR_DEF_PATTERN = re.compile(
+    r"([A-Z][a-z]+(?:\s+[A-Za-z]+){1,5})\s*\(([A-Z]{2,6})\)"
+    r"|([A-Z]{2,6})\s*\(([A-Z][a-z]+(?:\s+[A-Za-z]+){1,5})\)"
+)
+
+# 단위 패턴
+_UNIT_PATTERN = re.compile(
+    r"\b(\d+(?:\.\d+)?)\s*(kHz|MHz|GHz|Hz|V|mV|kV|A|mA|dB|dBm|dBμV|dBuV"
+    r"|°C|°F|K|m|cm|mm|km|kg|g|mg|s|ms|μs|ns|W|mW|kW|Pa|kPa|MPa|psi|lbs?|ft|in)\b"
+)
+
+# SI 단위 집합
+_SI_UNITS = {
+    "Hz", "kHz", "MHz", "GHz", "V", "mV", "kV", "A", "mA",
+    "dB", "dBm", "°C", "K", "m", "cm", "mm", "km", "kg", "g", "mg",
+    "s", "ms", "W", "mW", "kW", "Pa", "kPa", "MPa",
+}
+
+# 흔한 영어 단어 (약어로 오인 방지)
+_COMMON_WORDS = {
+    "THE", "AND", "FOR", "NOT", "ARE", "BUT", "ALL", "ANY", "CAN",
+    "HAD", "HER", "WAS", "ONE", "OUR", "OUT", "HAS", "HIS", "HOW",
+    "ITS", "MAY", "NEW", "NOW", "OLD", "SEE", "WAY", "WHO", "DID",
+    "GET", "LET", "SAY", "SHE", "TOO", "USE", "SET",
+    # 규격 접두사 (MIL-STD 등의 부분 문자열)
+    "MIL", "STD", "DTL", "PRF", "SAE", "AMS", "IEC", "ISO", "ASTM",
+    "RTCA", "DO",
+}
+
+
+def _extract_terms(paragraphs: list[str]) -> dict:
+    """문서 내 규격 번호, 약어, 단위를 추출한다."""
+    full_text = "\n".join(paragraphs)
+
+    # 규격 번호
+    spec_counts: dict[str, dict] = {}
+    for pi, para in enumerate(paragraphs):
+        for m in _SPEC_PATTERN.finditer(para):
+            spec_id = m.group(1).strip()
+            if spec_id not in spec_counts:
+                spec_counts[spec_id] = {"id": spec_id, "count": 0, "first_index": pi}
+            spec_counts[spec_id]["count"] += 1
+
+    # 약어 + 정의 (각 단락 내에서만 매칭하여 줄바꿈 섞임 방지)
+    abbr_defs: dict[str, str] = {}
+    for para in paragraphs:
+        for m in _ABBR_DEF_PATTERN.finditer(para):
+            if m.group(1) and m.group(2):
+                abbr_defs[m.group(2)] = m.group(1).strip()
+            elif m.group(3) and m.group(4):
+                abbr_defs[m.group(3)] = m.group(4).strip()
+
+    abbr_counts: dict[str, dict] = {}
+    for pi, para in enumerate(paragraphs):
+        for m in _ABBR_PATTERN.finditer(para):
+            abbr = m.group(1)
+            if abbr in _COMMON_WORDS or len(abbr) < 2:
+                continue
+            if abbr not in abbr_counts:
+                abbr_counts[abbr] = {
+                    "abbr": abbr,
+                    "definition": abbr_defs.get(abbr, ""),
+                    "count": 0,
+                    "first_index": pi,
+                }
+            abbr_counts[abbr]["count"] += 1
+
+    # 단위
+    unit_counts: dict[str, dict] = {}
+    for m in _UNIT_PATTERN.finditer(full_text):
+        unit = m.group(2)
+        if unit not in unit_counts:
+            unit_counts[unit] = {
+                "unit": unit,
+                "count": 0,
+                "si_compliant": unit in _SI_UNITS,
+            }
+        unit_counts[unit]["count"] += 1
+
+    return {
+        "specifications": sorted(spec_counts.values(), key=lambda x: -x["count"]),
+        "abbreviations": sorted(
+            [v for v in abbr_counts.values() if v["count"] >= 2],
+            key=lambda x: -x["count"],
+        ),
+        "units": sorted(unit_counts.values(), key=lambda x: -x["count"]),
+    }
 
 
 # ── 규칙 구현 ──
