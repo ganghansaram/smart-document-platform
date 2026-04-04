@@ -135,7 +135,7 @@
           "enabled": true,
           "severity": "suggestion",
           "params": {
-            "max_chars": 120
+            "max_chars": 150
           }
         }
       }

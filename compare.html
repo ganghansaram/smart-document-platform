@@ -992,6 +992,10 @@
                 });
             });
 
+            // ── 최근 작업 이력 (localStorage, Phase 4 Step 2에서 백엔드 이관) ──
+            var HISTORY_KEY = 'verify-history';
+            var HISTORY_MAX = 10;
+
             // 초기 모드: 허브 (빈 상태)
             document.getElementById('compare-body').classList.add('mode-hub');
             renderHistory();
@@ -1099,10 +1103,6 @@
                     }
                 });
             }
-
-            // ── 최근 작업 이력 (localStorage, Phase 4 Step 2에서 백엔드 이관) ──
-            var HISTORY_KEY = 'verify-history';
-            var HISTORY_MAX = 10;
 
             function getHistory() {
                 try {
@@ -3618,6 +3618,8 @@
                         });
                     }
                     // 인텔리전스 데이터
+                    if (validateState.categoryScores) payload.category_scores = validateState.categoryScores;
+                    if (validateState.wordCount) payload.word_count = validateState.wordCount;
                     if (validateState.structure) payload.structure = validateState.structure;
                     if (validateState.requirements) payload.requirements = validateState.requirements;
                     if (validateState.terms) payload.terms = validateState.terms;
@@ -4045,6 +4047,7 @@
                 if (summary.error > 0) html += '<span class="vd-score-stat stat-error">오류 ' + summary.error + '</span>';
                 if (summary.warning > 0) html += '<span class="vd-score-stat stat-warning">경고 ' + summary.warning + '</span>';
                 if (summary.suggestion > 0) html += '<span class="vd-score-stat stat-suggestion">제안 ' + summary.suggestion + '</span>';
+                if (validateState.wordCount > 0) html += '<span class="vd-score-stat" style="color:var(--text-light)">' + validateState.wordCount.toLocaleString() + ' words</span>';
                 html += '</div></div></div>';
 
                 // 심각도 분포 바
@@ -4063,23 +4066,15 @@
                         + '</div></div>';
                 }
 
-                // 카테고리별 점수
+                // 카테고리별 점수 (백엔드 계산 결과 사용)
                 var catLabels = { structure: '구조', terminology: '용어', readability: '가독성' };
                 var catOrder = ['structure', 'terminology', 'readability'];
-                var catPenalty = { structure: 0, terminology: 0, readability: 0 };
-                var catCount = { structure: 0, terminology: 0, readability: 0 };
-                for (var i = 0; i < issues.length; i++) {
-                    var cat = issues[i].category || 'etc';
-                    if (catPenalty[cat] === undefined) continue;
-                    var sevW = issues[i].severity === 'error' ? 10 : issues[i].severity === 'warning' ? 3 : 1;
-                    catPenalty[cat] += sevW;
-                    catCount[cat]++;
-                }
+                var catScores = validateState.categoryScores || {};
 
                 html += '<div class="intel-section"><div class="intel-section-title">카테고리별 평가</div>';
                 for (var ci = 0; ci < catOrder.length; ci++) {
                     var c = catOrder[ci];
-                    var catScore = Math.max(0, 100 - catPenalty[c] * 5);
+                    var catScore = catScores[c] != null ? catScores[c] : 100;
                     var barColor = catScore >= 80 ? 'var(--color-success)' : catScore >= 60 ? 'var(--color-warning)' : 'var(--color-error)';
                     html += '<div class="intel-cat-row">'
                         + '<span class="intel-cat-label">' + catLabels[c] + '</span>'
@@ -4337,7 +4332,9 @@
                 isLoading: false,
                 structure: null,
                 requirements: null,
-                terms: null
+                terms: null,
+                categoryScores: null,
+                wordCount: 0
             };
 
             // ── 검증 DOM 참조 ──
@@ -4392,6 +4389,8 @@
                     validateState.structure = data.structure || null;
                     validateState.requirements = data.requirements || null;
                     validateState.terms = data.terms || null;
+                    validateState.categoryScores = data.category_scores || null;
+                    validateState.wordCount = data.word_count || 0;
                     validateState.isLoading = false;
 
                     renderValidationHighlights(data.issues);

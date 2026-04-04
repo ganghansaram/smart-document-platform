@@ -114,14 +114,39 @@ def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dic
         if sev in summary:
             summary[sev] += 1
 
-    # 가중 밀도 방식: 문서 크기에 비례하여 점수 산출
-    # 감점 = error×10 + warning×3 + suggestion×1
-    # 밀도 = 감점 / 단락 수 (단락 0일 때 만점)
-    # 점수 = 100 - 밀도 × 스케일링 계수(10)
-    total_paragraphs = max(len(paragraphs), 1)
-    penalty = summary["error"] * 10 + summary["warning"] * 3 + summary["suggestion"] * 1
-    density = penalty / total_paragraphs
-    score = max(0, round(100 - density * 10))
+    # ── 업계 표준 기반 스코어링 (Acrolinx/STE density 방식) ──
+    # 기준: 단어 수 대비 가중 이슈 밀도 → 지수 감쇠 점수
+    #   - 단어 수 기반: 빈 단락 부풀림 방지 (STE/Acrolinx 표준)
+    #   - severity 가중치: error=5, warning=2, suggestion=1
+    #   - density = weighted_issues / words_per_100
+    #   - score = 100 × max(0, 1 - density / threshold)
+    #   - threshold: density가 이 값에 도달하면 0점 (캘리브레이션 상수)
+    SEVERITY_WEIGHT = {"error": 5, "warning": 2, "suggestion": 1}
+    DENSITY_THRESHOLD = 5.0  # 100단어당 가중이슈 5개 → 0점
+    MIN_WORDS = 200  # 최소 단어 수 하한 (짧은 문서 과대 감점 방지)
+
+    total_words = max(sum(len(p.split()) for p in paragraphs), 1)
+    effective_words = max(total_words, MIN_WORDS)
+    weighted_issues = sum(SEVERITY_WEIGHT.get(iss.get("severity", "warning"), 1) for iss in issues)
+    density = weighted_issues / (effective_words / 100)  # 100단어당 가중 이슈 수
+    score = max(0, round(100 * max(0, 1 - density / DENSITY_THRESHOLD)))
+
+    # 카테고리별 독립 점수 (Acrolinx 방식)
+    CATEGORY_MAP = {
+        "numbering_continuity": "structure",
+        "table_caption": "structure",
+        "figure_caption": "structure",
+        "forbidden_terms": "terminology",
+        "inconsistent_terms": "terminology",
+        "sentence_length": "readability",
+    }
+    cat_weighted = {"structure": 0, "terminology": 0, "readability": 0}
+    for iss in issues:
+        cat = CATEGORY_MAP.get(iss.get("rule_id", ""), iss.get("category", ""))
+        if cat in cat_weighted:
+            cat_weighted[cat] += SEVERITY_WEIGHT.get(iss.get("severity", "warning"), 1)
+    cat_density = {c: w / (effective_words / 100) for c, w in cat_weighted.items()}
+    category_scores = {c: max(0, round(100 * max(0, 1 - d / DENSITY_THRESHOLD))) for c, d in cat_density.items()}
 
     # 인텔리전스 데이터
     structure = _analyze_structure(paragraphs)
@@ -132,6 +157,8 @@ def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dic
         "score": score,
         "summary": summary,
         "issues": issues,
+        "category_scores": category_scores,
+        "word_count": total_words,
         "structure": structure,
         "requirements": requirements,
         "terms": terms,
