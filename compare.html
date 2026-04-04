@@ -4069,8 +4069,8 @@
                 }
 
                 // 카테고리별 점수 (백엔드 계산 결과 사용)
-                var catLabels = { structure: '구조', terminology: '용어', readability: '가독성' };
-                var catOrder = ['structure', 'terminology', 'readability'];
+                var catLabels = { structure: '구조', writing: '작성', terminology: '용어', readability: '가독성' };
+                var catOrder = ['structure', 'writing', 'terminology', 'readability'];
                 var catScores = validateState.categoryScores || {};
 
                 html += '<div class="intel-section"><div class="intel-section-title">카테고리별 평가</div>';
@@ -4548,8 +4548,8 @@
 
                 // 카테고리별 그룹화
                 var categories = {};
-                var categoryLabels = { structure: '구조', terminology: '용어', readability: '가독성' };
-                var categoryOrder = ['structure', 'terminology', 'readability'];
+                var categoryLabels = { structure: '구조', writing: '작성', terminology: '용어', readability: '가독성' };
+                var categoryOrder = ['structure', 'writing', 'terminology', 'readability'];
 
                 for (var i = 0; i < issues.length; i++) {
                     var cat = issues[i].category || 'etc';
