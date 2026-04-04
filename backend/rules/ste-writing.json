@@ -1,0 +1,179 @@
+{
+  "$schema": "./_schema.json",
+  "name": "ASD-STE100 작성 규칙",
+  "description": "Simplified Technical English 작성 규칙 (자동화 가능 항목)",
+  "rules": [
+    {
+      "id": "ste-3.1",
+      "source": "ASD-STE100",
+      "source_rule": "Writing Rule 3.1",
+      "category": "readability",
+      "severity": "warning",
+      "confidence": "high",
+      "type": "metric",
+      "name_ko": "절차문 길이 제한 (20단어)",
+      "name_en": "Procedural Sentence Length",
+      "description": "절차문은 20단어를 초과하면 안 된다 (ASD-STE100)",
+      "message_template": "절차문 길이 초과: {count}단어 (최대 20단어)",
+      "suggestion_template": "문장을 분리하거나 불필요한 단어를 제거하세요",
+      "enabled": true,
+      "params": {
+        "target": "sentence_words",
+        "max": 20,
+        "sentence_filter": "procedural"
+      }
+    },
+    {
+      "id": "ste-3.2",
+      "source": "ASD-STE100",
+      "source_rule": "Writing Rule 3.2",
+      "category": "readability",
+      "severity": "suggestion",
+      "confidence": "high",
+      "type": "metric",
+      "name_ko": "설명문 길이 제한 (25단어)",
+      "name_en": "Descriptive Sentence Length",
+      "description": "설명문은 25단어를 초과하면 안 된다 (ASD-STE100)",
+      "message_template": "설명문 길이 초과: {count}단어 (최대 25단어)",
+      "enabled": true,
+      "params": {
+        "target": "sentence_words",
+        "max": 25,
+        "sentence_filter": "descriptive"
+      }
+    },
+    {
+      "id": "ste-3.6",
+      "source": "ASD-STE100",
+      "source_rule": "Writing Rule 3.6",
+      "category": "writing",
+      "severity": "suggestion",
+      "confidence": "low",
+      "type": "pattern",
+      "name_ko": "수동태 감지",
+      "name_en": "Passive Voice Detection",
+      "description": "능동태 사용을 권장. 수동태 패턴을 감지한다 (NLP 없이 휴리스틱, 기본 OFF)",
+      "message_template": "수동태 표현 감지: '{match}'",
+      "suggestion_template": "능동태로 변환하세요",
+      "enabled": false,
+      "params": {
+        "patterns": [
+          "\\b(is|are|was|were|be|been|being)\\s+\\w+ed\\b",
+          "\\b(is|are|was|were|be|been|being)\\s+\\w+en\\b"
+        ],
+        "exceptions": [
+          "is required",
+          "is permitted",
+          "is recommended",
+          "are listed",
+          "is defined",
+          "is shown",
+          "is used"
+        ],
+        "scope": "sentence"
+      }
+    },
+    {
+      "id": "ste-5.1",
+      "source": "ASD-STE100",
+      "source_rule": "Writing Rule 5.1",
+      "category": "structure",
+      "severity": "warning",
+      "confidence": "high",
+      "type": "pattern",
+      "name_ko": "경고/주의문 대문자 표기",
+      "name_en": "WARNING/CAUTION Capitalization",
+      "description": "WARNING과 CAUTION은 전체 대문자로 표기해야 한다",
+      "message_template": "비표준 표기: '{match}' → 전체 대문자 사용 필수",
+      "enabled": true,
+      "params": {
+        "patterns": [
+          "\\b[Ww]arning\\b(?<!WARNING)",
+          "\\b[Cc]aution\\b(?<!CAUTION)"
+        ],
+        "exceptions": [],
+        "scope": "paragraph"
+      }
+    },
+    {
+      "id": "ste-6.1",
+      "source": "ASD-STE100",
+      "source_rule": "Writing Rule 6.1",
+      "category": "readability",
+      "severity": "suggestion",
+      "confidence": "high",
+      "type": "metric",
+      "name_ko": "단락 길이 제한 (6문장)",
+      "name_en": "Paragraph Length Limit",
+      "description": "단락은 6문장을 초과하면 안 된다",
+      "message_template": "단락 길이 초과: {count}문장 (최대 6문장)",
+      "enabled": true,
+      "params": {
+        "target": "paragraph_sentences",
+        "max": 6
+      }
+    },
+    {
+      "id": "ste-7.4",
+      "source": "ASD-STE100",
+      "source_rule": "Writing Rule 7.4",
+      "category": "writing",
+      "severity": "warning",
+      "confidence": "high",
+      "type": "pattern",
+      "name_ko": "슬래시 접속사 금지",
+      "name_en": "No Slash as Conjunction",
+      "description": "슬래시(/)를 and/or 대용으로 사용 금지",
+      "message_template": "슬래시 접속사 사용: '{match}' → and/or로 명시하세요",
+      "enabled": true,
+      "params": {
+        "patterns": ["\\b\\w+/\\w+\\b"],
+        "exceptions": [
+          "km/h", "m/s", "I/O", "N/A", "w/o",
+          "kHz/MHz", "and/or", "input/output",
+          "on/off", "AC/DC", "true/false"
+        ],
+        "scope": "sentence"
+      }
+    },
+    {
+      "id": "ste-3.9",
+      "source": "ASD-STE100",
+      "source_rule": "Writing Rule 3.9",
+      "category": "readability",
+      "severity": "suggestion",
+      "confidence": "medium",
+      "type": "pattern",
+      "name_ko": "종속절 중첩 제한",
+      "name_en": "Max One Subordination Level",
+      "description": "종속접속사가 한 문장에 2회 이상 사용되면 경고",
+      "message_template": "종속절 중첩: 한 문장에 종속접속사 {count}회 사용",
+      "enabled": true,
+      "params": {
+        "patterns": ["\\b(which|that|if|when|because|although|unless|while|where|after|before|until|since)\\b"],
+        "scope": "sentence",
+        "min_occurrences": 2
+      }
+    },
+    {
+      "id": "ste-2.1",
+      "source": "ASD-STE100",
+      "source_rule": "Writing Rule 2.1",
+      "category": "writing",
+      "severity": "suggestion",
+      "confidence": "low",
+      "type": "pattern",
+      "name_ko": "명사 클러스터 제한 (3단어)",
+      "name_en": "Noun Cluster Limit",
+      "description": "연속 명사 3개 초과 시 경고 (NLP 없이 휴리스틱, 기본 OFF)",
+      "message_template": "명사 클러스터 초과: '{match}' ({count}단어)",
+      "enabled": false,
+      "params": {
+        "patterns": ["(?:[A-Z][a-z]+\\s+){3,}[A-Z][a-z]+"],
+        "exceptions": [],
+        "scope": "sentence",
+        "tnd_aware": true
+      }
+    }
+  ]
+}

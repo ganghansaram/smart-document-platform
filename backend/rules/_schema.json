@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "verify-rule-schema-v1",
+  "title": "Verify Rule Definition",
+  "description": "표준 기반 규칙 엔진의 규칙 정의 스키마 (Phase 5)",
+
+  "type": "object",
+  "required": ["id", "source", "category", "severity", "confidence", "type", "name_ko", "enabled"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "고유 규칙 ID (예: ste-3.1, 961-s1, 38-a1)",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "source": {
+      "type": "string",
+      "description": "규칙 출처 표준",
+      "enum": ["ASD-STE100", "MIL-STD-961E", "MIL-STD-38784", "custom"]
+    },
+    "source_rule": {
+      "type": "string",
+      "description": "원본 표준 내 규칙 번호 (예: Writing Rule 3.1, §4.2)"
+    },
+    "category": {
+      "type": "string",
+      "description": "검사 카테고리",
+      "enum": ["structure", "writing", "terminology", "readability"]
+    },
+    "severity": {
+      "type": "string",
+      "description": "심각도",
+      "enum": ["error", "warning", "suggestion"]
+    },
+    "confidence": {
+      "type": "string",
+      "description": "자동 검출 신뢰도. low는 기본 OFF",
+      "enum": ["high", "medium", "low"]
+    },
+    "type": {
+      "type": "string",
+      "description": "규칙 실행 타입 — 엔진이 이 값으로 매칭 로직을 결정",
+      "enum": [
+        "pattern",
+        "metric",
+        "sequence",
+        "section",
+        "cross_ref",
+        "dictionary"
+      ]
+    },
+    "name_ko": {
+      "type": "string",
+      "description": "한국어 규칙명 (UI 표시용)"
+    },
+    "name_en": {
+      "type": "string",
+      "description": "영문 규칙명"
+    },
+    "description": {
+      "type": "string",
+      "description": "규칙 설명 (UI 툴팁용)"
+    },
+    "message_template": {
+      "type": "string",
+      "description": "이슈 메시지 템플릿. {변수} 치환 지원",
+      "examples": ["문장 길이 초과: {count}단어 (최대 {max})"]
+    },
+    "suggestion_template": {
+      "type": "string",
+      "description": "개선 제안 템플릿"
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "기본 활성 여부"
+    },
+    "params": {
+      "type": "object",
+      "description": "규칙 타입별 매개변수",
+      "additionalProperties": true
+    },
+    "legacy_id": {
+      "type": "string",
+      "description": "기존 6종 규칙과의 호환 매핑 (예: sentence_length)"
+    }
+  },
+
+  "$defs": {
+    "type_params": {
+      "pattern": {
+        "description": "정규식 패턴 매칭 (existence/substitution 통합)",
+        "properties": {
+          "patterns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "검출할 정규식 패턴 목록"
+          },
+          "exceptions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "예외 패턴 (매칭 제외)"
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["sentence", "paragraph", "document"],
+            "description": "매칭 범위"
+          }
+        }
+      },
+      "metric": {
+        "description": "수치 기반 검사 (길이, 카운트 등)",
+        "properties": {
+          "target": {
+            "type": "string",
+            "enum": ["sentence_words", "sentence_chars", "paragraph_sentences", "paragraph_words"],
+            "description": "측정 대상"
+          },
+          "max": { "type": "number", "description": "최대값" },
+          "min": { "type": "number", "description": "최소값" }
+        }
+      },
+      "sequence": {
+        "description": "번호/순서 연속성 검사",
+        "properties": {
+          "element": {
+            "type": "string",
+            "enum": ["heading", "figure", "table"],
+            "description": "검사 대상 요소"
+          },
+          "max_depth": { "type": "integer", "description": "최대 깊이 (번호 체계)" }
+        }
+      },
+      "section": {
+        "description": "필수 섹션 존재/순서/내용 제한 검사",
+        "properties": {
+          "required_sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": { "type": "string" },
+                "title": { "type": "string" },
+                "pattern": { "type": "string" }
+              }
+            }
+          },
+          "forbidden_keywords": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "해당 섹션에서 금지되는 키워드 (예: shall in SCOPE)"
+          },
+          "target_sections": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "검사 대상 섹션 번호 (예: [\"1\", \"6\"])"
+          }
+        }
+      },
+      "cross_ref": {
+        "description": "교차참조 정합성 검사",
+        "properties": {
+          "ref_pattern": { "type": "string", "description": "본문 참조 패턴 (예: Figure \\d+)" },
+          "target_pattern": { "type": "string", "description": "실제 대상 패턴 (예: ^Figure \\d+\\.)" },
+          "check_order": { "type": "boolean", "description": "참조가 대상보다 앞에 오는지 검사" },
+          "check_existence": { "type": "boolean", "description": "참조 대상이 실존하는지 검사" }
+        }
+      },
+      "dictionary": {
+        "description": "사전 기반 검사 (승인어/금지어/약어)",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["whitelist", "blacklist", "first_use"],
+            "description": "whitelist=허용어만, blacklist=금지어 검출, first_use=첫 사용 시 조건"
+          },
+          "dict_file": {
+            "type": "string",
+            "description": "사전 파일 경로 (rules/ 기준 상대경로)"
+          },
+          "tnd_aware": {
+            "type": "boolean",
+            "description": "TND(기술명사 사전) 예외 적용 여부"
+          }
+        }
+      }
+    }
+  }
+}

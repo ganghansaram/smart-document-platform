@@ -1,0 +1,141 @@
+{
+  "$schema": "./_schema.json",
+  "name": "MIL-STD 구조 규칙",
+  "description": "MIL-STD-961E(규격서) + MIL-STD-38784(기술교범) 구조·서식 규칙",
+  "rules": [
+    {
+      "id": "961-s1",
+      "source": "MIL-STD-961E",
+      "source_rule": "§4.2",
+      "category": "structure",
+      "severity": "error",
+      "confidence": "high",
+      "type": "section",
+      "name_ko": "필수 섹션 존재 검증",
+      "name_en": "Required Sections Check",
+      "description": "MIL-STD-961E 규격서 필수 섹션(1~6) 존재 여부 검사",
+      "message_template": "필수 섹션 누락: {section}",
+      "enabled": true,
+      "params": {
+        "required_sections": [
+          {"number": "1", "title": "SCOPE", "pattern": "^1\\.\\s+SCOPE"},
+          {"number": "2", "title": "APPLICABLE DOCUMENTS", "pattern": "^2\\.\\s+APPLICABLE\\s+DOCUMENTS"},
+          {"number": "3", "title": "REQUIREMENTS", "pattern": "^3\\.\\s+REQUIREMENTS"},
+          {"number": "4", "title": "VERIFICATION", "pattern": "^4\\.\\s+VERIFICATION"},
+          {"number": "5", "title": "PACKAGING", "pattern": "^5\\.\\s+PACKAGING"},
+          {"number": "6", "title": "NOTES", "pattern": "^6\\.\\s+NOTES"}
+        ]
+      }
+    },
+    {
+      "id": "961-r2",
+      "source": "MIL-STD-961E",
+      "source_rule": "§4.2.1",
+      "category": "structure",
+      "severity": "error",
+      "confidence": "high",
+      "type": "section",
+      "name_ko": "SCOPE 내 shall 금지",
+      "name_en": "No Requirements in SCOPE",
+      "description": "Section 1 (SCOPE)에는 요구사항(shall)을 포함하면 안 된다",
+      "message_template": "SCOPE 섹션에 요구사항 키워드 '{keyword}' 사용 금지",
+      "enabled": true,
+      "params": {
+        "target_sections": ["1"],
+        "forbidden_keywords": ["shall"]
+      }
+    },
+    {
+      "id": "961-r3",
+      "source": "MIL-STD-961E",
+      "source_rule": "§4.7.1",
+      "category": "structure",
+      "severity": "error",
+      "confidence": "high",
+      "type": "section",
+      "name_ko": "NOTES 내 shall 금지",
+      "name_en": "No Requirements in NOTES",
+      "description": "Section 6 (NOTES)에는 요구사항(shall)을 포함하면 안 된다",
+      "message_template": "NOTES 섹션에 요구사항 키워드 '{keyword}' 사용 금지",
+      "enabled": true,
+      "params": {
+        "target_sections": ["6"],
+        "forbidden_keywords": ["shall"]
+      }
+    },
+    {
+      "id": "961-n2",
+      "source": "MIL-STD-961E",
+      "source_rule": "§4.1.2",
+      "category": "structure",
+      "severity": "warning",
+      "confidence": "high",
+      "type": "sequence",
+      "name_ko": "번호 깊이 제한 (6단계)",
+      "name_en": "Max Subdivision Depth",
+      "description": "섹션 번호는 최대 6단계까지 허용 (예: 3.1.2.1.1.1)",
+      "message_template": "번호 깊이 초과: '{number}' ({depth}단계, 최대 6단계)",
+      "enabled": true,
+      "params": {
+        "element": "heading",
+        "max_depth": 6
+      }
+    },
+    {
+      "id": "38-a1",
+      "source": "MIL-STD-38784",
+      "source_rule": "§5.2.1",
+      "category": "terminology",
+      "severity": "warning",
+      "confidence": "high",
+      "type": "dictionary",
+      "name_ko": "약어 첫 사용 풀네임",
+      "name_en": "Abbreviation First-Use Expansion",
+      "description": "약어 첫 등장 시 풀네임(전체명)을 병기해야 한다",
+      "message_template": "약어 '{abbr}' 첫 사용 시 풀네임 미기재",
+      "suggestion_template": "첫 사용 시 'Full Name (ABBR)' 형태로 기재하세요",
+      "enabled": true,
+      "params": {
+        "mode": "first_use",
+        "tnd_aware": true
+      }
+    },
+    {
+      "id": "38-xr",
+      "source": "MIL-STD-38784",
+      "source_rule": "§5.7/5.8",
+      "category": "structure",
+      "severity": "warning",
+      "confidence": "high",
+      "type": "cross_ref",
+      "name_ko": "교차참조 대상 실존 검증",
+      "name_en": "Cross-Reference Target Exists",
+      "description": "본문의 'Figure N' 또는 'Table N' 참조 대상이 실제로 존재하는지 검사",
+      "message_template": "참조 대상 미존재: '{ref}' — 해당 {type}이(가) 문서에 없음",
+      "enabled": true,
+      "params": {
+        "ref_pattern": "(Figure|Table)\\s+(\\d+)",
+        "check_existence": true,
+        "check_order": true
+      }
+    },
+    {
+      "id": "38-w1",
+      "source": "MIL-STD-38784",
+      "source_rule": "§5.9.1",
+      "category": "structure",
+      "severity": "warning",
+      "confidence": "high",
+      "type": "pattern",
+      "name_ko": "WARNING/CAUTION 배치",
+      "name_en": "Warning Placement Check",
+      "description": "WARNING/CAUTION은 해당 위험 절차 직전에 배치해야 한다",
+      "message_template": "WARNING/CAUTION이 절차 단계 뒤에 위치함",
+      "enabled": true,
+      "params": {
+        "patterns": ["^\\s*(WARNING|CAUTION)\\s*[:.]?"],
+        "scope": "paragraph"
+      }
+    }
+  ]
+}

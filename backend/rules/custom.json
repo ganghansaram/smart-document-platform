@@ -1,0 +1,119 @@
+{
+  "$schema": "./_schema.json",
+  "name": "기존 자체 규칙",
+  "description": "Phase 3에서 구현된 6종 규칙의 새 스키마 마이그레이션",
+  "rules": [
+    {
+      "id": "custom-numbering",
+      "source": "custom",
+      "category": "structure",
+      "severity": "error",
+      "confidence": "high",
+      "type": "sequence",
+      "name_ko": "번호 체계 연속성",
+      "name_en": "Numbering Continuity",
+      "description": "섹션 번호가 순차적이지 않으면 경고 (예: 1, 2, 4 → 3 누락)",
+      "message_template": "번호 체계 불연속: '{prev}' 다음 '{curr}'",
+      "enabled": true,
+      "params": {
+        "element": "heading",
+        "max_depth": 6
+      },
+      "legacy_id": "numbering_continuity"
+    },
+    {
+      "id": "custom-table-caption",
+      "source": "custom",
+      "category": "structure",
+      "severity": "warning",
+      "confidence": "high",
+      "type": "cross_ref",
+      "name_ko": "표 캡션 검증",
+      "name_en": "Table Caption Verification",
+      "description": "표 번호 연속성 + 본문 참조 여부 검사",
+      "message_template": "{message}",
+      "enabled": true,
+      "params": {
+        "ref_pattern": "Table\\s+(\\d+)",
+        "target_pattern": "^Table\\s+(\\d+)",
+        "check_order": false,
+        "check_existence": true
+      },
+      "legacy_id": "table_caption"
+    },
+    {
+      "id": "custom-figure-caption",
+      "source": "custom",
+      "category": "structure",
+      "severity": "warning",
+      "confidence": "high",
+      "type": "cross_ref",
+      "name_ko": "그림 캡션 검증",
+      "name_en": "Figure Caption Verification",
+      "description": "그림 번호 연속성 + 본문 참조 여부 검사",
+      "message_template": "{message}",
+      "enabled": true,
+      "params": {
+        "ref_pattern": "Figure\\s+(\\d+)",
+        "target_pattern": "^Figure\\s+(\\d+)",
+        "check_order": false,
+        "check_existence": true
+      },
+      "legacy_id": "figure_caption"
+    },
+    {
+      "id": "custom-forbidden-terms",
+      "source": "custom",
+      "category": "terminology",
+      "severity": "warning",
+      "confidence": "high",
+      "type": "dictionary",
+      "name_ko": "금지 용어 감지",
+      "name_en": "Forbidden Terms Detection",
+      "description": "사용 금지 용어를 검출하고 대체어를 제안",
+      "message_template": "금지 용어 '{term}' 사용 → '{replacement}' 권장",
+      "enabled": false,
+      "params": {
+        "mode": "blacklist",
+        "tnd_aware": false
+      },
+      "legacy_id": "forbidden_terms"
+    },
+    {
+      "id": "custom-inconsistent-terms",
+      "source": "custom",
+      "category": "terminology",
+      "severity": "warning",
+      "confidence": "high",
+      "type": "dictionary",
+      "name_ko": "용어 일관성",
+      "name_en": "Term Consistency",
+      "description": "동일 개념에 대해 서로 다른 용어가 혼용되면 경고",
+      "message_template": "용어 불일치: '{term_a}'와(과) '{term_b}' 혼용",
+      "enabled": false,
+      "params": {
+        "mode": "blacklist",
+        "tnd_aware": false
+      },
+      "legacy_id": "inconsistent_terms"
+    },
+    {
+      "id": "custom-sentence-length",
+      "source": "custom",
+      "category": "readability",
+      "severity": "suggestion",
+      "confidence": "high",
+      "type": "metric",
+      "name_ko": "문장 길이 제한",
+      "name_en": "Sentence Length Limit",
+      "description": "문장이 지정된 최대 문자 수를 초과하면 경고",
+      "message_template": "문장 길이 초과: {count}자 (최대 {max}자)",
+      "enabled": true,
+      "params": {
+        "target": "sentence_chars",
+        "max": 150
+      },
+      "legacy_id": "sentence_length"
+    }
+  ]
+}
