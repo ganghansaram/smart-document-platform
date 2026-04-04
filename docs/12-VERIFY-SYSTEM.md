@@ -318,4 +318,67 @@ score = 100 × max(0, 1 - density / threshold)
 
 ---
 
+## 8. 운영 가이드 — 사용자 조정 방법
+
+### 8.1 규칙 ON/OFF
+
+검증 모드 사이드바 ⚙ 버튼 → 설정 모달에서:
+- **소스 그룹 토글**: ASD-STE100 / MIL-STD-38784 / MIL-STD-961E / 기본 규칙을 그룹 단위로 ON/OFF
+- **개별 규칙 토글**: 각 규칙을 개별적으로 ON/OFF
+- **심각도 변경**: 오류/경고/제안 중 선택
+
+### 8.2 약어 오탐 해소
+
+약어 감지(38-A1)에서 사내 용어가 오탐으로 경고되는 경우:
+
+**파일**: `backend/services/rule_engine.py`의 `common_abbrs` 집합에 해당 약어를 추가
+
+```python
+common_abbrs = {"WARNING", "CAUTION", ...,
+    # 사내 용어 추가
+    "KUH", "LAH", "KFX", "AESA",  # 예시
+}
+```
+
+### 8.3 점수가 너무 낮거나 높을 때
+
+**파일**: `backend/services/compare_service.py`
+
+| 상수 | 기본값 | 설명 | 조정 방향 |
+|------|:------:|------|----------|
+| `DENSITY_THRESHOLD` | 5.0 | 100단어당 이 값이면 0점 | 올리면 점수 관대, 내리면 엄격 |
+| `MIN_WORDS` | 200 | 짧은 문서 최소 단어 수 | 올리면 짧은 문서 점수 상승 |
+| `SEVERITY_WEIGHT` | error:5, warning:2, suggestion:1 | 심각도별 감점 가중치 | 비율 조정으로 감점 강도 변경 |
+
+### 8.4 금지 용어 / 용어 그룹 관리
+
+검증 모달 ⚙ → "기본 규칙" 그룹에서:
+- **금지 용어**: 직접 입력 또는 CSV 가져오기 (term,replacement 형식)
+- **용어 일관성 그룹**: 쉼표 구분 입력 또는 CSV 가져오기
+
+### 8.5 새 규칙 추가 (개발자용)
+
+`backend/rules/` 디렉토리에 JSON 파일 추가:
+
+```json
+{
+  "id": "custom-new-rule",
+  "source": "custom",
+  "category": "structure",
+  "severity": "warning",
+  "confidence": "high",
+  "type": "pattern",
+  "name_ko": "새 규칙 이름",
+  "enabled": true,
+  "params": {
+    "patterns": ["검출할 정규식"],
+    "scope": "sentence"
+  }
+}
+```
+
+서버 재시작 시 자동 로드. 코드 수정 불필요.
+
+---
+
 *최종 갱신: 2026-04-05 · 원본 표준: ASD-STE100 Issue 7, MIL-STD-961E, MIL-STD-38784B*

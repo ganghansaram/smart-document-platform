@@ -1,8 +1,8 @@
 # Plan-23: Verify(Compare) 시스템 고도화
 
 > **작성일**: 2026-04-01
-> **최종 갱신**: 2026-04-04 (Phase 4 Step 1 완료)
-> **상태**: Phase 4 Step 1 완료, Phase 5 대기
+> **최종 갱신**: 2026-04-05 (Phase 5 핵심 완료)
+> **상태**: Phase 5 핵심 완료 (5j/5k → backlog, 실사용 후 진행)
 > **관련**: `compare.html`, `backend/api/compare.py`, `backend/services/compare_service.py`
 > **선행 문서**: `docs/11-COMPARE-SYSTEM.md`, `docs/research-semantic-comparison.md`
 > **기준 문서**: `docs/12-VERIFY-SYSTEM.md` — 표준 규칙 분석 + 선정 근거 + 스코어링 설계
@@ -19,7 +19,7 @@
 | 3 | 규칙 검증 고도화 + 인텔리전스 패널 | 8 | 8 | ✅ 완료 |
 | 3V | 실효성 검증 (3모드 신뢰도) | 6 | 6 | ✅ 완료 |
 | 4 | 서버 이력 (Step 1) | 3 | 3 | ✅ 완료 (Step 2~3은 Phase 5 이후) |
-| 5 | 표준 기반 규칙 엔진 (STE + MIL-STD) | 11 | 9 | 진행 중 (5a~5i 완료) |
+| 5 | 표준 기반 규칙 엔진 (STE + MIL-STD) | 11 | 9 | ✅ 핵심 완료 (5j/5k → backlog) |
 
 ---
 
@@ -470,9 +470,9 @@ MIL-STD는 ASSIST에서 다운로드, STE는 공개 학술 자료에서 핵심 �
 | 5f | STE 작성 규칙 구현 | 8종 정의+엔진 실행. 문장분리 튜닝, 대문자 패턴 수정 완료 | 상 | 5d | ✅ |
 | 5g | MIL-STD 구조 규칙 구현 | 7종 정의+엔진 실행. 961 기본 OFF, 약어 오탐 수정 완료 | 상 | 5d | ✅ |
 | 5h | 스코어링 확장 | severity×confidence 이중 가중치 (high=1.0/medium=0.7/low=0.4) | 하 | 5f, 5g | ✅ |
-| 5i | 규칙 설정 UI + 패널 연동 | 동적 RULE_LABELS, 출처 배지, 체크리스트 확장 (6/10 완료) | 상 | 5h | ✅ |
-| 5j | 기술명사 사전(TND) 관리 | API + UI — 프로젝트별 기술명사 등록, 승인어 검사 연동 | 중 | 5f | ⬜ |
-| 5k | 검증 + 캘리브레이션 | 테스트셋 회귀, 오탐률 측정, 임계값 튜닝 | 중 | 5i, 5j | ⬜ |
+| 5i | 규칙 설정 UI + 패널 연동 | 동적 RULE_LABELS, 출처 배지, 그룹 토글, 체크리스트, 컨트롤 배치 (9/10) | 상 | 5h | ✅ |
+| 5j | 기술명사 사전(TND) 관리 | 승인어 검사(STE-1.1) 도입 시 함께 구현 | 중 | 5f | → backlog |
+| 5k | 검증 + 캘리브레이션 | 실사용 시작 후 실문서 기반 튜닝 | 중 | 5i, 5j | → backlog |
 
 ### 5i 상세: 규칙 설정 UI + 패널 연동
 
