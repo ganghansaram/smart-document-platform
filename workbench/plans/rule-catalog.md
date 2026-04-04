@@ -3,6 +3,7 @@
 > 작성일: 2026-04-04
 > 목적: Phase 5 규칙 엔진에서 구현할 규칙 목록 + 자동화 등급 + 우선순위
 > 대상 표준: ASD-STE100, MIL-STD-961E, MIL-STD-38784
+> **기준 문서**: [`docs/12-VERIFY-SYSTEM.md`](../../docs/12-VERIFY-SYSTEM.md) — 원본 대조 분석 + 선정 사유
 
 ---
 

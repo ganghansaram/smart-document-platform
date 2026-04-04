@@ -5,6 +5,7 @@
 > **상태**: Phase 4 Step 1 완료, Phase 5 대기
 > **관련**: `compare.html`, `backend/api/compare.py`, `backend/services/compare_service.py`
 > **선행 문서**: `docs/11-COMPARE-SYSTEM.md`, `docs/research-semantic-comparison.md`
+> **기준 문서**: `docs/12-VERIFY-SYSTEM.md` — 표준 규칙 분석 + 선정 근거 + 스코어링 설계
 
 ---
 
