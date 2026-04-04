@@ -54,13 +54,43 @@ def get_rule_by_id(rule_id: str) -> Optional[dict]:
 
 # ── 규칙 실행 ────────────────────────────────────
 
-# 문장 분리 패턴
-_SENT_SPLIT = re.compile(r"(?<=[.!?])\s+")
+# 문장 분리: 마침표+공백에서 분리하되, 번호/약어 뒤는 제외
+_SENT_ABBRS = {"Fig", "Tab", "Dr", "Mr", "Mrs", "No", "Rev", "Vol", "Eq", "vs", "etc", "approx"}
 
 
 def _split_sentences(text: str) -> list[str]:
-    """텍스트를 문장 단위로 분리"""
-    parts = _SENT_SPLIT.split(text.strip())
+    """텍스트를 문장 단위로 분리 (번호·약어 뒤 분리 방지)"""
+    parts = []
+    current = []
+    tokens = re.split(r"([.!?])\s+", text.strip())
+
+    i = 0
+    while i < len(tokens):
+        current.append(tokens[i])
+        if i + 1 < len(tokens) and tokens[i + 1] in ".!?":
+            punct = tokens[i + 1]
+            # 마침표인 경우: 앞 토큰이 번호/약어인지 확인
+            if punct == ".":
+                last_word = tokens[i].rstrip().rsplit(None, 1)[-1] if tokens[i].strip() else ""
+                # 숫자(1. 2. 3.), 단일 대문자(A. B.), 약어(Fig. Dr.)
+                if re.match(r"^\d+$", last_word) or re.match(r"^[A-Z]$", last_word) or last_word in _SENT_ABBRS:
+                    current.append(punct)
+                    if i + 2 < len(tokens):
+                        current.append(" ")
+                    i += 2
+                    continue
+            # 정상 문장 종결
+            current.append(punct)
+            parts.append("".join(current).strip())
+            current = []
+            i += 2
+        else:
+            i += 1
+
+    remainder = "".join(current).strip()
+    if remainder:
+        parts.append(remainder)
+
     return [s for s in parts if s.strip()]
 
 
@@ -137,10 +167,12 @@ def _run_pattern(paragraphs: list[str], rule: dict) -> list[dict]:
     min_occ = params.get("min_occurrences", 1)
     msg_tpl = rule.get("message_template", "패턴 매칭: '{match}'")
 
+    case_sensitive = params.get("case_sensitive", False)
+    flags = 0 if case_sensitive else re.IGNORECASE
     compiled = []
     for p in patterns:
         try:
-            compiled.append(re.compile(p, re.IGNORECASE))
+            compiled.append(re.compile(p, flags))
         except re.error:
             logger.warning("잘못된 정규식: %s (rule=%s)", p, rule["id"])
 

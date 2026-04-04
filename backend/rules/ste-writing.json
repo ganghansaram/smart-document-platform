@@ -88,11 +88,14 @@
       "enabled": true,
       "params": {
         "patterns": [
-          "\\b[Ww]arning\\b(?<!WARNING)",
-          "\\b[Cc]aution\\b(?<!CAUTION)"
+          "\\bWarning\\b",
+          "\\bwarning\\b",
+          "\\bCaution\\b",
+          "\\bcaution\\b"
         ],
         "exceptions": [],
-        "scope": "paragraph"
+        "scope": "paragraph",
+        "case_sensitive": true
       }
     },
     {
