@@ -464,7 +464,7 @@ MIL-STD는 ASSIST에서 다운로드, STE는 공개 학술 자료에서 핵심 �
 | 5a | 표준 문서 수집 | MIL-STD DL + STE 공개 규칙 수집 → `rule-catalog.md` | 하 | — | ✅ |
 | 5b | 규칙 카탈로그 작성 | 전체 규칙 목록 + 자동화 등급(A/B/C) + 우선순위 → `rule-catalog.md` | 중 | 5a | ✅ |
 | 5c | 규칙 JSON 스키마 설계 | `_schema.json` + 3개 규칙 파일 (custom/ste/mil) | 중 | 5b | ✅ |
-| 5d | 규칙 엔진 코어 | `rule_engine.py` — 스키마 기반 로더 + 매처 + 리포터 | 상 | 5c | ⬜ |
+| 5d | 규칙 엔진 코어 | `rule_engine.py` — 6개 타입 매처 + legacy 위임 + validate 통합 | 상 | 5c | ✅ |
 | 5e | 기존 6종 마이그레이션 | 하드코딩 규칙 → JSON 정의로 전환, 하위 호환 | 중 | 5d | ⬜ |
 | 5f | STE 작성 규칙 구현 | Priority 1: 7개 규칙 (Step 3) | 상 | 5d | ⬜ |
 | 5g | MIL-STD 구조 규칙 구현 | Priority 2: 6개 규칙 (Step 4) | 상 | 5d | ⬜ |

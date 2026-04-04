@@ -73,19 +73,25 @@ def save_rules(data: dict):
 
 
 def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dict:
-    """단락 배열에 대해 규칙 검증 수행 → 이슈 목록 반환"""
+    """단락 배열에 대해 규칙 검증 수행 → 이슈 목록 반환
+
+    새 규칙 엔진(rule_engine.py)과 기존 프리셋 시스템을 통합:
+    1. backend/rules/*.json에서 전체 규칙 로드
+    2. compare-rules.json 프리셋에서 legacy 규칙의 enabled/severity/params 오버라이드 적용
+    3. 엔진 실행 → 이슈 목록 반환
+    """
+    from services.rule_engine import load_all_rules, run_rules
+
     rules_data = load_rules()
     preset = preset or rules_data.get("active_preset", "technical")
     preset_config = rules_data.get("presets", {}).get(preset)
     if not preset_config:
         return {"score": 100, "summary": {"error": 0, "warning": 0, "suggestion": 0}, "issues": []}
 
-    rules = preset_config.get("rules", {})
-    issues = []
-    issue_counter = 0
+    preset_rules = preset_config.get("rules", {})
 
-    # 각 규칙 실행
-    rule_runners = {
+    # 기존 규칙 함수 맵 (legacy_id로 위임)
+    legacy_runners = {
         "numbering_continuity": _check_numbering,
         "table_caption": _check_table_caption,
         "figure_caption": _check_figure_caption,
@@ -94,18 +100,31 @@ def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dic
         "sentence_length": _check_sentence_length,
     }
 
-    for rule_id, runner in rule_runners.items():
-        rule_cfg = rules.get(rule_id, {})
-        if not rule_cfg.get("enabled", False):
-            continue
-        severity = rule_cfg.get("severity", "warning")
-        params = rule_cfg.get("params", {})
-        found = runner(paragraphs, severity, params)
-        for issue in found:
-            issue["id"] = f"issue-{issue_counter}"
-            issue["rule_id"] = rule_id
-            issue_counter += 1
-        issues.extend(found)
+    # 전체 규칙 로드 → 프리셋 오버라이드 적용 → 활성 규칙 필터링
+    all_rules = load_all_rules()
+    enabled_rules = []
+    for rule in all_rules:
+        rule_copy = dict(rule)  # 원본 보존
+        legacy_id = rule_copy.get("legacy_id")
+
+        if legacy_id and legacy_id in preset_rules:
+            # 기존 프리셋 설정으로 오버라이드
+            preset_cfg = preset_rules[legacy_id]
+            rule_copy["enabled"] = preset_cfg.get("enabled", rule_copy.get("enabled", False))
+            rule_copy["severity"] = preset_cfg.get("severity", rule_copy.get("severity", "warning"))
+            if "params" in preset_cfg:
+                rule_copy["params"] = {**rule_copy.get("params", {}), **preset_cfg["params"]}
+        # legacy가 아닌 새 규칙: JSON 정의의 enabled 그대로 사용
+
+        if rule_copy.get("enabled", False):
+            enabled_rules.append(rule_copy)
+
+    # 엔진 실행
+    issues = run_rules(paragraphs, enabled_rules, legacy_runners)
+    issue_counter = 0
+    for issue in issues:
+        issue["id"] = f"issue-{issue_counter}"
+        issue_counter += 1
 
     # 점수 계산
     summary = {"error": 0, "warning": 0, "suggestion": 0}
@@ -132,17 +151,9 @@ def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dic
     score = max(0, round(100 * max(0, 1 - density / DENSITY_THRESHOLD)))
 
     # 카테고리별 독립 점수 (Acrolinx 방식)
-    CATEGORY_MAP = {
-        "numbering_continuity": "structure",
-        "table_caption": "structure",
-        "figure_caption": "structure",
-        "forbidden_terms": "terminology",
-        "inconsistent_terms": "terminology",
-        "sentence_length": "readability",
-    }
-    cat_weighted = {"structure": 0, "terminology": 0, "readability": 0}
+    cat_weighted = {"structure": 0, "terminology": 0, "readability": 0, "writing": 0}
     for iss in issues:
-        cat = CATEGORY_MAP.get(iss.get("rule_id", ""), iss.get("category", ""))
+        cat = iss.get("category", "")
         if cat in cat_weighted:
             cat_weighted[cat] += SEVERITY_WEIGHT.get(iss.get("severity", "warning"), 1)
     cat_density = {c: w / (effective_words / 100) for c, w in cat_weighted.items()}
