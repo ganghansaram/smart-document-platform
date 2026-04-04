@@ -18,7 +18,7 @@
 | 3 | 규칙 검증 고도화 + 인텔리전스 패널 | 8 | 8 | ✅ 완료 |
 | 3V | 실효성 검증 (3모드 신뢰도) | 6 | 6 | ✅ 완료 |
 | 4 | 서버 이력 (Step 1) | 3 | 3 | ✅ 완료 (Step 2~3은 Phase 5 이후) |
-| 5 | 표준 기반 규칙 엔진 (STE + MIL-STD) | 10 | 0 | 3V 완료 후 착수 |
+| 5 | 표준 기반 규칙 엔진 (STE + MIL-STD) | 11 | 0 | 3V 완료 → 착수 가능 |
 
 ---
 
@@ -341,6 +341,7 @@ backend/services/rule_engine.py    ← 스키마 기반 규칙 실행 엔진
   "source_rule": "Rule 1.1",
   "category": "readability",
   "severity": "warning",
+  "confidence": "high",
   "name_ko": "문장 길이 제한",
   "name_en": "Sentence Length Limit",
   "description": "절차문은 20단어, 설명문은 25단어를 초과하면 안 된다",
@@ -352,6 +353,9 @@ backend/services/rule_engine.py    ← 스키마 기반 규칙 실행 엔진
   "enabled": true
 }
 ```
+
+> **confidence 필드**: high/medium/low 3단계. 정규식 정확 매칭은 high, 휴리스틱은 medium, NLP-free 근사는 low.
+> low confidence 규칙은 기본 OFF — 사용자가 설정에서 활성화.
 
 이렇게 하면:
 - 규칙 추가/수정에 코드 변경 불필요 (JSON만 편집)
@@ -412,15 +416,19 @@ MIL-STD는 ASSIST에서 다운로드, STE는 공개 학술 자료에서 핵심 �
 
 기존 규칙과 겹치는 것은 업그레이드, 나머지는 신규:
 
-| # | 규칙 | 현재 상태 | 작업 |
-|---|------|----------|------|
-| 1 | 문장 길이 제한 (절차 20 / 설명 25단어) | `sentence_length` 존재 (단일 임계값) | 업그레이드: 절차/설명 구분 |
-| 2 | 수동태 감지 | 없음 | 신규: be + past participle 패턴 |
-| 3 | 명사 클러스터 제한 (연속 명사 3개 이하) | 없음 | 신규: POS 없이 휴리스틱 |
-| 4 | 한 문장 한 지시 (절차문) | 없음 | 신규: and/or + 동사 패턴 |
-| 5 | 이중 부정 금지 | 없음 | 신규: not + un-/in- 패턴 |
-| 6 | 불명확 표현 경고 | `forbidden_words` 존재 (임의 목록) | 업그레이드: STE 비승인 목록 기반 |
-| 7 | 동명사 시작 금지 (절차문) | 없음 | 신규: -ing로 시작하는 문장 |
+| # | 규칙 | 현재 상태 | 신뢰도 | 작업 |
+|---|------|----------|:------:|------|
+| 1 | 문장 길이 제한 (절차 20 / 설명 25단어) | `sentence_length` 존재 (단일 임계값) | high | 업그레이드: 절차/설명 구분 |
+| 2 | 수동태 감지 | 없음 | **low** | 신규: be + past participle 패턴, **기본 OFF** |
+| 3 | 명사 클러스터 제한 (연속 명사 3개 이하) | 없음 | **low** | 신규: 휴리스틱, **기본 OFF**, TND 등록어 예외 |
+| 4 | 한 문장 한 지시 (절차문) | 없음 | medium | 신규: and/or + 동사 패턴 |
+| 5 | 이중 부정 금지 | 없음 | high | 신규: not + un-/in- 패턴 |
+| 6 | 불명확 표현 경고 | `forbidden_words` 존재 (임의 목록) | high | 업그레이드: STE 비승인 목록 기반 |
+| 7 | 동명사 시작 금지 (절차문) | 없음 | medium | 신규: -ing로 시작하는 문장 |
+| 8 | 승인 어휘 검사 | 없음 | high | 신규: STE 승인 사전 + TND 기반 |
+
+> 수동태(#2)·명사 클러스터(#3)는 NLP 없이 precision ~60%로 한계 명확.
+> **기본 OFF**, 사용자가 설정에서 활성화하는 옵트인 방식.
 
 #### Step 4: MIL-STD 구조 규칙 구현 (Priority 2)
 
@@ -432,40 +440,38 @@ MIL-STD는 ASSIST에서 다운로드, STE는 공개 학술 자료에서 핵심 �
 | 4 | 약어 첫사용 전개 | MIL-STD-38784 §5.9 | 약어 최초 등장 시 풀어쓰기 여부 |
 | 5 | 경고/주의문 배치 | MIL-STD-38784 §5.7 | WARNING/CAUTION이 해당 절차 앞에 위치하는지 |
 | 6 | 참조 문서 유효성 | MIL-STD-961 §4.2 | APPLICABLE DOCUMENTS 섹션 내 문서가 본문에서 참조되는지 |
+| 7 | 교차참조 역방향 검증 | MIL-STD-38784 | 본문의 "Figure N" "Table N" 참조 대상이 실제 존재하는지 |
 
-#### Step 5: 스코어링 체계 개편
+#### Step 5: 스코어링 확장 (3V-b 기반)
 
-현재 임의 penalty 공식을 표준 근거 기반으로 교체:
+> 3V-b에서 Acrolinx density 방식으로 이미 개선 완료. 여기서는 확장만.
 
-```
-현재:  score = max(0, 100 - (penalty / paragraphs) × 10)
-       penalty = error×10 + warning×3 + suggestion×1
-
-개선:  규칙별 가중치를 표준 출처 + severity로 결정
-       카테고리별 독립 점수 (구조 / 작성 / 용어)
-       종합 점수 = 가중 평균 (3V-a 조사 결과 반영)
-```
+- 신규 규칙의 category/severity/confidence를 기존 공식에 통합
+- confidence에 따른 가중치 차등: high=1.0, medium=0.7, low=0.4
+- 카테고리에 `writing` 추가 (기존 structure/terminology/readability + writing)
 
 #### Step 6: 검증 + 캘리브레이션
 
 - 3V-c에서 구축한 테스트 문서셋으로 회귀 테스트
-- 오탐률(false positive) 목표: < 15%
-- 인텔리전스 패널에 규칙 출처 표시 (예: "ASD-STE Rule 1.1")
+- 오탐률(false positive) 목표: high-confidence 규칙 < 10%, low-confidence < 25%
+- 인텔리전스 패널에 규칙 출처 + 신뢰도 표시 (예: "ASD-STE Rule 1.1 · high")
+- TND 미등록 기술명사로 인한 오탐 측정 → TND 초기 데이터 보강
 
 ### 5.4 구현 순서
 
 | # | 태스크 | 설명 | 난이도 | 의존 | 상태 |
 |---|--------|------|--------|------|------|
-| 5a | 표준 문서 수집 | MIL-STD DL + STE 공개 규칙 수집 | 하 | — | ⬜ |
-| 5b | 규칙 카탈로그 작성 | 전체 규칙 목록 + 자동화 등급(A/B/C) + 우선순위 | 중 | 5a | ⬜ |
+| 5a | 표준 문서 수집 | MIL-STD DL + STE 공개 규칙 수집 → `rule-catalog.md` | 하 | — | ✅ |
+| 5b | 규칙 카탈로그 작성 | 전체 규칙 목록 + 자동화 등급(A/B/C) + 우선순위 → `rule-catalog.md` | 중 | 5a | ✅ |
 | 5c | 규칙 JSON 스키마 설계 | 규칙 정의 데이터 구조 확정 | 중 | 5b | ⬜ |
 | 5d | 규칙 엔진 코어 | `rule_engine.py` — 스키마 기반 로더 + 매처 + 리포터 | 상 | 5c | ⬜ |
 | 5e | 기존 6종 마이그레이션 | 하드코딩 규칙 → JSON 정의로 전환, 하위 호환 | 중 | 5d | ⬜ |
 | 5f | STE 작성 규칙 구현 | Priority 1: 7개 규칙 (Step 3) | 상 | 5d | ⬜ |
 | 5g | MIL-STD 구조 규칙 구현 | Priority 2: 6개 규칙 (Step 4) | 상 | 5d | ⬜ |
-| 5h | 스코어링 개편 | 표준 근거 기반 가중치 + 카테고리별 독립 점수 | 중 | 5f, 5g | ⬜ |
-| 5i | 규칙 설정 UI + 패널 연동 | 프리셋+개별 토글 설정 UI, 규칙 출처 표시, 카테고리 확장 | 상 | 5h | ⬜ |
-| 5j | 검증 + 캘리브레이션 | 테스트셋 회귀, 오탐률 측정, 임계값 튜닝 | 중 | 5i | ⬜ |
+| 5h | 스코어링 확장 | confidence 가중치 통합, writing 카테고리 추가 | 하 | 5f, 5g | ⬜ |
+| 5i | 규칙 설정 UI + 패널 연동 | 프리셋+개별 토글, 규칙 출처·신뢰도 표시, 억제(suppress) 기능 | 상 | 5h | ⬜ |
+| 5j | 기술명사 사전(TND) 관리 | API + UI — 프로젝트별 기술명사 등록, 승인어 검사 연동 | 중 | 5f | ⬜ |
+| 5k | 검증 + 캘리브레이션 | 테스트셋 회귀, 오탐률 측정, 임계값 튜닝 | 중 | 5i, 5j | ⬜ |
 
 ### 5.5 Phase 순서 관계 (3V 진단 결과 반영)
 
