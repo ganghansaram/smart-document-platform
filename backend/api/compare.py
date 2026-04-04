@@ -1,8 +1,10 @@
 """
-Compare API — 문서 업로드, 텍스트 추출, 검증, AI 의미 분류, 유사도 검사, 내보내기
+Compare API — 문서 업로드, 텍스트 추출, 검증, AI 의미 분류, 유사도 검사, 내보내기, 이력
 """
+import json
 import logging
 import os
+from pathlib import Path
 
 from fastapi import APIRouter, File, Form, UploadFile, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -269,3 +271,53 @@ async def api_export_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ── 이력 API ──────────────────────────────────────
+
+def _history_path(username: str) -> Path:
+    return Path(config.VERIFY_DATA_DIR) / username / "_history.json"
+
+
+def _load_history(username: str) -> list:
+    p = _history_path(username)
+    if not p.exists():
+        return []
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+def _save_history(username: str, history: list):
+    p = _history_path(username)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(".tmp")
+    tmp.write_text(json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(p)
+
+
+@router.get("/history")
+async def api_get_history(user: dict = Depends(get_current_user)):
+    """사용자별 최근 작업 이력 조회"""
+    return _load_history(user["username"])
+
+
+@router.post("/history")
+async def api_add_history(
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """작업 이력 항목 추가 (최대 N건 FIFO)"""
+    entry = await request.json()
+
+    # 필수 필드 검증
+    if not entry.get("mode") or not entry.get("timestamp"):
+        raise HTTPException(status_code=400, detail="mode와 timestamp는 필수입니다")
+
+    history = _load_history(user["username"])
+    history.insert(0, entry)
+    if len(history) > config.VERIFY_HISTORY_MAX:
+        history = history[:config.VERIFY_HISTORY_MAX]
+    _save_history(user["username"], history)
+    return {"success": True, "count": len(history)}

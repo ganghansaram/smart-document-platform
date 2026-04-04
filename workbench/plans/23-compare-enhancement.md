@@ -1,8 +1,8 @@
 # Plan-23: Verify(Compare) 시스템 고도화
 
 > **작성일**: 2026-04-01
-> **최종 갱신**: 2026-04-04 (Phase 3V 완료)
-> **상태**: Phase 3V 완료, Phase 4/5 대기
+> **최종 갱신**: 2026-04-04 (Phase 4 Step 1 완료)
+> **상태**: Phase 4 Step 1 완료, Phase 5 대기
 > **관련**: `compare.html`, `backend/api/compare.py`, `backend/services/compare_service.py`
 > **선행 문서**: `docs/11-COMPARE-SYSTEM.md`, `docs/research-semantic-comparison.md`
 
@@ -17,7 +17,7 @@
 | 2 | 내보내기 확장 | 7 | 7 | ✅ 완료 |
 | 3 | 규칙 검증 고도화 + 인텔리전스 패널 | 8 | 8 | ✅ 완료 |
 | 3V | 실효성 검증 (3모드 신뢰도) | 6 | 6 | ✅ 완료 |
-| 4 | 서버 이력 (Step 1) | 3 | 0 | 대기 (Step 2~3은 Phase 5 이후) |
+| 4 | 서버 이력 (Step 1) | 3 | 3 | ✅ 완료 (Step 2~3은 Phase 5 이후) |
 | 5 | 표준 기반 규칙 엔진 (STE + MIL-STD) | 10 | 0 | 3V 완료 후 착수 |
 
 ---
@@ -280,9 +280,9 @@ Phase 3V 검증 결과, 현재 검증 결과는 **저장할 가치가 있는 수
 
 | # | 태스크 | 난이도 | 상태 |
 |---|--------|:------:|------|
-| 4a | 백엔드: 이력 저장/조회 API | 하 | ⬜ |
-| 4b | 프론트: localStorage → API fetch 전환 | 중 | ⬜ |
-| 4c | 각 모드 결과 후 이력 자동 저장 연동 | 하 | ⬜ |
+| 4a | 백엔드: 이력 저장/조회 API | 하 | ✅ |
+| 4b | 프론트: localStorage → API fetch 전환 | 중 | ✅ |
+| 4c | 각 모드 결과 후 이력 자동 저장 연동 | 하 | ✅ |
 
 ### 4.4 Step 2~3: Phase 5 이후 진행 (보류)
 

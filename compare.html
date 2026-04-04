@@ -992,10 +992,6 @@
                 });
             });
 
-            // ── 최근 작업 이력 (localStorage, Phase 4 Step 2에서 백엔드 이관) ──
-            var HISTORY_KEY = 'verify-history';
-            var HISTORY_MAX = 10;
-
             // 초기 모드: 허브 (빈 상태)
             document.getElementById('compare-body').classList.add('mode-hub');
             renderHistory();
@@ -1104,17 +1100,14 @@
                 });
             }
 
-            function getHistory() {
-                try {
-                    return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-                } catch(e) { return []; }
-            }
-
             function addHistory(entry) {
-                var list = getHistory();
-                list.unshift(entry);
-                if (list.length > HISTORY_MAX) list = list.slice(0, HISTORY_MAX);
-                localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+                // 서버에 이력 저장 (fire-and-forget)
+                fetch(API_BASE + '/compare/history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(entry)
+                }).catch(function() {});
             }
 
             function formatTimeAgo(ts) {
@@ -1132,29 +1125,36 @@
             function renderHistory() {
                 var historySection = document.getElementById('verify-hub-history');
                 var historyList = document.getElementById('verify-hub-history-list');
-                var list = getHistory();
-                if (list.length === 0) {
-                    historySection.style.display = 'none';
-                    return;
-                }
-                historySection.style.display = '';
 
-                var modeLabels = { similarity: 'Similarity', compare: 'Comparison', verify: 'Verification' };
-                var html = '';
-                for (var i = 0; i < list.length; i++) {
-                    var h = list[i];
-                    var modeClass = 'type-' + h.mode;
-                    var files = escapeHTML(h.files.a || '');
-                    if (h.files.b) files += ' <span class="arrow">↔</span> ' + escapeHTML(h.files.b);
+                fetch(API_BASE + '/compare/history', { credentials: 'include' })
+                    .then(function(res) { return res.ok ? res.json() : []; })
+                    .then(function(list) {
+                        if (!list || list.length === 0) {
+                            historySection.style.display = 'none';
+                            return;
+                        }
+                        historySection.style.display = '';
 
-                    html += '<div class="verify-hub-history-item">'
-                        + '<span class="verify-hub-history-mode ' + modeClass + '">' + (modeLabels[h.mode] || h.mode) + '</span>'
-                        + '<span class="verify-hub-history-files">' + files + '</span>'
-                        + '<span class="verify-hub-history-score" style="color:' + (h.scoreColor || 'var(--text-dark)') + '">' + escapeHTML(h.score) + '</span>'
-                        + '<span class="verify-hub-history-time">' + formatTimeAgo(h.timestamp) + '</span>'
-                        + '</div>';
-                }
-                historyList.innerHTML = html;
+                        var modeLabels = { similarity: 'Similarity', compare: 'Comparison', verify: 'Verification' };
+                        var html = '';
+                        for (var i = 0; i < list.length; i++) {
+                            var h = list[i];
+                            var modeClass = 'type-' + h.mode;
+                            var files = escapeHTML(h.files.a || '');
+                            if (h.files.b) files += ' <span class="arrow">↔</span> ' + escapeHTML(h.files.b);
+
+                            html += '<div class="verify-hub-history-item">'
+                                + '<span class="verify-hub-history-mode ' + modeClass + '">' + (modeLabels[h.mode] || h.mode) + '</span>'
+                                + '<span class="verify-hub-history-files">' + files + '</span>'
+                                + '<span class="verify-hub-history-score" style="color:' + (h.scoreColor || 'var(--text-dark)') + '">' + escapeHTML(h.score) + '</span>'
+                                + '<span class="verify-hub-history-time">' + formatTimeAgo(h.timestamp) + '</span>'
+                                + '</div>';
+                        }
+                        historyList.innerHTML = html;
+                    })
+                    .catch(function() {
+                        historySection.style.display = 'none';
+                    });
             }
 
             // ── 허브로 복귀 (파일 리셋) ──

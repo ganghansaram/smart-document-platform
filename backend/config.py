@@ -70,6 +70,10 @@ UPLOAD_TEMP_DIR = None  # None이면 기본값 (backend/temp/)
 # DRM 환경에서 COM 임시 파일이 암호화되어 변환 실패 시 False로 설정
 WORD_COM_PREPROCESS = False
 
+# Verify 설정
+VERIFY_DATA_DIR = str(Path(__file__).parent.parent / "data" / "verify")
+VERIFY_HISTORY_MAX = 10
+
 # Translator 설정
 TRANSLATOR_DATA_DIR = str(Path(__file__).parent.parent / "data" / "translator")
 TRANSLATOR_MAX_PDF_SIZE = 100 * 1024 * 1024  # 100MB
