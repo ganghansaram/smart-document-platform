@@ -486,6 +486,8 @@ MIL-STD는 ASSIST에서 다운로드, STE는 공개 학술 자료에서 핵심 �
 | 5 | 억제(suppress) 기능 | 개별 이슈를 "의도적"으로 무시하는 기능 | 미구현 |
 | 6 | `RULE_CATEGORY` 동적 생성 | 기존 하드코딩 → JSON 규칙의 `category` 필드 사용 | 하드코딩 |
 | 7 | 카테고리별 점수 `writing` | 프론트 `catLabels`에 writing 추가됨 (5d 점검 시 수정 완료) | ✅ 완료 |
+| 8 | 내보내기 규칙명 | 새 규칙이 ID 원본 표시 (예: "ste-7.4") → `name_ko` 매핑 필요 | ID 폴백 |
+| 9 | 문장길이 중복 감지 해소 | `custom-sentence-length`(문자)와 `ste-3.2`(단어)가 동일 문장 이중 경고 → 프리셋에서 택일 설계 | 중복 |
 
 ### 5.5 Phase 순서 관계 (3V 진단 결과 반영)
 
