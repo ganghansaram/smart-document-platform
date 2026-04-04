@@ -119,6 +119,7 @@ def run_rules(paragraphs: list[str], enabled_rules: list[dict],
             for iss in found:
                 iss["rule_id"] = rule_id
                 iss["source"] = rule.get("source", "custom")
+                iss["confidence"] = rule.get("confidence", "high")
                 if "category" not in iss:
                     iss["category"] = rule.get("category", "")
             issues.extend(found)
@@ -146,6 +147,7 @@ def run_rules(paragraphs: list[str], enabled_rules: list[dict],
             for iss in found:
                 iss["rule_id"] = rule_id
                 iss["source"] = rule.get("source", "custom")
+                iss["confidence"] = rule.get("confidence", "high")
                 iss["category"] = rule.get("category", "")
                 iss["severity"] = rule.get("severity", "warning")
             issues.extend(found)

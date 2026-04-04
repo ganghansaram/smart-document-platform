@@ -134,20 +134,21 @@ def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dic
             summary[sev] += 1
 
     # ── 업계 표준 기반 스코어링 (Acrolinx/STE density 방식) ──
-    # 기준: 단어 수 대비 가중 이슈 밀도 → 지수 감쇠 점수
-    #   - 단어 수 기반: 빈 단락 부풀림 방지 (STE/Acrolinx 표준)
-    #   - severity 가중치: error=5, warning=2, suggestion=1
-    #   - density = weighted_issues / words_per_100
-    #   - score = 100 × max(0, 1 - density / threshold)
-    #   - threshold: density가 이 값에 도달하면 0점 (캘리브레이션 상수)
+    # severity × confidence 이중 가중치로 이슈 영향력 차등 반영
     SEVERITY_WEIGHT = {"error": 5, "warning": 2, "suggestion": 1}
+    CONFIDENCE_WEIGHT = {"high": 1.0, "medium": 0.7, "low": 0.4}
     DENSITY_THRESHOLD = 5.0  # 100단어당 가중이슈 5개 → 0점
     MIN_WORDS = 200  # 최소 단어 수 하한 (짧은 문서 과대 감점 방지)
 
+    def _issue_weight(iss):
+        sev_w = SEVERITY_WEIGHT.get(iss.get("severity", "warning"), 1)
+        conf_w = CONFIDENCE_WEIGHT.get(iss.get("confidence", "high"), 1.0)
+        return sev_w * conf_w
+
     total_words = max(sum(len(p.split()) for p in paragraphs), 1)
     effective_words = max(total_words, MIN_WORDS)
-    weighted_issues = sum(SEVERITY_WEIGHT.get(iss.get("severity", "warning"), 1) for iss in issues)
-    density = weighted_issues / (effective_words / 100)  # 100단어당 가중 이슈 수
+    weighted_issues = sum(_issue_weight(iss) for iss in issues)
+    density = weighted_issues / (effective_words / 100)
     score = max(0, round(100 * max(0, 1 - density / DENSITY_THRESHOLD)))
 
     # 카테고리별 독립 점수 (Acrolinx 방식)
@@ -155,7 +156,7 @@ def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dic
     for iss in issues:
         cat = iss.get("category", "")
         if cat in cat_weighted:
-            cat_weighted[cat] += SEVERITY_WEIGHT.get(iss.get("severity", "warning"), 1)
+            cat_weighted[cat] += _issue_weight(iss)
     cat_density = {c: w / (effective_words / 100) for c, w in cat_weighted.items()}
     category_scores = {c: max(0, round(100 * max(0, 1 - d / DENSITY_THRESHOLD))) for c, d in cat_density.items()}
 
