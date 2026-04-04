@@ -103,6 +103,29 @@ async def api_compare_rules_put(
     return {"ok": True}
 
 
+@router.get("/rule-definitions")
+async def api_rule_definitions(user: dict = Depends(get_current_user)):
+    """규칙 엔진에 로드된 전체 규칙 정의 메타데이터 반환 (프론트 UI용)"""
+    from services.rule_engine import load_all_rules
+    rules = load_all_rules()
+    return [
+        {
+            "id": r["id"],
+            "name_ko": r.get("name_ko", r["id"]),
+            "name_en": r.get("name_en", ""),
+            "source": r.get("source", "custom"),
+            "source_rule": r.get("source_rule", ""),
+            "category": r.get("category", ""),
+            "severity": r.get("severity", "warning"),
+            "confidence": r.get("confidence", "high"),
+            "description": r.get("description", ""),
+            "enabled": r.get("enabled", False),
+            "legacy_id": r.get("legacy_id"),
+        }
+        for r in rules
+    ]
+
+
 @router.post("/ai-classify")
 async def api_compare_ai_classify(
     request: Request,

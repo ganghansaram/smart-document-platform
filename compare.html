@@ -4086,9 +4086,8 @@
                 }
                 html += '</div>';
 
-                // 규칙별 체크리스트
+                // 규칙별 체크리스트 — 활성 규칙 전체 동적 표시
                 html += '<div class="intel-section"><div class="intel-section-title">규칙별 검사 결과</div>';
-                var ruleIds = Object.keys(RULE_LABELS);
                 var ruleIssueCount = {};
                 var ruleMaxSev = {};
                 for (var i = 0; i < issues.length; i++) {
@@ -4101,8 +4100,28 @@
                     else if (!ruleMaxSev[rid]) ruleMaxSev[rid] = 'suggestion';
                 }
 
-                for (var ri = 0; ri < ruleIds.length; ri++) {
-                    var rid = ruleIds[ri];
+                // 활성 규칙 목록: RULE_META에서 enabled 규칙 + 이슈가 있는 규칙
+                var checklistIds = [];
+                var checklistSeen = {};
+                if (RULE_META.length > 0) {
+                    for (var mi = 0; mi < RULE_META.length; mi++) {
+                        var meta = RULE_META[mi];
+                        if (meta.enabled || ruleIssueCount[meta.id]) {
+                            checklistIds.push(meta.id);
+                            checklistSeen[meta.id] = true;
+                        }
+                    }
+                } else {
+                    // 폴백: 기존 RULE_LABELS 키
+                    checklistIds = Object.keys(RULE_LABELS);
+                }
+                // 이슈에는 있지만 목록에 없는 규칙 추가
+                for (var rid in ruleIssueCount) {
+                    if (!checklistSeen[rid] && RULE_LABELS[rid]) checklistIds.push(rid);
+                }
+
+                for (var ri = 0; ri < checklistIds.length; ri++) {
+                    var rid = checklistIds[ri];
                     var count = ruleIssueCount[rid] || 0;
                     var icon, statusClass;
                     if (count === 0) {
@@ -4112,9 +4131,17 @@
                         icon = maxSev === 'error' ? '&#10007;' : '&#9888;';
                         statusClass = maxSev === 'error' ? 'intel-rule-fail' : 'intel-rule-warn';
                     }
+                    var ruleName = RULE_LABELS[rid] || rid;
+                    // 출처 표시 (custom 제외)
+                    var ruleMeta = null;
+                    for (var mi2 = 0; mi2 < RULE_META.length; mi2++) {
+                        if (RULE_META[mi2].id === rid) { ruleMeta = RULE_META[mi2]; break; }
+                    }
+                    var srcTag = (ruleMeta && ruleMeta.source !== 'custom') ? ' <span class="vd-source-tag">' + (SOURCE_LABELS[ruleMeta.source] || '') + '</span>' : '';
+
                     html += '<div class="intel-rule-item ' + statusClass + '">'
                         + '<span class="intel-rule-icon">' + icon + '</span>'
-                        + '<span class="intel-rule-name">' + RULE_LABELS[rid] + '</span>'
+                        + '<span class="intel-rule-name">' + ruleName + srcTag + '</span>'
                         + '<span class="intel-rule-count">' + (count > 0 ? count + '건' : '통과') + '</span>'
                         + '</div>';
                 }
@@ -4581,8 +4608,11 @@
                         var hidden = !validateState.filter[iss.severity] ? ' vd-issue-hidden' : '';
 
                         var issBadgeClass = iss.severity === 'error' ? 'badge-error' : (iss.severity === 'warning' ? 'badge-warning' : 'badge-info');
+                        var srcLabel = SOURCE_LABELS[iss.source] || '';
+                        var srcBadge = srcLabel ? '<span class="badge vd-source-badge">' + srcLabel + '</span>' : '';
                         html += '<div class="vd-issue-item severity-' + iss.severity + hidden + '" data-vd-issue-index="' + gIdx + '">'
                             + '<span class="badge ' + issBadgeClass + '">' + sevLabel + '</span>'
+                            + srcBadge
                             + '<span class="vd-issue-text">' + escapeHTML(iss.message) + '</span>'
                             + '</div>';
                     }
@@ -4788,6 +4818,7 @@
             });
 
             // ── 3-3. 규칙 설정 모달 ──
+            // 규칙 메타데이터 — 서버 API에서 동적 로드 (폴백: 기존 6종)
             var RULE_LABELS = {
                 numbering_continuity: '번호 체계 연속성',
                 table_caption: '표 캡션 존재',
@@ -4796,26 +4827,33 @@
                 inconsistent_terms: '용어 일관성',
                 sentence_length: '문장 길이 제한'
             };
-
-            var RULE_CATEGORIES = {
-                numbering_continuity: '구조 검사',
-                table_caption: '구조 검사',
-                figure_caption: '구조 검사',
-                forbidden_terms: '용어 검사',
-                inconsistent_terms: '용어 검사',
-                sentence_length: '가독성 검사'
-            };
-
-            var RULE_DESCRIPTIONS = {
-                numbering_continuity: '단락 번호가 1.1 → 1.3처럼 건너뛰거나, 2.1 다음에 1.1이 오는 등 번호 체계가 끊기면 오류로 표시합니다.',
-                table_caption: '표(Table) 위에 "표 N." 형식의 캡션이 없으면 경고합니다.',
-                figure_caption: '그림(Figure) 아래에 "그림 N." 형식의 캡션이 없으면 경고합니다.',
-                forbidden_terms: '아래 등록된 금지 용어가 문서에 사용되면 대체어와 함께 표시합니다. 예: "비행기" → "항공기"',
-                inconsistent_terms: '같은 의미의 용어가 문서 내에서 혼용되면 가장 많이 쓰인 용어로 통일을 권장합니다. 예: "서버"와 "Server" 혼용',
-                sentence_length: '설정한 글자 수를 초과하는 문장을 표시합니다. 기술문서 120자, 일반문서 150자 권장.'
-            };
+            var RULE_CATEGORIES = {};
+            var RULE_DESCRIPTIONS = {};
+            var RULE_META = []; // 전체 규칙 정의 (API 응답 원본)
 
             var SEVERITY_LABELS = { error: '오류', warning: '경고', suggestion: '제안' };
+            var SOURCE_LABELS = { 'ASD-STE100': 'STE', 'MIL-STD-961E': '961', 'MIL-STD-38784': '38784', 'custom': '' };
+            var CONFIDENCE_LABELS = { high: '', medium: '보통', low: '낮음' };
+            var CATEGORY_GROUP_LABELS = { structure: '구조 검사', writing: '작성 검사', terminology: '용어 검사', readability: '가독성 검사' };
+
+            // 서버에서 규칙 정의 로드 → RULE_LABELS 등 동적 구성
+            fetch(API_BASE + '/compare/rule-definitions', { credentials: 'include' })
+                .then(function(res) { return res.ok ? res.json() : []; })
+                .then(function(defs) {
+                    RULE_META = defs;
+                    for (var i = 0; i < defs.length; i++) {
+                        var d = defs[i];
+                        var key = d.legacy_id || d.id;
+                        RULE_LABELS[key] = d.name_ko;
+                        // 새 규칙도 id로 등록
+                        if (d.legacy_id) RULE_LABELS[d.id] = d.name_ko;
+                        RULE_CATEGORIES[key] = CATEGORY_GROUP_LABELS[d.category] || d.category;
+                        if (d.legacy_id) RULE_CATEGORIES[d.id] = RULE_CATEGORIES[key];
+                        RULE_DESCRIPTIONS[key] = d.description || '';
+                        if (d.legacy_id) RULE_DESCRIPTIONS[d.id] = RULE_DESCRIPTIONS[key];
+                    }
+                })
+                .catch(function() {});
 
             // ── 5-1 CSV 템플릿 ──
             var CSV_TEMPLATE_FORBIDDEN = 'term,replacement\n비행기,항공기\n체크,점검\n';

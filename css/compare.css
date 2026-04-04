@@ -1335,6 +1335,37 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 .intel-rule-warn .intel-rule-count { color: var(--color-warning); }
 .intel-rule-fail .intel-rule-count { color: var(--color-error); }
 
+/* 규칙 출처 태그 (체크리스트 내) */
+.vd-source-tag {
+    font-size: 9px;
+    padding: 1px 4px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-dark);
+    color: var(--text-light);
+    margin-left: 4px;
+    vertical-align: middle;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+body[data-theme="dark"] .vd-source-tag {
+    background: var(--bg-base);
+    color: var(--text-light);
+}
+
+/* 사이드바 이슈 출처 배지 */
+.vd-source-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+    background: var(--bg-dark);
+    color: var(--text-light);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+body[data-theme="dark"] .vd-source-badge {
+    background: var(--bg-base);
+}
+
 /* 문서 요약 카드 */
 .intel-doc-summary {
     display: flex;
