@@ -81,33 +81,14 @@
                 </div>
             </div>
 
-            <div class="cp-filter-group" id="vd-filter-group" style="display:none">
-                <button class="toolbar-btn" id="vd-filter-btn" title="필터">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                </button>
-                <div class="cp-filter-dropdown" id="vd-filter-dropdown" style="display:none">
-                    <label><input type="checkbox" checked data-vd-filter="error"> 오류</label>
-                    <label><input type="checkbox" checked data-vd-filter="warning"> 경고</label>
-                    <label><input type="checkbox" checked data-vd-filter="suggestion"> 제안</label>
-                </div>
-            </div>
+            <!-- vd-filter-group, vd-settings-btn, vd-revalidate-btn → 사이드바 헤더로 이동 -->
 
             <button class="toolbar-btn" id="ai-classify-btn" style="display:none" title="AI 의미 분류 — 변경 유형을 자동 분석합니다">
                 <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M9.937 3.243c.282-.83 1.444-.83 1.726 0l1.07 3.158a.9.9 0 0 0 .566.566l3.158 1.07c.83.282.83 1.444 0 1.726l-3.158 1.07a.9.9 0 0 0-.566.566l-1.07 3.158c-.282.83-1.444.83-1.726 0l-1.07-3.158a.9.9 0 0 0-.566-.566L5.143 9.763c-.83-.282-.83-1.444 0-1.726l3.158-1.07a.9.9 0 0 0 .566-.566l1.07-3.158zM17.5 13c.2-.59 1-.59 1.2 0l.5 1.5c.07.2.22.35.42.42l1.5.5c.59.2.59 1 0 1.2l-1.5.5a.6.6 0 0 0-.42.42l-.5 1.5c-.2.59-1 .59-1.2 0l-.5-1.5a.6.6 0 0 0-.42-.42l-1.5-.5c-.59-.2-.59-1 0-1.2l1.5-.5a.6.6 0 0 0 .42-.42l.5-1.5z"/></svg>
                 <span id="ai-classify-label" style="display:none">AI 분석</span>
             </button>
 
-            <button class="toolbar-btn" id="vd-settings-btn" style="display:none" title="검증 규칙 설정">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            </button>
-
-            <button class="toolbar-btn" id="vd-revalidate-btn" style="display:none" title="재검증">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            </button>
-
-            <button class="toolbar-btn" id="paragraph-num-btn" style="display:none" title="단락 번호 표시">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
-            </button>
+            <!-- paragraph-num-btn → 패널A 헤더로 이동 -->
 
             <span class="toolbar-sep"></span>
 
@@ -198,6 +179,9 @@
                         </span>
                         <span class="cp-panel-spacer"></span>
                         <span id="cp-toolbar-slot"></span>
+                        <button class="cp-sidebar-action" id="paragraph-num-btn" style="display:none" title="단락 번호 표시">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+                        </button>
                         <button class="cp-file-remove" id="file-remove-a" title="파일 제거">&times;</button>
                     </div>
                     <div class="cp-panel-body-wrap">
@@ -287,6 +271,23 @@
                     <span id="cp-sidebar-mode-slot"></span>
                     <span class="cp-sidebar-title" id="cp-sidebar-title">변경 사항</span>
                     <span class="cp-panel-spacer"></span>
+                    <!-- 검증 모드 전용: 필터+설정+재검증 (사이드바 헤더 배치) -->
+                    <div class="cp-filter-group" id="vd-filter-group" style="display:none">
+                        <button class="cp-sidebar-action" id="vd-filter-btn" title="필터">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        </button>
+                        <div class="cp-filter-dropdown" id="vd-filter-dropdown" style="display:none">
+                            <label><input type="checkbox" checked data-vd-filter="error"> 오류</label>
+                            <label><input type="checkbox" checked data-vd-filter="warning"> 경고</label>
+                            <label><input type="checkbox" checked data-vd-filter="suggestion"> 제안</label>
+                        </div>
+                    </div>
+                    <button class="cp-sidebar-action" id="vd-settings-btn" style="display:none" title="검증 규칙 설정">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
+                    <button class="cp-sidebar-action" id="vd-revalidate-btn" style="display:none" title="재검증">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    </button>
                     <button class="cp-sidebar-action" id="sidebar-export-btn" style="display:none" title="리포트 내보내기">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </button>
