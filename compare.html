@@ -1111,7 +1111,9 @@
             }
 
             function formatTimeAgo(ts) {
-                var diff = Date.now() - new Date(ts).getTime();
+                var d = new Date(ts);
+                if (isNaN(d.getTime())) return '';
+                var diff = Date.now() - d.getTime();
                 var min = Math.floor(diff / 60000);
                 if (min < 1) return '방금';
                 if (min < 60) return min + '분 전';
