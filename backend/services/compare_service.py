@@ -107,14 +107,19 @@ def validate_paragraphs(paragraphs: list[str], preset: str | None = None) -> dic
         rule_copy = dict(rule)  # 원본 보존
         legacy_id = rule_copy.get("legacy_id")
 
+        # 프리셋에서 오버라이드 검색: legacy_id 또는 rule id로 매칭
+        preset_key = None
         if legacy_id and legacy_id in preset_rules:
-            # 기존 프리셋 설정으로 오버라이드
-            preset_cfg = preset_rules[legacy_id]
+            preset_key = legacy_id
+        elif rule_copy["id"] in preset_rules:
+            preset_key = rule_copy["id"]
+
+        if preset_key:
+            preset_cfg = preset_rules[preset_key]
             rule_copy["enabled"] = preset_cfg.get("enabled", rule_copy.get("enabled", False))
             rule_copy["severity"] = preset_cfg.get("severity", rule_copy.get("severity", "warning"))
             if "params" in preset_cfg:
                 rule_copy["params"] = {**rule_copy.get("params", {}), **preset_cfg["params"]}
-        # legacy가 아닌 새 규칙: JSON 정의의 enabled 그대로 사용
 
         if rule_copy.get("enabled", False):
             enabled_rules.append(rule_copy)

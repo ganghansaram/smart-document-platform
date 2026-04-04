@@ -2301,6 +2301,17 @@ body[data-theme="dark"] .validate-mark.severity-suggestion.validate-active { bac
     margin-bottom: 6px;
     padding-bottom: 4px;
     border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.vd-group-toggle { flex-shrink: 0; }
+.vd-group-toggle.partial { opacity: 0.6; }
+.vd-group-count {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: normal;
+    color: var(--text-light);
 }
 
 .vd-rule-row {

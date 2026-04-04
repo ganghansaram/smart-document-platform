@@ -4916,31 +4916,57 @@
                 function buildBody() {
                     var rules = currentRules.rules || {};
 
-                    // 카테고리별 그룹화
-                    var groups = {};
-                    var groupOrder = ['구조 검사', '용어 검사', '가독성 검사'];
-                    for (var ruleId in RULE_LABELS) {
-                        var cat = RULE_CATEGORIES[ruleId];
-                        if (!groups[cat]) groups[cat] = [];
-                        groups[cat].push(ruleId);
+                    // 소스별 그룹화 (RULE_META 기반)
+                    var SOURCE_GROUP_LABELS = {
+                        'custom': '기본 규칙',
+                        'ASD-STE100': 'ASD-STE100 작성 규칙',
+                        'MIL-STD-38784': 'MIL-STD-38784 기술교범',
+                        'MIL-STD-961E': 'MIL-STD-961E 규격서 구조'
+                    };
+                    var sourceOrder = ['custom', 'ASD-STE100', 'MIL-STD-38784', 'MIL-STD-961E'];
+                    var sourceGroups = {};
+                    for (var si = 0; si < sourceOrder.length; si++) sourceGroups[sourceOrder[si]] = [];
+
+                    // RULE_META에서 그룹핑
+                    for (var mi = 0; mi < RULE_META.length; mi++) {
+                        var meta = RULE_META[mi];
+                        var src = meta.source || 'custom';
+                        if (!sourceGroups[src]) sourceGroups[src] = [];
+                        sourceGroups[src].push(meta);
                     }
 
                     var html = '';
-                    for (var gi = 0; gi < groupOrder.length; gi++) {
-                        var groupName = groupOrder[gi];
-                        var ruleIds = groups[groupName];
-                        if (!ruleIds) continue;
+                    for (var sgi = 0; sgi < sourceOrder.length; sgi++) {
+                        var src = sourceOrder[sgi];
+                        var metas = sourceGroups[src];
+                        if (!metas || metas.length === 0) continue;
 
-                        html += '<div class="vd-rule-group">'
-                            + '<div class="vd-rule-group-title">' + groupName + '</div>';
+                        // 그룹 내 활성 규칙 수 계산
+                        var enabledCount = 0;
+                        for (var eci = 0; eci < metas.length; eci++) {
+                            var eKey = metas[eci].legacy_id || metas[eci].id;
+                            var eRule = rules[eKey];
+                            var isEnabled = eRule ? eRule.enabled : metas[eci].enabled;
+                            if (isEnabled) enabledCount++;
+                        }
+                        var allEnabled = (enabledCount === metas.length);
 
-                        for (var ri = 0; ri < ruleIds.length; ri++) {
-                            var ruleId = ruleIds[ri];
-                            var rule = rules[ruleId] || { enabled: false, severity: 'warning' };
+                        html += '<div class="vd-rule-group" data-source-group="' + src + '">'
+                            + '<div class="vd-rule-group-title">'
+                            + '<button class="vd-rule-toggle vd-group-toggle' + (allEnabled ? ' on' : (enabledCount > 0 ? ' partial' : '')) + '" data-group-toggle="' + src + '"></button>'
+                            + '<span>' + (SOURCE_GROUP_LABELS[src] || src) + '</span>'
+                            + '<span class="vd-group-count">' + enabledCount + '/' + metas.length + '</span>'
+                            + '</div>';
 
-                            html += '<div class="vd-rule-row" data-rule-id="' + ruleId + '">'
-                                + '<span class="vd-rule-name">' + RULE_LABELS[ruleId]
-                                + '<span class="tooltip-icon" data-tooltip="' + escapeHTML(RULE_DESCRIPTIONS[ruleId] || '') + '">ⓘ</span>'
+                        for (var ri = 0; ri < metas.length; ri++) {
+                            var meta = metas[ri];
+                            var ruleId = meta.legacy_id || meta.id;
+                            var rule = rules[ruleId] || { enabled: meta.enabled, severity: meta.severity };
+
+                            html += '<div class="vd-rule-row" data-rule-id="' + ruleId + '" data-meta-id="' + meta.id + '">'
+                                + '<span class="vd-rule-name">' + escapeHTML(meta.name_ko)
+                                + (meta.confidence === 'low' ? ' <span class="vd-source-tag">낮음</span>' : '')
+                                + '<span class="tooltip-icon" data-tooltip="' + escapeHTML(meta.description || '') + '">ⓘ</span>'
                                 + '</span>'
                                 + '<select class="form-select form-select-sm vd-rule-severity" data-rule-severity="' + ruleId + '">'
                                 + '<option value="error"' + (rule.severity === 'error' ? ' selected' : '') + '>오류</option>'
@@ -4950,10 +4976,10 @@
                                 + '<button class="vd-rule-toggle' + (rule.enabled ? ' on' : '') + '" data-rule-toggle="' + ruleId + '"></button>'
                                 + '</div>';
 
-                            // 파라미터 표시
+                            // 파라미터 표시 (legacy 규칙)
                             if (ruleId === 'sentence_length' && rule.params) {
                                 html += '<div class="vd-rule-param">'
-                                    + '최대 <input type="number" class="form-input form-input-sm" data-rule-param="sentence_length.max_chars" value="' + (rule.params.max_chars || 120) + '"> 자'
+                                    + '최대 <input type="number" class="form-input form-input-sm" data-rule-param="sentence_length.max_chars" value="' + (rule.params.max_chars || 150) + '"> 자'
                                     + '</div>';
                             }
 
@@ -5098,13 +5124,53 @@
                 });
 
                 function bindRuleEvents() {
-                    // 토글 버튼
-                    rulesBody.querySelectorAll('.vd-rule-toggle').forEach(function(btn) {
+                    // 그룹 토글 버튼
+                    rulesBody.querySelectorAll('[data-group-toggle]').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var src = btn.getAttribute('data-group-toggle');
+                            var group = btn.closest('.vd-rule-group');
+                            var toggles = group.querySelectorAll('[data-rule-toggle]');
+                            // 현재 그룹 내 하나라도 ON이면 → 전부 OFF, 아니면 → 전부 ON
+                            var anyOn = false;
+                            toggles.forEach(function(t) { if (t.classList.contains('on')) anyOn = true; });
+                            var newState = !anyOn;
+                            toggles.forEach(function(t) {
+                                var rid = t.getAttribute('data-rule-toggle');
+                                if (newState) t.classList.add('on'); else t.classList.remove('on');
+                                if (!currentRules.rules) currentRules.rules = {};
+                                if (!currentRules.rules[rid]) currentRules.rules[rid] = { enabled: false, severity: 'warning' };
+                                currentRules.rules[rid].enabled = newState;
+                            });
+                            // 그룹 토글 상태 업데이트
+                            btn.classList.toggle('on', newState);
+                            btn.classList.remove('partial');
+                            // 카운트 갱신
+                            var countEl = group.querySelector('.vd-group-count');
+                            if (countEl) countEl.textContent = (newState ? toggles.length : 0) + '/' + toggles.length;
+                        });
+                    });
+
+                    // 개별 토글 버튼
+                    rulesBody.querySelectorAll('[data-rule-toggle]').forEach(function(btn) {
                         btn.addEventListener('click', function() {
                             var ruleId = btn.getAttribute('data-rule-toggle');
                             btn.classList.toggle('on');
-                            if (currentRules.rules && currentRules.rules[ruleId]) {
-                                currentRules.rules[ruleId].enabled = btn.classList.contains('on');
+                            if (!currentRules.rules) currentRules.rules = {};
+                            if (!currentRules.rules[ruleId]) currentRules.rules[ruleId] = { enabled: false, severity: 'warning' };
+                            currentRules.rules[ruleId].enabled = btn.classList.contains('on');
+                            // 그룹 토글 상태 동기화
+                            var group = btn.closest('.vd-rule-group');
+                            if (group) {
+                                var groupBtn = group.querySelector('[data-group-toggle]');
+                                var toggles = group.querySelectorAll('[data-rule-toggle]');
+                                var onCount = 0;
+                                toggles.forEach(function(t) { if (t.classList.contains('on')) onCount++; });
+                                if (groupBtn) {
+                                    groupBtn.classList.toggle('on', onCount === toggles.length);
+                                    groupBtn.classList.toggle('partial', onCount > 0 && onCount < toggles.length);
+                                }
+                                var countEl = group.querySelector('.vd-group-count');
+                                if (countEl) countEl.textContent = onCount + '/' + toggles.length;
                             }
                         });
                     });
