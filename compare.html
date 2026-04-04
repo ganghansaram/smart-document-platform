@@ -3450,6 +3450,60 @@
                 }
                 lines.push('');
 
+                // 인텔리전스: 문서 구조
+                var st = validateState.structure;
+                if (st && st.headings.length > 0) {
+                    lines.push('── 문서 구조 ────────────────────────────────────');
+                    lines.push('단락 ' + st.total_paragraphs + ' · 문장 ' + st.total_sentences + ' · 섹션 ' + st.headings.length + ' · 표 ' + st.tables.length + ' · 그림 ' + st.figures.length);
+                    lines.push('');
+                    for (var hi = 0; hi < st.headings.length; hi++) {
+                        var h = st.headings[hi];
+                        var indent = '';
+                        for (var li = 1; li < h.level; li++) indent += '  ';
+                        var secInfo = st.sections[hi] ? ' (' + st.sections[hi].paragraph_count + '단락)' : '';
+                        lines.push(indent + h.number + '. ' + h.text + secInfo);
+                    }
+                    lines.push('');
+                }
+
+                // 인텔리전스: 요구사항 분류
+                var rq = validateState.requirements;
+                if (rq && rq.counts) {
+                    var reqLabels = { shall: '필수(shall)', should: '권고(should)', may: '허용(may)', test_condition: '시험조건', information: '정보서술' };
+                    var reqOrder = ['shall', 'should', 'may', 'test_condition', 'information'];
+                    var reqParts = [];
+                    for (var ri = 0; ri < reqOrder.length; ri++) {
+                        var rc = rq.counts[reqOrder[ri]] || 0;
+                        if (rc > 0) reqParts.push(reqLabels[reqOrder[ri]] + ' ' + rc + '건');
+                    }
+                    if (reqParts.length > 0) {
+                        lines.push('── 요구사항 분류 ────────────────────────────────');
+                        lines.push(reqParts.join(' · '));
+                        lines.push('');
+                    }
+                }
+
+                // 인텔리전스: 용어/규격
+                var tm = validateState.terms;
+                if (tm) {
+                    var specs = tm.specifications || [];
+                    var abbrs = tm.abbreviations || [];
+                    var units = tm.units || [];
+                    if (specs.length > 0 || abbrs.length > 0 || units.length > 0) {
+                        lines.push('── 용어/규격 ─────────────────────────────────');
+                        if (specs.length > 0) {
+                            lines.push('규격: ' + specs.map(function(s) { return s.id + '(' + s.count + ')'; }).join(', '));
+                        }
+                        if (abbrs.length > 0) {
+                            lines.push('약어: ' + abbrs.map(function(a) { var def = a.definition ? a.definition.substring(0, 40) : ''; return a.abbr + (def ? '=' + def : '') + '(' + a.count + ')'; }).join(', '));
+                        }
+                        if (units.length > 0) {
+                            lines.push('단위: ' + units.map(function(u) { return u.unit + '(' + u.count + ')'; }).join(', '));
+                        }
+                        lines.push('');
+                    }
+                }
+
                 downloadBlob(new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' }), getExportFilename('txt'));
             }
 
@@ -3558,11 +3612,15 @@
                         payload.issues.push({
                             index: i + 1,
                             severity: iss.severity === 'error' ? '오류' : iss.severity === 'warning' ? '경고' : '제안',
-                            rule: iss.rule || '',
+                            rule: iss.rule_id ? (RULE_LABELS[iss.rule_id] || iss.rule_id) : '',
                             location: iss.paragraph_index !== undefined ? '단락 ' + (iss.paragraph_index + 1) : '',
                             message: iss.message || ''
                         });
                     }
+                    // 인텔리전스 데이터
+                    if (validateState.structure) payload.structure = validateState.structure;
+                    if (validateState.requirements) payload.requirements = validateState.requirements;
+                    if (validateState.terms) payload.terms = validateState.terms;
                 }
 
                 return payload;
@@ -3648,6 +3706,56 @@
                             + '<td>' + escapeHTML(iss.message) + '</td></tr>';
                     }
                     h += '</tbody></table>';
+                }
+
+                // 인텔리전스 섹션 (verify 모드)
+                if (currentMode === 'verify' && p.structure) {
+                    var st = p.structure;
+                    h += '<h2>문서 구조</h2>';
+                    h += '<p style="color:#666;font-size:12px">단락 ' + st.total_paragraphs + ' · 문장 ' + st.total_sentences
+                        + ' · 섹션 ' + st.headings.length + ' · 표 ' + st.tables.length + ' · 그림 ' + st.figures.length + '</p>';
+                    if (st.headings.length > 0) {
+                        h += '<table><thead><tr><th>번호</th><th>제목</th><th>단락 수</th></tr></thead><tbody>';
+                        for (var si = 0; si < st.headings.length; si++) {
+                            var sh = st.headings[si];
+                            var sc = st.sections[si] ? st.sections[si].paragraph_count : '';
+                            h += '<tr><td>' + sh.number + '.</td><td style="padding-left:' + ((sh.level - 1) * 16) + 'px">' + escapeHTML(sh.text) + '</td><td>' + sc + '</td></tr>';
+                        }
+                        h += '</tbody></table>';
+                    }
+
+                    if (p.requirements && p.requirements.counts) {
+                        var rqc = p.requirements.counts;
+                        var rqLabels = { shall: '필수 (shall)', should: '권고 (should)', may: '허용 (may)', test_condition: '시험 조건', information: '정보 서술' };
+                        var rqOrder = ['shall', 'should', 'may', 'test_condition', 'information'];
+                        h += '<h2>요구사항 분류</h2><table><thead><tr><th>분류</th><th>건수</th></tr></thead><tbody>';
+                        for (var ri = 0; ri < rqOrder.length; ri++) {
+                            var rc = rqc[rqOrder[ri]] || 0;
+                            if (rc > 0) h += '<tr><td>' + rqLabels[rqOrder[ri]] + '</td><td>' + rc + '</td></tr>';
+                        }
+                        h += '</tbody></table>';
+                    }
+
+                    if (p.terms) {
+                        var specs = p.terms.specifications || [];
+                        var abbrs = p.terms.abbreviations || [];
+                        var units = p.terms.units || [];
+                        if (specs.length > 0) {
+                            h += '<h2>규격 번호</h2><table><thead><tr><th>규격</th><th>출현</th></tr></thead><tbody>';
+                            for (var i = 0; i < specs.length; i++) h += '<tr><td>' + escapeHTML(specs[i].id) + '</td><td>' + specs[i].count + '회</td></tr>';
+                            h += '</tbody></table>';
+                        }
+                        if (abbrs.length > 0) {
+                            h += '<h2>약어</h2><table><thead><tr><th>약어</th><th>정의</th><th>출현</th></tr></thead><tbody>';
+                            for (var i = 0; i < abbrs.length; i++) h += '<tr><td><strong>' + escapeHTML(abbrs[i].abbr) + '</strong></td><td>' + escapeHTML(abbrs[i].definition || '') + '</td><td>' + abbrs[i].count + '회</td></tr>';
+                            h += '</tbody></table>';
+                        }
+                        if (units.length > 0) {
+                            h += '<h2>단위</h2><table><thead><tr><th>단위</th><th>출현</th><th>SI</th></tr></thead><tbody>';
+                            for (var i = 0; i < units.length; i++) h += '<tr><td>' + escapeHTML(units[i].unit) + '</td><td>' + units[i].count + '회</td><td>' + (units[i].si_compliant ? '✓' : '⚠') + '</td></tr>';
+                            h += '</tbody></table>';
+                        }
+                    }
                 }
 
                 h += '</body></html>';

@@ -216,6 +216,129 @@ def _write_verify_sheet(ws, data):
     ws.column_dimensions["E"].width = 60
 
 
+def _write_intelligence_sheet(ws, data):
+    """인텔리전스 분석 시트 (verify 모드 전용)."""
+    ws.title = "문서 분석"
+    row = 1
+
+    # 1. 문서 구조
+    structure = data.get("structure")
+    if structure:
+        ws.cell(row=row, column=1, value="문서 구조").font = Font(name="맑은 고딕", bold=True, size=12, color="2C5282")
+        row += 1
+        stats = [
+            ("단락", structure.get("total_paragraphs", 0)),
+            ("문장", structure.get("total_sentences", 0)),
+            ("섹션", len(structure.get("headings", []))),
+            ("표", len(structure.get("tables", []))),
+            ("그림", len(structure.get("figures", []))),
+        ]
+        for label, val in stats:
+            ws.cell(row=row, column=1, value=label).font = Font(name="맑은 고딕", bold=True, size=10)
+            ws.cell(row=row, column=2, value=val).font = _BODY_FONT
+            ws.cell(row=row, column=1).border = _THIN_BORDER
+            ws.cell(row=row, column=2).border = _THIN_BORDER
+            row += 1
+
+        headings = structure.get("headings", [])
+        sections = structure.get("sections", [])
+        if headings:
+            row += 1
+            for col, h in enumerate(["번호", "제목", "단락 수"], 1):
+                ws.cell(row=row, column=col, value=h)
+            _apply_header_style(ws, row, 3)
+            row += 1
+            for hi, hd in enumerate(headings):
+                ws.cell(row=row, column=1, value=f"{hd['number']}.").font = _BODY_FONT
+                ws.cell(row=row, column=1).alignment = _CENTER_ALIGN
+                ws.cell(row=row, column=2, value=hd.get("text", "")).font = _BODY_FONT
+                pc = sections[hi]["paragraph_count"] if hi < len(sections) else ""
+                ws.cell(row=row, column=3, value=pc).font = _BODY_FONT
+                ws.cell(row=row, column=3).alignment = _CENTER_ALIGN
+                _apply_body_style(ws, row, 3)
+                row += 1
+
+    # 2. 요구사항 분류
+    requirements = data.get("requirements")
+    if requirements and requirements.get("counts"):
+        row += 1
+        ws.cell(row=row, column=1, value="요구사항 분류").font = Font(name="맑은 고딕", bold=True, size=12, color="2C5282")
+        row += 1
+        for col, h in enumerate(["분류", "건수"], 1):
+            ws.cell(row=row, column=col, value=h)
+        _apply_header_style(ws, row, 2)
+        row += 1
+        labels = {"shall": "필수 (shall)", "should": "권고 (should)", "may": "허용 (may)",
+                  "test_condition": "시험 조건", "information": "정보 서술"}
+        for key in ["shall", "should", "may", "test_condition", "information"]:
+            count = requirements["counts"].get(key, 0)
+            if count > 0:
+                ws.cell(row=row, column=1, value=labels[key]).font = _BODY_FONT
+                ws.cell(row=row, column=2, value=count).font = _BODY_FONT
+                ws.cell(row=row, column=2).alignment = _CENTER_ALIGN
+                _apply_body_style(ws, row, 2)
+                row += 1
+
+    # 3. 용어/규격
+    terms = data.get("terms")
+    if terms:
+        specs = terms.get("specifications", [])
+        abbrs = terms.get("abbreviations", [])
+        units = terms.get("units", [])
+
+        if specs:
+            row += 1
+            ws.cell(row=row, column=1, value="규격 번호").font = Font(name="맑은 고딕", bold=True, size=12, color="2C5282")
+            row += 1
+            for col, h in enumerate(["규격", "출현 횟수"], 1):
+                ws.cell(row=row, column=col, value=h)
+            _apply_header_style(ws, row, 2)
+            row += 1
+            for s in specs:
+                ws.cell(row=row, column=1, value=s["id"]).font = _BODY_FONT
+                ws.cell(row=row, column=2, value=s["count"]).font = _BODY_FONT
+                ws.cell(row=row, column=2).alignment = _CENTER_ALIGN
+                _apply_body_style(ws, row, 2)
+                row += 1
+
+        if abbrs:
+            row += 1
+            ws.cell(row=row, column=1, value="약어").font = Font(name="맑은 고딕", bold=True, size=12, color="2C5282")
+            row += 1
+            for col, h in enumerate(["약어", "정의", "출현 횟수"], 1):
+                ws.cell(row=row, column=col, value=h)
+            _apply_header_style(ws, row, 3)
+            row += 1
+            for a in abbrs:
+                ws.cell(row=row, column=1, value=a["abbr"]).font = Font(name="맑은 고딕", bold=True, size=10)
+                ws.cell(row=row, column=2, value=a.get("definition", "")).font = _BODY_FONT
+                ws.cell(row=row, column=3, value=a["count"]).font = _BODY_FONT
+                ws.cell(row=row, column=3).alignment = _CENTER_ALIGN
+                _apply_body_style(ws, row, 3)
+                row += 1
+
+        if units:
+            row += 1
+            ws.cell(row=row, column=1, value="단위").font = Font(name="맑은 고딕", bold=True, size=12, color="2C5282")
+            row += 1
+            for col, h in enumerate(["단위", "출현 횟수", "SI 준수"], 1):
+                ws.cell(row=row, column=col, value=h)
+            _apply_header_style(ws, row, 3)
+            row += 1
+            for u in units:
+                ws.cell(row=row, column=1, value=u["unit"]).font = _BODY_FONT
+                ws.cell(row=row, column=2, value=u["count"]).font = _BODY_FONT
+                ws.cell(row=row, column=2).alignment = _CENTER_ALIGN
+                si_cell = ws.cell(row=row, column=3, value="✓" if u.get("si_compliant") else "⚠")
+                si_cell.font = _BODY_FONT
+                si_cell.alignment = _CENTER_ALIGN
+                _apply_body_style(ws, row, 3)
+                row += 1
+
+    _auto_width(ws, 3)
+    ws.column_dimensions["B"].width = 40
+
+
 def build_excel_report(data: dict) -> io.BytesIO:
     """프론트엔드 페이로드로 Excel 리포트를 생성하여 BytesIO 스트림을 반환한다."""
     wb = Workbook()
@@ -235,6 +358,10 @@ def build_excel_report(data: dict) -> io.BytesIO:
     elif mode == "verify":
         ws_detail = wb.create_sheet()
         _write_verify_sheet(ws_detail, data)
+        # 시트 3: 인텔리전스 분석 (verify 전용)
+        if data.get("structure") or data.get("requirements") or data.get("terms"):
+            ws_intel = wb.create_sheet()
+            _write_intelligence_sheet(ws_intel, data)
 
     buf = io.BytesIO()
     wb.save(buf)
