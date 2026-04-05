@@ -356,16 +356,16 @@ Phase 5: 통합 테스트
 |  1-A  | 후처리 보강 (머리글/꼬리글, 하이픈, 빈줄) | ✅ | 텍스트 매칭 hf 제거 + 하이픈 합침 + 빈줄 정리 + YOLO 경로 수정. 4종 문서 16p 검증 |
 |  1-B  | PyMuPDF4LLM 옵션 활성화 (`margins` 등) | ⏭️ | 1-A pos 기반 제거로 충분, margins 불필요 판정 |
 |  1-C  | Marker 벤치마크 → 엔진 결정 | ✅ | PyMuPDF4LLM 유지 (Marker: OCR 아티팩트·표 후퇴·12x 느림) |
-| **2** | **Part A — 좌측 PDF 연속 스크롤** | ⬜ 미착수 | 3단계 점진적 전환 |
-|  2-α  | 연속 스크롤 코어 | ⬜ | 스택 DOM + Observer ±2 + canvas 렌더/해제 + currentPage 자동 추적. 최대 난이도 |
-|  2-β  | goToPage 전환 + 줌 | ⬜ | scrollIntoView 내부 전환 (시그니처 유지) + 줌 시 wrapper 높이 재계산 |
-|  2-γ  | 정리 | ⬜ | Prev/Next 제거, syncScroll 제거, 레거시 코드 삭제 |
-| **3** | **Part A — 우측 패널 연동** | ⬜ 미착수 | Phase 2 완료 후 진행 |
-|  3-A  | PDF 번역: 연속 스크롤 + 미번역 placeholder | ⬜ | |
-|  3-B  | 웹뷰: 전체 모드 기본화 | ⬜ | |
-|  3-C  | 좌우 동기화: 페이지 기반 + 디바운스 | ⬜ | syncScroll 대체. emitPageChanged 이벤트 |
-|  3-D  | 메모: 다중 페이지 주석 렌더 | ⬜ | renderAnnotations 가시 범위 확장 |
-|  3-E  | 통합 안정화 | ⬜ | 5종 패널 전체 동작 확인 + 엣지 케이스 |
+| **2** | **Part A — 좌측 PDF 연속 스크롤** | ✅ 완료 | 2-γ 잔여만 남음 |
+|  2-α  | 연속 스크롤 코어 | ✅ | 스택 DOM + Observer + 가상화 + currentPage 추적 + 이벤트 위임 수정. 16항목 회귀 테스트 통과 |
+|  2-β  | goToPage 전환 + 줌 | ✅ | 2-α에 포함 (scrollIntoView + 줌 리렌더 + 검색 타이밍) |
+|  2-γ  | 정리 | ⬜ | Prev/Next 제거, syncScroll 제거, 레거시 코드 삭제. **Phase 3 완료 후 진행** — 현재 제거 시 우측 패널 연동 깨짐 |
+| **3** | **Part A — 우측 패널 연동** | ✅ 완료 | |
+|  3-A  | PDF 번역: 연속 스크롤 | ⏭️ | 시도 후 롤백 — 우측은 페이지 단위 유지. 대신 PDF 캐시 + ±1 프리로드 + 디바운스 150ms 적용 |
+|  3-B  | 웹뷰: 전체 모드 기본화 | ✅ | webFullViewMode 기본 true |
+|  3-C  | 좌우 동기화: 페이지 기반 + 디바운스 | ✅ | _emitPageChanged 이벤트 (150ms 디바운스) |
+|  3-D  | 메모: 다중 페이지 주석 렌더 | ✅ | Phase 2-α에서 renderAnnotations 다중 페이지 구현 완료 |
+|  3-E  | 통합 안정화 | ✅ | 사용자 피드백 반영 대기 |
 | **4** | **Part B Step 2 — LLM 교정** | ⬜ 미착수 | |
 |  4-A  | 품질 부족 블록 선별 → Ollama 교정 | ⬜ | |
 | **5** | **통합 테스트** | ⬜ 미착수 | |
