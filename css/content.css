@@ -1437,3 +1437,55 @@ body[data-theme="dark"] .po-system-name {
     color: var(--active-color);
 }
 
+/* 규칙 예시 블록 (.po-rule-example) */
+.po-rule-example {
+    background: var(--bg-gray);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--color-warning);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 20px 24px;
+    margin: 16px 0;
+}
+.po-rule-example-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.po-rule-example-id {
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--primary-navy);
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+.po-rule-example-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+.po-rule-example p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+.po-rule-example p:last-child {
+    margin-bottom: 0;
+}
+.po-rule-example code {
+    background: rgba(0,0,0,0.06);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+body[data-theme="dark"] .po-rule-example {
+    background: rgba(255,255,255,0.04);
+}
+body[data-theme="dark"] .po-rule-example code {
+    background: rgba(255,255,255,0.08);
+}
+

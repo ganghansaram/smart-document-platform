@@ -8,11 +8,11 @@
 <!-- Hero -->
 <div class="po-hero">
     <div class="po-hero-label">Smart Document Platform</div>
-    <h2>항공우주 기술 문서를 검색하고, 분석하고, 검증하다</h2>
+    <h2>항공우주 기술 문서 통합 관리 플랫폼</h2>
     <p>
-        KAI 내부망 환경에 최적화된 AI 기반 기술 문서 플랫폼입니다.
-        외부 클라우드 의존 없이 조직 내 기술 자산을 즉시 검색하고,
-        해외 논문을 번역·분석하며, 작성 문서의 품질을 자동으로 검증합니다.
+        KAI 내부망 환경에서 동작하는 기술 문서 플랫폼입니다.
+        외부 클라우드 없이 조직 내 기술 자산을 검색하고,
+        해외 논문을 번역·분석하며, 작성 문서의 품질을 검증합니다.
     </p>
     <div class="po-badge-row">
         <span class="po-badge">폐쇄망 운용</span>
@@ -24,198 +24,191 @@
 
 <!-- 플랫폼 개요 -->
 <p>
-    Smart Document Platform은 항공우주 기술 문서 관리의 세 가지 핵심 과제를 해결하기 위해 설계되었습니다.
-    첫째, 수천 페이지에 달하는 기술 문서에서 원하는 정보를 찾는 데 드는 시간을 최소화합니다.
-    둘째, 영어로 작성된 해외 논문과 규격을 한국어로 즉시 번역하여 연구 생산성을 높입니다.
-    셋째, 문서 작성 품질을 AI가 자동으로 점검하여 인적 오류를 줄입니다.
+    Smart Document Platform은 항공우주 기술 문서 관리의 세 가지 과제를 해결합니다.
+    첫째, 수천 페이지 기술 문서에서 원하는 정보를 찾는 시간을 줄입니다.
+    둘째, 영어 논문과 규격을 한국어로 번역하여 연구 효율을 높입니다.
+    셋째, 문서 작성 품질을 자동으로 점검하여 인적 오류를 줄입니다.
 </p>
 <p>
-    플랫폼은 인터넷 연결 없이 조직 내부망에서 완전히 동작합니다.
-    KAI 내 AI 인프라(DE-Genie/Ollama)를 활용하여 민감한 기술 자산이 외부로 유출되지 않도록 설계되었으며,
-    Explorer · Notebook · Verify 세 개의 운용 서브시스템과 관리자 런처로 구성됩니다.
+    플랫폼은 인터넷 연결 없이 조직 내부망에서 동작합니다.
+    KAI AI 인프라(DE-Genie/Ollama)를 활용하여 기술 자산이 외부로 유출되지 않으며,
+    Explorer, Notebook, Verify 세 개의 서브시스템과 관리자 런처로 구성됩니다.
 </p>
 
 <div class="po-callout">
-    <strong>납품 및 운용 범위:</strong> 본 플랫폼은 기체 설계, 항전, 추진, 시험평가 등 KAI 전 사업 분야의 기술 문서를
-    단일 인터페이스에서 관리할 수 있도록 설계되었습니다. 현재 KF-21 개발백서, 설계 기준, 규격·표준,
-    시험평가, 품질인증, 운용정비 등 주요 카테고리가 등록되어 있으며, 관리자 권한으로 콘텐츠를 지속 확장할 수 있습니다.
+    <strong>납품 및 운용 범위:</strong> 기체 설계, 항전, 추진, 시험평가 등 KAI 전 사업 분야의 기술 문서를
+    단일 인터페이스에서 관리합니다. KF-21 개발백서, 설계 기준, 규격·표준,
+    시험평가, 품질인증, 운용정비 등 주요 카테고리가 등록되어 있으며, 관리자 권한으로 콘텐츠를 확장할 수 있습니다.
 </div>
 
-<!-- 런처 스크린샷 -->
 <div class="po-screenshot">
     <img src="images/launcher.png" alt="플랫폼 런처 화면">
 </div>
-<p class="po-screenshot-caption">▲ 플랫폼 런처 — 각 서브시스템으로의 진입점. 역할 기반 접근 제어(RBAC)로 권한 관리.</p>
+<p class="po-screenshot-caption">플랫폼 런처 — 각 서브시스템 진입점. 역할 기반 접근 제어(RBAC)로 권한 관리.</p>
 
-<!-- 핵심 시스템 -->
-<div class="po-section-title" id="핵심-시스템">핵심 시스템</div>
+
+<!-- ========================================
+     핵심 시스템
+     ======================================== -->
+<h2 class="po-section-title" id="핵심-시스템">핵심 시스템</h2>
 <p class="po-section-subtitle">4개 서브시스템이 기술 문서 생애주기 전반을 커버합니다.</p>
 
 <!-- Explorer -->
 <div class="po-system-card">
     <div class="po-system-card-header">
-        <div class="po-system-icon po-system-icon-blue">🔍</div>
         <div>
             <div class="po-system-name">Explorer <span class="po-system-en">Knowledge Explorer</span></div>
         </div>
         <span class="po-system-tag po-tag-stable">운용 중</span>
     </div>
     <p class="po-system-desc">
-        기술 문서 전체를 대상으로 <strong>하이브리드 RAG 검색(키워드 + 벡터)</strong>을 제공하는 지식 탐색 시스템입니다.
-        문서 트리를 통한 직접 탐색과 AI 채팅을 통한 자연어 질의응답을 동시에 지원하며,
+        기술 문서 전체를 대상으로 하이브리드 RAG 검색(키워드 + 벡터)을 제공하는 지식 탐색 시스템입니다.
+        문서 트리를 통한 직접 탐색과 AI 채팅을 통한 자연어 질의응답을 지원하며,
         검색 결과는 관련 섹션으로 자동 이동합니다.
     </p>
-    <ul class="po-feat-list">
+    <ul class="po-feat-list" style="grid-template-columns: 1fr;">
         <li>하이브리드 검색 (FAISS + bge-m3, RRF 병합)</li>
         <li>AI 채팅 — 문서 기반 Q&amp;A (스트리밍)</li>
         <li>계층형 콘텐츠 트리 내비게이션</li>
         <li>섹션 네비게이션 (On this page)</li>
-        <li>북마크 · 전체 텍스트 검색</li>
-        <li>다크모드 · 반응형 레이아웃</li>
+        <li>북마크, 전체 텍스트 검색</li>
+        <li>다크모드, 반응형 레이아웃</li>
         <li>멀티턴 대화 (세션 이력)</li>
         <li>쿼리 재작성 (후속 질문 독립화)</li>
     </ul>
-    <div class="po-screenshot-grid">
-        <div>
-            <div class="po-screenshot">
-                <img src="images/explorer.png" alt="Explorer 문서 탐색">
-            </div>
-            <p class="po-screenshot-caption">▲ 문서 트리 + 섹션 네비게이션</p>
-        </div>
-        <div>
-            <div class="po-screenshot">
-                <img src="images/explorer-chat.png" alt="Explorer AI 채팅">
-            </div>
-            <p class="po-screenshot-caption">▲ AI 어시스턴트 (문서 기반 Q&amp;A)</p>
-        </div>
+    <div class="po-screenshot">
+        <img src="images/explorer.png" alt="Explorer 문서 탐색">
     </div>
+    <p class="po-screenshot-caption">Explorer — 문서 트리 + 섹션 네비게이션</p>
+    <div class="po-screenshot">
+        <img src="images/explorer-chat.png" alt="Explorer AI 채팅">
+    </div>
+    <p class="po-screenshot-caption">Explorer — AI 어시스턴트 (문서 기반 Q&amp;A)</p>
 </div>
 
 <!-- Notebook -->
 <div class="po-system-card">
     <div class="po-system-card-header">
-        <div class="po-system-icon po-system-icon-green">📓</div>
         <div>
-            <div class="po-system-name">Notebook <span class="po-system-en">Research Notebook (구 Translator)</span></div>
+            <div class="po-system-name">Notebook <span class="po-system-en">Research Notebook</span></div>
         </div>
         <span class="po-system-tag po-tag-stable">운용 중</span>
     </div>
     <p class="po-system-desc">
-        영문 기술 논문 및 규격 PDF를 업로드하면 <strong>페이지별 AI 번역</strong>과 함께
-        요약·Q&amp;A·마인드맵·마킹 등 심층 분석 도구를 제공하는 연구 노트 시스템입니다.
-        원문 PDF와 번역 결과를 나란히 비교하는 듀얼 패널 뷰어로 번역 품질을 즉시 확인할 수 있습니다.
+        영문 기술 논문 및 규격 PDF를 업로드하면 페이지별 AI 번역과 함께
+        요약, Q&amp;A, 마인드맵, 마킹 등 분석 도구를 제공하는 연구 노트 시스템입니다.
+        원문 PDF와 번역 결과를 나란히 비교하는 듀얼 패널 뷰어를 지원합니다.
     </p>
-    <ul class="po-feat-list">
+    <ul class="po-feat-list" style="grid-template-columns: 1fr;">
         <li>PDF 번역 (pdf2zh, 레이아웃 보존)</li>
         <li>웹뷰 번역 (마크다운 추출 + Ollama)</li>
         <li>AI 요약 — 크기 적응형 (단일/계층)</li>
         <li>Q&amp;A 챗봇 — 문서 기반 질의응답</li>
-        <li>마인드맵 자동 생성 (클릭→AI 설명)</li>
-        <li>마킹·메모 (형광펜 4색, popover)</li>
-        <li>폴더 관리 · 드래그앤드롭 정리</li>
-        <li>ZIP 다운로드 · 마크다운 편집기</li>
+        <li>마인드맵 자동 생성</li>
+        <li>마킹, 메모 (형광펜 4색)</li>
+        <li>폴더 관리, 드래그앤드롭 정리</li>
+        <li>ZIP 다운로드, 마크다운 편집기</li>
     </ul>
-    <div class="po-screenshot-grid">
-        <div>
-            <div class="po-screenshot">
-                <img src="images/notebook-list.png" alt="Notebook 문서 목록">
-            </div>
-            <p class="po-screenshot-caption">▲ 문서 카드 목록 — 업로드 &amp; 폴더 관리</p>
-        </div>
-        <div>
-            <div class="po-screenshot">
-                <img src="images/notebook-viewer.png" alt="Notebook PDF 뷰어">
-            </div>
-            <p class="po-screenshot-caption">▲ PDF 뷰어 — 원문 + 우측 AI 도구 패널</p>
-        </div>
+    <div class="po-screenshot">
+        <img src="images/notebook-list.png" alt="Notebook 문서 목록">
     </div>
+    <p class="po-screenshot-caption">Notebook — 문서 카드 목록 및 폴더 관리</p>
+    <div class="po-screenshot">
+        <img src="images/notebook-viewer.png" alt="Notebook PDF 뷰어">
+    </div>
+    <p class="po-screenshot-caption">Notebook — 원문 PDF + 우측 AI 도구 패널</p>
 </div>
 
 <!-- Verify -->
 <div class="po-system-card">
     <div class="po-system-card-header">
-        <div class="po-system-icon po-system-icon-amber">✅</div>
         <div>
-            <div class="po-system-name">Verify <span class="po-system-en">Document Verify (구 Compare)</span></div>
+            <div class="po-system-name">Verify <span class="po-system-en">Document Verify</span></div>
         </div>
         <span class="po-system-tag po-tag-stable">운용 중</span>
     </div>
     <p class="po-system-desc">
-        원본 문서와 수정본을 비교하고, 작성 규칙을 자동 점검하며, 표절·유사도를 검사하는
-        <strong>통합 문서 검증 시스템</strong>입니다. 21종 규칙 엔진이 번호 연속성, 용어 통일, 문장 길이 등을
-        자동으로 검사하고, Acrolinx 방식의 품질 스코어로 문서 완성도를 수치화합니다.
+        원본 문서와 수정본을 비교하고, 작성 규칙을 자동 점검하며, 유사도를 검사하는
+        통합 문서 검증 시스템입니다. 21종 규칙 엔진이 번호 연속성, 용어 통일, 문장 길이 등을
+        검사하고, Acrolinx 방식의 품질 스코어로 문서 완성도를 수치화합니다.
     </p>
-    <ul class="po-feat-list">
+    <ul class="po-feat-list" style="grid-template-columns: 1fr;">
         <li>문서 비교 — 단어 수준 Diff + AI 의미 분류</li>
         <li>유사도 검사 (Winnowing + bge-m3 임베딩)</li>
         <li>규칙 검증 — 21종 자동 점검</li>
         <li>품질 스코어링 (Acrolinx 밀도 방식)</li>
         <li>수락/거절 판정 워크플로</li>
-        <li>검토 리포트 내보내기 (XLSX · HTML · TXT)</li>
+        <li>검토 리포트 내보내기 (XLSX, HTML, TXT)</li>
         <li>스크롤바 미니맵 (변경점 위치 시각화)</li>
         <li>세션 이력 관리</li>
     </ul>
     <div class="po-screenshot">
         <img src="images/verify-main.png" alt="Verify 메인 화면">
     </div>
-    <p class="po-screenshot-caption">▲ Verify 메인 — 유사도 검사 · 문서 비교 · 규칙 검증 세 가지 모드 선택</p>
+    <p class="po-screenshot-caption">Verify — 유사도 검사, 문서 비교, 규칙 검증 세 가지 모드 선택</p>
 </div>
 
 <!-- Author -->
 <div class="po-system-card" style="border-style: dashed; opacity: 0.65;">
     <div class="po-system-card-header">
-        <div class="po-system-icon po-system-icon-purple">✍️</div>
         <div>
             <div class="po-system-name">Author <span class="po-system-en">Document Author</span></div>
         </div>
         <span class="po-system-tag po-tag-plan">설계 중</span>
     </div>
     <p class="po-system-desc">
-        규격 문서 작성을 AI가 보조하는 차세대 저작 시스템입니다.
-        템플릿 기반 구조 생성, 요구사항 추적, 참조 문서 자동 인용 등의 기능이 계획되어 있습니다.
-        현재 설계 단계이며, 향후 플랫폼 업데이트를 통해 제공될 예정입니다.
+        규격 문서 작성을 AI가 보조하는 저작 시스템입니다.
+        템플릿 기반 구조 생성, 요구사항 추적, 참조 문서 자동 인용 등이 계획되어 있습니다.
+        현재 설계 단계이며, 향후 업데이트를 통해 제공됩니다.
     </p>
 </div>
 
-<!-- 플랫폼 가치 -->
-<div class="po-section-title" id="플랫폼-가치">플랫폼이 제공하는 가치</div>
-<p class="po-section-subtitle">기술 문서 관리의 비효율을 제거하고 지식 활용을 극대화합니다.</p>
 
-<div class="po-value-grid">
-    <div class="po-value-card">
-        <div class="po-value-card-icon">⚡</div>
-        <h4>즉각적인 정보 접근</h4>
-        <p>수천 페이지 기술 문서에서 원하는 정보를 수 초 내 검색. 하이브리드 RAG로 의미 기반 검색 지원.</p>
-    </div>
-    <div class="po-value-card">
-        <div class="po-value-card-icon">🌐</div>
-        <h4>언어 장벽 제거</h4>
-        <p>영문 논문·규격을 실시간 한국어로 번역. 원문 레이아웃을 보존하며 전문 용어 정확도 유지.</p>
-    </div>
-    <div class="po-value-card">
-        <div class="po-value-card-icon">🛡️</div>
-        <h4>보안 완전 내재화</h4>
-        <p>폐쇄망 온프레미스 운용. 기술 자산이 외부 클라우드에 전송되지 않아 보안 규정 완전 준수.</p>
-    </div>
-    <div class="po-value-card">
-        <div class="po-value-card-icon">📋</div>
-        <h4>문서 품질 자동 검증</h4>
-        <p>21종 규칙 엔진으로 작성 기준 자동 점검. 리뷰 시간 단축, 문서 완성도 수치화.</p>
-    </div>
-    <div class="po-value-card">
-        <div class="po-value-card-icon">🔗</div>
-        <h4>통합 지식 관리</h4>
-        <p>설계·시험·규격·운용 문서를 단일 인터페이스에서 탐색. 팀 간 지식 공유 촉진.</p>
-    </div>
-    <div class="po-value-card">
-        <div class="po-value-card-icon">🔄</div>
-        <h4>지속 확장 가능 구조</h4>
-        <p>관리자 콘솔에서 콘텐츠·메뉴·설정을 실시간 관리. 코드 수정 없이 플랫폼 확장 가능.</p>
-    </div>
-</div>
+<!-- ========================================
+     플랫폼 가치
+     ======================================== -->
+<h2 class="po-section-title" id="플랫폼-가치">플랫폼이 제공하는 가치</h2>
 
-<!-- 기술 사양 -->
-<div class="po-section-title" id="기술-사양">기술 사양</div>
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:25%">가치</th>
+            <th>설명</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>정보 접근 단축</strong></td>
+            <td>수천 페이지 기술 문서에서 원하는 정보를 수 초 내 검색. 하이브리드 RAG로 의미 기반 검색 지원.</td>
+        </tr>
+        <tr>
+            <td><strong>언어 장벽 해소</strong></td>
+            <td>영문 논문 및 규격을 한국어로 번역. 원문 레이아웃을 보존하며 전문 용어 정확도 유지.</td>
+        </tr>
+        <tr>
+            <td><strong>보안 내재화</strong></td>
+            <td>폐쇄망 온프레미스 운용. 기술 자산이 외부 클라우드에 전송되지 않아 보안 규정 준수.</td>
+        </tr>
+        <tr>
+            <td><strong>품질 자동 검증</strong></td>
+            <td>21종 규칙 엔진으로 작성 기준 자동 점검. 리뷰 시간 단축, 문서 완성도 수치화.</td>
+        </tr>
+        <tr>
+            <td><strong>통합 지식 관리</strong></td>
+            <td>설계, 시험, 규격, 운용 문서를 단일 인터페이스에서 탐색. 팀 간 지식 공유.</td>
+        </tr>
+        <tr>
+            <td><strong>확장 가능 구조</strong></td>
+            <td>관리자 콘솔에서 콘텐츠, 메뉴, 설정을 관리. 코드 수정 없이 플랫폼 확장 가능.</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     기술 사양
+     ======================================== -->
+<h2 class="po-section-title" id="기술-사양">기술 사양</h2>
 
 <table class="po-spec-table">
     <thead>
@@ -231,52 +224,55 @@
         </tr>
         <tr>
             <td><strong>백엔드</strong></td>
-            <td>Python 3.11 · FastAPI · Uvicorn (비동기 처리)</td>
+            <td>Python 3.11, FastAPI, Uvicorn (비동기 처리)</td>
         </tr>
         <tr>
             <td><strong>프론트엔드</strong></td>
-            <td>Vanilla JS (프레임워크 미사용) · 단일 HTML 파일 구조</td>
+            <td>Vanilla JS (프레임워크 미사용), 단일 HTML 파일 구조</td>
         </tr>
         <tr>
             <td><strong>AI 엔진</strong></td>
-            <td>DE-Genie / Ollama (LLM) · bge-m3 (임베딩) · bge-reranker-v2-m3 (리랭커)</td>
+            <td>DE-Genie / Ollama (LLM), bge-m3 (임베딩), bge-reranker-v2-m3 (리랭커)</td>
         </tr>
         <tr>
             <td><strong>검색 엔진</strong></td>
-            <td>FAISS (벡터) + BM25 (키워드) · RRF 하이브리드 병합 · Recall@5 = 100%</td>
+            <td>FAISS (벡터) + BM25 (키워드), RRF 하이브리드 병합, Recall@5 = 100%</td>
         </tr>
         <tr>
             <td><strong>PDF 번역</strong></td>
-            <td>pdf2zh (레이아웃 보존) · PyMuPDF4LLM (마크다운 추출)</td>
+            <td>pdf2zh (레이아웃 보존), PyMuPDF4LLM (마크다운 추출)</td>
         </tr>
         <tr>
             <td><strong>접근 제어</strong></td>
-            <td>3단계 RBAC — viewer · editor · admin</td>
+            <td>3단계 RBAC — viewer, editor, admin</td>
         </tr>
         <tr>
             <td><strong>지원 포맷</strong></td>
-            <td>콘텐츠: HTML(웹북) · 업로드: PDF · Verify 입력: DOCX · PDF · 텍스트</td>
+            <td>콘텐츠: HTML(웹북) / 업로드: PDF / Verify 입력: DOCX, PDF, 텍스트</td>
         </tr>
         <tr>
             <td><strong>데이터 저장</strong></td>
-            <td>JSON 파일 기반 · SQLite(분석) · 원자적 저장(data-loss 방지)</td>
+            <td>JSON 파일 기반, SQLite(분석), 원자적 저장(data-loss 방지)</td>
         </tr>
         <tr>
             <td><strong>운용 포트</strong></td>
-            <td>백엔드 8000 · 프론트엔드 8080 (정적 파일 서버)</td>
+            <td>백엔드 8000, 프론트엔드 8080 (정적 파일 서버)</td>
         </tr>
     </tbody>
 </table>
 
-<!-- 도입 및 관리 -->
-<div class="po-section-title" id="도입-및-관리">도입 및 관리</div>
+
+<!-- ========================================
+     도입 및 관리
+     ======================================== -->
+<h2 class="po-section-title" id="도입-및-관리">도입 및 관리</h2>
 
 <h3 id="빠른-시작">빠른 시작</h3>
-<p>플랫폼은 두 개의 프로세스(백엔드 + 정적 파일 서버)만으로 즉시 구동됩니다. 별도의 빌드 과정이나 외부 서비스 연동이 불필요합니다.</p>
+<p>플랫폼은 두 개의 프로세스(백엔드 + 정적 파일 서버)로 구동됩니다. 별도 빌드 과정이나 외부 서비스 연동이 불필요합니다.</p>
 
-<table>
+<table class="po-spec-table">
     <thead>
-        <tr><th>역할</th><th>명령</th><th>접속 주소</th></tr>
+        <tr><th style="width:20%">역할</th><th style="width:45%">명령</th><th>접속 주소</th></tr>
     </thead>
     <tbody>
         <tr>
@@ -294,27 +290,26 @@
 
 <h3 id="콘텐츠-관리">콘텐츠 관리 (관리자)</h3>
 <p>
-    관리자 권한으로 로그인하면 Explorer 상단에 <strong>Edit</strong> 메뉴가 활성화됩니다.
-    콘텐츠 파일(HTML 웹북)을 업로드하고, 메뉴 트리를 드래그&amp;드롭으로 재구성하며,
-    AI·검색·보안 설정을 GUI에서 조정할 수 있습니다.
-    메뉴 구조 변경은 즉시 전체 사용자에게 반영됩니다.
+    관리자 권한으로 로그인하면 Explorer 상단에 Edit 메뉴가 활성화됩니다.
+    콘텐츠 파일(HTML 웹북)을 업로드하고, 메뉴 트리를 드래그앤드롭으로 재구성하며,
+    AI, 검색, 보안 설정을 GUI에서 조정할 수 있습니다.
 </p>
 
 <ul>
     <li><strong>콘텐츠 등록:</strong> Edit → 파일 업로드 → 메뉴 트리에서 위치 지정</li>
     <li><strong>메뉴 관리:</strong> Edit → 메뉴 편집 → 드래그앤드롭으로 순서 조정</li>
-    <li><strong>설정 관리:</strong> Edit → 관리자 설정 → AI 모델·검색·보안·화면 탭별 조정</li>
-    <li><strong>검색 인덱스 재생성:</strong> 콘텐츠 업로드 시 자동 재생성 (수동 트리거도 가능)</li>
+    <li><strong>설정 관리:</strong> Edit → 관리자 설정 → AI 모델, 검색, 보안, 화면 탭별 조정</li>
+    <li><strong>검색 인덱스 재생성:</strong> 콘텐츠 업로드 시 자동 재생성 (수동 트리거 가능)</li>
 </ul>
 
 <h3 id="사용자-계정">사용자 계정 및 권한</h3>
 <p>
-    계정은 <code>data/users.json</code>에서 관리하며, 역할(viewer · editor · admin)에 따라
+    계정은 <code>data/users.json</code>에서 관리하며, 역할(viewer, editor, admin)에 따라
     콘텐츠 조회, 편집, 관리자 기능 접근이 구분됩니다.
     초기 관리자 계정 설정 후 팀별로 viewer 계정을 배포하여 운용합니다.
 </p>
 
 <div class="po-callout">
-    <strong>지원 및 문의:</strong> 플랫폼 운용 중 발생하는 기술적 문의사항은 시스템 관리자에게 문의하세요.
-    각 서브시스템의 상세 사용 방법은 좌측 메뉴 <em>플랫폼 가이드</em> 하위 항목을 참조하십시오.
+    <strong>참고:</strong> 각 서브시스템의 상세 사용 방법은 좌측 메뉴 <em>플랫폼 가이드</em> 하위 항목을 참조하십시오.
+    운용 중 문의사항은 시스템 관리자에게 연락해 주십시오.
 </div>

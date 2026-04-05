@@ -1,7 +1,236 @@
 <div class="page-header">
     <div class="page-header-info">
         <h1 id="explorer-사용법">Explorer 사용법</h1>
+        <p class="page-header-subtitle">Knowledge Explorer — 기술 문서 탐색 및 AI 질의 시스템</p>
     </div>
 </div>
 
-<p><em>이 문서는 준비 중입니다.</em></p>
+<!-- Hero -->
+<div class="po-hero">
+    <div class="po-hero-label">Knowledge Explorer</div>
+    <h2>기술 문서 탐색 및 AI 질의 시스템</h2>
+    <p>
+        Explorer는 등록된 기술 문서를 트리 구조로 탐색하고,
+        하이브리드 검색(키워드 + 벡터)으로 원하는 정보를 찾으며,
+        AI 채팅을 통해 문서 기반 질의응답을 수행하는 시스템입니다.
+    </p>
+    <div class="po-badge-row">
+        <span class="po-badge">문서 탐색</span>
+        <span class="po-badge">하이브리드 검색</span>
+        <span class="po-badge">AI 질의응답</span>
+        <span class="po-badge">북마크</span>
+    </div>
+</div>
+
+<!-- 개요 -->
+<p>
+    Explorer는 지식 탐색을 위한 세 가지 경로를 제공합니다.
+    좌측 트리 메뉴에서 문서를 직접 탐색하거나, 검색으로 키워드·의미 기반 검색을 수행하거나,
+    AI 채팅으로 자연어 질문에 대한 답변을 받을 수 있습니다.
+</p>
+
+<div class="po-screenshot">
+    <img src="images/explorer.png" alt="Explorer 메인 화면">
+</div>
+<p class="po-screenshot-caption">Explorer 메인 화면 — 좌측 트리 메뉴, 중앙 콘텐츠, 우측 섹션 네비게이션</p>
+
+
+<!-- ========================================
+     문서 탐색
+     ======================================== -->
+<h2 class="po-section-title" id="문서-탐색">문서 탐색</h2>
+
+<p>
+    좌측 Contents 패널의 트리 메뉴에서 문서를 선택하면 중앙 영역에 콘텐츠가 로드됩니다.
+    상단에 브레드크럼 경로가 표시되며, 우측 "On this page" 패널에서 문서 내 섹션을 확인할 수 있습니다.
+</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:25%">기능</th>
+            <th>설명</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>트리 메뉴</strong></td>
+            <td>계층형 문서 목록. 폴더를 펼치거나 접어 탐색합니다. 상단 검색창에서 메뉴 내 필터링이 가능합니다.</td>
+        </tr>
+        <tr>
+            <td><strong>브레드크럼</strong></td>
+            <td>현재 문서의 위치를 경로로 표시합니다. 상위 카테고리를 클릭하여 이동할 수 있습니다.</td>
+        </tr>
+        <tr>
+            <td><strong>On this page</strong></td>
+            <td>문서 내 제목(h1/h2/h3) 목록을 자동 생성합니다. 클릭 시 해당 섹션으로 이동합니다. Auto Track을 켜면 스크롤에 따라 현재 위치가 자동 추적됩니다.</td>
+        </tr>
+        <tr>
+            <td><strong>URL 공유</strong></td>
+            <td>현재 문서의 URL을 복사하면 다른 사용자에게 공유할 수 있습니다. 브라우저 뒤로/앞으로도 지원됩니다.</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     검색
+     ======================================== -->
+<h2 class="po-section-title" id="검색">검색</h2>
+
+<p>
+    상단 Search 버튼을 클릭하면 검색 오버레이가 열립니다.
+    등록된 전체 문서를 대상으로 검색하며, 결과를 클릭하면 해당 문서의 해당 섹션으로 이동합니다.
+</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:25%">검색 방식</th>
+            <th>설명</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>키워드 검색</strong></td>
+            <td>입력한 단어가 포함된 문서를 찾습니다. 2글자 이상 입력 시 동작합니다.</td>
+        </tr>
+        <tr>
+            <td><strong>벡터 검색</strong></td>
+            <td>bge-m3 임베딩을 사용하여 의미적으로 유사한 문서를 찾습니다. 정확한 단어가 없어도 관련 내용을 검색합니다.</td>
+        </tr>
+        <tr>
+            <td><strong>하이브리드</strong></td>
+            <td>키워드와 벡터 결과를 RRF(Reciprocal Rank Fusion)로 병합합니다. 기본 설정이며, 가장 정확도가 높습니다.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>
+    검색 결과를 클릭하면 해당 문서가 로드되고, 검색어가 본문에 하이라이트 표시됩니다.
+    결과에 섹션 정보가 포함된 경우 해당 위치로 자동 스크롤됩니다.
+</p>
+
+<div class="po-screenshot">
+    <img src="images/explorer-search.png" alt="Explorer 검색 결과">
+</div>
+<p class="po-screenshot-caption">검색 결과 — 키워드 하이라이트 및 섹션 이동</p>
+
+
+<!-- ========================================
+     AI 채팅
+     ======================================== -->
+<h2 class="po-section-title" id="ai-채팅">AI 채팅</h2>
+
+<p>
+    화면 우하단의 채팅 버튼을 클릭하면 AI 채팅 패널이 열립니다.
+    등록된 문서를 기반으로 질문에 답변하며, 답변에 출처(문서명, 섹션)가 함께 표시됩니다.
+</p>
+
+<div class="po-system-card">
+    <div class="po-system-card-header">
+        <div>
+            <div class="po-system-name">RAG 기반 질의응답</div>
+        </div>
+    </div>
+    <p class="po-system-desc">
+        질문을 입력하면 AI가 등록된 문서에서 관련 내용을 검색(RAG)한 뒤,
+        해당 내용을 근거로 답변을 생성합니다.
+        답변은 실시간 스트리밍으로 표시되며, 출처 링크를 클릭하면 원문 섹션으로 이동합니다.
+    </p>
+    <ul class="po-feat-list" style="grid-template-columns: 1fr;">
+        <li>문서 기반 RAG 답변 — 등록된 문서에서 근거를 찾아 응답</li>
+        <li>멀티턴 대화 — 이전 질문의 맥락을 유지하며 후속 질문 가능</li>
+        <li>출처 표시 — 답변에 사용된 문서명과 섹션 링크 제공</li>
+        <li>실시간 스트리밍 — 답변이 생성되는 대로 표시</li>
+        <li>빠른 질문 — 요약, 핵심 정리, 설명 버튼으로 간편 질문</li>
+        <li>신뢰도 표시 — 검색 결과가 부족한 경우 안내 메시지 표시</li>
+    </ul>
+</div>
+
+<div class="po-screenshot">
+    <img src="images/explorer-chat.png" alt="Explorer AI 채팅">
+</div>
+<p class="po-screenshot-caption">AI 채팅 — 문서 기반 질의응답 및 출처 표시</p>
+
+<div class="po-callout">
+    <strong>참고:</strong>
+    AI 답변은 등록된 문서 범위 내에서 생성됩니다.
+    문서에 없는 내용에 대해서는 "관련 정보를 찾을 수 없습니다"로 응답하며,
+    신뢰도가 낮은 경우 별도 안내가 표시됩니다.
+</div>
+
+
+<!-- ========================================
+     북마크
+     ======================================== -->
+<h2 class="po-section-title" id="북마크">북마크</h2>
+
+<p>
+    문서 내 제목(h1, h2) 옆의 별 아이콘을 클릭하면 해당 섹션이 북마크에 등록됩니다.
+    상단 Bookmarks 메뉴에서 저장된 북마크 목록을 확인하고, 클릭하여 해당 위치로 이동할 수 있습니다.
+</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:25%">항목</th>
+            <th>설명</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>등록</strong></td>
+            <td>제목 옆 별 아이콘(☆) 클릭 → 채워진 별(★)로 변경되며 등록</td>
+        </tr>
+        <tr>
+            <td><strong>조회</strong></td>
+            <td>상단 Bookmarks 메뉴 클릭 → 오버레이에 목록 표시</td>
+        </tr>
+        <tr>
+            <td><strong>이동</strong></td>
+            <td>목록에서 항목 클릭 → 해당 문서의 해당 섹션으로 이동</td>
+        </tr>
+        <tr>
+            <td><strong>저장</strong></td>
+            <td>브라우저 localStorage에 저장. 같은 브라우저에서 유지됩니다.</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     화면 설정
+     ======================================== -->
+<h2 class="po-section-title" id="화면-설정">화면 설정</h2>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:25%">설정</th>
+            <th>설명</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>다크모드</strong></td>
+            <td>상단 우측 테마 토글 버튼으로 라이트/다크 모드를 전환합니다. 설정은 브라우저에 저장됩니다.</td>
+        </tr>
+        <tr>
+            <td><strong>사이드바 접기</strong></td>
+            <td>좌측 Contents 패널과 우측 On this page 패널을 각각 접거나 펼칠 수 있습니다. 접으면 콘텐츠 영역이 넓어집니다.</td>
+        </tr>
+        <tr>
+            <td><strong>채팅 확장</strong></td>
+            <td>AI 채팅 패널을 전체 화면으로 확장할 수 있습니다.</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- 마무리 -->
+<div class="po-callout">
+    <strong>참고:</strong>
+    콘텐츠 등록, 메뉴 편집, AI/검색 설정 등 관리자 기능은
+    <em>플랫폼 가이드 > 관리자 가이드</em>를 참조하십시오.
+</div>

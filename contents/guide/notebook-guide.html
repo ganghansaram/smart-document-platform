@@ -1,7 +1,305 @@
 <div class="page-header">
     <div class="page-header-info">
         <h1 id="notebook-사용법">Notebook 사용법</h1>
+        <p class="page-header-subtitle">Research Notebook — 논문 번역 및 문서 분석 시스템</p>
     </div>
 </div>
 
-<p><em>이 문서는 준비 중입니다.</em></p>
+<!-- Hero -->
+<div class="po-hero">
+    <div class="po-hero-label">Research Notebook</div>
+    <h2>논문 번역 및 문서 분석 시스템</h2>
+    <p>
+        Notebook은 영문 기술 논문 및 규격 PDF를 업로드하여
+        페이지별 AI 번역, 요약, Q&amp;A, 마인드맵, 마킹 등
+        문서 분석 도구를 제공하는 연구 노트 시스템입니다.
+    </p>
+    <div class="po-badge-row">
+        <span class="po-badge">PDF 번역</span>
+        <span class="po-badge">AI 요약</span>
+        <span class="po-badge">Q&amp;A 챗봇</span>
+        <span class="po-badge">마킹·메모</span>
+        <span class="po-badge">폴더 관리</span>
+    </div>
+</div>
+
+<!-- 개요 -->
+<p>
+    사용 흐름은 PDF 업로드 → 문서 열기 → 번역 → AI 분석 → 내보내기 순서입니다.
+    원문 PDF와 번역 결과를 나란히 비교하는 듀얼 패널 뷰어를 지원하며,
+    우측 도구 패널에서 요약, Q&amp;A, 마인드맵, 마킹 등을 수행합니다.
+</p>
+
+<div class="po-screenshot">
+    <img src="images/notebook-list.png" alt="Notebook 문서 목록">
+</div>
+<p class="po-screenshot-caption">Notebook 문서 목록 — 업로드, 폴더 관리, 문서 카드</p>
+
+
+<!-- ========================================
+     문서 관리
+     ======================================== -->
+<h2 class="po-section-title" id="문서-관리">문서 관리</h2>
+
+<p>
+    PDF 파일을 업로드하면 문서 카드가 생성됩니다.
+    폴더를 만들어 문서를 분류하고, 트리 패널에서 계층 구조로 탐색할 수 있습니다.
+</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:22%">기능</th>
+            <th>설명</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>업로드</strong></td>
+            <td>PDF 파일을 드래그앤드롭하거나 업로드 버튼으로 등록합니다. 최대 100MB.</td>
+        </tr>
+        <tr>
+            <td><strong>문서 카드</strong></td>
+            <td>타일/리스트 뷰 전환 가능. 제목 편집, 삭제를 지원합니다.</td>
+        </tr>
+        <tr>
+            <td><strong>폴더 관리</strong></td>
+            <td>폴더 생성, 이름 변경, 삭제. 문서를 드래그앤드롭으로 폴더 간 이동할 수 있습니다.</td>
+        </tr>
+        <tr>
+            <td><strong>트리 패널</strong></td>
+            <td>좌측 오버레이로 폴더 구조를 표시합니다. 핀 고정하면 상시 표시됩니다.</td>
+        </tr>
+        <tr>
+            <td><strong>문서 검색</strong></td>
+            <td>본문 텍스트와 메모를 대상으로 검색합니다.</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     PDF 뷰어
+     ======================================== -->
+<h2 class="po-section-title" id="pdf-뷰어">PDF 뷰어</h2>
+
+<p>
+    문서 카드를 클릭하면 듀얼 패널 뷰어가 열립니다.
+    좌측에 원문 PDF, 우측에 번역 결과 또는 AI 도구가 표시됩니다.
+</p>
+
+<div class="po-screenshot">
+    <img src="images/notebook-viewer.png" alt="Notebook PDF 뷰어">
+</div>
+<p class="po-screenshot-caption">듀얼 패널 뷰어 — 좌측 원문 PDF, 우측 AI 도구 패널</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:22%">기능</th>
+            <th>설명</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>페이지 이동</strong></td>
+            <td>이전/다음 버튼 또는 페이지 번호 표시로 이동합니다.</td>
+        </tr>
+        <tr>
+            <td><strong>확대/축소</strong></td>
+            <td>+/- 버튼으로 조절합니다. 클릭 시 기본 크기로 복원됩니다.</td>
+        </tr>
+        <tr>
+            <td><strong>패널 크기 조절</strong></td>
+            <td>좌우 패널 사이의 구분선을 드래그하여 비율을 조정합니다.</td>
+        </tr>
+        <tr>
+            <td><strong>우측 도구 패널</strong></td>
+            <td>우측 아이콘 레일에서 번역, 메모, 용어집, AI 분석 탭을 전환합니다.</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     번역
+     ======================================== -->
+<h2 class="po-section-title" id="번역">번역</h2>
+
+<p>
+    두 가지 번역 모드를 제공합니다.
+    우측 아이콘 레일에서 모드를 전환하며, 모델 선택 후 번역을 실행합니다.
+</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:22%">모드</th>
+            <th style="width:20%">엔진</th>
+            <th>특징</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>PDF 번역</strong></td>
+            <td>pdf2zh</td>
+            <td>원문 레이아웃을 보존한 번역 PDF를 생성합니다. 페이지별 또는 범위 지정(최대 5페이지) 번역을 지원합니다.</td>
+        </tr>
+        <tr>
+            <td><strong>웹뷰 번역</strong></td>
+            <td>PyMuPDF4LLM + Ollama</td>
+            <td>PDF에서 텍스트를 추출하여 마크다운으로 번역합니다. 폰트 크기 조절(12~22px), 전체 문서 연속 스크롤, 마크다운 편집을 지원합니다.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>
+    번역 실행 후 상태가 3초 간격으로 갱신되며, 완료 시 우측 패널에 결과가 표시됩니다.
+    PDF 모드에서는 스크롤 동기화를 켜면 원문과 번역본이 함께 스크롤됩니다.
+</p>
+
+
+<!-- ========================================
+     AI 분석
+     ======================================== -->
+<h2 class="po-section-title" id="ai-분석">AI 분석</h2>
+
+<p>
+    우측 아이콘 레일에서 AI 분석 탭을 선택하면 요약, Q&amp;A, 마인드맵 세 가지 도구를 사용할 수 있습니다.
+    최초 사용 시 "문서 분석" 버튼을 클릭하여 문서 전체를 분석합니다. 분석은 문서당 1회 수행됩니다.
+</p>
+
+<h3 id="ai-요약">AI 요약</h3>
+<p>
+    문서 전체를 분석하여 요약문, 키워드, 섹션별 요약을 생성합니다.
+    문서 크기에 따라 단일 패스 또는 계층적 요약 방식이 자동 선택됩니다.
+</p>
+<ul class="po-feat-list" style="grid-template-columns: 1fr;">
+    <li>전체 요약문 — 문서 핵심 내용 요약</li>
+    <li>키워드 추출 — 태그 형태로 표시</li>
+    <li>섹션별 요약 — 접기/펼치기 가능</li>
+    <li>재생성 버튼으로 다시 분석 가능</li>
+</ul>
+
+<h3 id="qa-챗봇">Q&amp;A 챗봇</h3>
+<p>
+    해당 문서를 기반으로 질문에 답변하는 채팅 인터페이스입니다.
+    답변은 실시간 스트리밍으로 표시되며, 출처 페이지 번호가 함께 제공됩니다.
+</p>
+<ul class="po-feat-list" style="grid-template-columns: 1fr;">
+    <li>문서 기반 질의응답 — 해당 문서 내용에서 답변 생성</li>
+    <li>멀티턴 대화 — 이전 질문 맥락 유지</li>
+    <li>출처 페이지 표시 — 클릭 시 해당 페이지로 이동</li>
+    <li>빠른 질문 버튼 — 요약, 핵심 내용, 방법론</li>
+</ul>
+
+<h3 id="마인드맵">마인드맵</h3>
+<p>
+    문서 구조를 트리 형태로 시각화합니다.
+    노드를 클릭하면 AI가 해당 섹션에 대한 설명을 생성합니다.
+    확대/축소, 전체 펼치기/접기 컨트롤을 제공합니다.
+</p>
+
+
+<!-- ========================================
+     마킹·메모
+     ======================================== -->
+<h2 class="po-section-title" id="마킹-메모">마킹·메모</h2>
+
+<p>
+    좌측 원문 PDF에서 텍스트를 선택하면 마킹 도구가 표시됩니다.
+    형광펜 색상을 선택하고 메모를 입력하면 해당 위치에 표시가 남습니다.
+</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:22%">기능</th>
+            <th>설명</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>형광펜</strong></td>
+            <td>노랑, 초록, 빨강, 파랑 4색 중 선택하여 텍스트를 마킹합니다.</td>
+        </tr>
+        <tr>
+            <td><strong>메모</strong></td>
+            <td>마킹에 메모를 추가할 수 있습니다. 마킹 위에 마우스를 올리면 메모가 표시됩니다.</td>
+        </tr>
+        <tr>
+            <td><strong>선택 번역</strong></td>
+            <td>선택한 텍스트를 즉시 번역하는 팝업을 제공합니다.</td>
+        </tr>
+        <tr>
+            <td><strong>선택 요약</strong></td>
+            <td>선택한 텍스트의 요약을 생성합니다.</td>
+        </tr>
+        <tr>
+            <td><strong>메모 패널</strong></td>
+            <td>우측 메모 탭에서 전체 마킹 목록을 확인합니다. 클릭 시 해당 페이지로 이동합니다.</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     내보내기
+     ======================================== -->
+<h2 class="po-section-title" id="내보내기">내보내기</h2>
+
+<p>
+    상단 도구 모음의 다운로드 메뉴에서 다양한 형식으로 내보낼 수 있습니다.
+    번역 상태에 따라 사용 가능한 옵션이 달라집니다.
+</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:28%">형식</th>
+            <th style="width:30%">조건</th>
+            <th>설명</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>원본 PDF</strong></td>
+            <td>항상 가능</td>
+            <td>업로드한 원본 파일 다운로드</td>
+        </tr>
+        <tr>
+            <td><strong>번역 PDF (페이지)</strong></td>
+            <td>PDF 번역 완료 시</td>
+            <td>현재 페이지의 번역 PDF 다운로드</td>
+        </tr>
+        <tr>
+            <td><strong>마크다운 (페이지)</strong></td>
+            <td>웹뷰 번역 완료 시</td>
+            <td>현재 페이지의 번역 마크다운 다운로드</td>
+        </tr>
+        <tr>
+            <td><strong>마크다운 (전체)</strong></td>
+            <td>웹뷰 번역 1건 이상</td>
+            <td>전체 문서 번역 마크다운 다운로드</td>
+        </tr>
+        <tr>
+            <td><strong>ZIP</strong></td>
+            <td>웹뷰 번역 1건 이상</td>
+            <td>마크다운 + 이미지 에셋 압축 파일</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="po-callout">
+    <strong>마크다운 편집:</strong>
+    웹뷰 번역이 완료된 페이지에서 편집 버튼을 클릭하면 마크다운 편집기가 열립니다.
+    편집 내용은 저장 시 전체 문서에 자동 반영됩니다.
+</div>
+
+
+<!-- 마무리 -->
+<div class="po-callout">
+    <strong>참고:</strong>
+    번역 및 AI 분석에는 Ollama 모델이 사용됩니다.
+    사용 가능한 모델 목록은 시스템 환경에 따라 다르며, 관리자 설정에서 확인할 수 있습니다.
+</div>
