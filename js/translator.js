@@ -65,6 +65,7 @@
         var rightPdfDoc = null;
         var rightRenderTask = null;
         var legacyPdfDoc = null;  // 레거시 translated.pdf 캐시
+        var _rightPdfCache = {};  // pageNum → PDF.js doc (번역 PDF 캐시)
 
         // Zoom
         var zoom = 1.0;
@@ -569,6 +570,11 @@
 
         function destroyPdfs() {
             _teardownAllPages();
+            // 우측 PDF 캐시 정리
+            for (var key in _rightPdfCache) {
+                if (_rightPdfCache[key] !== legacyPdfDoc) _rightPdfCache[key].destroy();
+            }
+            _rightPdfCache = {};
             if (leftPdfDoc) { leftPdfDoc.destroy(); leftPdfDoc = null; }
             if (rightPdfDoc && rightPdfDoc !== legacyPdfDoc) { rightPdfDoc.destroy(); }
             rightPdfDoc = null;
@@ -833,7 +839,7 @@
         // ── 페이지 변경 이벤트 (Phase 3-C: 좌우 동기화) ──
         var _pageChangeTimer = null;
         function _emitPageChanged() {
-            // 300ms 디바운스: 빠른 스크롤 중 우측 과부하 방지
+            // 150ms 디바운스: 반응성과 과부하 방지 균형
             clearTimeout(_pageChangeTimer);
             _pageChangeTimer = setTimeout(function() {
                 if (!scrollSyncEnabled) return;
@@ -847,7 +853,7 @@
                     // PDF 번역: 향후 3-A에서 연속 스크롤 구현 시 scrollIntoView로 대체
                     updateRightPanel();
                 }
-            }, 300);
+            }, 150);
         }
 
         // ── Right Panel: Translation PDF or Placeholder ──
@@ -1342,27 +1348,53 @@
         function showRightTranslatedPage() {
             if (!activeRailPanel) return;
             _showDualPanel();
-            // 로딩 상태 표시 (placeholder 유지)
-            var textEl = $rightPlaceholder.querySelector('.placeholder-text');
-            var hintEl = $rightPlaceholder.querySelector('.placeholder-hint');
-            if (textEl) textEl.textContent = '번역 PDF 로드 중...';
-            if (hintEl) hintEl.textContent = '';
-            $rightPlaceholder.style.display = 'flex';
-            $rightContainer.style.display = 'none';
             $webViewContainer.style.display = 'none';
 
-            // 페이지별 번역 PDF 로드 (1페이지짜리)
-            if (rightPdfDoc && rightPdfDoc !== legacyPdfDoc) { rightPdfDoc.destroy(); }
-            rightPdfDoc = null;
-            var url = API + '/api/translator/translated-pdf/' + currentDocId + '/page/' + currentPage;
-            pdfjsLib.getDocument({ url: url, withCredentials: true }).promise.then(function(pdf) {
-                rightPdfDoc = pdf;
+            var pg = currentPage;
+
+            // 캐시 히트: 즉시 렌더 (깜빡임 없음)
+            if (_rightPdfCache[pg]) {
+                rightPdfDoc = _rightPdfCache[pg];
                 $rightPlaceholder.style.display = 'none';
                 $rightContainer.style.display = 'inline-block';
-                renderRightPage(1); // 1페이지짜리 PDF의 첫 페이지
+                renderRightPage(1);
+                _preloadAdjacentPages(pg);
+                return;
+            }
+
+            // 캐시 미스: 로딩 표시 후 fetch
+            $rightPlaceholder.style.display = 'flex';
+            $rightPlaceholder.innerHTML =
+                '<div class="spinner page-spinner"></div>' +
+                '<div class="placeholder-text">번역 PDF 로드 중...</div>';
+            $rightContainer.style.display = 'none';
+
+            var url = API + '/api/translator/translated-pdf/' + currentDocId + '/page/' + pg;
+            pdfjsLib.getDocument({ url: url, withCredentials: true }).promise.then(function(pdf) {
+                _rightPdfCache[pg] = pdf;
+                rightPdfDoc = pdf;
+                // 페이지가 이미 전환됐으면 렌더 스킵
+                if (currentPage !== pg) return;
+                $rightPlaceholder.style.display = 'none';
+                $rightContainer.style.display = 'inline-block';
+                renderRightPage(1);
+                _preloadAdjacentPages(pg);
             }).catch(function(err) {
                 console.error('[PDF.js] right page load error:', err);
-                showRightError({ error: 'PDF 로드 실패' });
+                if (currentPage === pg) showRightError({ error: 'PDF 로드 실패' });
+            });
+        }
+
+        // ±1 프리로드: 인접 번역 완료 페이지를 백그라운드 로드
+        function _preloadAdjacentPages(pg) {
+            [pg - 1, pg + 1].forEach(function(p) {
+                if (p < 1 || p > totalPages || _rightPdfCache[p]) return;
+                var ps = pageStatusCache[String(p)];
+                if (!ps || ps.status !== 'done') return;
+                var url = API + '/api/translator/translated-pdf/' + currentDocId + '/page/' + p;
+                pdfjsLib.getDocument({ url: url, withCredentials: true }).promise.then(function(pdf) {
+                    _rightPdfCache[p] = pdf;
+                }).catch(function() { /* 프리로드 실패 무시 */ });
             });
         }
 
@@ -1909,6 +1941,11 @@
                     credentials: 'include',
                 }).then(function(resp) {
                     if (!resp.ok) return resp.json().then(function(e) { throw new Error(e.detail); });
+                    // 재번역: 기존 캐시 무효화
+                    if (_rightPdfCache[currentPage]) {
+                        _rightPdfCache[currentPage].destroy();
+                        delete _rightPdfCache[currentPage];
+                    }
                     pageStatusCache[String(currentPage)] = {
                         status: 'translating',
                         progress_stage: '번역 준비 중...',
