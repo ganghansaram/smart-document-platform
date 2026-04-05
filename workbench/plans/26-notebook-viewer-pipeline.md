@@ -359,7 +359,7 @@ Phase 5: 통합 테스트
 | **2** | **Part A — 좌측 PDF 연속 스크롤** | ✅ 완료 | |
 |  2-α  | 연속 스크롤 코어 | ✅ | 스택 DOM + Observer + 가상화 + currentPage 추적 + 이벤트 위임 수정. 16항목 회귀 테스트 통과 |
 |  2-β  | goToPage 전환 + 줌 | ✅ | 2-α에 포함 (scrollIntoView + 줌 리렌더 + 검색 타이밍) |
-|  2-γ  | 정리 | ✅ | Prev/Next 유지(업계 표준), leftRenderTask 제거, scrollSync 기본 비활성, _emitPageChanged 독립화 |
+|  2-γ  | 정리 | ✅ | Prev/Next 유지(업계 표준), leftRenderTask 제거, 동기화 토글 기본 ON + _emitPageChanged 연결 |
 | **3** | **Part A — 우측 패널 연동** | ✅ 완료 | |
 |  3-A  | PDF 번역: 연속 스크롤 | ⏭️ | 시도 후 롤백 — 우측은 페이지 단위 유지. 대신 PDF 캐시 + ±1 프리로드 + 디바운스 150ms 적용 |
 |  3-B  | 웹뷰: 전체 모드 기본화 | ✅ | webFullViewMode 기본 true |
