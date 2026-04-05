@@ -2330,6 +2330,8 @@
 
         function syncScroll(source, target) {
             if (!scrollSyncEnabled || scrollSyncing) return;
+            // Phase 3-A: 연속 스크롤 모드에서는 비율 동기화 비활성 (페이지 기반으로 대체)
+            if (_rightWrappers.length > 0) return;
             scrollSyncing = true;
             var maxS = source.scrollHeight - source.clientHeight;
             var maxT = target.scrollHeight - target.clientHeight;
