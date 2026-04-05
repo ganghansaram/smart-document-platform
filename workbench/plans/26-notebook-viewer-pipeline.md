@@ -223,16 +223,32 @@ OFF 시: 좌우 독립 스크롤 (각자 자유롭게 탐색).
 
 ### 6. 기존 코드 영향 분석
 
-| 코드 | 변경 범위 |
-|------|----------|
-| `renderLeftPage()` | 리팩토링 → `renderPageInWrapper(pageNum)` (가상화 범위용) |
-| `goToPage()` | canvas 교체 → scrollIntoView |
-| `syncScroll()` | 제거 → 페이지 기반 `emitPageChanged()` 이벤트로 대체 |
-| Prev/Next 버튼 HTML | 제거 |
-| 페이지 표시 UI | 유지 (자동 갱신) |
-| `renderAnnotations()` | 단일 페이지 → 가시 범위 다중 페이지 |
-| 웹뷰 전체 모드 | 기본값으로 승격 |
-| PDF 번역 우측 패널 | 단일 canvas → 연속 스크롤 wrapper 스택 |
+#### 6.1 핵심 함수 의존성 (`translator.js`, 4948줄)
+
+| 함수 | 참조 수 | 주요 호출처 | Phase 2 전략 |
+|------|:-------:|------------|-------------|
+| `goToPage()` | 9곳 | memo 클릭, Prev/Next, 키보드, 검색 결과, Q&A 배지 | 시그니처 유지, 내부만 scrollIntoView로 전환 (2-C) |
+| `renderLeftPage()` | 6곳 | 초기 로드, 패널 리사이즈, Observer, goToPage, 줌 | 가상화 렌더로 교체 (2-B) |
+| `syncScroll()` | 2곳 | 좌측/우측 scroll 이벤트 | Phase 3-C에서 이벤트 기반으로 대체 |
+| `currentPage` | 60+곳 | 쓰기 4곳 (초기, openViewer, Observer L1392, goToPage) / 읽기 다수 | Observer 자동 추적으로 통합 (2-D) |
+| `renderAnnotations()` | 6곳 | renderLeftPage 완료, 하이라이트 CRUD | 가시 범위 확장 (3-D) |
+
+#### 6.2 주의 사항
+
+- **L1392 직접 write**: 웹 전체뷰 IntersectionObserver가 `goToPage()` 우회하고 `currentPage`를 직접 쓰는 경로. 연속 스크롤 전환 시 이 패턴이 주 네비게이션이 되므로 통합 필요 (2-D)
+- **goToPage 내 scrollTop=0 리셋** (L1860, L1890): 연속 스크롤에서 역효과. scrollIntoView 전환 시 제거 (2-C)
+- **패널 리사이즈 → renderLeftPage**: 사이드 패널 열기/닫기 후 canvas 리사이즈. 연속 스크롤에서는 가시 범위만 리렌더 (2-E)
+
+#### 6.3 전환 순서 원칙
+
+```
+연속 스크롤 코어 (2-α) → goToPage 전환 + 줌 (2-β) → 레거시 정리 (2-γ)
+```
+
+- **2-α가 핵심**: 스택 DOM + Observer + 렌더 + currentPage를 한 덩어리로 구현 (분리 불가)
+  - 내부 서브 커밋: ① 스택 DOM 생성 ② Observer 설정 ③ canvas 렌더 함수 ④ 메모리 해제
+- 각 단계마다 **기존 기능이 동작하는 상태 유지** → 커밋 → 다음 단계
+- `syncScroll` 제거와 Prev/Next 제거는 모든 전환 완료 후 최종 단계(2-γ)에서 수행
 
 ---
 
@@ -255,41 +271,40 @@ OFF 시: 좌우 독립 스크롤 (각자 자유롭게 탐색).
 
 ### 8. 잔여 품질 문제 및 개선 방안
 
-#### Step 1 — 후처리 보강 + Marker 벤치마크 (병행 진행)
+#### Step 1 — 후처리 보강 + Marker 벤치마크 ✅ 완료
 
-후처리는 어떤 엔진을 쓰든 필요. 동시에 Marker를 벤치마크하여 엔진 결정.
+**(A) 후처리 — 적용된 항목**:
 
-**(A) 후처리 파이프라인 보강** (코드 추가, 즉시):
-
-| 문제 | 원인 | 해결 |
+| 문제 | 해결 | 결과 |
 |------|------|------|
-| 헤더/푸터 오염 | 매 페이지 반복 문서 제목·번호 | 페이지 간 첫/마지막 줄 빈도 분석 → 반복 줄 제거 |
-| 하이픈 단어 분리 | 줄 끝 하이픈 유지 | `(\w)-\n(\w)` → 합침 |
-| 단독 페이지 번호 | "1" 등이 본문에 혼입 | 단독 숫자 줄 제거 |
-| 과다 빈 줄 | 3줄 이상 연속 | 2줄로 정리 |
+| 헤더/푸터 오염 | `page_boxes`의 `page-header`/`page-footer` 분류를 활용, pos 기반 텍스트 수집 → 텍스트 매칭 제거 | 6종 문서 16페이지 전부 정확 제거, 본문 무손실 |
+| 하이픈 단어 분리 | `_join_hyphenated_words()` — 의미적 접두사(self-/non- 등 18종) 보존 | 안전장치 적용 |
+| 과다 빈 줄 | `_normalize_blank_lines()` — 3줄+ → 2줄 | p1, p24, p25 정리 확인 |
+| YOLO 경로 후처리 누락 | 기존 5개 + 신규 2개를 YOLO 폴백 경로에도 일관 적용 | 기존 버그 수정 |
 
-**(B) PyMuPDF4LLM 옵션 활성화** (설정 변경, 즉시):
+**(A) 후처리 — 불필요로 스킵한 항목**:
 
-| 옵션 | 현재 | 개선 |
-|------|------|------|
-| `margins` | 미사용 | `(0, 50, 0, 50)` 헤더/푸터 크롭 |
-| `table_strategy` | `lines_strict` 고정 | 실패 시 `text` 재시도 |
+| 문제 | 사유 |
+|------|------|
+| 단독 페이지 번호 | `page-footer` 분류에 포함되어 이미 제거됨 |
+| 패턴 기반 헤더/푸터 | `page-header`/`page-footer` pos 제거가 완전하여 추가 패턴 불필요 |
 
-**(C) Marker 벤치마크** (A/B와 병행):
+**(B) margins 옵션** ⏭️ 스킵:
 
-| | PyMuPDF4LLM (현재) | Marker |
-|---|---|---|
-| 방식 | 규칙 기반 (좌표 추론) | ML 기반 (시각적 레이아웃 이해) |
-| 리스트 감지 | 구조 태그 없으면 불가 | 시각적 패턴으로 감지 |
-| 헤더/푸터 | 물리적 크롭 (고정값) | 의미적 판별 |
-| 속도 | 매우 빠름 | 5~30배 느림 (CPU) |
-| 모델 | 없음 (0 MB) | ~2 GB |
+업계 조사 결과 `margins`는 물리 크롭이 아닌 텍스트 필터링이나, (A)의 pos 기반 제거가 100% 정확하여 추가 리스크 없이 충분. 보류.
 
-**벤치마크**: MIL-STD 실문서 10~20페이지로 비교.
-**평가 기준**: 리스트 보존, 표 구조, 헤더/푸터, 읽기 순서, 처리 속도.
-**판단**: 품질 유의미 개선 시 Marker 채택, 아니면 PyMuPDF4LLM 유지.
-**교체 범위**: `md_extractor.py`의 `extract_page()` 내부 엔진만 교체.
-**롤백**: 설정 한 줄로 엔진 전환, 품질 저하 시 즉시 되돌림.
+**(C) Marker 벤치마크** ✅ **PyMuPDF4LLM 유지 결정**:
+
+MIL-STD-38784B 6페이지 실문서 비교 (벤치마크: `workbench/benchmark/`):
+
+| 항목 | PyMuPDF4LLM | Marker | 판정 |
+|------|-------------|--------|:----:|
+| 속도 (6p) | 5.1s | 61.5s (**12x**) | PyMuPDF 우위 |
+| 표 구조 | MD 표 정확 | 표 미인식, 텍스트 풀림 | PyMuPDF 우위 |
+| 텍스트 충실도 | 원문 그대로 | `<sup>a</sup>`, `par<sup>t</sup>` OCR 아티팩트 | PyMuPDF 우위 |
+| 페이지 매핑 | 정확 | 1페이지 오프셋 | PyMuPDF 우위 |
+| 헤더/푸터 | 후처리(A)로 해결 | 자동 제거 | 동등 |
+| 내부 링크 | 없음 | `#page-N` 링크 생성 | Marker 우위 |
 
 #### Step 2 — LLM 기반 교정 (선택된 엔진에서도 부족한 부분에 적용)
 
@@ -302,25 +317,23 @@ OFF 시: 좌우 독립 스크롤 (각자 자유롭게 탐색).
 ## 9. 구현 순서
 
 ```
-Phase 1: Part B — MD 추출 품질 강화
-  ├── (A) 후처리 보강 구현
-  ├── (B) PyMuPDF4LLM 옵션 활성화
-  └── (C) Marker 벤치마크 → 엔진 결정
+Phase 1: Part B — MD 추출 품질 강화 ✅
+  ├── (A) 후처리 보강 ✅ — hf 제거 + 하이픈 + 빈줄 + YOLO 경로
+  ├── (B) margins 옵션 ⏭️ — 불필요 판정
+  └── (C) Marker 벤치마크 ✅ — PyMuPDF4LLM 유지
 
-Phase 2: Part A — 좌측 PDF 연속 스크롤
-  ├── 가상화 컨테이너 + IntersectionObserver
-  ├── goToPage → scrollIntoView 변경
-  ├── currentPage 자동 추적
-  ├── 텍스트/주석 레이어 다중 페이지 관리
-  ├── 줌 처리 변경
-  └── Prev/Next 버튼 제거, 툴바 정리
+Phase 2: Part A — 좌측 PDF 연속 스크롤 (3단계 점진적 전환)
+  ├── (α) 연속 스크롤 코어 — 스택 DOM + Observer + 가시 범위 렌더 + currentPage 자동 추적
+  │      내부 서브 커밋: ① 스택 DOM 생성 ② Observer 설정 ③ canvas 렌더 함수 ④ 메모리 해제
+  ├── (β) goToPage 전환 + 줌 — scrollIntoView 내부 전환 + 줌 시 높이 재계산
+  └── (γ) 정리 — Prev/Next 제거, syncScroll 제거, 레거시 삭제
 
 Phase 3: Part A — 우측 패널 연동
-  ├── PDF 번역: 연속 스크롤 + 미번역 placeholder
-  ├── 웹뷰: 전체 모드 기본화
-  ├── 좌우 동기화: 페이지 기반 + 디바운스
-  ├── 메모: 다중 페이지 주석 렌더
-  └── syncScroll 제거
+  ├── (A) PDF 번역: 연속 스크롤 + 미번역 placeholder
+  ├── (B) 웹뷰: 전체 모드 기본화
+  ├── (C) 좌우 동기화: emitPageChanged 이벤트 + 디바운스
+  ├── (D) 메모: renderAnnotations 가시 범위 확장
+  └── (E) 통합 안정화 — 5종 패널 전체 동작 확인
 
 Phase 4: Part B Step 2 — LLM 교정
   └── 품질 부족 블록 선별 → Ollama 교정
@@ -340,22 +353,19 @@ Phase 5: 통합 테스트
 | Phase | 내용 | 상태 | 비고 |
 |:-----:|------|:----:|------|
 | **1** | **Part B — MD 추출 품질 강화** | ✅ 완료 | |
-|  1-A  | 후처리 보강 (머리글/꼬리글, 하이픈, 빈줄) | ✅ | pos 기반 hf 제거 + 하이픈 합침 + 빈줄 정리. 실문서 전후 비교 검증 완료 |
+|  1-A  | 후처리 보강 (머리글/꼬리글, 하이픈, 빈줄) | ✅ | 텍스트 매칭 hf 제거 + 하이픈 합침 + 빈줄 정리 + YOLO 경로 수정. 4종 문서 16p 검증 |
 |  1-B  | PyMuPDF4LLM 옵션 활성화 (`margins` 등) | ⏭️ | 1-A pos 기반 제거로 충분, margins 불필요 판정 |
 |  1-C  | Marker 벤치마크 → 엔진 결정 | ✅ | PyMuPDF4LLM 유지 (Marker: OCR 아티팩트·표 후퇴·12x 느림) |
-| **2** | **Part A — 좌측 PDF 연속 스크롤** | ⬜ 미착수 | |
-|  2-A  | 가상화 컨테이너 + IntersectionObserver | ⬜ | |
-|  2-B  | goToPage → scrollIntoView 변경 | ⬜ | |
-|  2-C  | currentPage 자동 추적 | ⬜ | |
-|  2-D  | 텍스트/주석 레이어 다중 페이지 관리 | ⬜ | |
-|  2-E  | 줌 처리 변경 | ⬜ | |
-|  2-F  | Prev/Next 버튼 제거, 툴바 정리 | ⬜ | |
-| **3** | **Part A — 우측 패널 연동** | ⬜ 미착수 | |
+| **2** | **Part A — 좌측 PDF 연속 스크롤** | ⬜ 미착수 | 3단계 점진적 전환 |
+|  2-α  | 연속 스크롤 코어 | ⬜ | 스택 DOM + Observer ±2 + canvas 렌더/해제 + currentPage 자동 추적. 최대 난이도 |
+|  2-β  | goToPage 전환 + 줌 | ⬜ | scrollIntoView 내부 전환 (시그니처 유지) + 줌 시 wrapper 높이 재계산 |
+|  2-γ  | 정리 | ⬜ | Prev/Next 제거, syncScroll 제거, 레거시 코드 삭제 |
+| **3** | **Part A — 우측 패널 연동** | ⬜ 미착수 | Phase 2 완료 후 진행 |
 |  3-A  | PDF 번역: 연속 스크롤 + 미번역 placeholder | ⬜ | |
 |  3-B  | 웹뷰: 전체 모드 기본화 | ⬜ | |
-|  3-C  | 좌우 동기화: 페이지 기반 + 디바운스 | ⬜ | |
-|  3-D  | 메모: 다중 페이지 주석 렌더 | ⬜ | |
-|  3-E  | syncScroll 제거 | ⬜ | |
+|  3-C  | 좌우 동기화: 페이지 기반 + 디바운스 | ⬜ | syncScroll 대체. emitPageChanged 이벤트 |
+|  3-D  | 메모: 다중 페이지 주석 렌더 | ⬜ | renderAnnotations 가시 범위 확장 |
+|  3-E  | 통합 안정화 | ⬜ | 5종 패널 전체 동작 확인 + 엣지 케이스 |
 | **4** | **Part B Step 2 — LLM 교정** | ⬜ 미착수 | |
 |  4-A  | 품질 부족 블록 선별 → Ollama 교정 | ⬜ | |
 | **5** | **통합 테스트** | ⬜ 미착수 | |
