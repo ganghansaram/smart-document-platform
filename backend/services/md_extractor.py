@@ -365,6 +365,16 @@ def _extract_page_yolo_fallback(
             "bbox": (int(bbox.x0), int(bbox.y0), int(bbox.x1), int(bbox.y1)),
         })
 
+    # ── YOLO 경로 후처리 (기존 누락 수정) ──
+    markdown_text = _clean_heading_styles(markdown_text)
+    markdown_text = re.sub(
+        r"^.*==>.*?intentionally omitted.*?<==.*$", "", markdown_text, flags=re.MULTILINE
+    )
+    markdown_text = re.sub(r"^\*{2,}$", "", markdown_text, flags=re.MULTILINE)
+    markdown_text = re.sub(r"^_{2,}$", "", markdown_text, flags=re.MULTILINE)
+    markdown_text = _join_hyphenated_words(markdown_text)
+    markdown_text = _normalize_blank_lines(markdown_text)
+
     logger.info(f"YOLO 폴백 추출 완료: {len(translate_regions)}개 텍스트 + {len(capture_regions)}개 캡처")
 
     return {
@@ -525,6 +535,15 @@ def extract_page(
 
     doc.close()
 
+    # ── 헤더/푸터 텍스트 수집 (pos 변경 전에 원본에서 추출) ──
+    _hf_texts = []
+    for b in page_boxes:
+        if b.get("class") in ("page-header", "page-footer") and b.get("pos"):
+            pos = b["pos"]
+            text = markdown_text[pos[0]:pos[1]].strip()
+            if text:
+                _hf_texts.append(text)
+
     # ── 비텍스트 영역의 텍스트 제거 + 이미지 참조 삽입 ──
     if assets:
         non_text_boxes = [
@@ -542,6 +561,17 @@ def extract_page(
     elif table_mode == "off":
         markdown_text = _remove_markdown_tables(markdown_text)
 
+    # ── 페이지 헤더/푸터 텍스트 제거 ──
+    # pos 기반이 아닌 텍스트 내용 기반 제거 (이미지/표 처리 후 pos 어긋남 방지)
+    if _hf_texts:
+        for hf_text in _hf_texts:
+            # 줄 단위로 정확히 매칭하여 제거 (앞뒤 빈줄 포함)
+            escaped = re.escape(hf_text)
+            markdown_text = re.sub(
+                r"^\s*" + escaped + r"\s*$", "", markdown_text, flags=re.MULTILINE
+            )
+        logger.debug(f"헤더/푸터 {len(_hf_texts)}개 텍스트 제거 완료")
+
     # ── 제목 이탤릭 제거 (가독성 개선) ──
     markdown_text = _clean_heading_styles(markdown_text)
 
@@ -553,6 +583,10 @@ def extract_page(
     # 빈 서식 (****, **, __ 등 내용 없는 볼드/이탤릭) 제거 — 수평선으로 오인 방지
     markdown_text = re.sub(r"^\*{2,}$", "", markdown_text, flags=re.MULTILINE)
     markdown_text = re.sub(r"^_{2,}$", "", markdown_text, flags=re.MULTILINE)
+
+    # ── 추출 품질 후처리 (Plan-26 Phase 1-A) ──
+    markdown_text = _join_hyphenated_words(markdown_text)
+    markdown_text = _normalize_blank_lines(markdown_text)
 
     # 디버그 모드: 추출 원문을 파일로 저장
     if debug and assets_dir:
@@ -868,3 +902,35 @@ def _remove_markdown_tables(text: str) -> str:
         if not is_table_line:
             result.append(line)
     return "\n".join(result)
+
+
+# ══════════════════════════════════════
+# 추출 품질 후처리 (Plan-26 Phase 1-A)
+# ══════════════════════════════════════
+
+def _join_hyphenated_words(text: str) -> str:
+    """줄 끝 하이픈으로 분리된 단어를 합친다.
+
+    영문 기술 문서에서 줄바꿈 시 삽입되는 하이픈을 제거:
+    distribu-\\ntion → distribution
+
+    의미적 하이픈 보존: self-, non- 등 알려진 접두사 뒤의 하이픈은 유지.
+    """
+    _KNOWN_PREFIXES = frozenset({
+        "self", "non", "anti", "semi", "pre", "post", "multi", "cross",
+        "over", "under", "well", "high", "low", "long", "short", "full",
+    })
+
+    def _hyphen_join(m):
+        prefix = m.group(1)
+        suffix = m.group(2)
+        if prefix.lower() in _KNOWN_PREFIXES:
+            return f"{prefix}-\n{suffix}"
+        return prefix + suffix
+
+    return re.sub(r"([A-Za-z]{2,})-\n([a-z])", _hyphen_join, text)
+
+
+def _normalize_blank_lines(text: str) -> str:
+    """3줄 이상 연속 빈 줄을 2줄로 정리한다."""
+    return re.sub(r"\n{4,}", "\n\n\n", text)
