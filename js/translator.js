@@ -196,7 +196,7 @@
         var webFontSize     = parseInt(localStorage.getItem('tt-web-font-size') || '15', 10);
         var webPageStatusCache = {};  // 웹 뷰 번역 상태 캐시
         var webPollingTimer = null;
-        var webFullViewMode = false; // 전체 문서 연속 스크롤 모드
+        var webFullViewMode = true; // 전체 문서 연속 스크롤 모드 (Phase 3-B: 기본 활성)
         var webFullViewObserver = null; // IntersectionObserver
         var webFullSyncLock = false; // 좌↔우 동기화 재진입 방지
 
@@ -661,11 +661,12 @@
                     }
                 }
 
-                // currentPage 갱신
+                // currentPage 갱신 + 우측 패널 동기화
                 if (bestPage !== currentPage && bestRatio > 0) {
                     currentPage = bestPage;
                     updatePageNav();
                     _syncLeftRefs();
+                    _emitPageChanged();
                 }
 
                 // 가시 범위 ± 버퍼 렌더/해제
@@ -827,6 +828,26 @@
                     annLayer.appendChild(createHighlightDiv(highlights[i]));
                 }
             }
+        }
+
+        // ── 페이지 변경 이벤트 (Phase 3-C: 좌우 동기화) ──
+        var _pageChangeTimer = null;
+        function _emitPageChanged() {
+            // 300ms 디바운스: 빠른 스크롤 중 우측 과부하 방지
+            clearTimeout(_pageChangeTimer);
+            _pageChangeTimer = setTimeout(function() {
+                if (!scrollSyncEnabled) return;
+                if (!activeRailPanel) return;
+
+                if (translateEngine === 'web' && webFullViewMode) {
+                    _scrollFullViewToPage(currentPage);
+                } else if (translateEngine === 'web') {
+                    updateRightPanel();
+                } else if (translateEngine === 'pdf') {
+                    // PDF 번역: 향후 3-A에서 연속 스크롤 구현 시 scrollIntoView로 대체
+                    updateRightPanel();
+                }
+            }, 300);
         }
 
         // ── Right Panel: Translation PDF or Placeholder ──
@@ -1808,8 +1829,8 @@
             // 전체 보기 토글 표시/숨김
             $webFullToggle.style.display = translateEngine === 'web' ? '' : 'none';
             if (translateEngine !== 'web') {
-                webFullViewMode = false;
-                $webFullToggle.classList.remove('active');
+                webFullViewMode = true; // Phase 3-B: 웹뷰 전환 시 기본 전체 모드
+                $webFullToggle.classList.add('active');
                 if (webFullViewObserver) { webFullViewObserver.disconnect(); webFullViewObserver = null; }
             }
 
