@@ -633,6 +633,7 @@
                     wrapper.dataset.page = String(i + 1);
                     wrapper.style.width = Math.floor(svp.width) + 'px';
                     wrapper.style.height = Math.floor(svp.height) + 'px';
+                    wrapper.style.setProperty('--scale-factor', scale);
                     _pageWrappers.push(wrapper);
                     frag.appendChild(wrapper);
                 }
@@ -741,9 +742,10 @@
                 canvas.style.width = Math.floor(scaledViewport.width) + 'px';
                 canvas.style.height = Math.floor(scaledViewport.height) + 'px';
 
-                // Wrapper 크기 갱신
+                // Wrapper 크기 갱신 + scale-factor (PDF.js text-layer 경고 방지)
                 wrapper.style.width = Math.floor(scaledViewport.width) + 'px';
                 wrapper.style.height = Math.floor(scaledViewport.height) + 'px';
+                wrapper.style.setProperty('--scale-factor', scale);
 
                 // Text layer
                 var textLayer = document.createElement('div');
@@ -2195,6 +2197,7 @@
                 if (wrapper) {
                     wrapper.style.width = Math.floor(svp.width) + 'px';
                     wrapper.style.height = Math.floor(svp.height) + 'px';
+                    wrapper.style.setProperty('--scale-factor', scale);
                 }
             }
             // 현재 렌더된 페이지 모두 해제 후 재렌더
