@@ -78,7 +78,7 @@
         var _navPdfViewport = null; // PDF 원본 viewport (scale=1)
 
         // Scroll sync
-        var scrollSyncEnabled = false; // Phase 2-γ: 연속 스크롤에서 픽셀 비율 동기화 비활성 기본
+        var scrollSyncEnabled = true; // 기본 ON — 좌측 스크롤 시 우측 페이지 동기화
         var scrollSyncing = false;  // 재진입 방지
 
         // ── DOM refs ──
@@ -841,6 +841,7 @@
             // 150ms 디바운스: 반응성과 과부하 방지 균형
             clearTimeout(_pageChangeTimer);
             _pageChangeTimer = setTimeout(function() {
+                if (!scrollSyncEnabled) return;
                 if (!activeRailPanel) return;
 
                 if (translateEngine === 'web' && webFullViewMode) {
