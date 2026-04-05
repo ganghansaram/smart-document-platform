@@ -1,6 +1,6 @@
 # Backend Architecture
 
-AI 챗봇 + 문서 편집기 백엔드 시스템 설계 및 배포 문서
+Smart Document Platform 백엔드 시스템 설계 및 배포 문서 — Explorer, Notebook(Translator), Verify(Compare)
 
 ---
 
@@ -45,17 +45,16 @@ AI 챗봇 + 문서 편집기 백엔드 시스템 설계 및 배포 문서
 │                         │  POST /api/analytics/*  통계 API              │    │
 │                         │  GET/POST /api/settings 설정 API (admin) 🔒   │    │
 │                         │  GET/POST /api/menu    메뉴 관리 (admin) 🔒   │    │
-│                         │  /api/translator/*     Translator API          │    │
-│                         │  /api/translator/ai/*  AI 번역/요약 API        │    │
-│                         │  /api/compare/*        Compare API (업로드/검증/규칙/AI분류) │    │
+│                         │  /api/translator/*     Notebook API (번역/추출/요약/Q&A/마킹) │    │
+│                         │  /api/compare/*        Verify API (diff/유사도/규칙/내보내기) │    │
 │                         │                              │    │
 │                         │  Services:                   │    │
 │                         │  - Auth (SQLite sessions)    │    │
-│                         │  - KeywordSearch             │    │
-│                         │  - VectorSearch (FAISS)      │    │
+│                         │  - KeywordSearch (BM25)      │    │
+│                         │  - VectorSearch (FAISS+RRF)  │    │
 │                         │  - EmbeddingClient (bge-m3)  │    │
 │                         │  - Reranker (Cross-encoder)  │    │
-│                         │  - ConversationStore         │    │
+│                         │  - ConversationStore (LRU)   │    │
 │                         │  - QueryRewriter             │    │
 │                         │  - QuestionRouter (4유형 분류)│    │
 │                         │  - QueryDecomposer (쿼리 분해)│    │
@@ -63,10 +62,19 @@ AI 챗봇 + 문서 편집기 백엔드 시스템 설계 및 배포 문서
 │                         │  - LLMProvider (Ollama/OpenAI)│    │
 │                         │  - LLMClient (응답 생성 래퍼) │    │
 │                         │  - KoreanTokenizer           │    │
-│                         │  - DocumentSave              │    │
-│                         │  - SettingsService (settings.json)  │    │
-│                         │  - Analytics (heartbeat/dashboard)  │    │
-│                         │  - CompareService (텍스트 추출/검증/AI분류) │    │
+│                         │  - SettingsService           │    │
+│                         │  - Analytics (SQLite 대시보드)│    │
+│                         │  - TranslatorService (번역/추출/요약 오케스트레이션) │    │
+│                         │  - AISummary (크기 적응형 요약+마인드맵)         │    │
+│                         │  - NotebookChat (문서 Q&A 스트리밍)             │    │
+│                         │  - MdExtractor (PyMuPDF+YOLO) │    │
+│                         │  - MdTranslator (블록 번역)   │    │
+│                         │  - TextTranslator (단일/배치)  │    │
+│                         │  - CompareService (텍스트 추출/AI분류)          │    │
+│                         │  - SimilarityEngine (Winnowing+시맨틱 임베딩)   │    │
+│                         │  - RuleEngine (21종 규칙 검증) │    │
+│                         │  - ExportService (XLSX/HTML/TXT 내보내기)       │    │
+│                         │  - DocumentExtractor (HTML/PDF/DOCX 추출)       │    │
 │                         └──────────────┬──────────────┘    │
 │                                        │                    │
 │  설치 항목:                             │                    │
@@ -164,29 +172,38 @@ smart-document-platform/
 │   │   ├── translator.py          # Translator API (번역, 추출, AI 요약, Q&A, 마킹, 용어집)
 │   │   └── compare.py             # Compare API (업로드/검증/규칙/AI분류)
 │   │
-│   ├── services/                   # 비즈니스 로직
+│   ├── services/                   # 비즈니스 로직 (28개 모듈)
 │   │   ├── __init__.py
+│   │   │── # ── Explorer 서비스 ──
 │   │   ├── auth.py                 # 사용자/세션 관리 (SQLite)
-│   │   ├── keyword_search.py       # 키워드 기반 검색
+│   │   ├── keyword_search.py       # 키워드 기반 검색 (BM25)
 │   │   ├── vector_search.py        # FAISS 벡터 검색 + 하이브리드 RRF 병합
-│   │   ├── embedding_client.py     # Ollama bge-m3 임베딩 클라이언트
+│   │   ├── embedding_client.py     # 임베딩 클라이언트 (로컬 sentence-transformers / Ollama)
 │   │   ├── reranker.py             # Cross-encoder 리랭킹 (bge-reranker-v2-m3)
-│   │   ├── conversation.py         # 인메모리 대화 세션 저장소 (LRU)
+│   │   ├── conversation.py         # 인메모리 대화 세션 저장소 (LRU, 60분 유휴)
 │   │   ├── query_rewriter.py       # LLM 기반 쿼리 재작성
 │   │   ├── question_router.py      # 질문 유형 분류 (SIMPLE/COMPARE/REASON/CHAT)
 │   │   ├── query_decomposer.py     # 복합 쿼리 분해 (1~3개 서브쿼리)
 │   │   ├── rag_agent.py            # Agentic RAG 반복 검색-판단 루프
+│   │   │── # ── 공통 인프라 ──
 │   │   ├── llm_provider.py         # LLM 프로바이더 추상화 (Ollama/OpenAI 호환)
 │   │   ├── llm_client.py           # LLM 응답 생성 래퍼 (동기/스트리밍)
-│   │   ├── korean_tokenizer.py     # 한국어 형태소 분석 (kiwipiepy/폴백)
-│   │   ├── settings_service.py    # settings.json CRUD, 런타임 config 적용
-│   │   ├── analytics.py           # 접속 통계 서비스
-│   │   ├── compare_service.py     # Compare 텍스트 추출, 규칙 엔진, AI 분류
-│   │   ├── translator_service.py  # 번역/추출/요약 오케스트레이션, 폴더·메타 관리
-│   │   ├── ai_summary.py          # 크기 적응형 AI 요약 + 마인드맵 트리 생성
-│   │   ├── notebook_chat.py       # 문서 Q&A (컨텍스트 폴백, 스트리밍)
-│   │   ├── md_extractor.py        # PDF → Markdown 추출 (PyMuPDF + DocLayout-YOLO)
-│   │   └── md_translator.py       # Markdown 블록 번역 + 병합
+│   │   ├── korean_tokenizer.py     # 한국어 형태소 분석 (kiwipiepy, 폴백: 공백 분리)
+│   │   ├── document_extractor.py   # 문서 텍스트 추출 (HTML/PDF/DOCX)
+│   │   ├── settings_service.py     # settings.json CRUD, 런타임 config 적용
+│   │   ├── analytics.py            # 접속 통계 서비스 (SQLite, 대시보드 집계)
+│   │   │── # ── Notebook(Translator) 서비스 ──
+│   │   ├── translator_service.py   # 번역/추출/요약 오케스트레이션, 폴더·메타 관리
+│   │   ├── ai_summary.py           # 크기 적응형 AI 요약 + 마인드맵 트리 생성
+│   │   ├── notebook_chat.py        # 문서 Q&A (컨텍스트 폴백 체인, 스트리밍)
+│   │   ├── md_extractor.py         # PDF → Markdown 추출 (PyMuPDF + DocLayout-YOLO)
+│   │   ├── md_translator.py        # Markdown 블록 번역 + 병합
+│   │   ├── text_translator.py      # 단일/배치 텍스트 번역 (LLM 기반)
+│   │   │── # ── Verify(Compare) 서비스 ──
+│   │   ├── compare_service.py      # 텍스트 추출, AI 의미 분류
+│   │   ├── similarity_engine.py    # 유사도 검사 (Winnowing L1 + bge-m3 시맨틱 L3)
+│   │   ├── rule_engine.py          # 문서 규칙 검증 엔진 (21종 규칙)
+│   │   └── export_service.py       # 검토 리포트 내보내기 (XLSX/HTML/TXT)
 │   │
 │   └── packages/                   # 오프라인 설치용 wheel 파일
 │       └── (pip download 결과물)
@@ -194,12 +211,18 @@ smart-document-platform/
 ├── data/
 │   ├── menu.json                   # 트리 메뉴 구조
 │   ├── search-index.json           # 키워드 검색 인덱스
+│   ├── vector-index.faiss          # FAISS 벡터 인덱스
+│   ├── vector-index_meta.json      # 벡터 인덱스 메타데이터
 │   ├── auth.db                     # 사용자/세션 SQLite DB (자동 생성)
-│   ├── vector-index/               # FAISS 벡터 인덱스
-│   │   ├── vector-index.faiss      # FAISS 인덱스 파일
-│   │   └── vector-index_meta.json  # 메타데이터 (title, content, url 등)
-│   └── translator/                 # Translator 개인 작업공간
-│       └── {username}/             # 유저별 디렉토리
+│   ├── analytics.db                # 접속 통계 SQLite DB (자동 생성)
+│   ├── settings.json               # 런타임 설정 오버라이드
+│   ├── glossary.json               # 항공 용어집 (26,000+)
+│   ├── compare-rules.json          # Verify 검증 규칙 정의
+│   ├── boilerplate-phrases.json    # 유사도 검사 보일러플레이트 제외 구문
+│   ├── translator/                 # Notebook 개인 작업공간
+│   │   └── {username}/             # 유저별 디렉토리
+│   ├── compare/                    # Verify 비교 세션 데이터
+│   └── verify/                     # Verify 검증 결과
 │
 ├── models/                         # 로컬 ML 모델
 │   └── bge-reranker-v2-m3/         # Cross-encoder 리랭커
@@ -216,39 +239,54 @@ smart-document-platform/
 │   └── converter/                  # 문서 변환기 (DOCX/PDF → HTML, 수식 변환, COM 전처리 포함)
 │
 ├── index.html                     # Explorer (문서 탐색)
-├── translator.html                # Translator (논문 번역)
-├── compare.html                   # Compare (문서 비교/검증)
-├── launcher.html                  # 런처 (시스템 선택)
+├── translator.html                # Notebook(Translator) — PDF 번역·분석
+├── compare.html                   # Verify(Compare) — 문서 비교·검증
+├── launcher.html                  # Launcher (시스템 선택)
 ├── admin.html                     # 관리자 설정
 ├── login.html                     # 로그인
 │
 ├── js/
+│   ├── app.js                     # Explorer 코어 (로딩, 스크롤, 설정)
+│   ├── config.js                  # DISPLAY/AI/EDITOR/UPLOAD/AUTH_CONFIG
+│   ├── auth.js                    # 3-role RBAC, 로그인 리다이렉트
+│   ├── ai-chat.js                 # AI 채팅 기능 (스트리밍, 피드백)
+│   ├── search.js                  # 검색 기능
+│   ├── tree-menu.js               # 트리 메뉴 렌더링
+│   ├── section-nav.js             # 우측 섹션 네비게이터
+│   ├── editor.js                  # Monaco 에디터 기반 문서 편집기 (Explorer)
+│   ├── editor-core.js             # 공통 편집기 코어 (Monaco 래퍼, Strategy 패턴)
+│   ├── banner.js                  # 배너 슬라이드쇼
+│   ├── figure-popup.js            # 그림/표 참조 팝업
+│   ├── bookmarks.js               # 헤딩 북마크
+│   ├── glossary.js                # 용어집 + 약어 하이라이트
+│   ├── keyboard.js                # 키보드 단축키
+│   ├── translator.js              # Notebook 뷰어 (PDF.js, 마킹, AI 분석, 용어집, Q&A)
 │   ├── platform-header.js         # 공통 헤더 (SVG 시스템 스위처, 호버 드롭다운)
 │   ├── platform-footer.js         # 공통 푸터
 │   ├── admin-settings.js          # 관리자 설정 GUI
 │   ├── analytics.js               # 접속 통계 (heartbeat, 대시보드)
-│   ├── app.js                     # Explorer 코어 (로딩, 스크롤, 설정)
-│   ├── auth.js                    # 3-role RBAC, 로그인 리다이렉트
-│   ├── config.js                  # DISPLAY/AI/EDITOR/UPLOAD/AUTH_CONFIG
-│   ├── translator.js              # Translator 뷰어 로직 (PDF.js, 마킹, AI 분석, 용어집)
-│   ├── editor-core.js             # 공통 Markdown 편집기 코어 (Monaco 래퍼, Strategy 패턴)
-│   ├── toast.js                   # 공통 토스트 알림 (Translator/Compare용)
+│   ├── toast.js                   # 공통 토스트 알림 (Notebook/Verify 공용)
 │   ├── lib/pdfjs/                 # PDF.js v3.11.174
-│   ├── lib/markmap/               # Markmap 마인드맵 (d3.min.js, markmap-view.js)
-│   └── ...                        # (기타 Explorer 모듈)
+│   └── lib/markmap/               # Markmap 마인드맵 (d3.min.js, markmap-view.js)
 │
 ├── css/
 │   ├── tokens.css                 # 디자인 토큰 (CSS 변수, 리셋, 글로벌 focus-visible)
+│   ├── components.css             # 공통 컴포넌트 (버튼, 입력, 배지, 스피너, 슬라이더, 툴팁)
+│   ├── modal.css                  # 공통 모달 스타일
 │   ├── scrollbar.css              # 공통 스크롤바 스타일
 │   ├── toast.css                  # 공통 토스트 알림 스타일
-│   ├── components.css             # 공통 컴포넌트 (버튼, 입력, 배지, 스피너)
-│   ├── modal.css                  # 공통 모달 스타일
 │   ├── platform-header.css        # 공통 헤더 스타일
 │   ├── platform-footer.css        # 공통 푸터 스타일
+│   ├── main.css, content.css      # Explorer 레이아웃 및 콘텐츠
+│   ├── ai-chat.css, editor.css    # Explorer 채팅/편집기
+│   ├── tree-menu.css, bookmarks.css, glossary.css  # Explorer 네비게이션
+│   ├── figure-popup.css           # 그림/표 팝업
+│   ├── auth.css                   # 인증 UI
+│   ├── analytics.css              # 접속 통계 대시보드
 │   ├── admin-settings.css         # 관리자 설정 스타일
-│   ├── translator.css             # Translator 뷰어 스타일
-│   ├── compare.css                # Compare 전용 스타일
-│   └── ...                        # (기타 스타일)
+│   ├── translator.css             # Notebook 뷰어 스타일
+│   ├── compare.css                # Verify 전용 스타일
+│   └── images/                    # UI 이미지 (로고, 배너 등)
 │
 └── contents/                      # Explorer HTML 콘텐츠
 ```
@@ -472,21 +510,27 @@ Response:
 - POST 시 홈 → [클라이언트 콘텐츠] → 용어집/정보 순으로 재조립
 - 원자적 저장: tmp 파일 → rename
 
-### 4.9 Compare API
+### 4.9 Verify(Compare) API
 
 ```
-POST /api/compare/upload       — DOCX/PDF 텍스트 추출 (파일 저장 없음)
-POST /api/compare/validate     — 규칙 기반 검증 → 이슈 목록
-GET  /api/compare/rules        — 규칙 설정 조회
-PUT  /api/compare/rules        — 규칙 설정 저장 (admin) 🔒
-POST /api/compare/ai-classify  — AI 의미 분류 (Ollama 구조화 출력)
+POST /api/compare/upload            — DOCX/PDF 텍스트 추출 (파일 저장 없음)
+POST /api/compare/extract-document  — 문서 텍스트 추출
+POST /api/compare/validate          — 규칙 기반 검증 → 이슈 목록
+GET  /api/compare/rules             — 규칙 설정 조회
+PUT  /api/compare/rules             — 규칙 설정 저장 (admin) 🔒
+GET  /api/compare/rule-definitions  — 규칙 정의 목록 조회
+POST /api/compare/ai-classify       — AI 의미 분류 (Ollama 구조화 출력)
+POST /api/compare/similarity        — 유사도 검사 (Winnowing + 시맨틱 임베딩)
+POST /api/compare/export            — 검토 리포트 내보내기 (XLSX/HTML/TXT)
+GET  /api/compare/history           — 세션 이력 조회
+POST /api/compare/history           — 세션 이력 저장
 ```
 
-> **상세**: [11-COMPARE-SYSTEM.md](11-COMPARE-SYSTEM.md) 참조
+> **상세**: [11-COMPARE-SYSTEM.md](11-COMPARE-SYSTEM.md), [12-VERIFY-SYSTEM.md](12-VERIFY-SYSTEM.md) 참조
 
-### 4.10 Translator / Notebook API
+### 4.10 Notebook(Translator) API
 
-Translator 시스템은 PDF 번역 외에 문서 분석(추출/요약/마인드맵), Q&A 챗봇, Markdown 편집 기능을 제공합니다.
+Notebook 시스템은 PDF 번역 외에 문서 분석(추출/요약/마인드맵), Q&A 챗봇, Markdown 편집 기능을 제공합니다.
 
 | 카테고리 | 주요 엔드포인트 | 설명 |
 |----------|----------------|------|
@@ -502,6 +546,9 @@ Translator 시스템은 PDF 번역 외에 문서 분석(추출/요약/마인드�
 | 마킹 | `GET/POST/PUT/DELETE /document/{id}/annotations` | 형광펜 마킹 CRUD |
 | 용어집 | `GET/PUT /glossary` | 개인 용어집 관리 |
 | 다운로드 | `GET /document/{id}/download/zip` | ZIP 일괄 다운로드 |
+| 검색 | `GET /search` | 사용자 문서 내 키워드 검색 |
+| AI 선택 | `POST /ai/selection` | 텍스트 선택 → 번역/요약/마킹 |
+| 모델 | `GET /models` | Ollama 사용 가능 모델 목록 |
 
 > **상세**: [07-TRANSLATOR-SYSTEM.md](07-TRANSLATOR-SYSTEM.md#4-백엔드-api) 참조
 

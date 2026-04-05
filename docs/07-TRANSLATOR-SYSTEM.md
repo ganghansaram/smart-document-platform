@@ -1,4 +1,4 @@
-# Translator / Notebook 시스템 — 설계 문서
+# Notebook(Translator) 시스템 — 설계 문서
 
 PDF 논문 업로드 → 페이지별 온디맨드 번역 → 듀얼 패널(원문/번역) 열람
 문서 분석(추출/요약/마인드맵) → Q&A 챗봇 → Markdown 편집

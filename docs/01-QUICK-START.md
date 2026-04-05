@@ -128,6 +128,12 @@ http://127.0.0.1:8080
 
 **Smart Document Platform 메인 페이지**가 나타나면 성공!
 
+**서브시스템 직접 접속:**
+- Launcher: `http://localhost:8080/launcher.html`
+- Explorer: `http://localhost:8080/`
+- Notebook(Translator): `http://localhost:8080/translator.html`
+- Verify(Compare): `http://localhost:8080/compare.html`
+
 ---
 
 ## 파일 수정 후 확인
