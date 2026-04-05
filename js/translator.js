@@ -136,20 +136,13 @@
 
         // Right panel
         var $panelRight     = document.getElementById('panel-right');
-        var $rightPagesStack = document.getElementById('right-pages-stack');
+        var $rightCanvas    = document.getElementById('right-canvas');
+        var $rightContainer = document.getElementById('right-page-container');
+        var $rightTextLayer = document.getElementById('right-text-layer');
+        var $rightAnnotationLayer = document.getElementById('right-annotation-layer');
         var $rightPlaceholder = document.getElementById('right-placeholder');
         var $webViewContainer = document.getElementById('web-view-container');
         var $webViewContent   = document.getElementById('web-view-content');
-        // Phase 3-A: 우측 PDF 연속 스크롤 상태
-        var _rightWrappers   = [];  // 0-based: 우측 wrapper DOM
-        var _rightRendered   = {};  // pageNum → true (PDF canvas 렌더됨)
-        var _rightPdfDocs    = {};  // pageNum → PDF.js doc (개별 1페이지 PDF)
-        var _rightRenderTasks = {}; // pageNum → renderTask
-        // 기존 호환 (renderRightPage, showRightTranslatedPage 등에서 사용)
-        var $rightContainer = document.createElement('div');
-        var $rightCanvas    = document.createElement('canvas');
-        var $rightTextLayer = document.createElement('div');
-        var $rightAnnotationLayer = document.createElement('div');
 
         // 마킹 플로팅 위젯
         var $markingFloat = document.getElementById('marking-float');
@@ -576,7 +569,6 @@
 
         function destroyPdfs() {
             _teardownAllPages();
-            _teardownRightStack();
             if (leftPdfDoc) { leftPdfDoc.destroy(); leftPdfDoc = null; }
             if (rightPdfDoc && rightPdfDoc !== legacyPdfDoc) { rightPdfDoc.destroy(); }
             rightPdfDoc = null;
@@ -852,137 +844,10 @@
                 } else if (translateEngine === 'web') {
                     updateRightPanel();
                 } else if (translateEngine === 'pdf') {
-                    // Phase 3-A: 우측 PDF 스택 동기화
-                    if (_rightWrappers.length) {
-                        _scrollRightToPage(currentPage);
-                    } else {
-                        updateRightPanel();
-                    }
+                    // PDF 번역: 향후 3-A에서 연속 스크롤 구현 시 scrollIntoView로 대체
+                    updateRightPanel();
                 }
             }, 300);
-        }
-
-        // ── Right Panel: PDF 번역 연속 스크롤 (Phase 3-A) ──
-
-        function _buildRightStack() {
-            // 좌측 wrapper가 없으면 대기
-            if (!_pageWrappers.length) return;
-            _teardownRightStack();
-            $rightPagesStack.innerHTML = '';
-            _rightWrappers = [];
-
-            var frag = document.createDocumentFragment();
-            for (var i = 0; i < totalPages; i++) {
-                var wrapper = document.createElement('div');
-                wrapper.className = 'pdf-page-wrapper right-pdf-wrapper';
-                wrapper.dataset.page = String(i + 1);
-                // 높이는 좌측 wrapper에서 복사
-                var leftW = _pageWrappers[i];
-                if (leftW) {
-                    wrapper.style.width = leftW.style.width;
-                    wrapper.style.height = leftW.style.height;
-                }
-                _rightWrappers.push(wrapper);
-                frag.appendChild(wrapper);
-            }
-            $rightPagesStack.appendChild(frag);
-            // 전체 wrapper에 상태별 콘텐츠 채우기
-            _updateRightWrappers();
-        }
-
-        function _updateRightWrappers() {
-            for (var i = 0; i < _rightWrappers.length; i++) {
-                var pg = i + 1;
-                if (_rightRendered[pg]) continue; // 이미 PDF 렌더됨
-                var wrapper = _rightWrappers[i];
-                var ps = pageStatusCache[String(pg)];
-                var status = ps ? ps.status : 'pending';
-
-                if (status === 'done') {
-                    _renderRightPdfPage(pg);
-                } else if (status === 'translating') {
-                    wrapper.innerHTML =
-                        '<div class="right-page-status">' +
-                        '<div class="spinner page-spinner"></div>' +
-                        '<div>' + ((ps && ps.progress_stage) || '번역 중...') + '</div></div>';
-                } else {
-                    // pending / error
-                    wrapper.innerHTML =
-                        '<div class="right-page-status">' +
-                        '<div class="right-page-num">' + pg + '</div>' +
-                        '<div>' + (status === 'error' ? '오류 — 재시도하세요' : '미번역') + '</div></div>';
-                }
-            }
-        }
-
-        function _renderRightPdfPage(pageNum) {
-            if (_rightRendered[pageNum]) return;
-            var wrapper = _rightWrappers[pageNum - 1];
-            if (!wrapper) return;
-
-            _rightRendered[pageNum] = true;
-            wrapper.innerHTML =
-                '<div class="right-page-status"><div class="spinner page-spinner"></div></div>';
-
-            var url = API + '/api/translator/translated-pdf/' + currentDocId + '/page/' + pageNum;
-            pdfjsLib.getDocument({ url: url, withCredentials: true }).promise.then(function(pdf) {
-                if (!_rightRendered[pageNum]) { pdf.destroy(); return; }
-                _rightPdfDocs[pageNum] = pdf;
-                return pdf.getPage(1);
-            }).then(function(page) {
-                if (!page || !_rightRendered[pageNum]) return;
-                var rightScroll = document.getElementById('right-scroll');
-                var wrapWidth = (rightScroll || $panelRight).clientWidth - 32;
-                var viewport = page.getViewport({ scale: 1 });
-                var fitScale = wrapWidth / viewport.width;
-                var baseScale = Math.min(fitScale, 1.5);
-                var scale = baseScale * zoom;
-                var scaledViewport = page.getViewport({ scale: scale });
-                var outputScale = window.devicePixelRatio || 1;
-
-                var canvas = document.createElement('canvas');
-                canvas.width = Math.floor(scaledViewport.width * outputScale);
-                canvas.height = Math.floor(scaledViewport.height * outputScale);
-                canvas.style.width = Math.floor(scaledViewport.width) + 'px';
-                canvas.style.height = Math.floor(scaledViewport.height) + 'px';
-
-                wrapper.style.width = Math.floor(scaledViewport.width) + 'px';
-                wrapper.style.height = Math.floor(scaledViewport.height) + 'px';
-                wrapper.innerHTML = '';
-                wrapper.appendChild(canvas);
-
-                var ctx = canvas.getContext('2d');
-                var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
-                var task = page.render({ canvasContext: ctx, transform: transform, viewport: scaledViewport });
-                _rightRenderTasks[pageNum] = task;
-                task.promise.then(function() {
-                    delete _rightRenderTasks[pageNum];
-                }).catch(function() { delete _rightRenderTasks[pageNum]; });
-            }).catch(function(err) {
-                delete _rightRendered[pageNum];
-                wrapper.innerHTML =
-                    '<div class="right-page-status">' +
-                    '<div class="right-page-num">' + pageNum + '</div>' +
-                    '<div>PDF 로드 실패</div></div>';
-            });
-        }
-
-        function _teardownRightStack() {
-            for (var key in _rightRenderTasks) {
-                _rightRenderTasks[key].cancel();
-            }
-            _rightRenderTasks = {};
-            for (var key2 in _rightPdfDocs) {
-                _rightPdfDocs[key2].destroy();
-            }
-            _rightPdfDocs = {};
-            _rightRendered = {};
-            _rightWrappers = [];
-        }
-
-        function _scrollRightToPage(pageNum) {
-            var wrapper = _rightWrappers[pageNum - 1];
-            if (wrapper) wrapper.scrollIntoView({ block: 'start' });
         }
 
         // ── Right Panel: Translation PDF or Placeholder ──
@@ -1046,35 +911,31 @@
                 return;
             }
 
-            // PDF 번역 모드 — Phase 3-A: 연속 스크롤 스택
-            if (!activeRailPanel) return;
-            _showDualPanel();
-
-            // 레거시 통번역: 기존 방식 유지 (단일 PDF)
+            // PDF 번역 모드 (기존)
             var ps = pageStatusCache[String(currentPage)];
             var status = ps ? ps.status : 'pending';
+
+            // 레거시 통번역이 있으면 그걸 표시
             if (hasLegacyTranslation && status === 'pending') {
-                $rightPagesStack.style.display = 'none';
                 showRightLegacy();
                 updateToolbarForStatus('legacy');
                 return;
             }
 
-            // 스택이 없으면 생성
-            if (!_rightWrappers.length && _pageWrappers.length) {
-                _buildRightStack();
+            if (status === 'done') {
+                showRightTranslatedPage();
+                updateToolbarForStatus('done');
+            } else if (status === 'translating') {
+                showRightTranslating(ps);
+                updateToolbarForStatus('translating');
+                startPolling();
+            } else if (status === 'error') {
+                showRightError(ps);
+                updateToolbarForStatus('error');
+            } else {
+                showRightPending();
+                updateToolbarForStatus('pending');
             }
-            $rightPlaceholder.style.display = 'none';
-            $webViewContainer.style.display = 'none';
-            $rightPagesStack.style.display = '';
-
-            // wrapper 상태 갱신 + 현재 페이지 툴바
-            _updateRightWrappers();
-            updateToolbarForStatus(status);
-            if (status === 'translating') startPolling();
-
-            // 현재 페이지로 스크롤
-            _scrollRightToPage(currentPage);
         }
 
         // ── 사이드 패널 레이아웃 (Phase 2 V4) ──
@@ -1438,7 +1299,7 @@
         }
 
         function showRightPending() {
-            $rightPagesStack.style.display = 'none';
+            $rightContainer.style.display = 'none';
             $webViewContainer.style.display = 'none';
             // 사이드 패널이 열려있으면 placeholder 표시
             if ($sidePanel.classList.contains('open') || $sidePanel.classList.contains('expand')) {
@@ -1454,9 +1315,9 @@
         }
 
         function showRightTranslating(ps) {
-            if (!activeRailPanel) return;
+            if (!activeRailPanel) return; // 아이콘 레일에서 열지 않았으면 무시
             _showDualPanel();
-            $rightPagesStack.style.display = 'none';
+            $rightContainer.style.display = 'none';
             $webViewContainer.style.display = 'none';
             $rightPlaceholder.style.display = 'flex';
             var stage = (ps && ps.progress_stage) || '번역 준비 중...';
@@ -1468,7 +1329,7 @@
         function showRightError(ps) {
             if (!activeRailPanel) return;
             _showDualPanel();
-            $rightPagesStack.style.display = 'none';
+            $rightContainer.style.display = 'none';
             $webViewContainer.style.display = 'none';
             $rightPlaceholder.style.display = 'flex';
             var errMsg = (ps && ps.error) || '알 수 없는 오류';
@@ -1510,7 +1371,7 @@
         function showRightWebView() {
             if (!activeRailPanel) return;
             _showDualPanel();
-            $rightPagesStack.style.display = 'none';
+            $rightContainer.style.display = 'none';
             // 로딩 상태 표시 (기존 PDF 로드 패턴과 동일)
             $rightPlaceholder.style.display = 'flex';
             $rightPlaceholder.innerHTML =
@@ -1560,7 +1421,7 @@
         function showRightWebViewFull() {
             if (!activeRailPanel) return;
             _showDualPanel();
-            $rightPagesStack.style.display = 'none';
+            $rightContainer.style.display = 'none';
             $rightPlaceholder.style.display = 'flex';
             $rightPlaceholder.innerHTML =
                 '<div class="spinner page-spinner"></div>' +
@@ -2241,13 +2102,8 @@
                 });
             }
 
-            // 우측 동기화: PDF 스택이면 scrollIntoView, 아니면 scrollTop 리셋
-            if (translateEngine === 'pdf' && _rightWrappers.length) {
-                _scrollRightToPage(currentPage);
-            } else {
-                var rightScroll2 = document.getElementById('right-scroll');
-                if (rightScroll2) rightScroll2.scrollTop = 0;
-            }
+            var rightScroll2 = document.getElementById('right-scroll');
+            if (rightScroll2) rightScroll2.scrollTop = 0;
         }
 
         // ── Keyboard shortcuts ──
@@ -2330,8 +2186,6 @@
 
         function syncScroll(source, target) {
             if (!scrollSyncEnabled || scrollSyncing) return;
-            // Phase 3-A: 연속 스크롤 모드에서는 비율 동기화 비활성 (페이지 기반으로 대체)
-            if (_rightWrappers.length > 0) return;
             scrollSyncing = true;
             var maxS = source.scrollHeight - source.clientHeight;
             var maxT = target.scrollHeight - target.clientHeight;

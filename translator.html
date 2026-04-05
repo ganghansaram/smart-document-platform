@@ -276,8 +276,10 @@
                             </div>
                         </div>
                       <div class="panel-scroll" id="right-scroll">
-                        <div class="pdf-pages-stack" id="right-pages-stack" style="display:none">
-                            <!-- Phase 3-A: 우측 PDF 번역 wrapper 스택 (JS 동적 생성) -->
+                        <div class="pdf-page-container" id="right-page-container" style="display:none">
+                            <canvas id="right-canvas"></canvas>
+                            <div class="text-layer" id="right-text-layer"></div>
+                            <div class="annotation-layer" id="right-annotation-layer"></div>
                         </div>
                         <div class="web-view-container" id="web-view-container" style="display:none">
                             <div class="web-view-content markdown-body" id="web-view-content"></div>

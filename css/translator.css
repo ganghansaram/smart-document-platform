@@ -1034,24 +1034,6 @@ body[data-theme="dark"] .side-panel { background: var(--white); }
     top: 0;
 }
 
-/* 우측 PDF 번역 wrapper 상태 표시 */
-.right-page-status {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--text-light);
-    font-size: var(--font-body);
-    gap: var(--space-sm);
-}
-
-.right-page-num {
-    font-size: 2rem;
-    font-weight: 300;
-    color: var(--text-lighter);
-}
-
 /* 우측 패널 기존 구조 유지 */
 .viewer-panel .pdf-page-container {
     position: relative;
