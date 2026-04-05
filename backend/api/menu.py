@@ -17,12 +17,20 @@ _MENU_PATH = Path(__file__).parent.parent.parent / "data" / "menu.json"
 SYSTEM_URLS = {
     "contents/home.html",
     "glossary:terms",
-    "contents/about.html",
+}
+
+# 시스템 고정 항목 label (URL이 없는 카테고리용)
+SYSTEM_LABELS = {
+    "플랫폼 가이드",
 }
 
 
 def _is_system(node: dict) -> bool:
-    return node.get("url", "") in SYSTEM_URLS
+    if node.get("url", "") in SYSTEM_URLS:
+        return True
+    if node.get("label", "") in SYSTEM_LABELS:
+        return True
+    return False
 
 
 def _load_menu() -> list:
@@ -40,11 +48,12 @@ def _save_menu(data: list) -> None:
 
 
 def _extract_system_items(menu: list) -> dict:
-    """시스템 항목을 URL → node 맵으로 추출"""
+    """시스템 항목을 키(URL 또는 label) → node 맵으로 추출"""
     result = {}
     for node in menu:
         if _is_system(node):
-            result[node["url"]] = node
+            key = node.get("url") or node.get("label", "")
+            result[key] = node
     return result
 
 
@@ -68,8 +77,8 @@ def _reassemble(content: list, system_items: dict) -> list:
             result.append(node)
 
     # 후미 시스템 항목 (순서 고정)
-    for url in ["glossary:terms", "contents/about.html"]:
-        item = system_items.get(url)
+    for key in ["플랫폼 가이드", "glossary:terms"]:
+        item = system_items.get(key)
         if item:
             result.append(item)
 

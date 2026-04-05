@@ -1162,3 +1162,278 @@ body[data-theme="dark"] .section-links a:hover .link-title {
     color: var(--active-color);
 }
 
+/* ===================================
+   플랫폼 가이드 콘텐츠 (.po-* 클래스)
+   platform-overview.html 등 가이드 페이지 전용
+   =================================== */
+
+.po-hero {
+    background: linear-gradient(135deg, var(--primary-navy) 0%, var(--secondary-navy) 60%, var(--active-color) 100%);
+    color: #fff;
+    border-radius: var(--radius-lg);
+    padding: 40px 48px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+}
+.po-hero::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+}
+.po-hero-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 12px;
+}
+.po-hero h2 {
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    margin-bottom: 16px !important;
+    line-height: 1.35 !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 0 !important;
+}
+.po-hero p {
+    font-size: 15px;
+    line-height: 1.75;
+    color: rgba(255,255,255,0.85);
+    max-width: 640px;
+    margin-bottom: 0;
+}
+.po-badge-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+}
+.po-badge {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* 섹션 타이틀 */
+.po-section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-navy);
+    margin-bottom: 8px;
+    margin-top: 48px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+}
+.po-section-subtitle {
+    font-size: 14px;
+    color: var(--text-light);
+    margin-bottom: 28px;
+    margin-top: 4px;
+}
+
+/* 시스템 카드 */
+.po-system-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-sm);
+}
+.po-system-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+.po-system-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+.po-system-icon-blue   { background: rgba(44,82,130,0.12); }
+.po-system-icon-green  { background: rgba(34,197,94,0.12); }
+.po-system-icon-amber  { background: rgba(245,158,11,0.12); }
+.po-system-icon-purple { background: rgba(139,92,246,0.12); }
+
+.po-system-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--primary-navy);
+    margin: 0;
+}
+.po-system-en {
+    font-size: 12px;
+    color: var(--text-light);
+    font-weight: 400;
+    margin-left: 6px;
+}
+.po-system-tag {
+    font-size: 11px;
+    border-radius: 10px;
+    padding: 2px 10px;
+    font-weight: 600;
+    margin-left: auto;
+}
+.po-tag-stable { background: rgba(34,197,94,0.12); color: #16a34a; }
+.po-tag-plan   { background: rgba(107,114,128,0.10); color: #6b7280; }
+
+.po-system-desc {
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+.po-feat-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 20px;
+    list-style: none;
+    padding: 0;
+    margin-bottom: 20px;
+}
+.po-feat-list li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.6;
+}
+.po-feat-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--color-success);
+    font-size: 11px;
+    top: 2px;
+}
+
+/* 스크린샷 */
+.po-screenshot {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    margin: 16px 0 4px;
+}
+.po-screenshot img {
+    width: 100%;
+    display: block;
+}
+.po-screenshot-caption {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 6px;
+    margin-bottom: 4px;
+}
+
+/* 두 컬럼 스크린샷 */
+.po-screenshot-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+}
+
+/* 가치 카드 그리드 */
+.po-value-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 20px 0 32px;
+}
+.po-value-card {
+    background: var(--bg-gray);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    border: 1px solid var(--border-color);
+}
+.po-value-card-icon {
+    font-size: 26px;
+    margin-bottom: 10px;
+}
+.po-value-card h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 6px;
+}
+.po-value-card p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin: 0;
+}
+
+/* 사양 테이블 */
+.po-spec-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 16px;
+    margin-bottom: 24px;
+}
+.po-spec-table th {
+    background: var(--primary-navy);
+    color: #fff;
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+}
+.po-spec-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    vertical-align: top;
+}
+.po-spec-table tr:nth-child(even) td {
+    background: var(--bg-gray);
+}
+.po-spec-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* 인용/강조 박스 */
+.po-callout {
+    background: var(--active-color-subtle);
+    border-left: 4px solid var(--active-color);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 16px 20px;
+    margin: 24px 0;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-primary);
+}
+
+/* 다크모드 대응 */
+body[data-theme="dark"] .po-system-card {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--border-color);
+}
+body[data-theme="dark"] .po-value-card {
+    background: rgba(255,255,255,0.04);
+}
+body[data-theme="dark"] .po-section-title {
+    color: var(--active-color);
+}
+body[data-theme="dark"] .po-system-name {
+    color: var(--active-color);
+}
+

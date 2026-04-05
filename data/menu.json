@@ -168,11 +168,33 @@
     ]
   },
   {
-    "label": "용어집",
-    "url": "glossary:terms"
+    "label": "플랫폼 가이드",
+    "icon": "info",
+    "children": [
+      {
+        "label": "플랫폼 소개",
+        "url": "contents/guide/platform-overview.html"
+      },
+      {
+        "label": "Explorer 사용법",
+        "url": "contents/guide/explorer-guide.html"
+      },
+      {
+        "label": "Notebook 사용법",
+        "url": "contents/guide/notebook-guide.html"
+      },
+      {
+        "label": "Verify 사용법",
+        "url": "contents/guide/verify-guide.html"
+      },
+      {
+        "label": "관리자 가이드",
+        "url": "contents/guide/admin-guide.html"
+      }
+    ]
   },
   {
-    "label": "정보",
-    "url": "contents/about.html"
+    "label": "용어집",
+    "url": "glossary:terms"
   }
 ]
