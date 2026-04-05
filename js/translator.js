@@ -2661,7 +2661,9 @@
             });
         }
 
-        $leftTextLayer.addEventListener('mouseup', function() {
+        // Phase 2-α: 이벤트 위임 — 동적 생성된 text-layer에서 mouseup 감지
+        $leftPagesStack.addEventListener('mouseup', function(e) {
+            if (!e.target.closest('.text-layer')) return;
             setTimeout(function() {
                 var selection = window.getSelection();
                 if (!selection || selection.isCollapsed) {
@@ -2864,8 +2866,8 @@
             });
         }
 
-        // 하이라이트 클릭 → popover
-        $leftAnnotationLayer.addEventListener('click', function(e) {
+        // 하이라이트 클릭 → popover (이벤트 위임)
+        $leftPagesStack.addEventListener('click', function(e) {
             var target = e.target;
             if (!target.classList.contains('highlight')) return;
             e.stopPropagation();
@@ -3620,24 +3622,28 @@
 
             if (docId === currentDocId) {
                 // 같은 문서: 페이지 이동 + 패널 열기 + 하이라이트
-                goToPage(page);
-                _openPanelForSearchSource(source);
-                if (source === 'translated' || source === 'memo') {
-                    setTimeout(function() { _highlightSearchTermsInPanel(_lastSearchQuery); }, 600);
-                }
+                // setTimeout: closeSearchOverlay DOM 변경 후 scrollIntoView 보장
+                setTimeout(function() {
+                    goToPage(page);
+                    _openPanelForSearchSource(source);
+                    if (source === 'translated' || source === 'memo') {
+                        setTimeout(function() { _highlightSearchTermsInPanel(_lastSearchQuery); }, 600);
+                    }
+                }, 50);
             } else {
                 // 다른 문서: 메타 fetch → 뷰어 열기 → 페이지 이동
                 fetch(API + '/api/translator/document/' + encodeURIComponent(docId), { credentials: 'include' })
                     .then(function(r) { return r.json(); })
                     .then(function(meta) {
                         openViewer(docId, meta.pages || 1);
+                        // PDF 로드 + wrapper 생성 완료 대기 후 페이지 이동
                         setTimeout(function() {
                             if (page > 1) goToPage(page);
                             _openPanelForSearchSource(source);
                             if (source === 'translated' || source === 'memo') {
                                 setTimeout(function() { _highlightSearchTermsInPanel(_lastSearchQuery); }, 600);
                             }
-                        }, 500);
+                        }, 1500);
                     })
                     .catch(function(err) {
                         console.error('[Search] doc open error:', err);
@@ -5070,8 +5076,8 @@
             }
         });
 
-        // ── 좌측→우측: PDF box 클릭 → MD 블록 스크롤 ──
-        $leftContainer.addEventListener('click', function (e) {
+        // ── 좌측→우측: PDF box 클릭 → MD 블록 스크롤 (이벤트 위임) ──
+        $leftPagesStack.addEventListener('click', function (e) {
             var boxEl = e.target.closest('.nav-box');
             if (!boxEl) return;
             e.stopPropagation(); // 텍스트 선택/annotation 이벤트 방지
