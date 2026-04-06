@@ -10,7 +10,7 @@ from pathlib import Path
 
 # Ollama 서버 설정
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = "gemma3:4b"
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3:4b")
 
 # LLM 프로바이더 설정
 LLM_PROVIDER = "ollama"           # "ollama" | "openai_compat"

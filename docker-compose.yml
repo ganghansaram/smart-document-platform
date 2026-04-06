@@ -1,0 +1,44 @@
+services:
+  # ── 백엔드 (FastAPI) ──
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sdp-backend
+    restart: unless-stopped
+    environment:
+      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma3:4b}
+      - CORS_ORIGINS=http://localhost
+      - KMP_DUPLICATE_LIB_OK=TRUE
+    volumes:
+      - ${DATA_DIR:-./data}:/app/data
+      - ${CONTENTS_DIR:-./contents}:/app/contents
+      - ${MODELS_DIR:-./models}:/app/models:ro
+      - ${BACKUPS_DIR:-./backups}:/app/backups
+      - ./logs:/app/backend/logs
+    # 외부 비노출 (Nginx가 프록시)
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── 프론트엔드 (Nginx 리버스 프록시) ──
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nginx
+    container_name: sdp-nginx
+    restart: unless-stopped
+    ports:
+      - "${PORT:-80}:80"
+    volumes:
+      - ${DATA_DIR:-./data}:/app/data:ro
+      - ${CONTENTS_DIR:-./contents}:/app/contents:ro
+    depends_on:
+      backend:
+        condition: service_healthy

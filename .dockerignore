@@ -1,0 +1,54 @@
+# ── Docker 빌드 제외 ──
+# 빌드 컨텍스트에서 불필요한 대용량/민감 파일 제외
+
+# Git
+.git
+.gitignore
+
+# Python 가상환경
+.venv
+venv
+ENV
+
+# ML 모델 (볼륨 마운트로 제공)
+models/
+
+# 런타임 데이터 (볼륨 마운트로 제공)
+data/
+contents/
+backups/
+logs/
+
+# 윈도우 전용 whl (Docker에서는 pip install로 리눅스 네이티브 설치)
+backend/packages/
+
+# 빌드/테스트 산출물
+backend/__pycache__
+backend/**/__pycache__
+tools/__pycache__
+tools/**/__pycache__
+tests/
+workbench/
+*.pyc
+
+# 에디터
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker 산출물
+*.tar
+.env
+
+# Claude/Playwright
+.claude/
+.playwright-mcp/
+
+# 문서 (docs/는 Nginx 이미지에서 COPY하므로 제외하지 않음)
+README.md
+CLAUDE.md

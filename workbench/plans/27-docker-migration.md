@@ -81,18 +81,18 @@
 ## 2. Phase 구성
 
 ### Phase 1: Docker 기반 파일 작성
-- [ ] `Dockerfile` — 백엔드 이미지 (Python + 의존성 + tools/)
-- [ ] `docker/nginx.conf` — 리버스 프록시 + 정적 파일 + 보안 차단
-- [ ] `docker/Dockerfile.nginx` — 프론트엔드 이미지 (Nginx + HTML/JS/CSS)
-- [ ] `docker/config.docker.js` — Docker 전용 프론트엔드 설정
-- [ ] `docker-compose.yml` — 서비스 오케스트레이션
-- [ ] `.env.example` — 설정 템플릿
-- [ ] `.dockerignore` — 빌드 제외 목록
+- [x] `Dockerfile` — 백엔드 이미지 (Python + 의존성 + tools/)
+- [x] `docker/nginx.conf` — 리버스 프록시 + 정적 파일 + 보안 차단
+- [x] `docker/Dockerfile.nginx` — 프론트엔드 이미지 (Nginx + HTML/JS/CSS)
+- [x] `docker/config.docker.js` — Docker 전용 프론트엔드 설정
+- [x] `docker-compose.yml` — 서비스 오케스트레이션
+- [x] `.env.example` — 설정 템플릿
+- [x] `.dockerignore` — 빌드 제외 목록
 
 ### Phase 2: 코드 조정 (최소 변경)
-- [ ] `config.py` — 변경 거의 없음 (상대경로 기반, 환경변수 오버라이드 이미 지원)
-- [ ] `CORS_ORIGINS` — Docker에서는 불필요하지만 윈도우 호환성 위해 유지
-- [ ] `config.js` — 원본 수정 없음 (Nginx가 Docker 전용 버전으로 오버라이드)
+- [x] `config.py` — `OLLAMA_MODEL`을 `os.getenv()` 연동 (1행 변경)
+- [x] `CORS_ORIGINS` — 기존 `os.getenv()` 유지, Docker에서는 compose가 주입
+- [x] `config.js` — 원본 수정 없음 (Nginx가 Docker 전용 버전으로 오버라이드)
 
 ### Phase 3: 로컬 빌드·검증
 - [ ] 이 PC(Windows)에서 Docker Desktop으로 빌드·실행 테스트
@@ -694,3 +694,76 @@ docker image prune -a                         # 미사용 이미지 정리
 - Ollama는 Docker에 포함하지 않음 (기존대로 별도 GPU 서버 연계)
 - `backend/packages/*.whl`은 윈도우용 — Docker 빌드 시 pip install로 리눅스 네이티브 설치
 - Phase 5 완료 시 섹션 7을 `OPERATIONS.md`로 별도 산출
+
+---
+
+## 9. Phase 1 완료 리뷰 (2026-04-07)
+
+### 산출물
+
+| 파일 | 크기 | 계획서 대응 |
+|------|------|------------|
+| `Dockerfile` | 1.4KB | 3-4절 백엔드 이미지 |
+| `docker/Dockerfile.nginx` | 0.7KB | 3-5절 프론트엔드 이미지 |
+| `docker/nginx.conf` | 2.2KB | 3-2절 Nginx 라우팅 |
+| `docker/config.docker.js` | 2.4KB | 3-3절 config.js 이중 환경 |
+| `docker-compose.yml` | 1.3KB | 1절 목표 아키텍처 |
+| `.env.example` | 0.5KB | 3-1절 외부 설정 |
+| `.dockerignore` | 0.8KB | Phase 1 빌드 최적화 |
+| `deploy.sh` | 1.7KB | Phase 4 배포 스크립트 |
+| `.gitignore` 추가분 | — | `.env`, `*.tar` 제외 |
+
+### 계획서 대비 변경/보강 사항
+
+1. **healthcheck 추가** — `docker-compose.yml`에 `/api/health` 기반 헬스체크 + Nginx `depends_on: condition: service_healthy`. 계획서에 없었으나 백엔드 모델 로딩 시간을 고려하면 필수
+2. **config.js 캐시 금지** — `location = /js/config.js`에 `Cache-Control: no-store` 추가. 7일 캐시가 걸리면 설정 변경이 브라우저에 반영 안 됨
+3. **`.git` 차단 강화** — `location ~ /\.git`(정규식)으로 `.gitignore` 등도 차단
+4. **CORS 정리** — `http://nginx`(컨테이너 내부 이름, 브라우저 Origin 아님) 제거
+5. **logs 경로 통일** — 계획서 1절 아키텍처(`./logs/`)와 일치하도록 `./logs:/app/backend/logs` 적용
+6. **deploy.sh 안전장치** — `cd "$(dirname "$0")"` + BSD grep 호환 포트 출력
+7. **`try_files` 변경** — 계획서 3-2절은 `/index.html` SPA 폴백이었으나, 플랫폼은 multi-page이므로 `=404`가 적절. 계획서 예시와 의도적 차이
+8. **`docs/` COPY 추가** — 계획서 3-5절에 없었으나 가이드 페이지 서빙에 필요
+
+### Phase 2에서 처리할 항목
+
+| 항목 | 근거 | 우선도 |
+|------|------|--------|
+| `config.py` `OLLAMA_MODEL` 환경변수 연동 | `os.getenv()` 미사용 → `.env`의 `OLLAMA_MODEL` 값이 첫 기동 시 무시됨 | 필수 |
+| `config.py` `LLM_PROVIDER` 등 추가 환경변수 | Docker 환경에서 settings.json 없이도 `.env`로 제어 가능하면 편의성 향상 | 선택 |
+
+### 검증 대기 항목 (Phase 3)
+
+- [ ] `backend/packages/`(152개 whl, 윈도우 전용)가 `.dockerignore`로 제외 → pip install이 리눅스 네이티브로 정상 설치되는지
+- [ ] babeldoc ONNX 캐시가 빌드 시 다운로드되는지 (실패 시 WARN 출력, 런타임 재시도)
+- [ ] `tools/` subprocess 호출이 Docker 내 경로(`/app/tools/`)에서 정상 동작하는지
+- [ ] `data/` 화이트리스트 3개만 Nginx에서 접근 가능하고 나머지 403인지
+- [ ] 쿠키 `samesite=lax` + Nginx 프록시 조합에서 세션이 유지되는지
+- [ ] `css/images/` 내 `cloud.mp4`가 `.dockerignore`에 걸리지 않는지 → .dockerignore에 `*.mp4` 없으므로 안전
+
+### 알려진 제한
+
+- `WORD_COM_PREPROCESS`(Win32 COM)는 Linux Docker에서 사용 불가 → `config.py` 기본값 `False`이므로 영향 없음
+- `pywin32`는 requirements.txt에서 주석 처리됨 → Docker 빌드에 영향 없음
+
+### Phase 2 완료 리뷰 (2026-04-07)
+
+**변경 사항**: `config.py:13` 1행 — `OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3:4b")`
+
+**검증 결과**:
+
+| 항목 | 결과 |
+|------|------|
+| 환경변수 오버라이드 | PASS — `os.getenv()` 동적 치환 확인 |
+| 경로 정합성 (9개 경로) | PASS — `Path(__file__).parent.parent` = `/app/` 기준, 볼륨 매핑과 일치 |
+| .dockerignore vs COPY 충돌 | PASS — Nginx/Backend 모두 충돌 없음 |
+| 볼륨 대상 제외 | PASS — data/, contents/, models/, backups/, logs/ 모두 제외 |
+| Nginx 라우팅 규칙 | PASS — 화이트리스트 3개, 보안 차단 7개, 프록시/스트리밍 정상 |
+| config.js 키 정합성 | PASS — 5개 CONFIG 블록 키 완전 일치 |
+| docker-compose.yml 구조 | PASS — YAML 파싱, 서비스 2개, healthcheck, depends_on 확인 |
+| 윈도우 기존 실행 호환 | PASS — 백엔드 API 200, 프론트엔드 정적 파일 200 |
+| 브라우저 테스트 | PASS — 로그인 → Launcher → Explorer → Notebook → Verify 모두 정상 로드 |
+
+**미변경 (계획서 원문 준수)**:
+- `CORS_ORIGINS` — 기존 `os.getenv()` 유지, 추가 변경 불필요
+- `config.js` — 원본 수정 없음 (Docker에서 Nginx 오버라이드)
+- `LLM_PROVIDER` 등 — 선택 사항, settings.json 런타임 제어 가능하므로 생략

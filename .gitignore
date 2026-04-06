@@ -89,3 +89,7 @@ workbench/screenshots/
 
 # Screenshots (test artifacts in repo root)
 /*.png
+
+# Docker runtime
+.env
+*.tar

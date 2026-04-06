@@ -1,0 +1,26 @@
+# ── Smart Document Platform: Frontend (Nginx) Image ──
+# 정적 자산 + Nginx 리버스 프록시
+FROM nginx:1.27-alpine
+
+# 기본 설정 제거, 커스텀 설정 복사
+RUN rm /etc/nginx/conf.d/default.conf
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+# ── 정적 프론트엔드 자산 ──
+# HTML 페이지
+COPY *.html      /app/frontend/
+COPY favicon.svg /app/frontend/
+
+# CSS + 이미지
+COPY css/ /app/frontend/css/
+
+# JS (코어 + 라이브러리 + Monaco)
+COPY js/ /app/frontend/js/
+
+# 문서 (가이드 페이지 등)
+COPY docs/ /app/frontend/docs/
+
+# Docker 전용 config.js 오버라이드
+COPY docker/config.docker.js /app/docker/config.docker.js
+
+EXPOSE 80
