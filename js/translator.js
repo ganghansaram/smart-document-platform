@@ -79,7 +79,7 @@
 
         // Scroll sync
         var scrollSyncEnabled = true; // 기본 ON — 좌측 스크롤 시 우측 페이지 동기화
-        var scrollSyncing = false;  // 재진입 방지
+
 
         // ── DOM refs ──
         var $viewList       = document.getElementById('view-list');
@@ -99,40 +99,14 @@
         var $zoomOut        = document.getElementById('zoom-out');
         var $scrollSyncBtn  = document.getElementById('scroll-sync-btn');
 
-        // Left panel (Phase 2-α: 연속 스크롤)
+        // Left panel
         var $panelLeft      = document.getElementById('panel-left');
         var $leftScroll     = document.getElementById('left-scroll');
-        var $leftPagesStack = document.getElementById('left-pages-stack');
-        var _pageViewports  = [];   // 0-based: 각 페이지의 viewport (scale=1)
-        var _pageWrappers   = [];   // 0-based: 각 페이지의 wrapper DOM
-        var _renderedPages  = {};   // pageNum → true (현재 렌더된 페이지)
-        var _leftObserver   = null; // IntersectionObserver
-        var _leftRenderTasks = {};  // pageNum → renderTask
-        var _BUFFER = 2;            // 가시 범위 ± 버퍼
-
-        // 호환 레이어: 기존 코드가 $leftCanvas/$leftContainer/$leftTextLayer/$leftAnnotationLayer를
-        // 참조하는 곳이 다수. currentPage wrapper의 자식 요소를 가리키는 변수 (동적 갱신).
-        var _dummyDiv = document.createElement('div');
-        var _dummyCanvas = document.createElement('canvas');
-        var $leftContainer = _dummyDiv;
-        var $leftCanvas = _dummyCanvas;
-        var $leftTextLayer = _dummyDiv;
-        var $leftAnnotationLayer = _dummyDiv;
-
-        function _syncLeftRefs() {
-            var w = _pageWrappers[currentPage - 1];
-            if (w && _renderedPages[currentPage]) {
-                $leftContainer = w;
-                $leftCanvas = w.querySelector('canvas') || _dummyCanvas;
-                $leftTextLayer = w.querySelector('.text-layer') || _dummyDiv;
-                $leftAnnotationLayer = w.querySelector('.annotation-layer') || _dummyDiv;
-            } else {
-                $leftContainer = _dummyDiv;
-                $leftCanvas = _dummyCanvas;
-                $leftTextLayer = _dummyDiv;
-                $leftAnnotationLayer = _dummyDiv;
-            }
-        }
+        var $leftCanvas     = document.getElementById('left-canvas');
+        var $leftContainer  = document.getElementById('left-page-container');
+        var $leftTextLayer  = document.getElementById('left-text-layer');
+        var $leftAnnotationLayer = document.getElementById('left-annotation-layer');
+        var leftRenderTask  = null;
 
         // Right panel
         var $panelRight     = document.getElementById('panel-right');
@@ -568,7 +542,7 @@
         }
 
         function destroyPdfs() {
-            _teardownAllPages();
+            if (leftRenderTask) { leftRenderTask.cancel(); leftRenderTask = null; }
             // 우측 PDF 캐시 정리
             for (var key in _rightPdfCache) {
                 if (_rightPdfCache[key] !== legacyPdfDoc) _rightPdfCache[key].destroy();
@@ -594,132 +568,27 @@
                 .catch(function() { if (cb) cb(); });
         }
 
-        // ── Left Panel: Original PDF (Phase 2-α 연속 스크롤) ──
+        // ── Left Panel: Original PDF (단일 페이지 렌더) ──
 
         function loadLeftPdf() {
             if (leftPdfDoc) { leftPdfDoc.destroy(); leftPdfDoc = null; }
-            _teardownAllPages();
-            $leftPagesStack.innerHTML = '';
-            _pageViewports = [];
-            _pageWrappers = [];
-
+            if (leftRenderTask) { leftRenderTask.cancel(); leftRenderTask = null; }
             var url = API + '/api/translator/pdf/' + currentDocId;
             pdfjsLib.getDocument({ url: url, withCredentials: true }).promise.then(function(pdf) {
                 leftPdfDoc = pdf;
                 totalPages = pdf.numPages;
                 updatePageNav();
-
-                // 모든 페이지 viewport 수집 → wrapper 생성
-                var promises = [];
-                for (var i = 1; i <= totalPages; i++) {
-                    promises.push(pdf.getPage(i));
-                }
-                return Promise.all(promises);
-            }).then(function(pages) {
-                var wrapWidth = ($leftScroll || $panelLeft).clientWidth - 32;
-                var frag = document.createDocumentFragment();
-
-                for (var i = 0; i < pages.length; i++) {
-                    var vp = pages[i].getViewport({ scale: 1 });
-                    _pageViewports.push(vp);
-
-                    var fitScale = wrapWidth / vp.width;
-                    var baseScale = Math.min(fitScale, 1.5);
-                    var scale = baseScale * zoom;
-                    var svp = pages[i].getViewport({ scale: scale });
-
-                    var wrapper = document.createElement('div');
-                    wrapper.className = 'pdf-page-wrapper';
-                    wrapper.dataset.page = String(i + 1);
-                    wrapper.style.width = Math.floor(svp.width) + 'px';
-                    wrapper.style.height = Math.floor(svp.height) + 'px';
-                    wrapper.style.setProperty('--scale-factor', scale);
-                    _pageWrappers.push(wrapper);
-                    frag.appendChild(wrapper);
-                }
-
-                $leftPagesStack.appendChild(frag);
-                _setupLeftObserver();
-
-                // 초기 페이지로 스크롤
-                if (currentPage > 1 && _pageWrappers[currentPage - 1]) {
-                    _pageWrappers[currentPage - 1].scrollIntoView({ block: 'start' });
-                }
+                renderLeftPage(currentPage);
             }).catch(function(err) {
                 console.error('[PDF.js] left load error:', err);
             });
         }
 
-        function _setupLeftObserver() {
-            if (_leftObserver) _leftObserver.disconnect();
-
-            _leftObserver = new IntersectionObserver(function(entries) {
-                var bestPage = currentPage;
-                var bestRatio = 0;
-
-                for (var i = 0; i < entries.length; i++) {
-                    var entry = entries[i];
-                    var pg = parseInt(entry.target.dataset.page, 10);
-
-                    if (entry.isIntersecting && entry.intersectionRatio > bestRatio) {
-                        bestRatio = entry.intersectionRatio;
-                        bestPage = pg;
-                    }
-                }
-
-                // currentPage 갱신 + 우측 패널 동기화
-                if (bestPage !== currentPage && bestRatio > 0) {
-                    currentPage = bestPage;
-                    updatePageNav();
-                    _syncLeftRefs();
-                    _emitPageChanged();
-                }
-
-                // 가시 범위 ± 버퍼 렌더/해제
-                _updateVisiblePages();
-            }, {
-                root: $leftScroll,
-                threshold: [0, 0.1, 0.25, 0.5, 0.75]
-            });
-
-            for (var i = 0; i < _pageWrappers.length; i++) {
-                _leftObserver.observe(_pageWrappers[i]);
-            }
-
-            // 초기 렌더
-            _updateVisiblePages();
-        }
-
-        function _updateVisiblePages() {
-            var min = Math.max(1, currentPage - _BUFFER);
-            var max = Math.min(totalPages, currentPage + _BUFFER);
-
-            // 범위 밖 해제
-            for (var key in _renderedPages) {
-                var pg = parseInt(key, 10);
-                if (pg < min || pg > max) {
-                    _teardownPage(pg);
-                }
-            }
-            // 범위 안 렌더
-            for (var p = min; p <= max; p++) {
-                if (!_renderedPages[p]) {
-                    renderLeftPage(p);
-                }
-            }
-        }
-
         function renderLeftPage(pageNum) {
-            if (!leftPdfDoc || _renderedPages[pageNum]) return;
-            var wrapper = _pageWrappers[pageNum - 1];
-            if (!wrapper) return;
-
-            _renderedPages[pageNum] = true;
+            if (!leftPdfDoc) return;
+            if (leftRenderTask) { leftRenderTask.cancel(); leftRenderTask = null; }
 
             leftPdfDoc.getPage(pageNum).then(function(page) {
-                // 이미 해제된 경우 (빠른 스크롤)
-                if (!_renderedPages[pageNum]) return;
-
                 var wrapWidth = ($leftScroll || $panelLeft).clientWidth - 32;
                 var viewport = page.getViewport({ scale: 1 });
                 var fitScale = wrapWidth / viewport.width;
@@ -727,115 +596,55 @@
                 var scale = baseScale * zoom;
                 var scaledViewport = page.getViewport({ scale: scale });
 
-                // 클릭 네비게이션용 (현재 페이지일 때만)
-                if (pageNum === currentPage) {
-                    _navScale = scale;
-                    _navPdfViewport = viewport;
-                }
+                // 클릭 네비게이션용 scale/viewport 저장
+                _navScale = scale;
+                _navPdfViewport = viewport;
 
                 var outputScale = window.devicePixelRatio || 1;
 
-                // Canvas
-                var canvas = document.createElement('canvas');
-                canvas.width = Math.floor(scaledViewport.width * outputScale);
-                canvas.height = Math.floor(scaledViewport.height * outputScale);
-                canvas.style.width = Math.floor(scaledViewport.width) + 'px';
-                canvas.style.height = Math.floor(scaledViewport.height) + 'px';
+                $leftCanvas.width = Math.floor(scaledViewport.width * outputScale);
+                $leftCanvas.height = Math.floor(scaledViewport.height * outputScale);
+                $leftCanvas.style.width = Math.floor(scaledViewport.width) + 'px';
+                $leftCanvas.style.height = Math.floor(scaledViewport.height) + 'px';
 
-                // Wrapper 크기 갱신 + scale-factor (PDF.js text-layer 경고 방지)
-                wrapper.style.width = Math.floor(scaledViewport.width) + 'px';
-                wrapper.style.height = Math.floor(scaledViewport.height) + 'px';
-                wrapper.style.setProperty('--scale-factor', scale);
+                $leftContainer.style.width = Math.floor(scaledViewport.width) + 'px';
+                $leftContainer.style.height = Math.floor(scaledViewport.height) + 'px';
 
-                // Text layer
-                var textLayer = document.createElement('div');
-                textLayer.className = 'text-layer';
-                textLayer.style.width = Math.floor(scaledViewport.width) + 'px';
-                textLayer.style.height = Math.floor(scaledViewport.height) + 'px';
-                textLayer.style.setProperty('--scale-factor', scale);
+                $leftTextLayer.innerHTML = '';
+                $leftTextLayer.style.width = Math.floor(scaledViewport.width) + 'px';
+                $leftTextLayer.style.height = Math.floor(scaledViewport.height) + 'px';
+                $leftTextLayer.style.setProperty('--scale-factor', scale);
 
-                // Annotation layer
-                var annLayer = document.createElement('div');
-                annLayer.className = 'annotation-layer';
-                annLayer.style.width = Math.floor(scaledViewport.width) + 'px';
-                annLayer.style.height = Math.floor(scaledViewport.height) + 'px';
+                $leftAnnotationLayer.style.width = Math.floor(scaledViewport.width) + 'px';
+                $leftAnnotationLayer.style.height = Math.floor(scaledViewport.height) + 'px';
 
-                // DOM 삽입
-                wrapper.innerHTML = '';
-                wrapper.appendChild(canvas);
-                wrapper.appendChild(textLayer);
-                wrapper.appendChild(annLayer);
-
-                var ctx = canvas.getContext('2d');
+                var ctx = $leftCanvas.getContext('2d');
                 var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
-                var renderTask = page.render({ canvasContext: ctx, transform: transform, viewport: scaledViewport });
-                _leftRenderTasks[pageNum] = renderTask;
-
-                renderTask.promise.then(function() {
-                    delete _leftRenderTasks[pageNum];
+                $leftContainer.style.opacity = '0';
+                leftRenderTask = page.render({ canvasContext: ctx, transform: transform, viewport: scaledViewport });
+                leftRenderTask.promise.then(function() {
+                    leftRenderTask = null;
+                    $leftContainer.style.transition = 'opacity 0.15s ease';
+                    $leftContainer.style.opacity = '1';
                     return page.getTextContent();
                 }).then(function(textContent) {
-                    if (!_renderedPages[pageNum]) return; // 해제 체크
                     if (textContent) {
                         pdfjsLib.renderTextLayer({
                             textContentSource: textContent,
-                            container: textLayer,
+                            container: $leftTextLayer,
                             viewport: scaledViewport,
                             textDivs: [],
                         });
                     }
-                    // 마킹 복원 (해당 페이지)
-                    _renderAnnotationsForPage(pageNum, annLayer);
-                    // 클릭 네비게이션 + 호환 레이어 갱신
-                    if (pageNum === currentPage) {
-                        _syncLeftRefs();
-                        _renderNavBoxes();
-                    }
-                }).catch(function() { delete _leftRenderTasks[pageNum]; });
+                    // 마킹 복원
+                    if (typeof renderAnnotations === 'function') renderAnnotations();
+                    // 클릭 네비게이션 오버레이 갱신
+                    _renderNavBoxes();
+                }).catch(function() { leftRenderTask = null; });
             });
         }
 
-        function _teardownPage(pageNum) {
-            if (!_renderedPages[pageNum]) return;
-            delete _renderedPages[pageNum];
 
-            // 진행 중 렌더 취소
-            if (_leftRenderTasks[pageNum]) {
-                _leftRenderTasks[pageNum].cancel();
-                delete _leftRenderTasks[pageNum];
-            }
-
-            var wrapper = _pageWrappers[pageNum - 1];
-            if (wrapper) {
-                // canvas 메모리 해제
-                var canvas = wrapper.querySelector('canvas');
-                if (canvas) {
-                    canvas.width = 0;
-                    canvas.height = 0;
-                }
-                wrapper.innerHTML = '';
-            }
-        }
-
-        function _teardownAllPages() {
-            for (var key in _leftRenderTasks) {
-                _leftRenderTasks[key].cancel();
-            }
-            _leftRenderTasks = {};
-            _renderedPages = {};
-            if (_leftObserver) { _leftObserver.disconnect(); _leftObserver = null; }
-        }
-
-        // 특정 페이지의 annotation layer에 마킹 렌더
-        function _renderAnnotationsForPage(pageNum, annLayer) {
-            if (!annotationsCache || !annotationsCache.highlights) return;
-            var highlights = annotationsCache.highlights;
-            for (var i = 0; i < highlights.length; i++) {
-                if (highlights[i].page === pageNum) {
-                    annLayer.appendChild(createHighlightDiv(highlights[i]));
-                }
-            }
-        }
 
         // ── 페이지 변경 이벤트 (Phase 3-C: 좌우 동기화) ──
         var _pageChangeTimer = null;
@@ -1637,10 +1446,7 @@
                         webFullSyncLock = true;
                         currentPage = pg;
                         updatePageNav();
-                        _syncLeftRefs();
-                        // 연속 스크롤: 좌측 해당 페이지로 스크롤 (Observer가 렌더 관리)
-                        var w = _pageWrappers[currentPage - 1];
-                        if (w) w.scrollIntoView({ block: 'start' });
+                        renderLeftPage(currentPage);
                         setTimeout(function() { webFullSyncLock = false; }, 300);
                     }
                 }
@@ -2107,11 +1913,10 @@
             stopWebPolling();
             currentPage = page;
             updatePageNav();
-            _syncLeftRefs();
 
-            // Left: 해당 페이지로 스크롤 (연속 스크롤 — 렌더는 Observer가 관리)
-            var targetWrapper = _pageWrappers[currentPage - 1];
-            if (targetWrapper) targetWrapper.scrollIntoView({ block: 'start' });
+            // Left: 원문 렌더링
+            renderLeftPage(currentPage);
+            if ($leftScroll) $leftScroll.scrollTop = 0;
 
             if (translateEngine === 'web' && webFullViewMode) {
                 // 전체 보기 모드: 우측 스크롤만 이동 (재로드 안 함)
@@ -2185,27 +1990,7 @@
         }
 
         function _rerenderVisiblePages() {
-            // 줌/리사이즈: wrapper 높이 재계산 + 가시 범위 강제 리렌더
-            var wrapWidth = ($leftScroll || $panelLeft).clientWidth - 32;
-            for (var i = 0; i < _pageViewports.length; i++) {
-                var vp = _pageViewports[i];
-                var fitScale = wrapWidth / vp.width;
-                var baseScale = Math.min(fitScale, 1.5);
-                var scale = baseScale * zoom;
-                var svp = { width: vp.width * scale, height: vp.height * scale };
-                var wrapper = _pageWrappers[i];
-                if (wrapper) {
-                    wrapper.style.width = Math.floor(svp.width) + 'px';
-                    wrapper.style.height = Math.floor(svp.height) + 'px';
-                    wrapper.style.setProperty('--scale-factor', scale);
-                }
-            }
-            // 현재 렌더된 페이지 모두 해제 후 재렌더
-            var rendered = Object.keys(_renderedPages);
-            for (var j = 0; j < rendered.length; j++) {
-                _teardownPage(parseInt(rendered[j], 10));
-            }
-            _updateVisiblePages();
+            renderLeftPage(currentPage);
         }
 
         // ── Resize handler ──
@@ -2223,26 +2008,7 @@
             $scrollSyncBtn.classList.toggle('active', scrollSyncEnabled);
         });
 
-        function syncScroll(source, target) {
-            if (!scrollSyncEnabled || scrollSyncing) return;
-            scrollSyncing = true;
-            var maxS = source.scrollHeight - source.clientHeight;
-            var maxT = target.scrollHeight - target.clientHeight;
-            if (maxS > 0 && maxT > 0) {
-                var ratio = source.scrollTop / maxS;
-                target.scrollTop = ratio * maxT;
-            }
-            scrollSyncing = false;
-        }
-
-        // 스크롤 동기화: panel-scroll 요소에 부착 (panel 자체는 overflow:hidden)
         var $rightScroll = document.getElementById('right-scroll');
-        $leftScroll.addEventListener('scroll', function() {
-            syncScroll($leftScroll, $rightScroll);
-        });
-        $rightScroll.addEventListener('scroll', function() {
-            syncScroll($rightScroll, $leftScroll);
-        });
 
         // ══════════════════════════════════════
         // Annotations (마킹/형광펜)
@@ -2291,34 +2057,27 @@
         // ── 현재 페이지 마킹 렌더 (좌측) ──
 
         function renderAnnotations() {
-            // Phase 2-α: 렌더된 모든 페이지의 annotation layer를 갱신
-            for (var key in _renderedPages) {
-                var pg = parseInt(key, 10);
-                var wrapper = _pageWrappers[pg - 1];
-                if (!wrapper) continue;
-                var annLayer = wrapper.querySelector('.annotation-layer');
-                if (!annLayer) continue;
+            // popover 등 보존
+            var savedPopover = $popover;
+            var savedActionBar = $actionBar;
+            var savedAiPopover = $aiPopover;
+            if (savedPopover && savedPopover.parentNode) savedPopover.parentNode.removeChild(savedPopover);
+            if (savedActionBar && savedActionBar.parentNode) savedActionBar.parentNode.removeChild(savedActionBar);
+            if (savedAiPopover && savedAiPopover.parentNode) savedAiPopover.parentNode.removeChild(savedAiPopover);
 
-                // popover 등 보존: currentPage의 annLayer에서만
-                if (pg === currentPage) {
-                    var savedPopover = $popover;
-                    var savedActionBar = $actionBar;
-                    var savedAiPopover = $aiPopover;
-                    if (savedPopover && savedPopover.parentNode) savedPopover.parentNode.removeChild(savedPopover);
-                    if (savedActionBar && savedActionBar.parentNode) savedActionBar.parentNode.removeChild(savedActionBar);
-                    if (savedAiPopover && savedAiPopover.parentNode) savedAiPopover.parentNode.removeChild(savedAiPopover);
-
-                    annLayer.innerHTML = '';
-                    _renderAnnotationsForPage(pg, annLayer);
-
-                    if (savedPopover) annLayer.appendChild(savedPopover);
-                    if (savedActionBar) annLayer.appendChild(savedActionBar);
-                    if (savedAiPopover) annLayer.appendChild(savedAiPopover);
-                } else {
-                    annLayer.innerHTML = '';
-                    _renderAnnotationsForPage(pg, annLayer);
+            $leftAnnotationLayer.innerHTML = '';
+            if (annotationsCache && annotationsCache.highlights) {
+                var highlights = annotationsCache.highlights;
+                for (var i = 0; i < highlights.length; i++) {
+                    if (highlights[i].page === currentPage) {
+                        $leftAnnotationLayer.appendChild(createHighlightDiv(highlights[i]));
+                    }
                 }
             }
+
+            if (savedPopover) $leftAnnotationLayer.appendChild(savedPopover);
+            if (savedActionBar) $leftAnnotationLayer.appendChild(savedActionBar);
+            if (savedAiPopover) $leftAnnotationLayer.appendChild(savedAiPopover);
         }
 
         // ── 우측 마진 마커 div 생성 ──
@@ -2722,7 +2481,7 @@
         }
 
         // Phase 2-α: 이벤트 위임 — 동적 생성된 text-layer에서 mouseup 감지
-        $leftPagesStack.addEventListener('mouseup', function(e) {
+        $leftContainer.addEventListener('mouseup', function(e) {
             if (!e.target.closest('.text-layer')) return;
             setTimeout(function() {
                 var selection = window.getSelection();
@@ -2927,7 +2686,7 @@
         }
 
         // 하이라이트 클릭 → popover (이벤트 위임)
-        $leftPagesStack.addEventListener('click', function(e) {
+        $leftContainer.addEventListener('click', function(e) {
             var target = e.target;
             if (!target.classList.contains('highlight')) return;
             e.stopPropagation();
@@ -5137,7 +4896,7 @@
         });
 
         // ── 좌측→우측: PDF box 클릭 → MD 블록 스크롤 (이벤트 위임) ──
-        $leftPagesStack.addEventListener('click', function (e) {
+        $leftContainer.addEventListener('click', function (e) {
             var boxEl = e.target.closest('.nav-box');
             if (!boxEl) return;
             e.stopPropagation(); // 텍스트 선택/annotation 이벤트 방지

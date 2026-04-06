@@ -1000,41 +1000,7 @@ body[data-theme="dark"] .rail-btn.active {
 }
 body[data-theme="dark"] .side-panel { background: var(--white); }
 
-/* 좌측 연속 스크롤 스택 (Phase 2-α) */
-.pdf-pages-stack {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-sm) 0;
-}
-
-.pdf-page-wrapper {
-    position: relative;
-    background: var(--content-bg);
-    border-radius: var(--radius-md);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-    overflow: hidden;
-    /* 높이는 JS에서 viewport 기반으로 설정 */
-}
-
-.pdf-page-wrapper canvas {
-    display: block;
-}
-
-.pdf-page-wrapper .text-layer {
-    position: absolute;
-    left: 0;
-    top: 0;
-}
-
-.pdf-page-wrapper .annotation-layer {
-    position: absolute;
-    left: 0;
-    top: 0;
-}
-
-/* 우측 패널 기존 구조 유지 */
+/* 양측 패널 공통 */
 .viewer-panel .pdf-page-container {
     position: relative;
     display: inline-block;
