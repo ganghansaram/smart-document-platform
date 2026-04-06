@@ -125,9 +125,11 @@ function createMenuList(items) {
             itemIcon.classList.add('icon-analytics');
         }
 
-        // 대시보드 메뉴: admin 전용 (auth-admin-only 클래스)
-        if (item.url === 'analytics:dashboard') {
+        // 권한별 메뉴 노출: role 필드 또는 하드코딩 대상
+        if (item.role === 'admin' || item.url === 'analytics:dashboard') {
             li.classList.add('auth-admin-only');
+        } else if (item.role === 'editor') {
+            li.classList.add('auth-editor-only');
         }
 
         // URL이 있는 문서는 has-url 클래스 추가
@@ -433,8 +435,11 @@ function createFilteredMenuList(items, query) {
         } else if (item.url === 'analytics:dashboard') {
             itemIcon.classList.add('icon-analytics');
         }
-        if (item.url === 'analytics:dashboard') {
+        // 권한별 메뉴 노출: role 필드 또는 하드코딩 대상
+        if (item.role === 'admin' || item.url === 'analytics:dashboard') {
             li.classList.add('auth-admin-only');
+        } else if (item.role === 'editor') {
+            li.classList.add('auth-editor-only');
         }
         // URL이 있는 문서는 has-url 클래스 추가
         if (!hasChildren && item.url) {

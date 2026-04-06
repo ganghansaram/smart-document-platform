@@ -1,0 +1,8 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8eef6', 'primaryBorderColor': '#2c5282', 'primaryTextColor': '#1a202c', 'lineColor': '#2c5282', 'fontSize': '14px'}}}%%
+graph TD
+    HUB["Verify 허브"] --> CMP["문서 비교\njsdiff + AI 분류 6태그"]
+    HUB --> SIM["유사도 검사\nWinnowing L1 + bge-m3 L3"]
+    HUB --> RUL["규칙 검증\n정규식 + 휴리스틱 21종"]
+    CMP --> EXP["XLSX / HTML / TXT 내보내기"]
+    SIM --> EXP
+    RUL --> EXP

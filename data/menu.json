@@ -172,24 +172,51 @@
     "icon": "info",
     "children": [
       {
-        "label": "플랫폼 소개",
-        "url": "contents/guide/platform-overview.html"
+        "label": "사용 가이드",
+        "children": [
+          {
+            "label": "플랫폼 소개",
+            "url": "contents/guide/platform-overview.html"
+          },
+          {
+            "label": "Explorer 사용법",
+            "url": "contents/guide/explorer-guide.html"
+          },
+          {
+            "label": "Notebook 사용법",
+            "url": "contents/guide/notebook-guide.html"
+          },
+          {
+            "label": "Verify 사용법",
+            "url": "contents/guide/verify-guide.html"
+          },
+          {
+            "label": "관리자 가이드",
+            "url": "contents/guide/admin-guide.html"
+          }
+        ]
       },
       {
-        "label": "Explorer 사용법",
-        "url": "contents/guide/explorer-guide.html"
-      },
-      {
-        "label": "Notebook 사용법",
-        "url": "contents/guide/notebook-guide.html"
-      },
-      {
-        "label": "Verify 사용법",
-        "url": "contents/guide/verify-guide.html"
-      },
-      {
-        "label": "관리자 가이드",
-        "url": "contents/guide/admin-guide.html"
+        "label": "기술 문서",
+        "role": "admin",
+        "children": [
+          {
+            "label": "시스템 아키텍처",
+            "url": "contents/guide/architecture.html"
+          },
+          {
+            "label": "RAG 검색 기술 보고서",
+            "url": "contents/guide/rag-report.html"
+          },
+          {
+            "label": "개발 경과 보고",
+            "url": "contents/guide/dev-progress.html"
+          },
+          {
+            "label": "문서 검증 규칙 레퍼런스",
+            "url": "contents/guide/verify-rules-ref.html"
+          }
+        ]
       }
     ]
   },

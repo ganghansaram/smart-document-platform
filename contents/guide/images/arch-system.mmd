@@ -1,0 +1,21 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8eef6', 'primaryBorderColor': '#2c5282', 'primaryTextColor': '#1a202c', 'lineColor': '#2c5282', 'secondaryColor': '#f0f4f8', 'tertiaryColor': '#fff', 'fontSize': '14px'}}}%%
+graph TB
+    subgraph WIN["Windows VM"]
+        direction TB
+        subgraph FE["Tomcat :8080"]
+            FE1["index.html / js / css / contents"]
+        end
+        subgraph BE["FastAPI :8000"]
+            BE1["/api/search — 검색"]
+            BE2["/api/chat — AI 채팅"]
+            BE3["/api/auth — 인증"]
+            BE4["/api/translator — 번역"]
+            BE5["/api/compare — 검증"]
+            BE6["/api/settings — 설정"]
+        end
+        FE -->|"HTTP 요청"| BE
+    end
+    subgraph GPU["Linux GPU 서버"]
+        OL["Ollama :11434\ngemma3:27b / bge-m3"]
+    end
+    BE -->|"LLM · 임베딩 · 리랭킹"| OL

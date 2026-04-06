@@ -1,0 +1,362 @@
+<div class="page-header">
+    <div class="page-header-info">
+        <h1 id="개발-경과-보고">개발 경과 보고</h1>
+        <p class="page-header-subtitle">정적 웹북에서 지식 플랫폼까지 — 7단계 발전 경과와 향후 방향</p>
+    </div>
+</div>
+
+<!-- Hero -->
+<div class="po-hero">
+    <div class="po-hero-label">Development Progress</div>
+    <h2>플랫폼 개발 경과 및 로드맵</h2>
+    <p>
+        2025년 정적 웹북으로 시작하여, RAG 검색, AI 번역, 문서 검증까지
+        7단계에 걸쳐 발전해 왔습니다.
+        현재 Explorer, Notebook, Verify 3개 서브시스템이 운용 중이며,
+        Author(AI 저작) 시스템을 설계 중입니다.
+    </p>
+    <div class="po-badge-row">
+        <span class="po-badge">7단계 진화</span>
+        <span class="po-badge">60+ 파일</span>
+        <span class="po-badge">28,000+ 줄</span>
+        <span class="po-badge">55+ API</span>
+    </div>
+</div>
+
+<p>
+    이 문서는 플랫폼이 어디서 출발하여 어디까지 왔고, 앞으로 어디로 가는지를 다룹니다.
+    기능 나열이 아닌 개발 경과와 의사결정 배경에 초점을 맞춘 보고 문서입니다.
+</p>
+
+
+<!-- ========================================
+     발전 경과
+     ======================================== -->
+<h2 class="po-section-title" id="발전-경과">발전 경과</h2>
+<p class="po-section-subtitle">정적 문서 뷰어에서 지식 플랫폼으로 진화한 7단계입니다.</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:12%">단계</th>
+            <th style="width:30%">목표</th>
+            <th>주요 결과</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Phase 1</strong></td>
+            <td>정적 웹북</td>
+            <td>DOCX &rarr; HTML 변환, 문서 트리 네비게이션, 다크모드</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 2</strong></td>
+            <td>RAG 검색 + 에디터</td>
+            <td>하이브리드 검색 (BM25+FAISS), AI 채팅, Monaco 에디터</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 3</strong></td>
+            <td>관리 + 통계</td>
+            <td>RBAC 3단계, 관리자 설정 GUI, 접속 통계, 콘텐츠 업로드</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 4</strong></td>
+            <td>번역 시스템</td>
+            <td>Notebook 서브시스템 — PDF 번역, 듀얼 패널 뷰어, AI 분석</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 5</strong></td>
+            <td>문서 검증</td>
+            <td>Verify 서브시스템 — 비교, 유사도, 21종 규칙 엔진</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 6</strong></td>
+            <td>품질 강화</td>
+            <td>디자인 시스템 (tokens.css), 운영 안정성, 구조화 로깅</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 7</strong></td>
+            <td>플랫폼 통합</td>
+            <td>공통 헤더, 시스템 전환, 플랫폼 가이드, 런처 통합</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     플랫폼 구성
+     ======================================== -->
+<h2 class="po-section-title" id="플랫폼-구성">플랫폼 4체제 구성</h2>
+<p class="po-section-subtitle">기술 문서 생애주기의 네 단계를 각각의 서브시스템이 담당합니다.</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:18%">시스템</th>
+            <th style="width:18%">역할</th>
+            <th style="width:12%">상태</th>
+            <th>핵심 기능</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Explorer</strong></td>
+            <td>읽기 / 소비</td>
+            <td>운용 중</td>
+            <td>하이브리드 RAG 검색, AI 채팅, 문서 트리, 용어집</td>
+        </tr>
+        <tr>
+            <td><strong>Notebook</strong></td>
+            <td>이해 / 내재화</td>
+            <td>운용 중</td>
+            <td>PDF 번역, AI 요약, Q&amp;A, 마인드맵, 마킹</td>
+        </tr>
+        <tr>
+            <td><strong>Verify</strong></td>
+            <td>검증 / 판단</td>
+            <td>운용 중</td>
+            <td>문서 비교, 유사도 검사, 21종 규칙 자동 점검</td>
+        </tr>
+        <tr>
+            <td><strong>Author</strong></td>
+            <td>생산 / 창작</td>
+            <td>설계 중</td>
+            <td>AI 보조 문서 저작, 요구사항 추적, 참조 인용 (계획)</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="po-screenshot">
+    <img src="images/dev-lifecycle.svg" alt="플랫폼 4체제 흐름도" style="max-width: 420px; display: block; margin: 0 auto;">
+</div>
+<p class="po-screenshot-caption">플랫폼 4체제 — 기술 문서의 소비, 이해, 검증, 생산 순환</p>
+
+<div class="po-callout">
+    <strong>비전:</strong> "폐쇄망 엔지니어를 위한 지식 플랫폼 — 읽고, 이해하고, 검증하고, 만든다."
+    네 개의 서브시스템이 이 순환을 완성합니다.
+</div>
+
+
+<!-- ========================================
+     개발 규모
+     ======================================== -->
+<h2 class="po-section-title" id="개발-규모">개발 규모</h2>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:30%">영역</th>
+            <th style="width:20%">파일 수</th>
+            <th>코드 줄 수</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>JavaScript (프론트엔드)</td><td>14+ 모듈</td><td>12,000+ 줄</td></tr>
+        <tr><td>CSS (디자인 시스템)</td><td>16 파일</td><td>9,100+ 줄</td></tr>
+        <tr><td>Python (백엔드 API/서비스)</td><td>24+ 모듈</td><td>4,000+ 줄</td></tr>
+        <tr><td>Python (변환 도구)</td><td>6 모듈</td><td>3,000+ 줄</td></tr>
+        <tr>
+            <td><strong>합계</strong></td>
+            <td><strong>60+ 파일</strong></td>
+            <td><strong>28,000+ 줄</strong></td>
+        </tr>
+    </tbody>
+</table>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:30%">항목</th>
+            <th>수치</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>API 엔드포인트</td><td>55+ 개</td></tr>
+        <tr><td>서비스 모듈 (백엔드)</td><td>28개</td></tr>
+        <tr><td>자동화 규칙 (Verify)</td><td>21종</td></tr>
+        <tr><td>항공 용어집</td><td>26,000+ 항목</td></tr>
+        <tr><td>콘텐츠 카테고리</td><td>6개 범용 + KF-21 개발백서</td></tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     핵심 성과
+     ======================================== -->
+<h2 class="po-section-title" id="핵심-성과">핵심 기술 성과</h2>
+
+<div class="po-system-card">
+    <div class="po-system-card-header">
+        <div><div class="po-system-name">검색 품질</div></div>
+    </div>
+    <p class="po-system-desc">
+        하이브리드 RAG 검색에서 Recall@5 = 100%, MRR = 0.967을 달성했습니다.
+        키워드(BM25)와 벡터(FAISS + bge-m3)를 RRF로 병합하고,
+        Cross-encoder(bge-reranker-v2-m3)로 리랭킹합니다.
+        구조 보존 인덱싱(테이블 &rarr; Markdown, 수식 &rarr; LaTeX)이 핵심 차별점입니다.
+    </p>
+</div>
+
+<div class="po-system-card">
+    <div class="po-system-card-header">
+        <div><div class="po-system-name">문서 변환 파이프라인</div></div>
+    </div>
+    <p class="po-system-desc">
+        DOCX 변환기가 스타일 기반 heading 감지, 표 병합(colspan/rowspan),
+        OMML &rarr; MathML 변환(18종 수학 요소)을 지원합니다.
+        PDF 변환기는 TOC 자동 감지와 3-pass 퍼지 매칭(threshold 0.80)으로
+        문서 구조를 복원합니다.
+    </p>
+</div>
+
+<div class="po-system-card">
+    <div class="po-system-card-header">
+        <div><div class="po-system-name">외부 의존성 제로</div></div>
+    </div>
+    <p class="po-system-desc">
+        인터넷 연결, 외부 클라우드, npm, 빌드 도구 없이 동작합니다.
+        Python wheel 패키지 오프라인 설치, Ollama 로컬 LLM,
+        FAISS 인메모리 벡터 검색으로 폐쇄망 완전 자립 운용이 가능합니다.
+    </p>
+</div>
+
+
+<!-- ========================================
+     기술 선택 배경
+     ======================================== -->
+<h2 class="po-section-title" id="기술-선택-배경">기술 선택 배경</h2>
+<p class="po-section-subtitle">주요 기술 결정의 근거입니다.</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:25%">결정</th>
+            <th style="width:22%">선택</th>
+            <th>근거</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>프론트엔드</td>
+            <td>Vanilla JS 유지</td>
+            <td>폐쇄망에서 빌드 불가. 작동하는 코드 폐기 비용 > 전환 이득.</td>
+        </tr>
+        <tr>
+            <td>백엔드</td>
+            <td>FastAPI 통일</td>
+            <td>비동기 처리, 자동 API 문서, Python ML 생태계 접근.</td>
+        </tr>
+        <tr>
+            <td>AI 엔진</td>
+            <td>Ollama (로컬)</td>
+            <td>폐쇄망 제약. OpenAI API 사용 불가.</td>
+        </tr>
+        <tr>
+            <td>데이터 저장</td>
+            <td>SQLite + JSON</td>
+            <td>동시 10~30명 규모. 외부 DB 불필요.</td>
+        </tr>
+        <tr>
+            <td>공용 포맷</td>
+            <td>Markdown</td>
+            <td>추출, 번역, 편집, 인덱싱의 공통 중간 표현.</td>
+        </tr>
+        <tr>
+            <td>시스템 연계</td>
+            <td>독립 운용 우선</td>
+            <td>외부 시스템(K-Spec 등)은 플랫폼 외부에서 연동.</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     경쟁 비교
+     ======================================== -->
+<h2 class="po-section-title" id="경쟁-비교">유사 서비스 비교</h2>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:28%">기능</th>
+            <th style="width:24%">본 플랫폼</th>
+            <th style="width:24%">NotebookLM</th>
+            <th style="width:24%">Obsidian</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>폐쇄망 동작</td><td>가능</td><td>불가</td><td>가능</td></tr>
+        <tr><td>PDF 번역</td><td>가능 (레이아웃 보존)</td><td>불가</td><td>불가</td></tr>
+        <tr><td>RAG 검색</td><td>하이브리드 + 리랭킹</td><td>자체 구현</td><td>플러그인 필요</td></tr>
+        <tr><td>문서 비교/검증</td><td>21종 규칙 엔진</td><td>불가</td><td>불가</td></tr>
+        <tr><td>도메인 용어집</td><td>26,000+ 항공 용어</td><td>불가</td><td>수동 구축</td></tr>
+        <tr><td>기술 문서 특화</td><td>수식, 표, 규격 지원</td><td>범용</td><td>범용</td></tr>
+        <tr><td>접근 제어</td><td>RBAC 3단계</td><td>Google 계정</td><td>로컬 전용</td></tr>
+    </tbody>
+</table>
+
+<div class="po-callout">
+    <strong>차별점:</strong> 폐쇄망에서 동작하면서 PDF 번역, RAG 검색, 문서 검증을 모두 제공하는
+    통합 플랫폼은 현재 유일합니다. 범용 도구로는 불가능한 기술 문서 특화 기능
+    (수식 변환, 규격 검증, 항공 용어집)이 핵심 가치입니다.
+</div>
+
+
+<!-- ========================================
+     로드맵
+     ======================================== -->
+<h2 class="po-section-title" id="로드맵">향후 로드맵</h2>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:15%">단계</th>
+            <th style="width:25%">목표</th>
+            <th style="width:12%">상태</th>
+            <th>주요 내용</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Phase A</strong></td>
+            <td>품질 향상</td>
+            <td>완료</td>
+            <td>디자인 시스템, 운영 안정성, Notebook 플랫폼 완성</td>
+        </tr>
+        <tr>
+            <td><strong>Phase A+</strong></td>
+            <td>지식 플랫폼</td>
+            <td>완료</td>
+            <td>Verify 고도화, 플랫폼 가이드, 관리자 설정 통합</td>
+        </tr>
+        <tr>
+            <td><strong>Phase B</strong></td>
+            <td>데이터 아키텍처</td>
+            <td>진행 중</td>
+            <td>PDF 입력 통일, Notebook 뷰어 개선, MD 추출 품질 강화</td>
+        </tr>
+        <tr>
+            <td><strong>Phase C</strong></td>
+            <td>Author MVP</td>
+            <td>계획</td>
+            <td>AI 보조 문서 저작, 요구사항 추적, 참조 인용</td>
+        </tr>
+        <tr>
+            <td><strong>Phase D</strong></td>
+            <td>시스템 연계</td>
+            <td>계획</td>
+            <td>서브시스템 간 데이터 흐름, 크로스 참조</td>
+        </tr>
+        <tr>
+            <td><strong>Phase E</strong></td>
+            <td>공통 서비스</td>
+            <td>계획</td>
+            <td>공유 컴포넌트 분리, 인프라 통합</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="po-callout">
+    <strong>설계 원칙:</strong> 한 번에 하나의 단계만 진행하며, 각 단계마다 실제 사용자 가치를 전달합니다.
+    검증 후 다음 단계로 확장하고, 필요할 때만 분리합니다.
+</div>

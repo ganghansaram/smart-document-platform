@@ -1,0 +1,435 @@
+<div class="page-header">
+    <div class="page-header-info">
+        <h1 id="시스템-아키텍처">시스템 아키텍처</h1>
+        <p class="page-header-subtitle">Smart Document Platform 내부 구조 및 기술 설계</p>
+    </div>
+</div>
+
+<!-- Hero -->
+<div class="po-hero">
+    <div class="po-hero-label">Architecture Overview</div>
+    <h2>플랫폼 기술 아키텍처</h2>
+    <p>
+        폐쇄망 환경에서 동작하는 3-Tier 구조의 문서 플랫폼입니다.
+        프론트엔드(정적 HTML), 백엔드(FastAPI), AI 엔진(Ollama)이
+        각각 독립된 프로세스로 운용되며, 빌드 도구나 외부 클라우드 없이 동작합니다.
+    </p>
+    <div class="po-badge-row">
+        <span class="po-badge">3-Tier 아키텍처</span>
+        <span class="po-badge">55+ API 엔드포인트</span>
+        <span class="po-badge">28개 서비스 모듈</span>
+        <span class="po-badge">폐쇄망 운용</span>
+    </div>
+</div>
+
+<p>
+    이 문서는 플랫폼의 서버 구성, 서비스 계층, API 설계, 폴더 구조, 운영 준비 상태를 다룹니다.
+    "어떻게 쓰는가"가 아닌 "어떻게 만들어졌는가"에 초점을 맞춘 기술 참조 문서입니다.
+</p>
+
+
+<!-- ========================================
+     서버 구성
+     ======================================== -->
+<h2 class="po-section-title" id="서버-구성">서버 구성</h2>
+<p class="po-section-subtitle">2대 서버, 3개 프로세스로 운용합니다.</p>
+
+<div class="po-screenshot">
+    <img src="images/arch-system.svg" alt="시스템 구성도" style="max-width: 380px; display: block; margin: 0 auto;">
+</div>
+<p class="po-screenshot-caption">시스템 구성도 — 프론트엔드, 백엔드, AI 엔진 3계층 구조</p>
+
+<div class="po-system-card">
+    <table class="po-spec-table" style="margin-bottom:0;">
+        <thead>
+            <tr>
+                <th style="width:18%">계층</th>
+                <th style="width:30%">서버</th>
+                <th>역할</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>프론트엔드</strong></td>
+                <td>Windows VM :8080<br><small>Tomcat 또는 Python http.server</small></td>
+                <td>HTML, JS, CSS 정적 파일 서빙. 프레임워크 없이 Vanilla JS로 구성.</td>
+            </tr>
+            <tr>
+                <td><strong>백엔드</strong></td>
+                <td>Windows VM :8000<br><small>FastAPI + Uvicorn</small></td>
+                <td>인증, 검색, 채팅, 번역, 비교, 설정 등 55+ API 엔드포인트 제공.</td>
+            </tr>
+            <tr>
+                <td><strong>AI 엔진</strong></td>
+                <td>Linux GPU :11434<br><small>Ollama (NVIDIA L40-48Q)</small></td>
+                <td>LLM 추론(gemma3), 임베딩(bge-m3), 리랭킹(bge-reranker-v2-m3).</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="po-callout">
+    <strong>설계 원칙:</strong> 프론트엔드는 백엔드 없이도 기본 문서 열람이 가능합니다.
+    AI 채팅, 검색, 번역 등 고급 기능만 백엔드 + AI 엔진이 필요합니다.
+    이 계층 분리 덕분에 장비 구성에 따라 기능을 단계적으로 도입할 수 있습니다.
+</div>
+
+<h3 id="기능별-인프라">기능별 인프라 요구사항</h3>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:35%">기능</th>
+            <th style="width:22%">백엔드</th>
+            <th style="width:22%">Ollama</th>
+            <th>비고</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>문서 열람 (웹북)</td><td>불필요</td><td>불필요</td><td>정적 서버만으로 동작</td></tr>
+        <tr><td>키워드 검색</td><td>필요</td><td>불필요</td><td>search-index.json 사용</td></tr>
+        <tr><td>하이브리드 검색 + AI 채팅</td><td>필요</td><td>필요</td><td>벡터 검색 + LLM 추론</td></tr>
+        <tr><td>PDF 번역 (Notebook)</td><td>필요</td><td>필요</td><td>pdf2zh + Ollama</td></tr>
+        <tr><td>문서 비교 (Verify)</td><td>필요</td><td>선택</td><td>AI 분류 사용 시 필요</td></tr>
+        <tr><td>인증 / 관리자 설정</td><td>필요</td><td>불필요</td><td>SQLite + JSON 기반</td></tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     서비스 계층
+     ======================================== -->
+<h2 class="po-section-title" id="서비스-계층">서비스 계층</h2>
+<p class="po-section-subtitle">백엔드는 API 라우터 + 서비스 모듈 2계층 구조입니다.</p>
+
+<h3 id="api-라우터">API 라우터 (8개)</h3>
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:22%">라우터</th>
+            <th style="width:18%">엔드포인트</th>
+            <th>주요 기능</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><code>auth.py</code></td><td>5개</td><td>로그인, 세션, 사용자 CRUD</td></tr>
+        <tr><td><code>search.py</code></td><td>3개</td><td>키워드, 벡터, 하이브리드 검색</td></tr>
+        <tr><td><code>chat.py</code></td><td>2개</td><td>RAG 채팅, 세션 관리</td></tr>
+        <tr><td><code>translator.py</code></td><td>30+개</td><td>PDF 업로드, 번역, 추출, 요약, Q&amp;A, 폴더</td></tr>
+        <tr><td><code>compare.py</code></td><td>11개</td><td>비교, 유사도, 규칙 검증, 내보내기</td></tr>
+        <tr><td><code>upload.py</code></td><td>3개</td><td>DOCX/PDF 변환, 인덱스 재생성</td></tr>
+        <tr><td><code>settings.py</code></td><td>3개</td><td>런타임 설정 CRUD</td></tr>
+        <tr><td><code>menu.py</code></td><td>2개</td><td>메뉴 트리 조회/저장</td></tr>
+    </tbody>
+</table>
+
+<h3 id="서비스-모듈">서비스 모듈 (28개)</h3>
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:25%">영역</th>
+            <th style="width:15%">모듈 수</th>
+            <th>주요 모듈</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Explorer</strong></td>
+            <td>10개</td>
+            <td>keyword_search, vector_search, embedding_client, reranker, rag_agent, conversation, query_rewriter, llm_provider, question_router, chat_formatter</td>
+        </tr>
+        <tr>
+            <td><strong>Notebook</strong></td>
+            <td>6개</td>
+            <td>translator_service, md_extractor, ai_summary, notebook_chat, pmt_runner, marking_service</td>
+        </tr>
+        <tr>
+            <td><strong>Verify</strong></td>
+            <td>4개</td>
+            <td>compare_service, similarity_service, rules_engine, score_calculator</td>
+        </tr>
+        <tr>
+            <td><strong>공통 인프라</strong></td>
+            <td>6개</td>
+            <td>auth_service, settings_service, analytics_service, backup_service, health_service, session_manager</td>
+        </tr>
+        <tr>
+            <td><strong>변환 도구</strong></td>
+            <td>2개</td>
+            <td>docx_converter (표 병합, OMML-MathML), word_preprocessor (COM)</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     프론트엔드 구조
+     ======================================== -->
+<h2 class="po-section-title" id="프론트엔드-구조">프론트엔드 구조</h2>
+<p class="po-section-subtitle">프레임워크 없이 Vanilla JS + 모놀리식 HTML 구조입니다.</p>
+
+<h3 id="설계-결정">핵심 설계 결정</h3>
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:25%">결정</th>
+            <th style="width:30%">선택</th>
+            <th>근거</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>프레임워크</td>
+            <td>Vanilla JS (ES5+)</td>
+            <td>폐쇄망에서 npm/빌드 도구 불필요. 브라우저 호환성 최대화.</td>
+        </tr>
+        <tr>
+            <td>페이지 구조</td>
+            <td>서브시스템당 단일 HTML</td>
+            <td>index.html, translator.html, compare.html, login.html 4파일.</td>
+        </tr>
+        <tr>
+            <td>콘텐츠 로딩</td>
+            <td>fetch() + #main-content</td>
+            <td>메뉴 클릭 시 HTML 프래그먼트를 동적 삽입. SPA와 유사한 UX.</td>
+        </tr>
+        <tr>
+            <td>상태 관리</td>
+            <td>전역 객체 (AppState)</td>
+            <td>menuData, searchIndex, currentPage 등 최소 상태만 관리.</td>
+        </tr>
+        <tr>
+            <td>디자인 시스템</td>
+            <td>CSS 변수 (tokens.css)</td>
+            <td>색상, 간격, 둥글기, 트랜지션 등 토큰화. 다크모드 자동 전환.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 id="js-모듈-구성">JS 모듈 구성</h3>
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:30%">모듈</th>
+            <th>역할</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><code>app.js</code></td><td>초기화, 콘텐츠 로딩, 브레드크럼, URL 라우팅</td></tr>
+        <tr><td><code>tree-menu.js</code></td><td>좌측 트리 메뉴 렌더링, 검색 필터, 업로드</td></tr>
+        <tr><td><code>auth.js</code></td><td>3-role RBAC, 로그인 게이트, 세션 관리</td></tr>
+        <tr><td><code>ai-chat.js</code></td><td>RAG 챗봇 UI, NDJSON 스트리밍, 섹션 네비게이션</td></tr>
+        <tr><td><code>search.js</code></td><td>전체 텍스트 검색, 하이브리드 검색 UI</td></tr>
+        <tr><td><code>editor-core.js</code></td><td>Monaco 에디터 래퍼, 분할 뷰, Strategy 패턴</td></tr>
+        <tr><td><code>admin-settings.js</code></td><td>관리자 설정 GUI (6탭)</td></tr>
+        <tr><td><code>config.js</code></td><td>DISPLAY_CONFIG, AI_CONFIG, AUTH_CONFIG 등 상수</td></tr>
+        <tr><td><code>toast.js</code></td><td>공통 토스트 알림</td></tr>
+        <tr><td><code>platform-header.js</code></td><td>공통 헤더 (시스템 전환, 테마, 네비게이션)</td></tr>
+    </tbody>
+</table>
+
+<h3 id="css-디자인-시스템">CSS 디자인 시스템</h3>
+<p>
+    16개 CSS 파일이 역할별로 분리되어 있습니다.
+    <code>tokens.css</code>가 모든 디자인 토큰(색상, 간격, 둥글기, 그림자)을 정의하고,
+    각 컴포넌트 CSS가 이를 참조합니다. 하드코딩된 색상값은 사용하지 않습니다.
+</p>
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:30%">파일</th>
+            <th>역할</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><code>tokens.css</code></td><td>디자인 토큰 (색상, 간격, 둥글기, 트랜지션)</td></tr>
+        <tr><td><code>components.css</code></td><td>공통 컴포넌트 (버튼, 입력, 배지, 스피너, 슬라이더)</td></tr>
+        <tr><td><code>modal.css</code></td><td>모달 오버레이/박스 공통 구조</td></tr>
+        <tr><td><code>content.css</code></td><td>콘텐츠 영역 타이포그래피, 가이드 po-* 클래스</td></tr>
+        <tr><td><code>auth.css</code></td><td>인증 모달, 로그인 게이트, 권한별 표시 제어</td></tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     데이터 저장
+     ======================================== -->
+<h2 class="po-section-title" id="데이터-저장">데이터 저장</h2>
+<p class="po-section-subtitle">파일 기반 저장 + SQLite 조합으로 운용합니다.</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:30%">데이터</th>
+            <th style="width:22%">저장 방식</th>
+            <th>보호 방식</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>메뉴 트리, 설정, 사용자 목록</td>
+            <td>JSON 파일</td>
+            <td>원자적 저장 (tmp &rarr; rename)</td>
+        </tr>
+        <tr>
+            <td>검색 인덱스</td>
+            <td>JSON + FAISS 바이너리</td>
+            <td>재생성 가능 (원본 HTML에서 복원)</td>
+        </tr>
+        <tr>
+            <td>인증/세션</td>
+            <td>SQLite (auth.db)</td>
+            <td>PBKDF2-SHA256 260K iterations</td>
+        </tr>
+        <tr>
+            <td>접속 통계</td>
+            <td>SQLite (analytics.db)</td>
+            <td>일일 백업 (30일 보존)</td>
+        </tr>
+        <tr>
+            <td>Notebook 작업물</td>
+            <td>파일시스템 (사용자별 디렉토리)</td>
+            <td>data/translator/{username}/{doc_id}/</td>
+        </tr>
+        <tr>
+            <td>콘텐츠 (웹북)</td>
+            <td>HTML 파일</td>
+            <td>contents/ 디렉토리, 업로드 시 자동 백업</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="po-callout">
+    <strong>SQLite 적합성:</strong> 동시 접속 10~30명, 쓰기 빈도 낮음, 데이터 수십 MB 수준이므로
+    PostgreSQL 등 외부 DB 없이 SQLite로 충분합니다.
+    재설계 시점은 동시 접속 50명 이상, 문서 1,000개 이상, 외부 시스템 연계 시입니다.
+</div>
+
+
+<!-- ========================================
+     보안 설계
+     ======================================== -->
+<h2 class="po-section-title" id="보안-설계">보안 설계</h2>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:25%">영역</th>
+            <th>구현</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>비밀번호 저장</strong></td>
+            <td>PBKDF2-SHA256, 260,000 iterations, secrets.token_hex(32) 솔트</td>
+        </tr>
+        <tr>
+            <td><strong>세션 관리</strong></td>
+            <td>HttpOnly 쿠키, SameSite=lax, secrets.compare_digest() 비교</td>
+        </tr>
+        <tr>
+            <td><strong>접근 제어</strong></td>
+            <td>3단계 RBAC (viewer/editor/admin). API 레벨 + CSS 클래스 이중 제어.</td>
+        </tr>
+        <tr>
+            <td><strong>네트워크</strong></td>
+            <td>폐쇄망 전용. CORS origin 환경변수로 제한. 외부 통신 없음.</td>
+        </tr>
+        <tr>
+            <td><strong>데이터 보호</strong></td>
+            <td>원자적 JSON 저장 (tmp &rarr; rename). 일일 백업 자동 실행.</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     운영 준비 상태
+     ======================================== -->
+<h2 class="po-section-title" id="운영-준비-상태">운영 준비 상태</h2>
+<p class="po-section-subtitle">운영 안정성 강화(Plan-22) 완료 후 평가 결과입니다.</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:30%">평가 항목</th>
+            <th style="width:15%">점수</th>
+            <th>상세</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>인증/인가</td><td><strong>8 / 10</strong></td><td>PBKDF2 + RBAC + HttpOnly 쿠키</td></tr>
+        <tr><td>데이터 보호</td><td><strong>9 / 10</strong></td><td>원자적 저장, 자동 백업 30일</td></tr>
+        <tr><td>API 보안</td><td><strong>7 / 10</strong></td><td>Depends(require_admin) 전역 적용</td></tr>
+        <tr><td>로깅/모니터링</td><td><strong>8 / 10</strong></td><td>RotatingFileHandler 10MB x 5, 구조화 로깅</td></tr>
+        <tr><td>에러 처리</td><td><strong>8 / 10</strong></td><td>Graceful Shutdown, 고착 태스크 리셋</td></tr>
+        <tr><td>프론트엔드</td><td><strong>8 / 10</strong></td><td>content-visibility 최적화, 수렴 스크롤</td></tr>
+        <tr><td>DB 구조</td><td><strong>8 / 10</strong></td><td>SQLite WAL 모드, 적정 규모</td></tr>
+        <tr><td>서버 구성</td><td><strong>5 / 10</strong></td><td>프로세스 관리(NSSM) 미적용</td></tr>
+    </tbody>
+</table>
+
+<h3 id="권장-사양">권장 하드웨어 사양</h3>
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:20%">항목</th>
+            <th style="width:25%">권장</th>
+            <th>산정 근거</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>RAM</strong></td>
+            <td>16 GB</td>
+            <td>OS+Tomcat 3GB + FastAPI 500MB + 리랭커 2GB + FAISS 100MB + 번역 1GB</td>
+        </tr>
+        <tr>
+            <td><strong>디스크</strong></td>
+            <td>100 GB SSD</td>
+            <td>현재 16GB, 연간 증가 약 15GB (문서 + 백업)</td>
+        </tr>
+        <tr>
+            <td><strong>CPU</strong></td>
+            <td>12코어 이상</td>
+            <td>FastAPI 비동기 처리 + 문서 변환 병렬 실행</td>
+        </tr>
+        <tr>
+            <td><strong>GPU</strong></td>
+            <td>NVIDIA L40 48GB</td>
+            <td>Ollama LLM 추론, 임베딩, 리랭킹 (Linux 서버)</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     기술 스택
+     ======================================== -->
+<h2 class="po-section-title" id="기술-스택">기술 스택 요약</h2>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:22%">영역</th>
+            <th>기술</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>백엔드</strong></td><td>Python 3.11, FastAPI 0.128, Uvicorn (비동기)</td></tr>
+        <tr><td><strong>프론트엔드</strong></td><td>Vanilla JS (ES5+), 단일 HTML, CSS 변수 디자인 시스템</td></tr>
+        <tr><td><strong>LLM</strong></td><td>Ollama + gemma3:27b (추론), gemma3:4b (경량 작업)</td></tr>
+        <tr><td><strong>임베딩</strong></td><td>bge-m3 (1024차원, 한/영 혼합)</td></tr>
+        <tr><td><strong>리랭커</strong></td><td>bge-reranker-v2-m3 (Cross-encoder)</td></tr>
+        <tr><td><strong>벡터 DB</strong></td><td>FAISS IndexFlatL2 (인메모리)</td></tr>
+        <tr><td><strong>PDF 번역</strong></td><td>pdf2zh (레이아웃 보존), PyMuPDF4LLM (마크다운 추출)</td></tr>
+        <tr><td><strong>문서 변환</strong></td><td>python-docx + COM 전처리, OMML &rarr; MathML 18종</td></tr>
+        <tr><td><strong>데이터 저장</strong></td><td>SQLite (인증/통계) + JSON 파일 (설정/인덱스)</td></tr>
+        <tr><td><strong>정적 서버</strong></td><td>Tomcat 7.0 또는 Python http.server</td></tr>
+    </tbody>
+</table>
+
+<div class="po-callout">
+    <strong>참고:</strong> 기술 스택의 상세 사양과 설정 방법은 시스템 관리자에게 문의하십시오.
+    프론트엔드 사용 방법은 좌측 메뉴 <em>사용 가이드</em> 항목을 참조하십시오.
+</div>

@@ -1,0 +1,14 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8eef6', 'primaryBorderColor': '#2c5282', 'primaryTextColor': '#1a202c', 'lineColor': '#2c5282', 'fontSize': '14px'}}}%%
+graph TD
+    Q["사용자 질문"] --> S["세션 관리\nconversation_id"]
+    S --> R["쿼리 재작성\n대화 기록 + 질문 → 독립 쿼리"]
+    R --> H
+    subgraph H["하이브리드 검색"]
+        direction LR
+        K["키워드 검색\nBM25"] --> RRF["RRF 점수 병합\nkeyword 30% + vector 70%"]
+        V["벡터 검색\nFAISS + bge-m3"] --> RRF
+    end
+    H --> RE["Cross-encoder 리랭킹\nbge-reranker-v2-m3"]
+    RE --> DD["중복 제거"]
+    DD --> LLM["LLM 응답 생성\n시스템 프롬프트 + 컨텍스트 + 이력"]
+    LLM --> OUT["NDJSON 스트리밍 응답"]

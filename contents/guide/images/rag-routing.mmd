@@ -1,0 +1,10 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8eef6', 'primaryBorderColor': '#2c5282', 'primaryTextColor': '#1a202c', 'lineColor': '#2c5282', 'fontSize': '14px'}}}%%
+graph TD
+    Q["사용자 질문"] --> ROUTER["질문 라우터"]
+    ROUTER -->|"SIMPLE"| SIM["단일 검색 → 직접 답변"]
+    ROUTER -->|"COMPARE"| CMP["쿼리 분해 1~3개\n병렬 검색 → 병합"]
+    ROUTER -->|"REASON"| AGT["Agentic RAG\n최대 3회 검색-판단 루프"]
+    ROUTER -->|"CHAT"| CHT["검색 없이 직접 응답"]
+    SIM --> ANS["LLM 답변 생성"]
+    CMP --> ANS
+    AGT --> ANS

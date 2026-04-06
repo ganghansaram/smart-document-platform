@@ -1,0 +1,16 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8eef6', 'primaryBorderColor': '#2c5282', 'primaryTextColor': '#1a202c', 'lineColor': '#2c5282', 'fontSize': '14px'}}}%%
+graph TD
+    DOC["입력 문서\nDOCX / PDF / 텍스트"] --> EXT["텍스트 추출"]
+    EXT --> ENG["21종 규칙 엔진"]
+    ENG --> STE["STE 12건"]
+    ENG --> MIL1["961E 9건"]
+    ENG --> MIL2["38784B 6건"]
+    ENG --> CUS["자체 6건"]
+    STE --> COL["위반 수집"]
+    MIL1 --> COL
+    MIL2 --> COL
+    CUS --> COL
+    COL --> DEN["밀도 계산\nseverity × confidence / 단어 수"]
+    DEN --> SCO["점수 산출\n100 × max 0,  1 − 밀도 / 임계값"]
+    SCO --> GRD["등급 판정\nA 90+ · B 70+ · C 50+ · D 0+"]
+    GRD --> RPT["리포트 출력 + 내보내기"]

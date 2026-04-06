@@ -1,0 +1,499 @@
+<div class="page-header">
+    <div class="page-header-info">
+        <h1 id="문서-검증-규칙-레퍼런스">문서 검증 규칙 레퍼런스</h1>
+        <p class="page-header-subtitle">3개 국제 표준 기반 21종 자동 점검 규칙 상세</p>
+    </div>
+</div>
+
+<!-- Hero -->
+<div class="po-hero">
+    <div class="po-hero-label">Verify Rules Reference</div>
+    <h2>문서 검증 규칙 엔진</h2>
+    <p>
+        Verify 시스템은 3개 국제 표준(ASD-STE100, MIL-STD-961E, MIL-STD-38784B)에서
+        도출한 21종 규칙으로 기술 문서 품질을 자동 점검합니다.
+        78건의 원본 조항을 분석하여 33건(42%)을 자동화했으며,
+        Acrolinx 방식의 밀도 스코어링으로 품질을 수치화합니다.
+    </p>
+    <div class="po-badge-row">
+        <span class="po-badge">3개 국제 표준</span>
+        <span class="po-badge">21종 자동 규칙</span>
+        <span class="po-badge">78건 분석 / 33건 적용</span>
+        <span class="po-badge">A~D 등급 산출</span>
+    </div>
+</div>
+
+<p>
+    이 문서는 각 규칙이 무엇을 검사하고, 어떤 기준으로 판정하는지를 다루는 실무 레퍼런스입니다.
+    "Verify 사용법"이 화면 조작을 다루는 반면, 이 문서는 규칙의 내용과 판정 근거에 초점을 맞춥니다.
+</p>
+
+
+<!-- ========================================
+     참조 표준
+     ======================================== -->
+<h2 class="po-section-title" id="참조-표준">참조 표준</h2>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:30%">표준</th>
+            <th style="width:15%">분량</th>
+            <th>대상</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>ASD-STE100</strong> Issue 7</td>
+            <td>382페이지</td>
+            <td>Simplified Technical English. 기술 영어 작성 규칙 49건.</td>
+        </tr>
+        <tr>
+            <td><strong>MIL-STD-961E</strong> Rev E</td>
+            <td>111페이지</td>
+            <td>군용 규격서 구조/서식 요구사항 13건.</td>
+        </tr>
+        <tr>
+            <td><strong>MIL-STD-38784B</strong> Rev B</td>
+            <td>138페이지</td>
+            <td>기술교범(TM) 작성 규칙 10건.</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="po-callout">
+    <strong>적용 범위:</strong> 원본 78건 중 33건(42%)을 자동화했습니다.
+    미적용 45건은 NLP 의존(18건), 주관적 판단(10건), 우선순위 낮음(12건), 타 표준 커버(5건) 사유입니다.
+    향후 NLP 도입 시 적용률을 40~50%까지 확대할 수 있습니다.
+</div>
+
+
+<!-- ========================================
+     검증 3모드
+     ======================================== -->
+<h2 class="po-section-title" id="검증-3모드">Verify 시스템 3가지 모드</h2>
+
+<div class="po-screenshot">
+    <img src="images/verify-hub.svg" alt="Verify 3-모드 허브" style="max-width: 360px; display: block; margin: 0 auto;">
+</div>
+<p class="po-screenshot-caption">Verify 3-모드 허브 — 비교, 유사도, 규칙 검증</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:20%">모드</th>
+            <th style="width:28%">기술</th>
+            <th>용도</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>문서 비교</strong></td>
+            <td>jsdiff + AI 의미 분류(6태그)</td>
+            <td>원본 vs 수정본 단어 수준 Diff, 변경 유형 자동 분류</td>
+        </tr>
+        <tr>
+            <td><strong>유사도 검사</strong></td>
+            <td>Winnowing (L1) + bge-m3 (L3)</td>
+            <td>두 문서 간 구간별 유사도 측정, 유사 구간 하이라이트</td>
+        </tr>
+        <tr>
+            <td><strong>규칙 검증</strong></td>
+            <td>정규식 + 휴리스틱 (21종)</td>
+            <td>작성 기준 자동 점검, 품질 스코어 산출</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     ASD-STE100 규칙
+     ======================================== -->
+<h2 class="po-section-title" id="ste-규칙">ASD-STE100 적용 규칙 (12건)</h2>
+<p class="po-section-subtitle">Simplified Technical English 작성 규칙 중 자동화 가능한 12건입니다.</p>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">STE 1.1</span>
+        <span class="po-rule-example-name">승인 사전 룩업</span>
+    </div>
+    <p>STE 승인 단어 사전에 등록되지 않은 단어를 감지합니다.</p>
+    <p><strong>판정:</strong> 비승인 단어 사용 시 warning. <strong>구현:</strong> 사전 룩업.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">STE 1.5</span>
+        <span class="po-rule-example-name">기술명 화이트리스트</span>
+    </div>
+    <p>항공기, 시스템, 부품 등 기술 고유명사를 화이트리스트로 관리합니다. 등록된 기술명은 STE 사전 검사에서 제외됩니다.</p>
+    <p><strong>판정:</strong> 화이트리스트 등록 여부. <strong>구현:</strong> 사전 룩업.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">STE 1.11</span>
+        <span class="po-rule-example-name">동의어 그룹 매칭</span>
+    </div>
+    <p>동일 문서 내에서 같은 의미를 다른 단어로 표현하는 경우를 감지합니다 (예: remove / take away).</p>
+    <p><strong>판정:</strong> 동의어 그룹 내 복수 단어 사용 시 warning. <strong>구현:</strong> 동의어 사전 매칭.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">STE 2.1</span>
+        <span class="po-rule-example-name">명사 클러스터 3단어 제한</span>
+    </div>
+    <p>연속된 명사가 3단어를 초과하면 가독성이 떨어집니다 (예: "engine oil filter element" &rarr; 4단어).</p>
+    <p><strong>판정:</strong> 3단어 초과 시 suggestion. <strong>구현:</strong> 정규식. <strong>신뢰도:</strong> low (복합 명사 오탐 가능).</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">STE 3.6</span>
+        <span class="po-rule-example-name">수동태 감지</span>
+    </div>
+    <p>절차문에서 수동태 사용을 감지합니다. STE는 능동태 사용을 권장합니다.</p>
+    <p><strong>판정:</strong> 수동태 패턴 검출 시 suggestion. <strong>구현:</strong> 정규식. <strong>신뢰도:</strong> low (be+pp 패턴 한계).</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">STE 5.1</span>
+        <span class="po-rule-example-name">절차문 20단어 제한</span>
+    </div>
+    <p>절차(Procedure) 유형 문장은 20단어를 초과하지 않아야 합니다.</p>
+    <p><strong>판정:</strong> 20단어 초과 시 warning. <strong>구현:</strong> 단어 수 카운트.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">STE 6.3</span>
+        <span class="po-rule-example-name">설명문 25단어 제한</span>
+    </div>
+    <p>설명(Description) 유형 문장은 25단어를 초과하지 않아야 합니다.</p>
+    <p><strong>판정:</strong> 25단어 초과 시 warning. <strong>구현:</strong> 단어 수 카운트.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">STE 6.6</span>
+        <span class="po-rule-example-name">단락 6문장 제한</span>
+    </div>
+    <p>하나의 단락이 6문장을 초과하면 분리를 권장합니다.</p>
+    <p><strong>판정:</strong> 6문장 초과 시 suggestion. <strong>구현:</strong> 문장 수 카운트.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">STE 7.1</span>
+        <span class="po-rule-example-name">WARNING / CAUTION 표기</span>
+    </div>
+    <p>안전 경고 문구(WARNING, CAUTION)의 표기 형식을 점검합니다.</p>
+    <p><strong>판정:</strong> 형식 미준수 시 error. <strong>구현:</strong> 구조 패턴 매칭.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">STE 8.4~8.7</span>
+        <span class="po-rule-example-name">단어 수 규칙</span>
+    </div>
+    <p>목록 항목(list item), 제목(title), 표 셀(table cell) 등의 단어 수 제한입니다.</p>
+    <p><strong>판정:</strong> 제한 초과 시 warning. <strong>구현:</strong> 단어 수 카운트.</p>
+</div>
+
+
+<!-- ========================================
+     MIL-STD-961E 규칙
+     ======================================== -->
+<h2 class="po-section-title" id="mil-961e-규칙">MIL-STD-961E 적용 규칙 (9건)</h2>
+<p class="po-section-subtitle">군용 규격서 구조와 서식 요구사항입니다.</p>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">961E-S01</span>
+        <span class="po-rule-example-name">6섹션 구조 검증</span>
+    </div>
+    <p>규격서가 표준 6섹션 구조(Scope, Applicable Documents, Requirements, Verification, Packaging, Notes)를 갖추었는지 점검합니다.</p>
+    <p><strong>판정:</strong> 누락 섹션 발견 시 error. <strong>구현:</strong> 구조 패턴 매칭.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">961E-S02</span>
+        <span class="po-rule-example-name">번호 연속성 검증</span>
+    </div>
+    <p>섹션 번호(1., 1.1, 1.1.1)가 연속적이고 건너뜀 없이 이어지는지 확인합니다.</p>
+    <p><strong>판정:</strong> 번호 건너뜀 또는 중복 시 error. <strong>구현:</strong> 상태 추적.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">961E-S03</span>
+        <span class="po-rule-example-name">약어 풀네임 병기</span>
+    </div>
+    <p>약어 첫 사용 시 풀네임을 괄호와 함께 표기했는지 점검합니다 (예: "Light Detection And Ranging (LIDAR)").</p>
+    <p><strong>판정:</strong> 미정의 약어 사용 시 warning. <strong>구현:</strong> 상태 추적 + 정규식.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">961E-S04</span>
+        <span class="po-rule-example-name">shall / will / should / may 일관성</span>
+    </div>
+    <p>
+        요구사항에는 <code>shall</code>, 계약자 의무에는 <code>will</code>,
+        권고에는 <code>should</code>, 허용에는 <code>may</code>를 사용해야 합니다.
+    </p>
+    <p><strong>판정:</strong> 혼용 시 warning. <strong>구현:</strong> 정규식 + 수치 카운트.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">961E-S05</span>
+        <span class="po-rule-example-name">표/그림 번호 순차 + 제목</span>
+    </div>
+    <p>Table 1, Table 2 / Figure 1, Figure 2 번호가 순차적이고, 각각 제목이 있는지 확인합니다.</p>
+    <p><strong>판정:</strong> 번호 누락 또는 제목 미기재 시 warning. <strong>구현:</strong> 정규식 + 상태 추적.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">961E-S06</span>
+        <span class="po-rule-example-name">교차 참조 실존 검증</span>
+    </div>
+    <p>본문에서 참조하는 섹션, 표, 그림 번호가 실제로 존재하는지 확인합니다.</p>
+    <p><strong>판정:</strong> 미존재 참조 시 error. <strong>구현:</strong> 정규식 + 사전 룩업.</p>
+</div>
+
+<div class="po-rule-example">
+    <div class="po-rule-example-header">
+        <span class="po-rule-example-id">961E-S07~S09</span>
+        <span class="po-rule-example-name">추가 구조 규칙</span>
+    </div>
+    <p>요구사항 항목 구조, 참고 문서 형식, 부록 번호 체계를 점검합니다.</p>
+    <p><strong>판정:</strong> 형식 미준수 시 warning. <strong>구현:</strong> 구조 패턴 매칭.</p>
+</div>
+
+
+<!-- ========================================
+     MIL-STD-38784B 규칙
+     ======================================== -->
+<h2 class="po-section-title" id="mil-38784b-규칙">MIL-STD-38784B 적용 규칙 (6건)</h2>
+<p class="po-section-subtitle">기술교범 작성 규칙입니다. 일부는 961E/STE 규칙과 통합 적용됩니다.</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:20%">규칙 ID</th>
+            <th style="width:30%">규칙명</th>
+            <th>통합 여부</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>38784B-01</td><td>약어 풀네임 병기</td><td>961E-S03과 통합</td></tr>
+        <tr><td>38784B-02</td><td>shall / will 구분</td><td>961E-S04와 통합</td></tr>
+        <tr><td>38784B-03</td><td>WARNING 배치 및 서식</td><td>STE 7.1과 연계, 위치 규칙 추가</td></tr>
+        <tr><td>38784B-04</td><td>CAUTION 배치 및 서식</td><td>WARNING과 동일 패턴</td></tr>
+        <tr><td>38784B-05</td><td>표 번호 체계</td><td>961E-S05와 통합</td></tr>
+        <tr><td>38784B-06</td><td>문장 간결</td><td>STE 5.1/6.3으로 커버</td></tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     자체 규칙
+     ======================================== -->
+<h2 class="po-section-title" id="자체-규칙">자체 추가 규칙 (6건)</h2>
+<p class="po-section-subtitle">표준 외에 실무적으로 유용한 규칙을 추가 구현했습니다.</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:20%">규칙 ID</th>
+            <th style="width:25%">규칙명</th>
+            <th>설명</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>CUSTOM-01</td><td>용어 통일성</td><td>동일 개념에 대해 문서 내에서 서로 다른 용어 사용을 감지</td></tr>
+        <tr><td>CUSTOM-02</td><td>빈 섹션 감지</td><td>제목만 있고 내용이 없는 섹션을 경고</td></tr>
+        <tr><td>CUSTOM-03</td><td>TBD/TBR 잔류</td><td>미확정 항목(To Be Determined/Resolved)이 남아있는지 감지</td></tr>
+        <tr><td>CUSTOM-04</td><td>중복 단락</td><td>동일하거나 유사한 단락이 반복되는지 검사</td></tr>
+        <tr><td>CUSTOM-05</td><td>숫자 단위 일관성</td><td>동일 물리량에 대해 서로 다른 단위 사용을 감지</td></tr>
+        <tr><td>CUSTOM-06</td><td>참조 문서 유효성</td><td>참조된 외부 문서 번호 형식 검증</td></tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     스코어링
+     ======================================== -->
+<h2 class="po-section-title" id="스코어링">품질 스코어링</h2>
+<p class="po-section-subtitle">Acrolinx 밀도(density) 방식으로 품질을 수치화합니다.</p>
+
+<h3 id="심각도-체계">심각도 및 신뢰도</h3>
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:20%">심각도</th>
+            <th style="width:15%">가중치</th>
+            <th>의미</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>error</strong></td><td>5</td><td>구조적 결함, 반드시 수정 필요</td></tr>
+        <tr><td><strong>warning</strong></td><td>2</td><td>작성 기준 미준수, 수정 권장</td></tr>
+        <tr><td><strong>suggestion</strong></td><td>1</td><td>개선 권고, 선택적 수정</td></tr>
+    </tbody>
+</table>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:20%">신뢰도</th>
+            <th style="width:15%">계수</th>
+            <th>의미</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>high</strong></td><td>1.0</td><td>오탐 가능성 낮음 (사전 룩업, 번호 체계)</td></tr>
+        <tr><td><strong>medium</strong></td><td>0.7</td><td>대부분 정확 (단어 수, 구조 패턴)</td></tr>
+        <tr><td><strong>low</strong></td><td>0.4</td><td>오탐 가능 (수동태 감지, 명사 클러스터)</td></tr>
+    </tbody>
+</table>
+
+<div class="po-screenshot">
+    <img src="images/verify-scoring.svg" alt="규칙 검증 및 스코어링 흐름" style="max-width: 360px; display: block; margin: 0 auto;">
+</div>
+<p class="po-screenshot-caption">규칙 검증 및 스코어링 흐름</p>
+
+<h3 id="점수-산출">점수 산출 방식</h3>
+<p>
+    각 위반의 가중 합계를 단어 수로 나누어 밀도(density)를 구하고,
+    임계값(기본 5.0) 대비 점수를 산출합니다.
+</p>
+<div class="po-callout">
+    <strong>공식:</strong> 밀도 = (위반별 severity x confidence 합계) / 단어 수 x 1000<br>
+    점수 = 100 x max(0, 1 - 밀도 / 임계값)<br>
+    최소 단어 수(MIN_WORDS) = 200. 미달 시 "분석 불가" 표시.
+</div>
+
+<h3 id="등급-체계">등급 체계</h3>
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:15%">등급</th>
+            <th style="width:20%">점수 범위</th>
+            <th>의미</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>A</strong></td><td>90 ~ 100</td><td>우수. 주요 위반 없음.</td></tr>
+        <tr><td><strong>B</strong></td><td>70 ~ 89</td><td>양호. 경미한 개선 필요.</td></tr>
+        <tr><td><strong>C</strong></td><td>50 ~ 69</td><td>보통. 다수 위반 존재.</td></tr>
+        <tr><td><strong>D</strong></td><td>0 ~ 49</td><td>미흡. 전면 재검토 필요.</td></tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     업계 비교
+     ======================================== -->
+<h2 class="po-section-title" id="업계-비교">업계 도구 비교</h2>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:22%">도구</th>
+            <th style="width:20%">STE 커버리지</th>
+            <th>특징</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>HyperSTE</strong></td>
+            <td>62%</td>
+            <td>STE 전문 상용 도구. NLP 기반 고정밀 분석.</td>
+        </tr>
+        <tr>
+            <td><strong>Acrolinx</strong></td>
+            <td>범용</td>
+            <td>기업용 문서 품질 플랫폼. 커스텀 규칙 지원.</td>
+        </tr>
+        <tr>
+            <td><strong>Vale</strong></td>
+            <td>YAML 기반</td>
+            <td>오픈소스 linter. YAML 규칙 정의, CI/CD 통합.</td>
+        </tr>
+        <tr>
+            <td><strong>본 시스템</strong></td>
+            <td>24%</td>
+            <td>STE + MIL-STD 15건 통합. 폐쇄망 동작. 유사도/비교 포함.</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="po-callout">
+    <strong>차별점:</strong> STE 단독 커버리지는 상용 도구보다 낮지만,
+    MIL-STD-961E와 MIL-STD-38784B를 함께 지원하는 도구는 현재 없습니다.
+    또한 문서 비교(Diff), 유사도 검사와 규칙 검증을 하나의 시스템에서 통합 제공합니다.
+</div>
+
+
+<!-- ========================================
+     구현 방식 분류
+     ======================================== -->
+<h2 class="po-section-title" id="구현-방식">구현 방식 분류</h2>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:22%">구현 방식</th>
+            <th style="width:12%">건수</th>
+            <th>대표 규칙</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>정규식 (Regex)</td><td>10건</td><td>수동태 감지, shall/will, 약어 패턴</td></tr>
+        <tr><td>수치 카운트</td><td>5건</td><td>단어 수 제한, 문장 수 제한</td></tr>
+        <tr><td>사전 룩업</td><td>4건</td><td>STE 승인 단어, 기술명 화이트리스트</td></tr>
+        <tr><td>구조 패턴</td><td>8건</td><td>6섹션 구조, WARNING 배치, 표 번호</td></tr>
+        <tr><td>상태 추적</td><td>3건</td><td>번호 연속성, 약어 첫 사용, 교차참조</td></tr>
+        <tr><td>휴리스틱</td><td>3건</td><td>명사 클러스터, 용어 통일, 단위 일관성</td></tr>
+    </tbody>
+</table>
+
+
+<!-- ========================================
+     운영 가이드
+     ======================================== -->
+<h2 class="po-section-title" id="운영-가이드">운영 가이드</h2>
+
+<h3 id="규칙-설정">규칙 ON/OFF 설정</h3>
+<p>
+    관리자 설정 &gt; Verify 탭에서 개별 규칙을 활성/비활성할 수 있습니다.
+    조직의 작성 기준에 맞지 않는 규칙은 비활성하여 불필요한 경고를 줄일 수 있습니다.
+</p>
+
+<h3 id="오탐-관리">약어 오탐 관리</h3>
+<p>
+    약어 검사에서 오탐이 발생하면 해당 약어를 화이트리스트에 추가합니다.
+    조직 내에서 통용되는 약어(예: KF-21, AESA)는 미리 등록하면 검사 정확도가 향상됩니다.
+</p>
+
+<h3 id="점수-조정">점수 임계값 조정</h3>
+<p>
+    DENSITY_THRESHOLD(기본 5.0)를 조정하여 채점 엄격도를 변경할 수 있습니다.
+    임계값을 낮추면 같은 위반 수에서도 점수가 더 낮아져 엄격해집니다.
+</p>
+
+<h3 id="규칙-추가">새 규칙 추가</h3>
+<p>
+    <code>backend/rules/</code> 디렉토리에 JSON 파일을 추가하면
+    서버 재시작 시 자동으로 규칙 엔진에 로드됩니다. 코드 수정이 불필요합니다.
+</p>
+
+<div class="po-callout">
+    <strong>참고:</strong> Verify 화면 조작 방법은 좌측 메뉴 <em>사용 가이드 &gt; Verify 사용법</em>을 참조하십시오.
+</div>

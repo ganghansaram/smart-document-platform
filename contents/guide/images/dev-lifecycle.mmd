@@ -1,0 +1,10 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8eef6', 'primaryBorderColor': '#2c5282', 'primaryTextColor': '#1a202c', 'lineColor': '#2c5282', 'fontSize': '14px'}}}%%
+graph LR
+    EX["Explorer\n읽기 · 소비\n─────────\nRAG 검색\nAI 채팅\n문서 트리"]
+    NB["Notebook\n이해 · 내재화\n─────────\nPDF 번역\nAI 요약\nQ&A · 마인드맵"]
+    VF["Verify\n검증 · 판단\n─────────\n문서 비교\n유사도 검사\n21종 규칙"]
+    AU["Author\n생산 · 창작\n─────────\nAI 저작\n참조 인용\n요구사항 추적"]
+    EX -->|"이해"| NB
+    NB -->|"검증"| VF
+    VF -->|"생산"| AU
+    AU -.->|"지식 순환"| EX
