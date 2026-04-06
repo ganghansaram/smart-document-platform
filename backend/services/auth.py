@@ -144,6 +144,7 @@ def create_session(user_id: int) -> str:
     expires = datetime.utcnow() + timedelta(hours=config.SESSION_EXPIRY_HOURS)
     conn = _get_conn()
     try:
+        conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
         conn.execute(
             "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)",
             (token, user_id, expires.isoformat()),
