@@ -170,9 +170,6 @@
         var webFontSize     = parseInt(localStorage.getItem('tt-web-font-size') || '15', 10);
         var webPageStatusCache = {};  // 웹 뷰 번역 상태 캐시
         var webPollingTimer = null;
-        var webFullViewMode = true; // 전체 문서 연속 스크롤 모드 (Phase 3-B: 기본 활성)
-        var webFullViewObserver = null; // IntersectionObserver
-        var webFullSyncLock = false; // 좌↔우 동기화 재진입 방지
 
         // Range dialog
         var $rangeOverlay   = document.getElementById('range-dialog-overlay');
@@ -655,14 +652,7 @@
                 if (!scrollSyncEnabled) return;
                 if (!activeRailPanel) return;
 
-                if (translateEngine === 'web' && webFullViewMode) {
-                    _scrollFullViewToPage(currentPage);
-                } else if (translateEngine === 'web') {
-                    updateRightPanel();
-                } else if (translateEngine === 'pdf') {
-                    // PDF 번역: 향후 3-A에서 연속 스크롤 구현 시 scrollIntoView로 대체
-                    updateRightPanel();
-                }
+                updateRightPanel();
             }, 150);
         }
 
@@ -674,13 +664,6 @@
 
             // 웹 뷰 모드
             if (translateEngine === 'web') {
-                // 전체 문서 모드
-                if (webFullViewMode) {
-                    showRightWebViewFull();
-                    updateToolbarForStatus('done');
-                    return;
-                }
-
                 var wps = webPageStatusCache[String(currentPage)];
                 var wStatus = wps ? wps.status : 'pending';
 
@@ -1258,215 +1241,6 @@
             });
         }
 
-        // ── 웹 뷰 전체 문서 연속 스크롤 ──
-
-        function showRightWebViewFull() {
-            if (!activeRailPanel) return;
-            _showDualPanel();
-            $rightContainer.style.display = 'none';
-            $rightPlaceholder.style.display = 'flex';
-            $rightPlaceholder.innerHTML =
-                '<div class="spinner page-spinner"></div>' +
-                '<div class="placeholder-text">전체 문서 로드 중...</div>';
-            $webViewContainer.style.display = 'none';
-
-            fetch(API + '/api/translator/web-view/' + currentDocId + '/full', {
-                credentials: 'include',
-            }).then(function(r) {
-                if (!r.ok) throw new Error('full load failed');
-                return r.json();
-            }).then(function(data) {
-                var fullMd = data.markdown || '';
-                var translatedPages = data.translated_pages || [];
-                var total = data.total_pages || totalPages;
-
-                // <!-- Page N --> 주석 기준으로 페이지별 분리
-                var pageMap = {};
-                var pageRegex = /<!--\s*Page\s+(\d+)\s*[^>]*-->/g;
-                var match;
-                var lastPage = null;
-                var lastIdx = 0;
-
-                while ((match = pageRegex.exec(fullMd)) !== null) {
-                    if (lastPage !== null) {
-                        pageMap[lastPage] = fullMd.substring(lastIdx, match.index).trim();
-                    }
-                    lastPage = parseInt(match[1], 10);
-                    lastIdx = match.index + match[0].length;
-                }
-                if (lastPage !== null) {
-                    pageMap[lastPage] = fullMd.substring(lastIdx).trim();
-                }
-
-                // 전체 페이지 HTML 조립
-                var htmlParts = [];
-                for (var p = 1; p <= total; p++) {
-                    var pageMd = pageMap[p];
-                    if (pageMd) {
-                        // 이미지 경로 변환 (각 페이지별 assets 경로)
-                        var assetBase = API + '/api/translator/web-view/' + currentDocId + '/page/' + p + '/assets/';
-                        pageMd = pageMd.replace(/!\[([^\]]*)\]\(assets\/([^)]+)\)/g, '![$1](' + assetBase + '$2)');
-                        pageMd = pageMd.replace(/src="assets\/([^"]+)"/g, 'src="' + assetBase + '$1"');
-                        var pageHtml = DOMPurify.sanitize(marked.parse(pageMd), { ADD_ATTR: ['style'] });
-                        htmlParts.push(
-                            '<div class="web-page-section" data-page="' + p + '">' +
-                            '<div class="web-page-marker">Page ' + p + '</div>' +
-                            pageHtml +
-                            '</div>'
-                        );
-                    } else {
-                        htmlParts.push(
-                            '<div class="web-page-section web-page-not-translated" data-page="' + p + '">' +
-                            '<div class="web-page-placeholder">' +
-                            '<p>' + p + ' 페이지 — 아직 번역되지 않았습니다</p>' +
-                            '<button class="btn btn-primary btn-sm web-translate-inline" data-page="' + p + '">번역하기</button>' +
-                            '</div></div>'
-                        );
-                    }
-                }
-
-                $rightPlaceholder.style.display = 'none';
-                $webViewContainer.style.display = 'block';
-                $webViewContent.innerHTML = htmlParts.join('');
-                _applyWebFontSize();
-
-                // 인라인 번역 버튼 이벤트
-                var inlineBtns = $webViewContent.querySelectorAll('.web-translate-inline');
-                for (var i = 0; i < inlineBtns.length; i++) {
-                    inlineBtns[i].addEventListener('click', function(e) {
-                        var pg = parseInt(e.target.getAttribute('data-page'), 10);
-                        _startWebTranslationForPage(pg);
-                    });
-                }
-
-                // IntersectionObserver: 현재 보이는 섹션 → 좌측 PDF 이동
-                _setupFullViewObserver();
-
-            }).catch(function(err) {
-                console.error('[WebView Full] load error:', err);
-                $rightPlaceholder.style.display = 'none';
-                $webViewContainer.style.display = 'block';
-                $webViewContent.innerHTML = '<p class="placeholder-error">전체 문서 로드 실패</p>';
-            });
-        }
-
-        function _startWebTranslationForPage(pageNum) {
-            var model = $modelSelect.value;
-            fetch(API + '/api/translator/web-translate/' + currentDocId + '/page/' + pageNum, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: model }),
-            }).then(function(r) {
-                if (!r.ok) throw new Error('start failed');
-                // 해당 섹션을 "번역 중" 표시로 교체
-                var section = $webViewContent.querySelector('[data-page="' + pageNum + '"]');
-                if (section) {
-                    section.innerHTML =
-                        '<div class="web-page-placeholder">' +
-                        '<div class="spinner spinner-sm"></div>' +
-                        '<p>' + pageNum + ' 페이지 번역 중...</p>' +
-                        '</div>';
-                }
-                // 완료 폴링
-                _pollInlineTranslation(pageNum);
-            }).catch(function(err) {
-                console.error('[WebView Full] inline translate error:', err);
-            });
-        }
-
-        function _pollInlineTranslation(pageNum) {
-            var timer = setInterval(function() {
-                fetch(API + '/api/translator/web-translate/' + currentDocId + '/page/' + pageNum + '/status', {
-                    credentials: 'include',
-                }).then(function(r) { return r.json(); })
-                .then(function(st) {
-                    if (st.status === 'done') {
-                        clearInterval(timer);
-                        // 완료된 페이지 Markdown 로드 후 섹션 교체
-                        fetch(API + '/api/translator/web-view/' + currentDocId + '/page/' + pageNum, {
-                            credentials: 'include',
-                        }).then(function(r) { return r.json(); })
-                        .then(function(data) {
-                            var md = data.markdown || '';
-                            if (md.startsWith('---')) {
-                                var endIdx = md.indexOf('---', 3);
-                                if (endIdx > 0) md = md.substring(endIdx + 3).trim();
-                            }
-                            var assetBase = API + '/api/translator/web-view/' + currentDocId + '/page/' + pageNum + '/assets/';
-                            md = md.replace(/!\[([^\]]*)\]\(assets\/([^)]+)\)/g, '![$1](' + assetBase + '$2)');
-                            md = md.replace(/src="assets\/([^"]+)"/g, 'src="' + assetBase + '$1"');
-                            var html = DOMPurify.sanitize(marked.parse(md), { ADD_ATTR: ['style'] });
-                            var section = $webViewContent.querySelector('[data-page="' + pageNum + '"]');
-                            if (section) {
-                                section.className = 'web-page-section';
-                                section.innerHTML =
-                                    '<div class="web-page-marker">Page ' + pageNum + '</div>' + html;
-                            }
-                            _applyWebFontSize();
-                            // 캐시 갱신
-                            webPageStatusCache[String(pageNum)] = st;
-                        });
-                    } else if (st.status === 'error') {
-                        clearInterval(timer);
-                        var section = $webViewContent.querySelector('[data-page="' + pageNum + '"]');
-                        if (section) {
-                            section.innerHTML =
-                                '<div class="web-page-placeholder">' +
-                                '<p>' + pageNum + ' 페이지 번역 실패</p>' +
-                                '<button class="btn btn-primary btn-sm web-translate-inline" data-page="' + pageNum + '">재시도</button>' +
-                                '</div>';
-                            section.querySelector('.web-translate-inline').addEventListener('click', function() {
-                                _startWebTranslationForPage(pageNum);
-                            });
-                        }
-                    }
-                }).catch(function() { clearInterval(timer); });
-            }, 3000);
-        }
-
-        function _setupFullViewObserver() {
-            if (webFullViewObserver) webFullViewObserver.disconnect();
-            var sections = $webViewContent.querySelectorAll('.web-page-section');
-            if (!sections.length) return;
-
-            webFullViewObserver = new IntersectionObserver(function(entries) {
-                if (webFullSyncLock) return;
-                var best = null;
-                for (var i = 0; i < entries.length; i++) {
-                    if (entries[i].isIntersecting) {
-                        if (!best || entries[i].intersectionRatio > best.intersectionRatio) {
-                            best = entries[i];
-                        }
-                    }
-                }
-                if (best) {
-                    var pg = parseInt(best.target.getAttribute('data-page'), 10);
-                    if (pg && pg !== currentPage) {
-                        webFullSyncLock = true;
-                        currentPage = pg;
-                        updatePageNav();
-                        renderLeftPage(currentPage);
-                        setTimeout(function() { webFullSyncLock = false; }, 300);
-                    }
-                }
-            }, { root: $webViewContainer, threshold: [0.1, 0.3, 0.5] });
-
-            for (var i = 0; i < sections.length; i++) {
-                webFullViewObserver.observe(sections[i]);
-            }
-        }
-
-        function _scrollFullViewToPage(pageNum) {
-            if (!webFullViewMode) return;
-            var section = $webViewContent.querySelector('[data-page="' + pageNum + '"]');
-            if (section) {
-                webFullSyncLock = true;
-                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                setTimeout(function() { webFullSyncLock = false; }, 500);
-            }
-        }
-
         function startWebPolling() {
             stopWebPolling();
             webPollingTimer = setInterval(function() {
@@ -1594,7 +1368,7 @@
             // (전체 문서 모드에서는 currentPage와 다른 페이지를 보고 있으므로 숨김)
             var $editBtn = document.getElementById('web-edit-btn');
             if ($editBtn) {
-                $editBtn.style.display = (translateEngine === 'web' && status === 'done' && !webFullViewMode) ? '' : 'none';
+                $editBtn.style.display = (translateEngine === 'web' && status === 'done') ? '' : 'none';
             }
 
             if (status === 'pending' || status === 'error') {
@@ -1665,28 +1439,7 @@
                 scrollSyncEnabled = false;
                 if ($scrollSyncBtn) $scrollSyncBtn.classList.remove('active');
             }
-            // 전체 보기 토글 표시/숨김
-            $webFullToggle.style.display = translateEngine === 'web' ? '' : 'none';
-            if (translateEngine !== 'web') {
-                webFullViewMode = true; // Phase 3-B: 웹뷰 전환 시 기본 전체 모드
-                $webFullToggle.classList.add('active');
-                if (webFullViewObserver) { webFullViewObserver.disconnect(); webFullViewObserver = null; }
-            }
-
             // 모드 전환 시 해당 모드의 캐시된 결과 표시
-            updateRightPanel();
-        });
-
-        // ── 전체 보기 토글 ──
-        var $webFullToggle = document.getElementById('web-full-toggle');
-        $webFullToggle.addEventListener('click', function() {
-            webFullViewMode = !webFullViewMode;
-            $webFullToggle.classList.toggle('active', webFullViewMode);
-            $webFullToggle.title = webFullViewMode ? '페이지별 보기' : '전체 문서 보기';
-            if (!webFullViewMode && webFullViewObserver) {
-                webFullViewObserver.disconnect();
-                webFullViewObserver = null;
-            }
             updateRightPanel();
         });
 
@@ -1918,11 +1671,6 @@
             renderLeftPage(currentPage);
             if ($leftScroll) $leftScroll.scrollTop = 0;
 
-            if (translateEngine === 'web' && webFullViewMode) {
-                // 전체 보기 모드: 우측 스크롤만 이동 (재로드 안 함)
-                _scrollFullViewToPage(currentPage);
-                return;
-            }
             if (translateEngine === 'web') {
                 // 웹뷰 모드: updateRightPanel()이 자체적으로 서버 fetch
                 updateRightPanel();
@@ -4844,7 +4592,6 @@
             var old = $leftContainer.querySelector('.nav-box-layer');
             if (old) old.remove();
 
-            if (webFullViewMode) return;  // 전체 문서 모드에서는 비활성
             if (translateEngine !== 'web') return; // 웹뷰 모드에서만
 
             var boxes = _navBoxes[String(currentPage)];
@@ -4882,7 +4629,6 @@
 
         // ── 우측→좌측: MD 블록 클릭 → PDF box 하이라이트 ──
         $webViewContent.addEventListener('click', function (e) {
-            if (webFullViewMode) return;
             var target = e.target.closest('[data-box-index]');
             if (!target) return;
             var idx = target.getAttribute('data-box-index');
