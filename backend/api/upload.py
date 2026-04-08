@@ -27,7 +27,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 CONVERTER_DIR = PROJECT_ROOT / "tools" / "converter"
 
 # 허용 확장자
-ALLOWED_EXTENSIONS = {'.docx', '.pdf'}
+ALLOWED_EXTENSIONS = {'.doc', '.docx', '.pdf'}
 
 # 최대 파일 크기 (500MB)
 MAX_FILE_SIZE = 500 * 1024 * 1024
@@ -90,7 +90,18 @@ def run_converter(input_path: Path, output_path: Path, file_ext: str) -> dict:
         sys.path.insert(0, converter_dir_str)
 
     preprocessed_path = None
+    converted_doc_path = None
     try:
+        # .doc → .docx 사전 변환
+        if file_ext == '.doc':
+            from services.doc_converter import convert_doc_to_docx
+            doc_bytes = input_path.read_bytes()
+            docx_bytes = convert_doc_to_docx(doc_bytes)
+            converted_doc_path = input_path.with_suffix('.docx')
+            converted_doc_path.write_bytes(docx_bytes)
+            input_path = converted_doc_path
+            file_ext = '.docx'
+
         if file_ext == '.docx':
             # 전처리: COM으로 장절번호 평문화 + 필드 갱신
             from config import WORD_COM_PREPROCESS
@@ -130,6 +141,12 @@ def run_converter(input_path: Path, output_path: Path, file_ext: str) -> dict:
             detail=f"변환기 모듈 로드 실패: {str(e)}. python-docx 또는 PyMuPDF 패키지 설치를 확인하세요."
         )
     finally:
+        # .doc→.docx 변환 임시 파일 정리
+        if converted_doc_path and converted_doc_path.exists():
+            try:
+                converted_doc_path.unlink(missing_ok=True)
+            except OSError:
+                pass
         # 전처리 임시 파일 정리
         if preprocessed_path and preprocessed_path != str(input_path):
             try:

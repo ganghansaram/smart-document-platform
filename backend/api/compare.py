@@ -26,7 +26,7 @@ from services.similarity_engine import run_similarity
 
 router = APIRouter(prefix="/compare", tags=["compare"])
 
-ALLOWED_EXTENSIONS = {".docx", ".pdf"}
+ALLOWED_EXTENSIONS = {".doc", ".docx", ".pdf"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 

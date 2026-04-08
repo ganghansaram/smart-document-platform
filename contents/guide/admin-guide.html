@@ -154,11 +154,52 @@
 
 <p>
     런처 또는 헤더의 시스템 전환 버튼에서 관리자 설정 페이지에 접근합니다.
-    설정은 시스템별, 탭별로 구분되어 있으며 변경 후 저장 버튼을 클릭합니다.
-    일부 항목은 서버 재시작이 필요하며, 해당 항목에는 안내가 표시됩니다.
+    사이드바는 <strong>관리</strong>(계정 관리, 대시보드)와 <strong>플랫폼 설정</strong>(일반, AI 연결, 콘텐츠, 검색/챗봇, 번역, 문서 검증) 두 그룹으로 구분됩니다.
+    변경 후 저장 버튼을 클릭하며, 일부 항목은 서버 재시작이 필요합니다.
+    자주 변경하지 않는 세부 항목은 [고급] 섹션에 접혀 있습니다.
 </p>
 
-<h3 id="ai-rag-설정">AI / RAG 설정</h3>
+<h3 id="일반-설정">일반</h3>
+
+<table class="po-spec-table">
+    <thead>
+        <tr>
+            <th style="width:28%">항목</th>
+            <th>설명</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>사이트 타이틀</strong></td>
+            <td>헤더, 로그인 페이지, 브라우저 탭에 표시되는 사이트 이름.</td>
+        </tr>
+        <tr>
+            <td><strong>테이블 스타일</strong></td>
+            <td>bordered(기본), simple, minimal 중 선택.</td>
+        </tr>
+        <tr>
+            <td><strong>열람 로그인 필수</strong></td>
+            <td>비인증 사용자의 접근 차단 여부. 재시작 필요.</td>
+        </tr>
+        <tr>
+            <td><strong>로그인 세션 만료</strong></td>
+            <td>로그인 유지 시간 (시간 단위). 재시작 필요.</td>
+        </tr>
+        <tr>
+            <td><strong>에디터 활성화</strong></td>
+            <td>인라인 문서 편집 기능 사용 여부.</td>
+        </tr>
+        <tr>
+            <td><strong>저장 시 백업 생성</strong></td>
+            <td>파일 저장 전 .bak 백업 파일 생성 여부.</td>
+        </tr>
+    </tbody>
+</table>
+<p>
+    [고급] 섹션: 자동 저장 간격, 최대 대화 턴 수, 유휴 세션 만료
+</p>
+
+<h3 id="ai-연결">AI 연결</h3>
 
 <table class="po-spec-table">
     <thead>
@@ -170,88 +211,35 @@
     <tbody>
         <tr>
             <td><strong>Ollama URL</strong></td>
-            <td>로컬 Ollama 서버 주소 (예: http://localhost:11434). 재시작 필요.</td>
+            <td>Ollama 서버 주소 (예: http://localhost:11434). 재시작 필요. Docker 환경에서는 .env로 관리됩니다.</td>
         </tr>
         <tr>
-            <td><strong>LLM 모델</strong></td>
-            <td>채팅에 사용할 모델 이름 (예: gemma3:4b). 재시작 필요.</td>
+            <td><strong>AI 모델</strong></td>
+            <td>플랫폼 전체에서 사용하는 기본 AI 모델 (예: gemma3:4b). Explorer 챗봇, Notebook 번역/요약, Verify 비교에 모두 적용. 재시작 필요.</td>
         </tr>
         <tr>
-            <td><strong>임베딩 모델</strong></td>
-            <td>벡터 검색용 모델 (예: bge-m3). 재시작 필요.</td>
-        </tr>
-        <tr>
-            <td><strong>기본 검색 방식</strong></td>
-            <td>hybrid(권장), keyword, vector 중 선택.</td>
-        </tr>
-        <tr>
-            <td><strong>최대 검색 결과</strong></td>
-            <td>챗봇 응답에 사용할 최대 문서 청크 수 (1~20).</td>
-        </tr>
-        <tr>
-            <td><strong>최대 컨텍스트 길이</strong></td>
-            <td>LLM에 전달할 최대 문자 수 (1,000~32,000).</td>
-        </tr>
-        <tr>
-            <td><strong>리랭커</strong></td>
-            <td>교차 인코더 리랭커(bge-reranker-v2-m3) 활성화 여부.</td>
-        </tr>
-        <tr>
-            <td><strong>쿼리 재작성</strong></td>
-            <td>멀티턴 대화에서 후속 질문을 독립 쿼리로 자동 변환.</td>
-        </tr>
-        <tr>
-            <td><strong>시스템 프롬프트</strong></td>
-            <td>RAG 챗봇의 기본 응답 지침.</td>
+            <td><strong>AI 챗봇 표시</strong></td>
+            <td>Explorer 우측 하단 AI 챗봇 버튼 표시 여부.</td>
         </tr>
     </tbody>
 </table>
 
-<h3 id="세션-설정">세션 설정</h3>
+<h3 id="콘텐츠-설정">콘텐츠</h3>
+
+<p>
+    <strong>업로드</strong> 탭과 <strong>메뉴 관리</strong> 탭으로 구분됩니다.
+</p>
 
 <table class="po-spec-table">
     <thead>
         <tr>
-            <th style="width:28%">항목</th>
+            <th style="width:28%">항목 (업로드 탭)</th>
             <th>설명</th>
         </tr>
     </thead>
     <tbody>
         <tr>
-            <td><strong>최대 대화 턴</strong></td>
-            <td>챗봇이 기억하는 최대 Q&amp;A 쌍 수 (1~20).</td>
-        </tr>
-        <tr>
-            <td><strong>최대 히스토리 길이</strong></td>
-            <td>LLM에 전달할 대화 이력 최대 문자 수.</td>
-        </tr>
-        <tr>
-            <td><strong>최대 세션 수</strong></td>
-            <td>서버 메모리에 유지할 동시 세션 수. 초과 시 LRU 방식으로 제거.</td>
-        </tr>
-        <tr>
-            <td><strong>유휴 타임아웃</strong></td>
-            <td>비활성 세션 자동 삭제 시간 (분).</td>
-        </tr>
-        <tr>
-            <td><strong>로그인 유지 시간</strong></td>
-            <td>로그인 세션 유효 시간 (시간 단위). 재시작 필요.</td>
-        </tr>
-    </tbody>
-</table>
-
-<h3 id="업로드-설정">업로드 설정</h3>
-
-<table class="po-spec-table">
-    <thead>
-        <tr>
-            <th style="width:28%">항목</th>
-            <th>설명</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><strong>업로드 활성화</strong></td>
+            <td><strong>업로드 기능 활성화</strong></td>
             <td>편집자 이상 사용자에게 업로드 UI 표시 여부.</td>
         </tr>
         <tr>
@@ -259,21 +247,17 @@
             <td>단일 파일 최대 크기 (MB).</td>
         </tr>
         <tr>
-            <td><strong>자동 키워드 인덱싱</strong></td>
+            <td><strong>검색 인덱스 자동 갱신</strong></td>
             <td>업로드 후 BM25 검색 인덱스 자동 재생성.</td>
         </tr>
         <tr>
-            <td><strong>자동 벡터 인덱싱</strong></td>
+            <td><strong>벡터 인덱스 자동 갱신</strong></td>
             <td>업로드 후 FAISS 벡터 인덱스 자동 재생성. 시간 소요가 큽니다.</td>
         </tr>
-        <tr>
-            <td><strong>DOCX COM 전처리</strong></td>
-            <td>Microsoft Word COM으로 자동 번호를 평문화. Windows + Word 설치 필요.</td>
-        </tr>
     </tbody>
 </table>
 
-<h3 id="화면-에디터-설정">화면 / 에디터 설정</h3>
+<h3 id="검색-챗봇-설정">검색 / 챗봇</h3>
 
 <table class="po-spec-table">
     <thead>
@@ -284,33 +268,32 @@
     </thead>
     <tbody>
         <tr>
-            <td><strong>사이트 제목</strong></td>
-            <td>헤더, 로그인 페이지, 브라우저 탭에 표시되는 사이트 이름.</td>
+            <td><strong>검색 방식</strong></td>
+            <td>하이브리드(권장), 키워드(BM25), 벡터 유사도 중 선택.</td>
         </tr>
         <tr>
-            <td><strong>테이블 스타일</strong></td>
-            <td>bordered(기본), simple, minimal 중 선택.</td>
+            <td><strong>최대 검색 결과 수</strong></td>
+            <td>챗봇 응답에 사용할 최대 문서 청크 수 (1~20).</td>
         </tr>
         <tr>
-            <td><strong>AI 챗봇 표시</strong></td>
-            <td>우하단 AI 채팅 버튼 표시 여부.</td>
+            <td><strong>리랭커 사용</strong></td>
+            <td>교차 인코더 리랭커로 검색 결과 정확도 향상.</td>
         </tr>
         <tr>
-            <td><strong>에디터 활성화</strong></td>
-            <td>인라인 문서 편집 기능 사용 여부.</td>
+            <td><strong>쿼리 재작성</strong></td>
+            <td>멀티턴 대화에서 후속 질문을 독립 쿼리로 자동 변환.</td>
         </tr>
         <tr>
-            <td><strong>자동 저장 간격</strong></td>
-            <td>편집 시 자동 저장 주기 (밀리초 단위, 기본 30초).</td>
-        </tr>
-        <tr>
-            <td><strong>백업 생성</strong></td>
-            <td>저장 전 .bak 백업 파일 생성 여부.</td>
+            <td><strong>시스템 프롬프트</strong></td>
+            <td>RAG 챗봇의 기본 응답 지침. 비워두면 기본 프롬프트 적용.</td>
         </tr>
     </tbody>
 </table>
+<p>
+    [고급] 섹션: 최대 컨텍스트 길이, 키워드 비중, 최소 벡터 유사도
+</p>
 
-<h3 id="보안-설정">보안 설정</h3>
+<h3 id="번역-설정">번역</h3>
 
 <table class="po-spec-table">
     <thead>
@@ -321,60 +304,81 @@
     </thead>
     <tbody>
         <tr>
-            <td><strong>로그인 필수</strong></td>
-            <td>비인증 API 접근 차단 여부. 재시작 필요.</td>
+            <td><strong>테이블 텍스트 번역</strong></td>
+            <td>PDF 번역 시 표 안의 텍스트도 번역 대상에 포함.</td>
         </tr>
         <tr>
-            <td><strong>CORS 허용 출처</strong></td>
-            <td>허용할 외부 도메인 목록 (줄바꿈 구분). 재시작 필요.</td>
+            <td><strong>OCR 우회</strong></td>
+            <td>스캔 PDF에서 OCR 처리 활성화.</td>
+        </tr>
+        <tr>
+            <td><strong>표 추출 모드</strong></td>
+            <td>웹뷰 번역 시 표 영역 처리 방식 (구조 추출/이미지/끄기).</td>
+        </tr>
+        <tr>
+            <td><strong>수식 추출 모드</strong></td>
+            <td>웹뷰 번역 시 수식 처리 방식 (LaTeX/이미지/끄기).</td>
+        </tr>
+        <tr>
+            <td><strong>자동 요약</strong></td>
+            <td>전체 추출 완료 후 AI 요약 자동 생성 여부.</td>
+        </tr>
+        <tr>
+            <td><strong>동시 번역 수</strong></td>
+            <td>서버에서 동시에 처리할 최대 번역 작업 수.</td>
         </tr>
     </tbody>
 </table>
+<p>
+    [고급] 섹션: 번역 모델 오버라이드, 커스텀 프롬프트, 리치텍스트 비활성화, 호환성 강화, 이미지 DPI, 페이지 타임아웃, AI 번역/요약 프롬프트
+</p>
 
-<h3 id="notebook-verify-설정">Notebook / Verify 설정</h3>
+<h3 id="문서-검증-설정">문서 검증</h3>
 
 <p>
-    Notebook과 Verify 시스템별 설정은 관리자 설정 페이지에서 해당 시스템 탭을 선택하여 조정합니다.
+    <strong>AI 비교</strong>, <strong>유사도 검사</strong>, <strong>규칙 검증</strong> 세 개 탭으로 구분됩니다.
 </p>
 
 <table class="po-spec-table">
     <thead>
         <tr>
-            <th style="width:15%">시스템</th>
-            <th style="width:25%">설정 영역</th>
-            <th>주요 항목</th>
+            <th style="width:15%">탭</th>
+            <th style="width:25%">항목</th>
+            <th>설명</th>
         </tr>
     </thead>
     <tbody>
         <tr>
-            <td rowspan="3"><strong>Notebook</strong></td>
-            <td>번역 모델</td>
-            <td>Notebook 전용 Ollama 모델 지정 (미지정 시 Explorer 모델 사용)</td>
+            <td rowspan="2"><strong>AI 비교</strong></td>
+            <td>AI 비교 활성화</td>
+            <td>차이점의 AI 의미 분류 기능 사용 여부</td>
         </tr>
         <tr>
-            <td>PDF 번역 품질</td>
-            <td>번역 프롬프트, 표 텍스트 번역, OCR, 최소 텍스트 길이</td>
+            <td>시스템 프롬프트</td>
+            <td>AI 비교 분류 지침. [고급]: 모델 오버라이드, 온도</td>
         </tr>
         <tr>
-            <td>웹뷰 번역 품질</td>
-            <td>표 처리 방식, 수식 처리, 이미지 DPI, 자동 요약</td>
+            <td rowspan="2"><strong>유사도 검사</strong></td>
+            <td>유사도 임계값</td>
+            <td>높음/중간 기준 (0~100%)</td>
         </tr>
         <tr>
-            <td rowspan="2"><strong>Verify</strong></td>
-            <td>비교 설정</td>
-            <td>AI 의미 분류 활성화, 온도, 배치 크기, 타임아웃</td>
+            <td>판정 기준</td>
+            <td>낮음/높음 판정 경계값</td>
         </tr>
         <tr>
-            <td>유사도 설정</td>
-            <td>유사도 임계값(높음/중간), 판정 기준, Winnowing 파라미터</td>
+            <td><strong>규칙 검증</strong></td>
+            <td>규칙 편집기</td>
+            <td>검증 규칙 목록 관리 (추가, 편집, 삭제, 활성화 토글)</td>
         </tr>
     </tbody>
 </table>
 
 <div class="po-callout">
     <strong>재시작 필요 항목:</strong>
-    Ollama URL, LLM 모델, 임베딩 모델, 로그인 필수, CORS, 로그인 유지 시간은
+    Ollama URL, AI 모델, 열람 로그인 필수, 로그인 세션 만료는
     변경 후 서버 재시작이 필요합니다. 해당 항목 변경 시 UI에 안내가 표시됩니다.
+    Docker 환경에서는 Ollama URL과 AI 모델이 .env 환경변수로 관리되며, 설정 UI에서 변경할 수 없습니다.
 </div>
 
 

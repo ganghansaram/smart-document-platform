@@ -50,6 +50,11 @@ def extract_document(
     if file_bytes is None:
         raise ValueError("file_bytes 또는 text 중 하나는 필수입니다")
 
+    if ext == ".doc":
+        from services.doc_converter import convert_doc_to_docx
+        file_bytes = convert_doc_to_docx(file_bytes)
+        ext = ".docx"
+
     if ext == ".pdf":
         return _from_pdf(file_bytes)
     elif ext == ".docx":

@@ -86,7 +86,7 @@ const UPLOAD_CONFIG = {
     backendUrl: 'http://localhost:8000',    // 업로드 API 서버
 
     // 허용 파일 형식
-    acceptFormats: ['.docx', '.pdf'],       // 업로드 가능한 확장자
+    acceptFormats: ['.doc', '.docx', '.pdf'],  // 업로드 가능한 확장자
 
     // 업로드 제한
     maxFileSize: 500 * 1024 * 1024,         // 최대 파일 크기 (500MB)

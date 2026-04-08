@@ -53,6 +53,11 @@ echo "[4/4] 서비스 시작..."
 docker compose up -d
 echo ""
 
+# ── 5. 이전 이미지 정리 ──
+echo "미사용 이미지 정리..."
+docker image prune -f 2>/dev/null || true
+echo ""
+
 # ── 상태 확인 ──
 echo "=== 배포 완료 ==="
 docker compose ps

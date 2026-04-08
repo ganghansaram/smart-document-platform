@@ -163,14 +163,14 @@
                 </div>
                 <div class="verify-hub-hint">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    .docx, .pdf 파일을 화면에 드래그하면 비교 모드로 바로 시작합니다
+                    .doc, .docx, .pdf 파일을 화면에 드래그하면 비교 모드로 바로 시작합니다
                 </div>
             </div>
 
             <!-- 패널 컨테이너 (Translator viewer-panels 패턴) -->
             <div class="cp-panels" id="cp-panels">
-                <input type="file" id="file-input-a" accept=".docx,.pdf" style="display:none">
-                <input type="file" id="file-input-b" accept=".docx,.pdf" style="display:none">
+                <input type="file" id="file-input-a" accept=".doc,.docx,.pdf" style="display:none">
+                <input type="file" id="file-input-b" accept=".doc,.docx,.pdf" style="display:none">
 
                 <div class="compare-panel panel-a" id="panel-a">
                     <div class="cp-panel-header">
@@ -203,7 +203,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
                                 텍스트 붙여넣기
                             </button>
-                            <span class="placeholder-hint">.docx, .pdf 지원</span>
+                            <span class="placeholder-hint">.doc, .docx, .pdf 지원</span>
                         </div>
                     </div>
                     <div class="cp-minimap" id="cp-minimap-a"></div>
@@ -257,7 +257,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
                                 텍스트 붙여넣기
                             </button>
-                            <span class="placeholder-hint">.docx, .pdf 지원</span>
+                            <span class="placeholder-hint">.doc, .docx, .pdf 지원</span>
                         </div>
                     </div>
                     <div class="cp-minimap" id="cp-minimap-b"></div>
@@ -458,7 +458,7 @@
                     + '<span class="placeholder-or">또는</span>'
                     + '<button class="placeholder-paste-link" data-action="paste" data-side="' + side + '">'
                     + PASTE_ICON + ' 텍스트 붙여넣기</button>'
-                    + '<span class="placeholder-hint">.docx, .pdf 지원</span>'
+                    + '<span class="placeholder-hint">.doc, .docx, .pdf 지원</span>'
                     + '</div>';
             }
 
@@ -589,8 +589,8 @@
                 if (currentMode === 'similarity') { simUploadFile(side, file); return; }
 
                 var ext = file.name.split('.').pop().toLowerCase();
-                if (ext !== 'docx' && ext !== 'pdf') {
-                    showToast('지원하지 않는 형식입니다. 허용: .docx, .pdf', 'warning');
+                if (ext !== 'doc' && ext !== 'docx' && ext !== 'pdf') {
+                    showToast('지원하지 않는 형식입니다. 허용: .doc, .docx, .pdf', 'warning');
                     return;
                 }
 
@@ -1461,8 +1461,8 @@
             function simUploadFile(side, file) {
                 if (!file || currentMode !== 'similarity') return;
                 var ext = file.name.split('.').pop().toLowerCase();
-                if (ext !== 'docx' && ext !== 'pdf') {
-                    showToast('지원하지 않는 형식입니다. 허용: .docx, .pdf', 'warning');
+                if (ext !== 'doc' && ext !== 'docx' && ext !== 'pdf') {
+                    showToast('지원하지 않는 형식입니다. 허용: .doc, .docx, .pdf', 'warning');
                     return;
                 }
                 var panel = getPanel(side);

@@ -23,6 +23,11 @@ RULES_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "compare-r
 
 def extract_text(file_bytes: bytes, ext: str) -> dict:
     """확장자에 따라 텍스트 추출"""
+    if ext == ".doc":
+        from services.doc_converter import convert_doc_to_docx
+        file_bytes = convert_doc_to_docx(file_bytes)
+        ext = ".docx"
+
     if ext == ".docx":
         return _extract_docx(file_bytes)
     elif ext == ".pdf":

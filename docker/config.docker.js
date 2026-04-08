@@ -57,7 +57,7 @@ const UPLOAD_CONFIG = {
     enabled: true,
     requireAuth: true,
     backendUrl: '',                    // Nginx 동일 포트 → 상대경로
-    acceptFormats: ['.docx', '.pdf'],
+    acceptFormats: ['.doc', '.docx', '.pdf'],
     maxFileSize: 500 * 1024 * 1024,
     autoSearchIndex: false,
     autoVectorIndex: false,
