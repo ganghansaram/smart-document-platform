@@ -254,9 +254,10 @@ function generateSectionLinks() {
             // 통계 스트립 생성
             generateHomeStats(menuData);
 
-            // 1레벨 항목 중 children이 있는 것만
+            // 1레벨 항목 중 children이 있는 것만 (가이드·용어집 제외)
             var sections = menuData.filter(function(item) {
-                return item.children && item.children.length > 0;
+                return item.children && item.children.length > 0
+                    && item.icon !== 'info';
             });
 
             var descriptions = {

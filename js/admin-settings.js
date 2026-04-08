@@ -22,9 +22,10 @@ if (typeof showToast === 'undefined') {
 // ── 재시작 대기 상태 (페이지 재진입 시 배너 복원용) ──────────────────────────
 var _pendingRestartItems = [];
 
-// ── 설정 스키마 (시스템 > 탭 2-depth) ────────────────────────────────────────
+// ── 설정 스키마 (기능 도메인 중심 재구성) ─────────────────────────────────────
 var SETTINGS_SCHEMA = {
     systems: [
+        // ── 관리 ──
         {
             id: 'users',
             label: '계정 관리',
@@ -37,138 +38,111 @@ var SETTINGS_SCHEMA = {
             custom: true,
             group: '관리',
         },
+        // ── 플랫폼 설정 ──
         {
-            id: 'common',
-            label: '공통',
-            group: '시스템 설정',
+            id: 'general',
+            label: '일반',
+            group: '플랫폼 설정',
             tabs: [
                 {
-                    tabId: 'tab-security',
-                    tabLabel: '보안 / 접근',
+                    tabId: 'tab-general',
+                    tabLabel: '일반',
                     sections: [
                         {
-                            title: '접근 제어',
+                            title: '사이트',
                             fields: [
-                                { group: 'security', key: 'login_required', label: '열람 로그인 필수 (백엔드)', type: 'toggle',
-                                  restart: true, desc: '활성화 시 비로그인 사용자의 API 접근 차단. 변경 후 서버 재시작 필요' },
-                                { group: 'security', key: 'cors_origins',   label: 'CORS 허용 출처',            type: 'textarea',
-                                  restart: true,
-                                  desc: '허용할 출처 URL (줄바꿈으로 구분). 변경 후 서버 재시작 필요',
-                                  toStr: function(arr) { return Array.isArray(arr) ? arr.join('\n') : String(arr || ''); },
-                                  fromStr: function(s) { return s.split('\n').map(function(v) { return v.trim(); }).filter(Boolean); }
-                                },
+                                { group: 'frontend', key: 'display_site_title',  label: '사이트 타이틀', type: 'text',
+                                  restart: false, desc: '헤더, 로그인 페이지, 브라우저 탭에 표시되는 사이트 이름' },
+                                { group: 'frontend', key: 'display_table_style', label: '테이블 스타일', type: 'select',
+                                  options: [['bordered','Bordered — 테두리형 (기본)'], ['simple','Simple — 심플'], ['minimal','Minimal — 최소']],
+                                  restart: false, desc: '문서 내 테이블의 표시 스타일' },
                             ]
-                        }
+                        },
+                        {
+                            title: '보안',
+                            fields: [
+                                { group: 'security', key: 'login_required', label: '열람 로그인 필수', type: 'toggle',
+                                  restart: true, desc: '활성화 시 비로그인 사용자의 접근 차단. 변경 후 서버 재시작 필요' },
+                                { group: 'session', key: 'session_expiry_hours', label: '로그인 세션 만료 (시간)', type: 'number',
+                                  restart: true, min: 1, max: 720, step: 1,
+                                  desc: '로그인 유지 시간. 이 시간이 지나면 자동 로그아웃 (재시작 필요)' },
+                            ]
+                        },
+                        {
+                            title: '에디터',
+                            fields: [
+                                { group: 'frontend', key: 'editor_enabled',        label: '에디터 활성화',    type: 'toggle',
+                                  restart: false, desc: '문서 인라인 편집 기능 활성화 여부' },
+                                { group: 'frontend', key: 'editor_create_backup',  label: '저장 시 백업 생성', type: 'toggle',
+                                  restart: false, desc: '파일 저장 전 .bak 백업 파일 생성' },
+                            ]
+                        },
+                        {
+                            title: '고급',
+                            collapsed: true,
+                            fields: [
+                                { group: 'frontend', key: 'editor_auto_save_interval', label: '자동 저장 간격 (ms)', type: 'number',
+                                  restart: false, min: 5000, max: 300000, step: 5000,
+                                  desc: '에디터 자동 저장 주기 (밀리초). 기본 30000 = 30초' },
+                                { group: 'session', key: 'max_conversation_turns', label: '최대 대화 턴 수', type: 'number',
+                                  restart: false, min: 1, max: 20, step: 1,
+                                  desc: '챗봇이 기억할 최대 대화 교환 횟수' },
+                                { group: 'session', key: 'max_idle_minutes', label: '유휴 세션 만료 (분)', type: 'number',
+                                  restart: false, min: 1, max: 1440, step: 5,
+                                  desc: '마지막 메시지 이후 이 시간이 지나면 대화 세션 삭제' },
+                            ]
+                        },
                     ]
                 }
             ]
         },
         {
-            id: 'explorer',
-            label: 'Explorer',
-            group: '시스템 설정',
+            id: 'ai',
+            label: 'AI 연결',
+            group: '플랫폼 설정',
             tabs: [
                 {
-                    tabId: 'tab-ai',
-                    tabLabel: 'AI / RAG',
+                    tabId: 'tab-ai-connection',
+                    tabLabel: 'AI 연결',
                     sections: [
                         {
-                            title: '모델 연결',
+                            title: '서버 연결',
                             fields: [
-                                { group: 'ai', key: 'ollama_url',      label: 'Ollama URL',   type: 'text',   restart: true,
+                                { group: 'ai', key: 'ollama_url', label: 'Ollama URL', type: 'text', restart: true,
                                   placeholder: 'http://localhost:11434',
-                                  desc: '로컬 Ollama 서버 주소 (예: http://localhost:11434)' },
-                                { group: 'ai', key: 'ollama_model',    label: 'LLM 모델',     type: 'text',   restart: true,
+                                  desc: 'Ollama 서버 주소. Docker 환경에서는 .env 파일로 관리됩니다.' },
+                            ]
+                        },
+                        {
+                            title: '플랫폼 AI 모델',
+                            fields: [
+                                { group: 'ai', key: 'ollama_model', label: 'AI 모델', type: 'text', restart: true,
                                   placeholder: 'gemma3:4b',
-                                  desc: '챗봇에 사용할 Ollama 모델명 (예: gemma3:4b, llama3:8b)' },
-                                { group: 'ai', key: 'embedding_model', label: '임베딩 모델',  type: 'text',   restart: true,
-                                  placeholder: 'bge-m3',
-                                  desc: '벡터 검색에 사용할 임베딩 모델 (예: bge-m3)' },
+                                  desc: '플랫폼 전체에서 사용하는 기본 AI 모델. Explorer 챗봇, Notebook 번역/요약, Verify 비교에 모두 적용됩니다.' },
                             ]
                         },
                         {
-                            title: '검색 설정',
+                            title: '기능',
                             fields: [
-                                { group: 'ai', key: 'default_search_type',   label: '검색 방식',          type: 'select',
-                                  options: [['hybrid','하이브리드 (권장)'], ['keyword','키워드 (BM25)'], ['vector','벡터 유사도']],
-                                  restart: false, desc: '문서 검색 알고리즘 선택' },
-                                { group: 'ai', key: 'max_search_results',    label: '최대 검색 결과 수',  type: 'number',
-                                  restart: false, min: 1, max: 20, step: 1,
-                                  desc: '챗봇 답변 생성 시 참조할 최대 문서 청크 수' },
-                                { group: 'ai', key: 'max_context_length',    label: '최대 컨텍스트 길이', type: 'number',
-                                  restart: false, min: 1000, max: 32000, step: 500,
-                                  desc: 'LLM에 전달하는 참고문서 최대 글자 수 (토큰 예산)' },
-                                { group: 'ai', key: 'hybrid_keyword_weight', label: '키워드 비중 (하이브리드)', type: 'number',
-                                  restart: false, min: 0, max: 1, step: 0.05,
-                                  desc: '하이브리드 검색에서 BM25(키워드) 비중. 나머지는 벡터 비중 (예: 0.3 → 키워드 30%, 벡터 70%)' },
-                                { group: 'ai', key: 'hybrid_rrf_k',         label: 'RRF K 값',           type: 'number',
-                                  restart: false, min: 1, max: 200, step: 1,
-                                  desc: 'Reciprocal Rank Fusion 상수. 작을수록 상위 순위 문서 가중치 증가 (기본 60)' },
-                                { group: 'ai', key: 'min_vector_score',     label: '최소 벡터 유사도',   type: 'number',
-                                  restart: false, min: 0, max: 1, step: 0.01,
-                                  desc: '이 값 미만의 벡터 유사도 결과는 제외. 관련 없는 결과 필터링 (기본 0.48)' },
-                            ]
-                        },
-                        {
-                            title: '리랭커 / 쿼리 재작성',
-                            fields: [
-                                { group: 'ai', key: 'reranker_enabled',          label: '리랭커 사용',      type: 'toggle',
-                                  restart: false, desc: 'Cross-encoder 리랭커(bge-reranker-v2-m3)로 검색 결과 정확도 향상' },
-                                { group: 'ai', key: 'reranker_top_k_multiplier', label: '리랭커 후보 배수', type: 'number',
-                                  restart: false, min: 1, max: 10, step: 1,
-                                  desc: '리랭커 입력 후보 수 = 최대 검색 결과 × 이 값 (더 많은 후보에서 선별)' },
-                                { group: 'ai', key: 'query_rewrite_enabled',     label: '쿼리 재작성',      type: 'toggle',
-                                  restart: false, desc: '멀티턴 대화에서 이전 문맥을 반영한 독립적 검색 쿼리 자동 재작성' },
-                            ]
-                        },
-                        {
-                            title: '챗봇 프롬프트',
-                            fields: [
-                                { group: 'ai', key: 'chat_system_prompt', label: '시스템 프롬프트 (백엔드 RAG)',
-                                  type: 'textarea', restart: false, rows: 12,
-                                  placeholder: '당신은 KF-21 전투기 기술 문서 전문 어시스턴트입니다. 제공된 참고 문서만을 기반으로 답변합니다.\n\n[핵심 규칙]\n1. 오직 제공된 문서 내용만 사용하여 답변합니다\n2. 문서에 없는 내용은 절대 추측하거나 일반 지식으로 보충하지 않습니다\n3. 정보가 없으면 "제공된 문서에서 해당 정보를 찾지 못했습니다"라고만 답변하고 끝냅니다\n4. "하지만", "일반적으로", "참고로" 등으로 문서 외 지식을 덧붙이지 않습니다\n\n[답변 형식]\n- 마크다운으로 답변합니다: **굵게**와 목록(- 또는 1.)만 사용합니다\n- 핵심 내용을 먼저 간결하게 제시하고, 필요한 경우만 목록으로 구조화합니다\n\n[언어]\n반드시 한국어로 답변합니다. 참고 문서가 영어여도 한국어로 번역하여 답변합니다.',
-                                  desc: '챗봇이 답변 생성 시 따르는 지침. 비워두면 회색 글씨의 기본 프롬프트가 적용됩니다.' },
+                                { group: 'frontend', key: 'ai_enabled', label: 'AI 챗봇 표시', type: 'toggle',
+                                  restart: false, desc: 'Explorer 우측 하단 AI 챗봇 버튼 및 패널 표시 여부' },
                             ]
                         },
                     ]
-                },
-                {
-                    tabId: 'tab-session',
-                    tabLabel: '세션',
-                    sections: [
-                        {
-                            title: '대화 세션 (인메모리)',
-                            fields: [
-                                { group: 'session', key: 'max_conversation_turns', label: '최대 대화 턴 수',      type: 'number',
-                                  restart: false, min: 1, max: 20, step: 1,
-                                  desc: '챗봇이 기억할 최대 대화 교환 횟수 (이전 Q&A 쌍)' },
-                                { group: 'session', key: 'max_history_length',     label: '히스토리 최대 길이',   type: 'number',
-                                  restart: false, min: 100, max: 10000, step: 100,
-                                  desc: 'LLM에 포함되는 대화 히스토리 최대 글자 수' },
-                                { group: 'session', key: 'max_sessions',           label: '최대 세션 수',         type: 'number',
-                                  restart: false, min: 1, max: 1000, step: 10,
-                                  desc: '서버 메모리에 동시 유지할 최대 대화 세션 수 (초과 시 LRU 방식으로 오래된 세션 제거)' },
-                                { group: 'session', key: 'max_idle_minutes',       label: '유휴 세션 만료 (분)', type: 'number',
-                                  restart: false, min: 1, max: 1440, step: 5,
-                                  desc: '마지막 메시지 이후 이 시간(분)이 지나면 세션 자동 삭제' },
-                            ]
-                        },
-                        {
-                            title: '로그인 세션',
-                            fields: [
-                                { group: 'session', key: 'session_expiry_hours', label: '로그인 세션 만료 (시간)', type: 'number',
-                                  restart: true, min: 1, max: 720, step: 1,
-                                  desc: '로그인 유지 시간. 이 시간이 지나면 자동 로그아웃 처리 (재시작 필요)' },
-                            ]
-                        }
-                    ]
-                },
+                }
+            ]
+        },
+        {
+            id: 'content',
+            label: '콘텐츠',
+            group: '플랫폼 설정',
+            tabs: [
                 {
                     tabId: 'tab-upload',
                     tabLabel: '업로드',
                     sections: [
                         {
-                            title: '업로드 기능',
+                            title: '업로드 설정',
                             fields: [
                                 { group: 'frontend', key: 'upload_enabled',           label: '업로드 기능 활성화',             type: 'toggle',
                                   restart: false, desc: 'Editor 이상 권한 사용자의 파일 업로드 UI 표시 여부' },
@@ -176,68 +150,11 @@ var SETTINGS_SCHEMA = {
                                   restart: false, min: 1, max: 2000, step: 10,
                                   desc: '업로드 허용 최대 단일 파일 크기 (MB 단위)' },
                                 { group: 'frontend', key: 'upload_auto_search_index', label: '업로드 후 검색 인덱스 자동 갱신', type: 'toggle',
-                                  restart: false, desc: '파일 업로드 완료 후 키워드(BM25) 검색 인덱스 자동 재생성' },
+                                  restart: false, desc: '업로드 완료 후 키워드(BM25) 검색 인덱스 자동 재생성' },
                                 { group: 'frontend', key: 'upload_auto_vector_index', label: '업로드 후 벡터 인덱스 자동 갱신', type: 'toggle',
-                                  restart: false, desc: '파일 업로드 완료 후 FAISS 벡터 인덱스 자동 재생성 (시간 소요)' },
+                                  restart: false, desc: '업로드 완료 후 FAISS 벡터 인덱스 자동 재생성 (시간 소요)' },
                             ]
                         },
-                        {
-                            title: 'DOCX 변환',
-                            fields: [
-                                { group: 'upload', key: 'word_com_preprocess', label: 'Word COM 전처리', type: 'toggle',
-                                  restart: false, desc: 'DOCX 변환 시 Microsoft Word COM으로 자동 번호(장절 목차 등) 평문화. Windows + Word 설치 필요' },
-                                { group: 'upload', key: 'upload_temp_dir',     label: '임시 폴더 경로',  type: 'text',
-                                  restart: false, desc: '업로드 파일 임시 저장 경로 (비워두면 시스템 기본 임시 폴더 사용)' },
-                            ]
-                        }
-                    ]
-                },
-                {
-                    tabId: 'tab-frontend',
-                    tabLabel: '화면 / 에디터',
-                    sections: [
-                        {
-                            title: '화면 표시',
-                            fields: [
-                                { group: 'frontend', key: 'display_site_title',  label: '사이트 타이틀', type: 'text',
-                                  restart: false, desc: '헤더·로그인 페이지·브라우저 탭에 표시되는 사이트 이름 (예: KF-21 History WebBook)' },
-                                { group: 'frontend', key: 'display_table_style', label: '테이블 스타일', type: 'select',
-                                  options: [['bordered','Bordered — 테두리형 (기본)'], ['simple','Simple — 심플'], ['minimal','Minimal — 최소']],
-                                  restart: false, desc: '문서 내 테이블의 표시 스타일 프리셋' },
-                                { group: 'frontend', key: 'login_required',      label: '열람 로그인 필수 (프론트엔드)', type: 'toggle',
-                                  restart: false, desc: '프론트엔드 측 로그인 게이트 여부. 보안 탭의 백엔드 설정과 동일하게 유지 권장' },
-                            ]
-                        },
-                        {
-                            title: 'AI 챗봇 (프론트엔드)',
-                            fields: [
-                                { group: 'frontend', key: 'ai_enabled',             label: '챗봇 표시',            type: 'toggle',
-                                  restart: false, desc: '우측 하단 AI 챗봇 버튼 및 패널 표시 여부' },
-                                { group: 'frontend', key: 'ai_use_backend',          label: '백엔드 RAG 사용',      type: 'toggle',
-                                  restart: false, desc: '활성화 시 서버 RAG 파이프라인 사용 / 비활성화 시 브라우저에서 Ollama 직접 호출' },
-                                { group: 'frontend', key: 'ai_search_type',          label: '검색 방식 (직접 모드)', type: 'select',
-                                  options: [['hybrid','하이브리드'], ['keyword','키워드'], ['vector','벡터']],
-                                  restart: false, desc: '백엔드 미사용 시 프론트엔드 직접 검색 방식 (백엔드 RAG 사용 시 무관)' },
-                                { group: 'frontend', key: 'ai_max_search_results',   label: '최대 검색 결과 수',    type: 'number',
-                                  restart: false, min: 1, max: 20, step: 1 },
-                                { group: 'frontend', key: 'ai_max_context_length',   label: '최대 컨텍스트 길이',   type: 'number',
-                                  restart: false, min: 1000, max: 32000, step: 500 },
-                                { group: 'frontend', key: 'ai_system_prompt',        label: '시스템 프롬프트 (직접 모드)',      type: 'textarea',
-                                  restart: false, rows: 8, desc: '백엔드 RAG 미사용(직접 모드) 시에만 적용됩니다. 백엔드 RAG 사용 시에는 AI/RAG 탭의 프롬프트가 적용됩니다.' },
-                            ]
-                        },
-                        {
-                            title: '에디터',
-                            fields: [
-                                { group: 'frontend', key: 'editor_enabled',            label: '에디터 활성화',      type: 'toggle',
-                                  restart: false, desc: '문서 인라인 편집 기능 활성화 여부' },
-                                { group: 'frontend', key: 'editor_auto_save_interval', label: '자동 저장 간격 (ms)', type: 'number',
-                                  restart: false, min: 5000, max: 300000, step: 5000,
-                                  desc: '에디터 자동 저장 주기 (밀리초). 기본 30000 = 30초' },
-                                { group: 'frontend', key: 'editor_create_backup',      label: '저장 시 백업 생성',   type: 'toggle',
-                                  restart: false, desc: '파일 저장 전 .bak 백업 파일 생성' },
-                            ]
-                        }
                     ]
                 },
                 {
@@ -248,116 +165,134 @@ var SETTINGS_SCHEMA = {
             ]
         },
         {
+            id: 'search',
+            label: '검색 / 챗봇',
+            group: '플랫폼 설정',
+            tabs: [
+                {
+                    tabId: 'tab-search',
+                    tabLabel: '검색 / 챗봇',
+                    sections: [
+                        {
+                            title: '검색 설정',
+                            fields: [
+                                { group: 'ai', key: 'default_search_type', label: '검색 방식', type: 'select',
+                                  options: [['hybrid','하이브리드 (권장)'], ['keyword','키워드 (BM25)'], ['vector','벡터 유사도']],
+                                  restart: false, desc: '문서 검색 알고리즘 선택' },
+                                { group: 'ai', key: 'max_search_results', label: '최대 검색 결과 수', type: 'number',
+                                  restart: false, min: 1, max: 20, step: 1,
+                                  desc: '챗봇 답변 생성 시 참조할 최대 문서 청크 수' },
+                                { group: 'ai', key: 'reranker_enabled', label: '리랭커 사용', type: 'toggle',
+                                  restart: false, desc: 'Cross-encoder 리랭커로 검색 결과 정확도 향상' },
+                                { group: 'ai', key: 'query_rewrite_enabled', label: '쿼리 재작성', type: 'toggle',
+                                  restart: false, desc: '멀티턴 대화에서 이전 문맥을 반영한 독립적 검색 쿼리 자동 재작성' },
+                            ]
+                        },
+                        {
+                            title: '챗봇 프롬프트',
+                            fields: [
+                                { group: 'ai', key: 'chat_system_prompt', label: '시스템 프롬프트',
+                                  type: 'textarea', restart: false, rows: 12,
+                                  placeholder: '당신은 KF-21 전투기 기술 문서 전문 어시스턴트입니다. 제공된 참고 문서만을 기반으로 답변합니다.\n\n[핵심 규칙]\n1. 오직 제공된 문서 내용만 사용하여 답변합니다\n2. 문서에 없는 내용은 절대 추측하거나 일반 지식으로 보충하지 않습니다\n3. 정보가 없으면 "제공된 문서에서 해당 정보를 찾지 못했습니다"라고만 답변하고 끝냅니다\n4. "하지만", "일반적으로", "참고로" 등으로 문서 외 지식을 덧붙이지 않습니다\n\n[답변 형식]\n- 마크다운으로 답변합니다: **굵게**와 목록(- 또는 1.)만 사용합니다\n- 핵심 내용을 먼저 간결하게 제시하고, 필요한 경우만 목록으로 구조화합니다\n\n[언어]\n반드시 한국어로 답변합니다. 참고 문서가 영어여도 한국어로 번역하여 답변합니다.',
+                                  desc: '챗봇이 답변 생성 시 따르는 지침. 비워두면 회색 글씨의 기본 프롬프트가 적용됩니다.' },
+                            ]
+                        },
+                        {
+                            title: '고급',
+                            collapsed: true,
+                            fields: [
+                                { group: 'ai', key: 'max_context_length', label: '최대 컨텍스트 길이', type: 'number',
+                                  restart: false, min: 1000, max: 32000, step: 500,
+                                  desc: 'LLM에 전달하는 참고문서 최대 글자 수 (토큰 예산)' },
+                                { group: 'ai', key: 'hybrid_keyword_weight', label: '키워드 비중 (하이브리드)', type: 'number',
+                                  restart: false, min: 0, max: 1, step: 0.05,
+                                  desc: '하이브리드 검색에서 BM25(키워드) 비중 (기본 0.3)' },
+                                { group: 'ai', key: 'min_vector_score', label: '최소 벡터 유사도', type: 'number',
+                                  restart: false, min: 0, max: 1, step: 0.01,
+                                  desc: '이 값 미만의 벡터 유사도 결과는 제외 (기본 0.48)' },
+                            ]
+                        },
+                    ]
+                }
+            ]
+        },
+        {
             id: 'translator',
-            label: 'Notebook',
-            group: '시스템 설정',
+            label: '번역',
+            group: '플랫폼 설정',
             tabs: [
                 {
                     tabId: 'tab-translator',
-                    tabLabel: '번역 설정',
+                    tabLabel: '번역',
                     sections: [
                         {
-                            title: '번역 모델',
+                            title: 'PDF 번역',
                             fields: [
-                                { group: 'translator', key: 'translation_model',
-                                  label: '번역 모델', type: 'text', restart: false,
-                                  placeholder: 'Explorer LLM 모델 사용',
-                                  desc: '번역 전용 Ollama 모델. 비워두면 AI/RAG 탭의 LLM 모델 사용' },
+                                { group: 'translator', key: 'translate_table_text',
+                                  label: '테이블 텍스트 번역', type: 'toggle', restart: false,
+                                  desc: '표 안의 텍스트도 번역 대상에 포함' },
+                                { group: 'translator', key: 'ocr_workaround',
+                                  label: 'OCR 우회', type: 'toggle', restart: false,
+                                  desc: '스캔 PDF에서 OCR 처리 활성화' },
                             ]
                         },
                         {
-                            title: '번역 품질',
-                            subtabs: [
-                                {
-                                    subtabId: 'quality-pdf',
-                                    subtabLabel: 'PDF 번역',
-                                    fields: [
-                                        { group: 'translator', key: 'custom_prompt',
-                                          label: '시스템 프롬프트 (role block)', type: 'textarea', restart: false,
-                                          rows: 4,
-                                          desc: '--custom-system-prompt 값. 비워두면 BabelDOC 기본 프롬프트 사용. $lang_out 변수 사용 가능',
-                                          placeholder: 'You are a professional $lang_out native translator who needs to fluently translate text into $lang_out.' },
-                                        { group: 'translator', key: 'disable_rich_text',
-                                          label: '리치텍스트 번역 비활성화', type: 'toggle', restart: false,
-                                          desc: '<style> 태그 손상 방지. 볼드/이탤릭 서식이 번역에서 제외됨' },
-                                        { group: 'translator', key: 'translate_table_text',
-                                          label: '테이블 텍스트 번역', type: 'toggle', restart: false,
-                                          desc: '표 안의 텍스트도 번역 대상에 포함' },
-                                        { group: 'translator', key: 'min_text_length',
-                                          label: '최소 텍스트 길이', type: 'number', restart: false,
-                                          min: 0, max: 100, step: 1,
-                                          desc: '이 글자 수 미만의 텍스트 블록은 번역 건너뜀' },
-                                        { group: 'translator', key: 'ocr_workaround',
-                                          label: 'OCR 우회', type: 'toggle', restart: false,
-                                          desc: '스캔 PDF에서 OCR 처리 활성화' },
-                                        { group: 'translator', key: 'enhance_compatibility',
-                                          label: '호환성 강화', type: 'toggle', restart: false,
-                                          desc: '일부 PDF 뷰어 호환성 문제 해결' },
-                                    ]
-                                },
-                                {
-                                    subtabId: 'quality-web',
-                                    subtabLabel: '웹 뷰 번역',
-                                    fields: [
-                                        { group: 'translator', key: 'web_table_mode',
-                                          label: '표 추출 모드', type: 'select', restart: false,
-                                          options: [['extract','구조 추출 (Markdown 테이블)'], ['image','이미지만'], ['off','끄기']],
-                                          desc: '표 영역 처리 방식. "구조 추출"은 셀 데이터를 Markdown 테이블로 변환, "이미지만"은 스크린샷 캡처' },
-                                        { group: 'translator', key: 'web_formula_mode',
-                                          label: '수식 추출 모드', type: 'select', restart: false,
-                                          options: [['latex','LaTeX 변환'], ['image','이미지만'], ['off','끄기']],
-                                          desc: '수식 영역 처리 방식. "LaTeX"는 Pix2Text 모델 필요 (~200MB)' },
-                                        { group: 'translator', key: 'web_image_dpi',
-                                          label: '이미지 해상도 (DPI)', type: 'range', restart: false,
-                                          min: 72, max: 300, step: 6,
-                                          desc: '추출 이미지의 해상도. 높을수록 선명하지만 파일 크기 증가' },
-                                        { group: 'translator', key: 'web_table_strategy',
-                                          label: '표 감지 전략', type: 'select', restart: false,
-                                          options: [['lines_strict','lines_strict (엄격)'], ['lines','lines (표준)'], ['text','text (텍스트 기반)']],
-                                          desc: 'PyMuPDF 표 감지 알고리즘. "lines_strict"가 가장 정확하나 선 없는 표 누락 가능' },
-                                        { group: 'translator', key: 'web_auto_summary',
-                                          label: '번역 완료 시 자동 요약', type: 'toggle', restart: false,
-                                          desc: '웹 뷰 번역 완료 후 자동으로 문서 요약 생성 (향후 기능)' },
-                                        { group: 'translator', key: 'web_debug',
-                                          label: '디버그 모드', type: 'toggle', restart: false,
-                                          desc: '추출 중간 결과 파일을 저장. 문제 해결 시에만 사용' },
-                                    ]
-                                },
-                                {
-                                    subtabId: 'quality-ai-selection',
-                                    subtabLabel: 'AI 선택 번역',
-                                    fields: [
-                                        { group: 'translator', key: 'ai_translate_prompt',
-                                          label: '번역 프롬프트', type: 'textarea', restart: false,
-                                          rows: 4,
-                                          desc: '텍스트 선택 → 번역 시 Ollama에 전달되는 system 프롬프트' },
-                                        { group: 'translator', key: 'ai_summarize_prompt',
-                                          label: '요약 프롬프트', type: 'textarea', restart: false,
-                                          rows: 4,
-                                          desc: '텍스트 선택 → 요약 시 Ollama에 전달되는 system 프롬프트' },
-                                        { group: 'translator', key: 'ai_selection_timeout',
-                                          label: '타임아웃 (초)', type: 'number', restart: false,
-                                          min: 5, max: 120, step: 5,
-                                          desc: '선택 번역/요약 최대 대기 시간. 짧은 텍스트 대상이므로 30초 권장' },
-                                    ]
-                                },
+                            title: '웹뷰 번역',
+                            fields: [
+                                { group: 'translator', key: 'web_table_mode',
+                                  label: '표 추출 모드', type: 'select', restart: false,
+                                  options: [['extract','구조 추출 (Markdown 테이블)'], ['image','이미지만'], ['off','끄기']],
+                                  desc: '표 영역 처리 방식' },
+                                { group: 'translator', key: 'web_formula_mode',
+                                  label: '수식 추출 모드', type: 'select', restart: false,
+                                  options: [['latex','LaTeX 변환'], ['image','이미지만'], ['off','끄기']],
+                                  desc: '수식 영역 처리 방식' },
+                                { group: 'translator', key: 'web_auto_summary',
+                                  label: '번역 완료 시 자동 요약', type: 'toggle', restart: false,
+                                  desc: '웹 뷰 번역 완료 후 자동으로 문서 요약 생성' },
                             ]
                         },
                         {
-                            title: '동시성 / 성능',
+                            title: '성능',
                             fields: [
                                 { group: 'translator', key: 'max_concurrent',
                                   label: '동시 번역 수', type: 'number', restart: false,
                                   min: 1, max: 16, step: 1,
                                   desc: 'GPU 부하 제한. 동시에 진행할 수 있는 최대 번역 작업 수' },
+                            ]
+                        },
+                        {
+                            title: '고급',
+                            collapsed: true,
+                            fields: [
+                                { group: 'translator', key: 'translation_model',
+                                  label: '번역 전용 모델 (오버라이드)', type: 'text', restart: false,
+                                  placeholder: '플랫폼 AI 모델 사용',
+                                  desc: '비워두면 AI 연결의 플랫폼 모델을 사용합니다' },
+                                { group: 'translator', key: 'custom_prompt',
+                                  label: 'PDF 시스템 프롬프트', type: 'textarea', restart: false, rows: 4,
+                                  desc: 'BabelDOC 시스템 프롬프트. 비워두면 기본 프롬프트 사용',
+                                  placeholder: 'You are a professional $lang_out native translator...' },
+                                { group: 'translator', key: 'disable_rich_text',
+                                  label: '리치텍스트 번역 비활성화', type: 'toggle', restart: false,
+                                  desc: '볼드/이탤릭 서식이 번역에서 제외됨' },
+                                { group: 'translator', key: 'enhance_compatibility',
+                                  label: '호환성 강화', type: 'toggle', restart: false,
+                                  desc: '일부 PDF 뷰어 호환성 문제 해결' },
+                                { group: 'translator', key: 'web_image_dpi',
+                                  label: '이미지 해상도 (DPI)', type: 'range', restart: false,
+                                  min: 72, max: 300, step: 6,
+                                  desc: '추출 이미지의 해상도 (기본 150)' },
                                 { group: 'translator', key: 'page_timeout',
                                   label: '페이지 타임아웃 (초)', type: 'number', restart: false,
                                   min: 60, max: 1800, step: 30,
-                                  desc: '페이지당 최대 번역 시간. 초과 시 실패 처리' },
-                                { group: 'translator', key: 'qps',
-                                  label: 'QPS 제한', type: 'number', restart: false,
-                                  min: 0, max: 100, step: 1,
-                                  desc: 'Ollama 초당 요청 수 제한. 0이면 무제한' },
+                                  desc: '페이지당 최대 번역 시간 (기본 300초)' },
+                                { group: 'translator', key: 'ai_translate_prompt',
+                                  label: '선택 번역 프롬프트', type: 'textarea', restart: false, rows: 4,
+                                  desc: '텍스트 선택 번역 시 Ollama에 전달되는 프롬프트' },
+                                { group: 'translator', key: 'ai_summarize_prompt',
+                                  label: '선택 요약 프롬프트', type: 'textarea', restart: false, rows: 4,
+                                  desc: '텍스트 선택 요약 시 Ollama에 전달되는 프롬프트' },
                             ]
                         },
                     ]
@@ -366,39 +301,34 @@ var SETTINGS_SCHEMA = {
         },
         {
             id: 'verify',
-            label: 'Verify',
-            group: '시스템 설정',
+            label: '문서 검증',
+            group: '플랫폼 설정',
             tabs: [
                 {
                     tabId: 'tab-verify-compare',
-                    tabLabel: '비교',
+                    tabLabel: 'AI 비교',
                     sections: [
                         {
                             title: 'AI 의미 분류',
                             fields: [
                                 { group: 'compare', key: 'ai_enabled', label: 'AI 분석 활성화', type: 'toggle',
-                                  restart: false, desc: '비교 모드에서 "AI 분석" 버튼 표시 여부. 비활성화 시 기존 텍스트 diff만 사용' },
-                                { group: 'compare', key: 'ai_model', label: '분류 모델', type: 'text',
-                                  restart: false, placeholder: 'Explorer LLM 모델 사용',
-                                  desc: 'AI 분류에 사용할 Ollama 모델명. 비워두면 Explorer AI/RAG 탭의 LLM 모델 사용' },
-                                { group: 'compare', key: 'ai_temperature', label: '온도', type: 'range',
-                                  restart: false, min: 0, max: 2, step: 0.1,
-                                  desc: '0이면 결정적 출력 (분류 일관성 최대화). 높일수록 결과 다양성 증가' },
-                                { group: 'compare', key: 'ai_batch_size', label: '배치 크기', type: 'number',
-                                  restart: false, min: 1, max: 50, step: 1, placeholder: '20',
-                                  desc: '1회 LLM 호출당 최대 변경 구간 수. 4B 모델은 5, 12B 이상은 20 권장' },
-                                { group: 'compare', key: 'ai_timeout', label: '타임아웃 (초)', type: 'number',
-                                  restart: false, min: 10, max: 300, step: 10, placeholder: '60',
-                                  desc: 'LLM 호출 최대 대기 시간. 배치 크기가 클수록 늘려야 함' },
-                            ]
-                        },
-                        {
-                            title: '시스템 프롬프트',
-                            fields: [
+                                  restart: false, desc: '비교 모드에서 "AI 분석" 버튼 표시 여부' },
                                 { group: 'compare', key: 'ai_system_prompt', label: '시스템 프롬프트',
                                   type: 'textarea', restart: false, rows: 16,
                                   placeholder: '당신은 기술문서 변경사항을 분류하는 전문가입니다.\n두 문서 버전 간의 변경 구간을 받아, 각 변경의 의미적 유형을 분류합니다.\n\n## 분류 태그 (정확히 6종 중 하나를 선택)\n\n- EDITORIAL: 편집상 변경...\n- CLARIFICATION: 기존 내용의 표현을 명확하게 보완...\n- STRICTER: 요구사항/기준/제약이 더 엄격해짐...\n- MORE_LENIENT: 요구사항/기준/제약이 완화됨...\n- EXPANDED: 기존에 없던 새 내용/범위/기능 추가...\n- RESTRUCTURED: 내용은 동일하나 위치/구조/번호 변경...',
-                                  desc: '변경 구간 분류 시 LLM에 전달되는 지침. 비워두면 회색 글씨의 기본 프롬프트가 적용됩니다. 도메인 특화 판단 기준을 추가할 수 있습니다.' },
+                                  desc: '변경 구간 분류 시 LLM에 전달되는 지침. 비워두면 기본 프롬프트 적용' },
+                            ]
+                        },
+                        {
+                            title: '고급',
+                            collapsed: true,
+                            fields: [
+                                { group: 'compare', key: 'ai_model', label: '비교 전용 모델 (오버라이드)', type: 'text',
+                                  restart: false, placeholder: '플랫폼 AI 모델 사용',
+                                  desc: '비워두면 AI 연결의 플랫폼 모델을 사용합니다' },
+                                { group: 'compare', key: 'ai_temperature', label: '온도', type: 'range',
+                                  restart: false, min: 0, max: 2, step: 0.1,
+                                  desc: '0이면 결정적 출력. 높일수록 결과 다양성 증가' },
                             ]
                         }
                     ]
@@ -409,41 +339,26 @@ var SETTINGS_SCHEMA = {
                     sections: [
                         {
                             title: '분류 임계값',
-                            desc: '유사도 검사 엔진의 분류 기준. 값을 높이면 판정이 엄격해지고, 낮추면 더 많은 구간이 검출됩니다.',
+                            desc: '유사도 검사 엔진의 분류 기준. 값을 높이면 판정이 엄격해집니다.',
                             fields: [
                                 { group: 'verify', key: 'sim_threshold_high', label: '동일 판정 기준 (L1)', type: 'range',
                                   restart: false, min: 0.5, max: 1.0, step: 0.05,
-                                  desc: 'Winnowing 지문 일치율이 이 값 이상이면 "동일(identical)"로 판정. 기본 0.85' },
+                                  desc: 'Winnowing 지문 일치율이 이 값 이상이면 "동일" 판정. 기본 0.85' },
                                 { group: 'verify', key: 'sim_threshold_medium', label: '유사 판정 하한 (L3)', type: 'range',
                                   restart: false, min: 0.3, max: 0.9, step: 0.05,
-                                  desc: '의미 유사도(임베딩)가 이 값 이상이면 매칭 후보로 포함. 기본 0.75' },
+                                  desc: '의미 유사도가 이 값 이상이면 매칭 후보로 포함. 기본 0.75' },
                             ]
                         },
                         {
                             title: '판정 라벨 경계',
-                            desc: '전체 유사율(%)에 따라 표시되는 판정 라벨(양호/보통/주의)의 경계값.',
+                            desc: '전체 유사율(%)에 따라 표시되는 판정 라벨의 경계값.',
                             fields: [
                                 { group: 'verify', key: 'sim_verdict_low', label: '양호/보통 경계 (%)', type: 'number',
                                   restart: false, min: 0, max: 100, step: 5, placeholder: '30',
-                                  desc: '유사율이 이 값 미만이면 "양호", 이상이면 "보통". 기본 30%' },
+                                  desc: '유사율이 이 값 미만이면 "양호". 기본 30%' },
                                 { group: 'verify', key: 'sim_verdict_high', label: '보통/주의 경계 (%)', type: 'number',
                                   restart: false, min: 0, max: 100, step: 5, placeholder: '60',
                                   desc: '유사율이 이 값 이상이면 "주의". 기본 60%' },
-                            ]
-                        },
-                        {
-                            title: '엔진 파라미터',
-                            desc: '검색 엔진 내부 파라미터. 변경 시 결과 품질에 영향을 줄 수 있으므로 주의.',
-                            fields: [
-                                { group: 'verify', key: 'sim_winnow_k', label: 'Winnowing k-gram 크기', type: 'number',
-                                  restart: false, min: 10, max: 50, step: 5, placeholder: '25',
-                                  desc: '텍스트 지문 생성 시 k-gram 크기. 작을수록 민감, 클수록 관대. 기본 25' },
-                                { group: 'verify', key: 'sim_winnow_window', label: 'Winnowing 윈도우 크기', type: 'number',
-                                  restart: false, min: 2, max: 10, step: 1, placeholder: '4',
-                                  desc: 'sliding window 크기. 작을수록 더 많은 지문 보존. 기본 4' },
-                                { group: 'verify', key: 'sim_embedding_batch', label: '임베딩 배치 크기', type: 'number',
-                                  restart: false, min: 8, max: 256, step: 8, placeholder: '64',
-                                  desc: '한 번에 인코딩할 문장 수. GPU 메모리에 맞게 조정. 기본 64' },
                             ]
                         }
                     ]
@@ -467,7 +382,7 @@ async function renderAdminSettings() {
     container.innerHTML = '<div class="admin-settings-page"><div class="admin-settings-loading"><div class="spinner admin-spinner"></div>설정 로드 중...</div></div>';
     if (typeof updateSectionNav === 'function') updateSectionNav();
 
-    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
 
     try {
         var r = await fetch(backendUrl + '/api/settings', { credentials: 'include' });
@@ -656,8 +571,13 @@ function _renderSystemContent(sys) {
             html += '<div class="admin-section"><p class="admin-section-desc" style="text-align:center;padding:40px 0;color:var(--text-muted)">향후 추가 예정입니다.</p></div>';
         }
         tab.sections.forEach(function(section) {
-            html += '<div class="admin-section">';
-            html += '<h3 class="admin-section-title">' + _escHtml(section.title) + '</h3>';
+            var isCollapsed = section.collapsed;
+            html += '<div class="admin-section' + (isCollapsed ? ' admin-section-collapsed' : '') + '">';
+            html += '<h3 class="admin-section-title' + (isCollapsed ? ' admin-section-toggle' : '') + '"' +
+                    (isCollapsed ? ' onclick="_adminToggleSection(this)" role="button" tabindex="0"' : '') + '>' +
+                    _escHtml(section.title) +
+                    (isCollapsed ? '<span class="admin-toggle-arrow">&#9654;</span>' : '') +
+                    '</h3>';
             if (section.desc) html += '<p class="admin-section-desc">' + _escHtml(section.desc) + '</p>';
 
             if (section.subtabs) {
@@ -694,7 +614,7 @@ function _renderSystemContent(sys) {
     area.innerHTML = html;
 
     // 메뉴 관리 탭 커스텀 렌더링
-    if (sys.id === 'explorer') _renderMenuTab();
+    if (sys.id === 'content') _renderMenuTab();
 }
 
 // ── 필드 렌더링 ───────────────────────────────────────────────────────────────
@@ -797,6 +717,16 @@ function _adminSwitchTab(tabId) {
     });
 }
 
+// ── 고급 섹션 토글 ──────────────────────────────────────────────────────────
+
+function _adminToggleSection(titleEl) {
+    var section = titleEl.closest('.admin-section');
+    if (!section) return;
+    section.classList.toggle('admin-section-collapsed');
+    var arrow = titleEl.querySelector('.admin-toggle-arrow');
+    if (arrow) arrow.textContent = section.classList.contains('admin-section-collapsed') ? '\u25B6' : '\u25BC';
+}
+
 // ── 서브탭 전환 ──────────────────────────────────────────────────────────────
 
 function _adminSwitchSubtab(subtabId, btn) {
@@ -847,7 +777,7 @@ async function _adminSave() {
     _hideNotice();
 
     var settings = _collectSettings();
-    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
 
     try {
         var r = await fetch(backendUrl + '/api/settings', {
@@ -891,7 +821,7 @@ async function _adminSave() {
 async function _adminReset() {
     if (!confirm('모든 설정을 기본값으로 초기화하시겠습니까?\n저장된 settings.json이 삭제됩니다.')) return;
 
-    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
 
     try {
         var r = await fetch(backendUrl + '/api/settings/reset', {
@@ -959,7 +889,7 @@ function _renderMenuTab() {
 }
 
 async function _menuFetchData() {
-    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
     try {
         var r = await fetch(backendUrl + '/api/menu', { credentials: 'include' });
         if (r.status === 401) {
@@ -1227,7 +1157,7 @@ async function _menuSave() {
     var saveBtn = document.querySelector('.menu-editor-actions .admin-btn-save');
     if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '\uC800\uC7A5 \uC911...'; }
 
-    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
 
     try {
         var r = await fetch(backendUrl + '/api/menu', {
@@ -1260,7 +1190,7 @@ async function _menuSave() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function _renderUsersPanel(area) {
-    var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
 
     area.innerHTML =
         '<div class="admin-section">' +

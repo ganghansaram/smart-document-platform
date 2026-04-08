@@ -18,8 +18,8 @@
 function initPlatformHeader(config) {
     'use strict';
 
-    var API = (typeof AUTH_CONFIG !== 'undefined' && AUTH_CONFIG.backendUrl)
-        ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+    var API = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG)
+        ? AUTH_CONFIG.backendUrl : '';
 
     var title = config.title || 'Platform';
     var navItems = config.navItems || [];

@@ -818,7 +818,7 @@ function updateBreadcrumb(url) {
 
 async function loadRuntimeSettings() {
     try {
-        var backendUrl = (typeof AUTH_CONFIG !== 'undefined') ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+        var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
         var r = await fetch(backendUrl + '/api/settings/public');
         if (!r.ok) return;
         var data = await r.json();

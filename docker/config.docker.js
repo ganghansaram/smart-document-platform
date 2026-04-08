@@ -15,7 +15,7 @@ const AI_CONFIG = {
     useBackend: true,
     backendUrl: '',                    // Nginx 동일 포트 → 상대경로
 
-    ollamaUrl: 'http://localhost:11434',
+    ollamaUrl: '',                        // Nginx 동일 포트 → 백엔드 경유
     model: 'gemma3:4b',
 
     searchType: 'hybrid',

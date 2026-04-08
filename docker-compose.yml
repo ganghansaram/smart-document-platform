@@ -11,6 +11,7 @@ services:
       - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma3:4b}
       - CORS_ORIGINS=http://localhost
       - KMP_DUPLICATE_LIB_OK=TRUE
+      - DOCKER_ENV=true
     volumes:
       - ${DATA_DIR:-./data}:/app/data
       - ${CONTENTS_DIR:-./contents}:/app/contents

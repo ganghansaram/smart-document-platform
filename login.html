@@ -239,8 +239,8 @@
     <script>
         // 플랫폼 타이틀은 고정 (런타임 설정 오버라이드 없음)
 
-        var _backendUrl = (typeof AUTH_CONFIG !== 'undefined' && AUTH_CONFIG.backendUrl)
-            ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+        var _backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG)
+            ? AUTH_CONFIG.backendUrl : '';
 
         var loginWrap     = document.getElementById('login-wrap');
         var usernameInput = document.getElementById('username');

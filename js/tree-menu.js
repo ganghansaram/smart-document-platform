@@ -604,7 +604,7 @@ function openUploadDialog(targetUrl, docLabel, menuPath) {
 
 function _openUploadDialogInner(targetUrl, docLabel, menuPath) {
     var config = typeof UPLOAD_CONFIG !== 'undefined' ? UPLOAD_CONFIG : {};
-    var backendUrl = config.backendUrl || 'http://localhost:8000';
+    var backendUrl = ('backendUrl' in config) ? config.backendUrl : '';
     var acceptFormats = config.acceptFormats || ['.docx', '.pdf'];
     var maxFileSize = config.maxFileSize || 50 * 1024 * 1024;
 
@@ -899,7 +899,7 @@ function initIndexStatus() {
  */
 function checkIndexStatus() {
     var config = typeof UPLOAD_CONFIG !== 'undefined' ? UPLOAD_CONFIG : {};
-    var backendUrl = config.backendUrl || 'http://localhost:8000';
+    var backendUrl = ('backendUrl' in config) ? config.backendUrl : '';
 
     var dot = document.querySelector('.index-status-dot');
     var text = document.querySelector('.index-status-text');
@@ -942,7 +942,7 @@ async function runManualReindex() {
 
 async function _runManualReindexInner() {
     var config = typeof UPLOAD_CONFIG !== 'undefined' ? UPLOAD_CONFIG : {};
-    var backendUrl = config.backendUrl || 'http://localhost:8000';
+    var backendUrl = ('backendUrl' in config) ? config.backendUrl : '';
 
     var reindexBtn = document.getElementById('reindex-btn');
     var dot = document.querySelector('.index-status-dot');

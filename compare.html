@@ -333,7 +333,7 @@
             var sidebarWidth = 360; // px, 리사이즈 가능
             var SIDEBAR_MIN = 280;
             var SIDEBAR_MAX = 700;
-            var API_BASE = ((typeof AUTH_CONFIG !== 'undefined' && AUTH_CONFIG.backendUrl) ? AUTH_CONFIG.backendUrl : 'http://localhost:8000') + '/api';
+            var API_BASE = ((typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '') + '/api';
 
             // ── 문서 상태 ──
             var docState = {
@@ -640,9 +640,95 @@
                     + '</div>';
                 panel.insertAdjacentHTML('beforeend', html);
 
-                // textarea 포커스
+                // textarea 포커스 + text/html 폴백 핸들러
                 var textarea = document.getElementById('paste-textarea-' + side);
-                if (textarea) textarea.focus();
+                if (textarea) {
+                    textarea.addEventListener('paste', function(e) {
+                        var plain = (e.clipboardData || window.clipboardData).getData('text/plain');
+                        if (plain) return; // text/plain 있으면 브라우저 기본 동작
+                        // text/plain 없음 → text/html 폴백
+                        var html = (e.clipboardData || window.clipboardData).getData('text/html');
+                        if (html) {
+                            e.preventDefault();
+                            var text = htmlToPlainText(html);
+                            var start = textarea.selectionStart;
+                            var end = textarea.selectionEnd;
+                            textarea.value = textarea.value.substring(0, start) + text + textarea.value.substring(end);
+                            textarea.selectionStart = textarea.selectionEnd = start + text.length;
+                        }
+                    });
+                    textarea.focus();
+                }
+            }
+
+            // ── 붙여넣기 전처리 유틸리티 ──
+
+            /** HTML을 plain text로 변환 (Word 붙여넣기 폴백용) */
+            function htmlToPlainText(html) {
+                var tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                // Word/브라우저 전용 태그 제거
+                var removes = tmp.querySelectorAll('style, script, meta, link, xml, o\\:p');
+                for (var i = 0; i < removes.length; i++) removes[i].remove();
+                // <br> → 줄바꿈
+                var brs = tmp.querySelectorAll('br');
+                for (var i = 0; i < brs.length; i++) brs[i].replaceWith('\n');
+                // 블록 요소 뒤 줄바꿈 보장
+                var blocks = tmp.querySelectorAll('p, div, li, tr, h1, h2, h3, h4, h5, h6');
+                for (var i = 0; i < blocks.length; i++) {
+                    blocks[i].insertAdjacentText('afterend', '\n');
+                }
+                var text = tmp.textContent || tmp.innerText || '';
+                // 연속 줄바꿈 정리 (3개 이상 → 2개)
+                text = text.replace(/\n{3,}/g, '\n\n');
+                return text.trim();
+            }
+
+            /** PDF 줄바꿈 병합: 시각적 줄바꿈을 문장 단위로 재결합 */
+            function mergePdfLineBreaks(text) {
+                var lines = text.split('\n');
+                var merged = [];
+                var buffer = '';
+
+                for (var i = 0; i < lines.length; i++) {
+                    var trimmed = lines[i].trim();
+
+                    // 빈 줄 → 단락 경계 보존
+                    if (!trimmed) {
+                        if (buffer) { merged.push(buffer); buffer = ''; }
+                        merged.push('');
+                        continue;
+                    }
+
+                    if (!buffer) {
+                        buffer = trimmed;
+                        continue;
+                    }
+
+                    if (shouldMergeLines(buffer, trimmed)) {
+                        buffer = buffer + ' ' + trimmed;
+                    } else {
+                        merged.push(buffer);
+                        buffer = trimmed;
+                    }
+                }
+                if (buffer) merged.push(buffer);
+
+                return merged.join('\n');
+            }
+
+            /** 두 줄을 병합해야 하는지 판정 */
+            function shouldMergeLines(prevLine, currLine) {
+                // 이전 줄이 문장 종결 부호로 끝남 → 새 문장
+                if (/[.!?\u3002\uFF01\uFF1F]\s*$/.test(prevLine)) return false;
+                // 현재 줄이 목록 마커로 시작 → 새 항목
+                if (/^(\d+[\.\)]\s|[-\u2022\u00B7\u25AA]\s|[a-zA-Z][\.\)]\s)/.test(currLine)) return false;
+                // 이전 줄이 콜론으로 끝남 → 제목/라벨
+                if (/:\s*$/.test(prevLine)) return false;
+                // 이전 줄이 짧으면 제목 가능성
+                if (prevLine.length < 15) return false;
+                // 기본: 병합
+                return true;
             }
 
             function confirmPaste(side) {
@@ -660,6 +746,9 @@
                     simPasteText(side, text);
                     return;
                 }
+
+                // PDF 줄바꿈 병합 (시각적 줄바꿈 → 문장 단위 재결합)
+                text = mergePdfLineBreaks(text);
 
                 // 단락 분리: 빈 줄 기준, 없으면 줄바꿈 기준
                 var paragraphs;
@@ -2831,13 +2920,17 @@
                 docState[side].text = newParagraphs.join('\n');
             }
 
-            // ── 편집 모드: plain text 붙여넣기 강제 ──
+            // ── 편집 모드: plain text 붙여넣기 강제 (text/html 폴백 포함) ──
             cpPanels.addEventListener('paste', function(e) {
                 if (!editMode) return;
                 if (!e.target.isContentEditable) return;
                 e.preventDefault();
                 var text = (e.clipboardData || window.clipboardData).getData('text/plain');
-                document.execCommand('insertText', false, text);
+                if (!text) {
+                    var html = (e.clipboardData || window.clipboardData).getData('text/html');
+                    text = html ? htmlToPlainText(html) : '';
+                }
+                if (text) document.execCommand('insertText', false, text);
             });
 
             // ── 2-8. A ↔ B 교체 ──

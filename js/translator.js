@@ -4,8 +4,8 @@
         // ── PDF.js 설정 ──
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/lib/pdfjs/pdf.worker.min.js';
 
-        var API = (typeof AUTH_CONFIG !== 'undefined' && AUTH_CONFIG.backendUrl)
-            ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+        var API = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG)
+            ? AUTH_CONFIG.backendUrl : '';
 
         // ── Platform Header ──
         var header = initPlatformHeader({

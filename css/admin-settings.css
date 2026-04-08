@@ -395,6 +395,27 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
     line-height: 1.5;
 }
 
+/* ── 고급 섹션 접기 ────────────────────────────────────────────────────────── */
+.admin-section-toggle {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.admin-section-toggle:hover { color: var(--active-color); }
+.admin-toggle-arrow {
+    font-size: 10px;
+    transition: var(--transition-fast);
+    margin-left: auto;
+}
+.admin-section-collapsed .admin-section-desc,
+.admin-section-collapsed .admin-fields,
+.admin-section-collapsed .admin-subtabs,
+.admin-section-collapsed .admin-subtab-panel {
+    display: none;
+}
+
 /* ── 필드 공통 ──────────────────────────────────────────────────────────────── */
 .admin-fields {
     display: flex;

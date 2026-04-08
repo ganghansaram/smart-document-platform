@@ -217,6 +217,12 @@ def get_public_settings() -> dict:
     vfy = s.get("verify", DEFAULT_SETTINGS.get("verify", {}))
     result["verify_verdict_low"] = vfy.get("sim_verdict_low", 30)
     result["verify_verdict_high"] = vfy.get("sim_verdict_high", 60)
+    # 환경 메타 정보 (프론트엔드 조건부 UI 표시용)
+    env_overrides = [k for k, v in _ENV_PROTECTED.items() if os.getenv(v) is not None]
+    result["_meta"] = {
+        "is_docker": os.getenv("DOCKER_ENV") == "true",
+        "env_overrides": env_overrides,
+    }
     return result
 
 
@@ -316,9 +322,21 @@ def apply_to_config(settings: dict) -> list[str]:
     return restart_needed
 
 
+# 환경변수로 보호되는 설정 — os.getenv()가 설정되어 있으면 settings.json 값 무시
+_ENV_PROTECTED = {
+    "OLLAMA_URL":    "OLLAMA_URL",
+    "OLLAMA_MODEL":  "OLLAMA_MODEL",
+    "CORS_ORIGINS":  "CORS_ORIGINS",
+}
+
+
 def _set(group: dict, key: str, config_attr: str, restart_list: list,
          immediate: bool = False) -> None:
     if key not in group:
+        return
+    # 환경변수가 설정된 항목은 settings.json 값으로 덮어쓰지 않음
+    env_key = _ENV_PROTECTED.get(config_attr)
+    if env_key and os.getenv(env_key) is not None:
         return
     val = group[key]
     setattr(_config, config_attr, val)

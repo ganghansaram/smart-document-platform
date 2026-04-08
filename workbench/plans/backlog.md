@@ -39,6 +39,14 @@
 - 분석 진행 중 취소 시 "현재 페이지 완료 후 중단" → 더 즉각적인 중단 방식 검토
 - 취소 후 이미 추출 완료된 페이지 결과물 활용 전략
 
+## 플랫폼 — 관리자 설정: 임베딩 모델 필드 개선
+
+> 출처: Plan-27 Phase 3 검증 시 발견
+
+- 로컬 모드(`EMBEDDING_BACKEND=local`)일 때 관리자 UI의 임베딩 모델 필드가 무효 (실제로는 `EMBEDDING_LOCAL_MODEL` 경로를 사용)
+- 개선: 로컬 모드 시 필드에 `bge-m3 (로컬)` 표시 + 편집 비활성화, Ollama 모드 시에만 편집 가능
+- 관련 파일: `js/admin-settings.js`, `backend/services/settings_service.py`, `backend/services/embedding_client.py`
+
 ## 플랫폼 — 관리자 설정 메뉴
 
 > 출처: memory/admin-settings-plan.md

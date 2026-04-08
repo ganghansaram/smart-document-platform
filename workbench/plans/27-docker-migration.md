@@ -95,17 +95,17 @@
 - [x] `config.js` — 원본 수정 없음 (Nginx가 Docker 전용 버전으로 오버라이드)
 
 ### Phase 3: 로컬 빌드·검증
-- [ ] 이 PC(Windows)에서 Docker Desktop으로 빌드·실행 테스트
-- [ ] 6개 서브시스템별 핵심 기능 검증 (상세: 4절)
-- [ ] 볼륨 마운트 후 컨테이너 재시작해도 데이터 유지 확인
+- [x] 이 PC(Windows)에서 Docker Desktop으로 빌드·실행 테스트
+- [x] 6개 서브시스템별 핵심 기능 검증 (상세: 4절)
+- [x] 볼륨 마운트 후 컨테이너 재시작해도 데이터 유지 확인
 
 ### Phase 4: 이미지 반출·반입
-- [ ] `docker save` → tar 파일 생성
-- [ ] 리눅스 VM에서 `docker load` → `docker compose up -d`
-- [ ] 배포 스크립트 (`deploy.sh`) 작성 — 첫 설치 + 업데이트 겸용
+- [x] `docker save` → tar 파일 생성
+- [x] 리눅스 VM에서 `docker load` → `docker compose up -d`
+- [x] 배포 스크립트 (`deploy.sh`) 작성 — 첫 설치 + 업데이트 겸용
 
 ### Phase 5: 운영 매뉴얼
-- [ ] 아래 섹션 7의 내용을 별도 `OPERATIONS.md`로도 배포 디렉토리에 포함
+- [x] `docs/13-DOCKER-OPERATIONS.md` — 비전문가용 배포·운영 가이드
 
 ---
 
@@ -422,23 +422,90 @@ smart-document-platform/
 ```
 
 #### Step 3: 로컬 빌드·테스트 (Phase 3)
-```bash
-# .env 생성
-cp .env.example .env
-# OLLAMA_URL 등 로컬 환경에 맞게 수정
 
-# 빌드
+> 전제: Docker Desktop이 실행 중이어야 한다.
+
+**3-1. Docker Desktop 상태 확인**
+
+CMD 또는 PowerShell에서:
+```powershell
+docker --version          # 버전 출력되면 정상
+docker compose version
+```
+
+**3-2. .env 파일 생성**
+```powershell
+cd C:\AHS_Proj\smart-document-platform
+copy .env.example .env
+notepad .env
+```
+수정할 항목:
+- `OLLAMA_URL` — 로컬 Ollama라면 `http://host.docker.internal:11434` (기본값 그대로)
+- GPU 서버가 따로 있다면 해당 IP로 변경 (예: `http://192.168.x.x:11434`)
+
+> `host.docker.internal`은 Docker 컨테이너에서 호스트 PC를 가리키는 특수 주소.
+
+**3-3. 이미지 빌드**
+```powershell
+cd C:\AHS_Proj\smart-document-platform
 docker compose build
+```
+- 첫 빌드 **10~30분** 소요 (pip install + babeldoc ONNX ~500MB 다운로드)
+- `backend`(sdp-backend)와 `nginx`(sdp-nginx) 이미지 2개 생성
 
-# 실행
+**3-4. 컨테이너 실행**
+```powershell
 docker compose up -d
-
-# 검증 (브라우저에서 http://localhost 접속)
 docker compose ps
-docker compose logs -f
+```
+- 두 컨테이너 모두 **Up (healthy)** / **running** 이면 정상
+- 백엔드 healthcheck로 모델 로딩 완료까지 대기 (최대 ~2분)
+- 이상 시: `docker compose logs`
 
-# 서브시스템별 테스트 (4절 체크리스트 참조)
-# 테스트 완료 후 종료
+**3-5. 브라우저 접속 및 서브시스템 검증**
+
+`http://localhost` 접속 (포트 80, `.env`의 PORT 값).
+
+| 순서 | 검증 항목 | 방법 |
+|------|-----------|------|
+| 1 | 인증 | testbot / test1234 로그인 → 세션 유지 → 로그아웃 |
+| 2 | Launcher | 메뉴 목록 노출, 가이드 페이지 열기 |
+| 3 | Explorer | 웹북 열기 → 검색 → AI 챗봇 (Ollama 연결 시) |
+| 4 | Notebook | PDF 업로드 → 페이지 번역 시도 → 웹뷰 |
+| 5 | Verify | 문서 업로드 → 비교 → 규칙 검증 |
+| 6 | 관리자 설정 | 설정 변경 → 저장 → 재접속 후 유지 확인 |
+
+**3-6. Nginx 보안 검증**
+
+브라우저 주소창에서 직접 확인:
+
+| URL | 기대 결과 |
+|-----|-----------|
+| `http://localhost/data/menu.json` | 정상 응답 (JSON) |
+| `http://localhost/data/search-index.json` | 정상 응답 (JSON) |
+| `http://localhost/data/glossary.json` | 정상 응답 (JSON) |
+| `http://localhost/data/auth.db` | **403 Forbidden** |
+| `http://localhost/data/settings.json` | **403 Forbidden** |
+| `http://localhost/backend/` | **403 Forbidden** |
+| `http://localhost/.env` | **403 Forbidden** |
+
+**3-7. 데이터 영속성 확인**
+```powershell
+docker compose down
+docker compose up -d
+```
+재접속 → 이전 계정·업로드 문서 유지되면 성공.
+
+**3-8. 유용한 디버깅 명령어**
+```powershell
+docker compose logs -f              # 실시간 로그 (Ctrl+C 종료)
+docker compose logs -f backend      # 백엔드만
+docker compose exec backend bash    # 컨테이너 쉘 접속
+docker compose exec backend pdf2zh --version   # pdf2zh 설치 확인
+```
+
+**3-9. 테스트 완료 후 정리**
+```powershell
 docker compose down
 ```
 

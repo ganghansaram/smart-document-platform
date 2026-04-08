@@ -2,132 +2,132 @@
   {
     "title": "정보",
     "url": "contents/about.html",
-    "path": "정보 > 정보",
+    "path": "contents/about.html > 정보",
     "content": "",
     "section_id": "정보",
     "heading_level": 1,
     "metadata": {
-      "doc_category": "정보",
+      "doc_category": "contents/about.html",
       "depth": 2
     }
   },
   {
     "title": "KF-21 History WebBook 소개",
     "url": "contents/about.html",
-    "path": "정보 > KF-21 History WebBook 소개",
+    "path": "contents/about.html > KF-21 History WebBook 소개",
     "content": "KF-21 History WebBook은 폐쇄망(에어갭) 환경에서 사용 가능한 기술문서 통합 열람 플랫폼입니다.\n3단계 접근 권한(열람자/편집자/관리자)을 지원하며, 문서 열람·검색·AI 챗봇 질문 등의 기능을 제공합니다.\n\n| 항목 | 내용 |\n| --- | --- |\n| 버전 | v5.5 |\n| 동작 환경 | Chrome, Edge, Firefox (최신 버전 권장) |\n| 접속 방법 | 브라우저에서 서버 주소 입력 후 로그인 |\n\n주요 기능\n",
     "section_id": "kf-21-history-webbook-소개",
     "heading_level": 2,
     "metadata": {
-      "doc_category": "정보",
+      "doc_category": "contents/about.html",
       "depth": 2
     }
   },
   {
     "title": "문서 탐색",
     "url": "contents/about.html",
-    "path": "정보 > 문서 탐색",
+    "path": "contents/about.html > 문서 탐색",
     "content": "트리 메뉴 : 좌측 패널에서 계층적 메뉴를 통해 문서를 탐색할 수 있습니다.\n섹션 목차 (On this page) : 우측 패널에 현재 문서의 제목 목차가 자동 생성됩니다. 클릭하면 해당 섹션으로 이동합니다.\n브레드크럼 : 상단에 현재 문서의 메뉴 경로가 표시됩니다.\n패널 토글 : 좌측·우측 패널을 숨기거나 표시하여 본문에 집중할 수 있습니다.",
     "section_id": "문서-탐색",
     "heading_level": 3,
     "metadata": {
-      "doc_category": "정보",
+      "doc_category": "contents/about.html",
       "depth": 2
     }
   },
   {
     "title": "검색",
     "url": "contents/about.html",
-    "path": "정보 > 검색",
+    "path": "contents/about.html > 검색",
     "content": "상단 검색창( Ctrl+K 또는 / )에 키워드를 입력하면 전체 문서에서 관련 내용을 검색합니다.\n키워드 매칭과 의미 기반 검색을 결합한 하이브리드 검색 을 사용하여, 동의어나 유사 표현도 찾아줍니다.\n검색 결과 클릭 시 해당 문서의 정확한 섹션 으로 바로 이동합니다.\n검색 결과 상단에 항공 용어집 일치 항목도 함께 표시됩니다.",
     "section_id": "검색",
     "heading_level": 3,
     "metadata": {
-      "doc_category": "정보",
+      "doc_category": "contents/about.html",
       "depth": 2
     }
   },
   {
     "title": "AI 챗봇",
     "url": "contents/about.html",
-    "path": "정보 > AI 챗봇",
+    "path": "contents/about.html > AI 챗봇",
     "content": "우하단 챗봇 아이콘을 클릭하여 문서 내용에 대해 자연어로 질문 할 수 있습니다.\n시스템이 자동으로 관련 문서를 검색한 후, 해당 내용을 기반으로 한국어 답변을 생성합니다.\n멀티턴 대화 : 후속 질문의 맥락을 유지하여 연속적인 대화가 가능합니다.\n빠른 질문 버튼 : 현재 페이지의 요약, 핵심 내용, 쉬운 설명을 바로 요청할 수 있습니다.\n답변에 포함된 참고 문서 링크 를 클릭하면 해당 섹션으로 이동합니다.\n\n참고 : AI 챗봇은 문서에 포함된 내용만을 기반으로 답변합니다. 문서에 없는 정보는 답변하지 않습니다.",
     "section_id": "ai-챗봇",
     "heading_level": 3,
     "metadata": {
-      "doc_category": "정보",
+      "doc_category": "contents/about.html",
       "depth": 2
     }
   },
   {
     "title": "북마크",
     "url": "contents/about.html",
-    "path": "정보 > 북마크",
+    "path": "contents/about.html > 북마크",
     "content": "문서의 제목(h1~h4) 위에 마우스를 올리면 ☆ 아이콘 이 나타납니다.\n클릭하면 ★로 변경되어 북마크에 저장됩니다.\n상단 Bookmarks 메뉴에서 저장된 북마크 목록을 확인하고, 클릭하면 해당 위치로 바로 이동합니다.\n다른 문서에 저장한 북마크도 클릭 한 번으로 이동됩니다.",
     "section_id": "북마크",
     "heading_level": 3,
     "metadata": {
-      "doc_category": "정보",
+      "doc_category": "contents/about.html",
       "depth": 2
     }
   },
   {
     "title": "다크/라이트 모드",
     "url": "contents/about.html",
-    "path": "정보 > 다크/라이트 모드",
+    "path": "contents/about.html > 다크/라이트 모드",
     "content": "상단 헤더의 해/달 아이콘 을 클릭하여 테마를 전환할 수 있습니다.\n선택한 테마는 브라우저에 저장되어 다음 방문 시에도 유지됩니다.\n인쇄 시에는 자동으로 라이트 모드가 적용됩니다.",
     "section_id": "다크-라이트-모드",
     "heading_level": 3,
     "metadata": {
-      "doc_category": "정보",
+      "doc_category": "contents/about.html",
       "depth": 2
     }
   },
   {
     "title": "항공 용어집",
     "url": "contents/about.html",
-    "path": "정보 > 항공 용어집",
+    "path": "contents/about.html > 항공 용어집",
     "content": "좌측 메뉴의 용어집 항목에서 26,000+ 항공 용어를 검색·탐색할 수 있습니다.\nA-Z 알파벳 필터, 실시간 검색(약어·영문·한국어)을 지원합니다.\n문서 본문에서 용어집에 등록된 약어에는 점선 밑줄 이 자동 표시됩니다. 클릭하면 풀네임과 한국어 해설 팝업이 나타납니다.",
     "section_id": "항공-용어집",
     "heading_level": 3,
     "metadata": {
-      "doc_category": "정보",
+      "doc_category": "contents/about.html",
       "depth": 2
     }
   },
   {
     "title": "그림/표 참조 팝업",
     "url": "contents/about.html",
-    "path": "정보 > 그림/표 참조 팝업",
+    "path": "contents/about.html > 그림/표 참조 팝업",
     "content": "본문에서 \"Figure 1\", \"표 2\" 같은 참조 텍스트 (파란색 점선 밑줄)를 클릭하면 해당 그림이나 표를 팝업으로 바로 확인할 수 있습니다.\n팝업에서 \"원본 위치로 이동\" 버튼을 클릭하면 해당 그림/표 위치로 스크롤됩니다.",
     "section_id": "그림-표-참조-팝업",
     "heading_level": 3,
     "metadata": {
-      "doc_category": "정보",
+      "doc_category": "contents/about.html",
       "depth": 2
     }
   },
   {
     "title": "키보드 단축키",
     "url": "contents/about.html",
-    "path": "정보 > 키보드 단축키",
+    "path": "contents/about.html > 키보드 단축키",
     "content": "| 키 | 기능 |\n| --- | --- |\n| ? | 단축키 도움말 열기/닫기 |\n| / 또는 Ctrl+K | 검색 열기 |\n| ← → | 이전/다음 문서 이동 |\n| H | 홈으로 이동 |\n| B | 북마크 열기 |\n| Esc | 모달/오버레이 닫기 |",
     "section_id": "키보드-단축키",
     "heading_level": 3,
     "metadata": {
-      "doc_category": "정보",
+      "doc_category": "contents/about.html",
       "depth": 2
     }
   },
   {
     "title": "설계 원칙",
     "url": "contents/about.html",
-    "path": "정보 > 설계 원칙",
+    "path": "contents/about.html > 설계 원칙",
     "content": "폐쇄망 완전 독립 : 외부 인터넷 연결 없이 모든 기능이 동작합니다.\n역할 기반 접근 : 열람자·편집자·관리자 3단계 권한으로 기능 범위를 제어합니다.\n외부 의존성 Zero : CDN, 외부 API, 프레임워크를 사용하지 않습니다.\n설치 간편 : 폴더 복사만으로 서비스를 시작할 수 있습니다.\n\n라이선스 및 저작권\n이 웹북은 KF-21 개발 프로그램을 위해 제작되었습니다.\n모든 콘텐츠와 기술 정보는 저작권의 보호를 받습니다.\n\n문의\n웹북 사용 중 문제가 발생하거나 개선 사항이 있으시면 웹북 관리자에게 문의하시기 바랍니다.",
     "section_id": "설계-원칙",
     "heading_level": 2,
     "metadata": {
-      "doc_category": "정보",
+      "doc_category": "contents/about.html",
       "depth": 2
     }
   },
@@ -193,6 +193,1293 @@
       "doc_category": "KF-21 개발백서",
       "depth": 4,
       "parent_doc": "프로그램 소개"
+    }
+  },
+  {
+    "title": "관리자 가이드",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > 관리자 가이드",
+    "content": "시스템 관리 — 콘텐츠, 설정, 계정 관리\n\nSystem Administration",
+    "section_id": "관리자-가이드",
+    "heading_level": 1,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "플랫폼 관리자 가이드",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > 플랫폼 관리자 가이드",
+    "content": "관리자(admin) 권한으로 수행하는 콘텐츠 등록, 메뉴 편집,\n시스템 설정, 계정 관리 방법을 안내합니다.\n\n콘텐츠 관리\n메뉴 편집\n시스템 설정\n계정 관리\n\n플랫폼은 3단계 권한 체계로 운영됩니다.\n관리자(admin)는 모든 기능에 접근할 수 있으며,\n편집자(editor)는 콘텐츠 편집과 업로드, 열람자(viewer)는 문서 조회만 가능합니다.\n\n| 역할 | 권한 | 주요 기능 |\n| --- | --- | --- |\n| admin | 전체 관리 | 콘텐츠 등록, 메뉴 편집, 시스템 설정, 계정 관리, 인덱스 재생성 |\n| editor | 콘텐츠 편집 | 문서 편집, 파일 업로드 |\n| viewer | 조회 전용 | 문서 탐색, 검색, AI 채팅, 북마크 |\n\n콘텐츠 관리\n",
+    "section_id": "플랫폼-관리자-가이드",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "콘텐츠 업로드",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > 콘텐츠 업로드",
+    "content": "Explorer 좌측 트리 메뉴에서 업로드 버튼을 클릭하여 콘텐츠를 등록합니다.\nDOCX, PDF, Markdown, HTML 파일을 지원하며, 업로드 후 자동으로 HTML 변환과 검색 인덱스 생성이 진행됩니다.\n\n| 단계 | 처리 내용 |\n| --- | --- |\n| 1. 파일 선택 | 트리 메뉴의 업로드 버튼 클릭 → 파일 선택 대화상자 |\n| 2. 변환 | DOCX → HTML 변환 (표, 수식, 이미지 포함). PDF/MD는 직접 등록. |\n| 3. 인덱싱 | 키워드(BM25) 인덱스 생성. 벡터(FAISS) 인덱스는 설정에 따라 자동 실행. |\n| 4. 메뉴 등록 | 트리 메뉴에 항목이 추가되어 전체 사용자에게 즉시 반영. |",
+    "section_id": "콘텐츠-업로드",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "검색 인덱스 관리",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > 검색 인덱스 관리",
+    "content": "Explorer 좌측 패널 하단의 상태 표시줄에서 인덱스 상태를 확인합니다.\n\"갱신 필요\" 표시 시 재생성 버튼을 클릭하면 키워드 및 벡터 인덱스가 갱신됩니다.\n업로드 설정에서 자동 재생성을 활성화하면 콘텐츠 등록 시 자동으로 처리됩니다.\n\n인라인 편집\nExplorer 상단 Edit 메뉴를 클릭하면 현재 문서를 직접 편집할 수 있습니다.\n자동 저장 간격과 백업 생성 여부는 시스템 설정에서 조정합니다.",
+    "section_id": "검색-인덱스",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "메뉴 편집",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > 메뉴 편집",
+    "content": "Explorer 상단 Edit 메뉴에서 메뉴 편집 모드로 진입합니다.\n트리 구조의 메뉴 항목을 추가, 이름 변경, 삭제, 순서 변경할 수 있으며,\n드래그앤드롭으로 계층 구조를 재구성합니다. 변경사항은 저장 즉시 전체 사용자에게 반영됩니다.\n\n| 기능 | 설명 |\n| --- | --- |\n| 항목 추가 | 카테고리(폴더) 또는 문서 링크를 추가합니다. |\n| 이름 변경 | 메뉴 항목의 표시 이름을 수정합니다. |\n| 순서 변경 | 드래그앤드롭으로 항목 순서와 계층을 조정합니다. |\n| 삭제 | 메뉴 항목을 제거합니다. 시스템 보호 항목(플랫폼 가이드 등)은 삭제할 수 없습니다. |",
+    "section_id": "메뉴-편집",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "시스템 설정",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > 시스템 설정",
+    "content": "런처 또는 헤더의 시스템 전환 버튼에서 관리자 설정 페이지에 접근합니다.\n설정은 시스템별, 탭별로 구분되어 있으며 변경 후 저장 버튼을 클릭합니다.\n일부 항목은 서버 재시작이 필요하며, 해당 항목에는 안내가 표시됩니다.",
+    "section_id": "시스템-설정",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "AI / RAG 설정",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > AI / RAG 설정",
+    "content": "| 항목 | 설명 |\n| --- | --- |\n| Ollama URL | 로컬 Ollama 서버 주소 (예: http://localhost:11434). 재시작 필요. |\n| LLM 모델 | 채팅에 사용할 모델 이름 (예: gemma3:4b). 재시작 필요. |\n| 임베딩 모델 | 벡터 검색용 모델 (예: bge-m3). 재시작 필요. |\n| 기본 검색 방식 | hybrid(권장), keyword, vector 중 선택. |\n| 최대 검색 결과 | 챗봇 응답에 사용할 최대 문서 청크 수 (1~20). |\n| 최대 컨텍스트 길이 | LLM에 전달할 최대 문자 수 (1,000~32,000). |\n| 리랭커 | 교차 인코더 리랭커(bge-reranker-v2-m3) 활성화 여부. |\n| 쿼리 재작성 | 멀티턴 대화에서 후속 질문을 독립 쿼리로 자동 변환. |\n| 시스템 프롬프트 | RAG 챗봇의 기본 응답 지침. |",
+    "section_id": "ai-rag-설정",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "세션 설정",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > 세션 설정",
+    "content": "| 항목 | 설명 |\n| --- | --- |\n| 최대 대화 턴 | 챗봇이 기억하는 최대 Q&A 쌍 수 (1~20). |\n| 최대 히스토리 길이 | LLM에 전달할 대화 이력 최대 문자 수. |\n| 최대 세션 수 | 서버 메모리에 유지할 동시 세션 수. 초과 시 LRU 방식으로 제거. |\n| 유휴 타임아웃 | 비활성 세션 자동 삭제 시간 (분). |\n| 로그인 유지 시간 | 로그인 세션 유효 시간 (시간 단위). 재시작 필요. |",
+    "section_id": "세션-설정",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "업로드 설정",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > 업로드 설정",
+    "content": "| 항목 | 설명 |\n| --- | --- |\n| 업로드 활성화 | 편집자 이상 사용자에게 업로드 UI 표시 여부. |\n| 최대 파일 크기 | 단일 파일 최대 크기 (MB). |\n| 자동 키워드 인덱싱 | 업로드 후 BM25 검색 인덱스 자동 재생성. |\n| 자동 벡터 인덱싱 | 업로드 후 FAISS 벡터 인덱스 자동 재생성. 시간 소요가 큽니다. |\n| DOCX COM 전처리 | Microsoft Word COM으로 자동 번호를 평문화. Windows + Word 설치 필요. |",
+    "section_id": "업로드-설정",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "화면 / 에디터 설정",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > 화면 / 에디터 설정",
+    "content": "| 항목 | 설명 |\n| --- | --- |\n| 사이트 제목 | 헤더, 로그인 페이지, 브라우저 탭에 표시되는 사이트 이름. |\n| 테이블 스타일 | bordered(기본), simple, minimal 중 선택. |\n| AI 챗봇 표시 | 우하단 AI 채팅 버튼 표시 여부. |\n| 에디터 활성화 | 인라인 문서 편집 기능 사용 여부. |\n| 자동 저장 간격 | 편집 시 자동 저장 주기 (밀리초 단위, 기본 30초). |\n| 백업 생성 | 저장 전 .bak 백업 파일 생성 여부. |",
+    "section_id": "화면-에디터-설정",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "보안 설정",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > 보안 설정",
+    "content": "| 항목 | 설명 |\n| --- | --- |\n| 로그인 필수 | 비인증 API 접근 차단 여부. 재시작 필요. |\n| CORS 허용 출처 | 허용할 외부 도메인 목록 (줄바꿈 구분). 재시작 필요. |",
+    "section_id": "보안-설정",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "Notebook / Verify 설정",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > Notebook / Verify 설정",
+    "content": "Notebook과 Verify 시스템별 설정은 관리자 설정 페이지에서 해당 시스템 탭을 선택하여 조정합니다.\n\n시스템: Notebook | 설정 영역: 번역 모델 | 주요 항목: Notebook 전용 Ollama 모델 지정 (미지정 시 Explorer 모델 사용)\n시스템: Notebook | 설정 영역: PDF 번역 품질 | 주요 항목: 번역 프롬프트, 표 텍스트 번역, OCR, 최소 텍스트 길이\n시스템: Notebook | 설정 영역: 웹뷰 번역 품질 | 주요 항목: 표 처리 방식, 수식 처리, 이미지 DPI, 자동 요약\n시스템: Verify | 설정 영역: 비교 설정 | 주요 항목: AI 의미 분류 활성화, 온도, 배치 크기, 타임아웃\n시스템: Verify | 설정 영역: 유사도 설정 | 주요 항목: 유사도 임계값(높음/중간), 판정 기준, Winnowing 파라미터\n\n재시작 필요 항목:\nOllama URL, LLM 모델, 임베딩 모델, 로그인 필수, CORS, 로그인 유지 시간은\n변경 후 서버 재시작이 필요합니다. 해당 항목 변경 시 UI에 안내가 표시됩니다.",
+    "section_id": "notebook-verify-설정",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "계정 관리",
+    "url": "contents/guide/admin-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 관리자 가이드 > 계정 관리",
+    "content": "관리자 설정 페이지의 \"계정 관리\" 탭에서 사용자를 관리합니다.\n\n| 기능 | 설명 |\n| --- | --- |\n| 사용자 목록 | 등록된 전체 사용자의 ID, 역할, 생성일을 확인합니다. |\n| 사용자 추가 | 사용자명, 비밀번호, 역할(viewer/editor/admin)을 입력하여 등록합니다. |\n| 정보 수정 | 비밀번호 변경, 역할 변경이 가능합니다. |\n| 사용자 삭제 | 확인 후 삭제됩니다. 자기 자신은 삭제할 수 없습니다. |\n\n초기 운영 시 관리자 계정을 설정한 뒤, 팀별로 viewer 계정을 배포하여 운용합니다.\n편집 권한이 필요한 담당자에게는 editor 역할을 부여합니다.\n\n참고:\n설정 변경은 저장 즉시 적용됩니다 (재시작 필요 항목 제외).\n설정 초기화가 필요한 경우 data/settings.json 파일을 삭제하면 기본값으로 복원됩니다.",
+    "section_id": "계정-관리",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "관리자 가이드"
+    }
+  },
+  {
+    "title": "시스템 아키텍처",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 시스템 아키텍처",
+    "content": "Smart Document Platform 내부 구조 및 기술 설계\n\nArchitecture Overview",
+    "section_id": "시스템-아키텍처",
+    "heading_level": 1,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "플랫폼 기술 아키텍처",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 플랫폼 기술 아키텍처",
+    "content": "폐쇄망 환경에서 동작하는 3-Tier 구조의 문서 플랫폼입니다.\n프론트엔드(정적 HTML), 백엔드(FastAPI), AI 엔진(Ollama)이\n각각 독립된 프로세스로 운용되며, 빌드 도구나 외부 클라우드 없이 동작합니다.\n\n3-Tier 아키텍처\n55+ API 엔드포인트\n28개 서비스 모듈\n폐쇄망 운용\n\n이 문서는 플랫폼의 서버 구성, 서비스 계층, API 설계, 폴더 구조, 운영 준비 상태를 다룹니다.\n\"어떻게 쓰는가\"가 아닌 \"어떻게 만들어졌는가\"에 초점을 맞춘 기술 참조 문서입니다.",
+    "section_id": "플랫폼-기술-아키텍처",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "서버 구성",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 서버 구성",
+    "content": "2대 서버, 3개 프로세스로 운용합니다.\n\n시스템 구성도 — 프론트엔드, 백엔드, AI 엔진 3계층 구조\n\n| 계층 | 서버 | 역할 |\n| --- | --- | --- |\n| 프론트엔드 | Windows VM :8080 Tomcat 또는 Python http.server | HTML, JS, CSS 정적 파일 서빙. 프레임워크 없이 Vanilla JS로 구성. |\n| 백엔드 | Windows VM :8000 FastAPI + Uvicorn | 인증, 검색, 채팅, 번역, 비교, 설정 등 55+ API 엔드포인트 제공. |\n| AI 엔진 | Linux GPU :11434 Ollama (NVIDIA L40-48Q) | LLM 추론(gemma3), 임베딩(bge-m3), 리랭킹(bge-reranker-v2-m3). |\n\n설계 원칙: 프론트엔드는 백엔드 없이도 기본 문서 열람이 가능합니다.\nAI 채팅, 검색, 번역 등 고급 기능만 백엔드 + AI 엔진이 필요합니다.\n이 계층 분리 덕분에 장비 구성에 따라 기능을 단계적으로 도입할 수 있습니다.",
+    "section_id": "서버-구성",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "기능별 인프라 요구사항",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 기능별 인프라 요구사항",
+    "content": "| 기능 | 백엔드 | Ollama | 비고 |\n| --- | --- | --- | --- |\n| 문서 열람 (웹북) | 불필요 | 불필요 | 정적 서버만으로 동작 |\n| 키워드 검색 | 필요 | 불필요 | search-index.json 사용 |\n| 하이브리드 검색 + AI 채팅 | 필요 | 필요 | 벡터 검색 + LLM 추론 |\n| PDF 번역 (Notebook) | 필요 | 필요 | pdf2zh + Ollama |\n| 문서 비교 (Verify) | 필요 | 선택 | AI 분류 사용 시 필요 |\n| 인증 / 관리자 설정 | 필요 | 불필요 | SQLite + JSON 기반 |\n\n서비스 계층\n백엔드는 API 라우터 + 서비스 모듈 2계층 구조입니다.",
+    "section_id": "기능별-인프라",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "API 라우터 (8개)",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > API 라우터 (8개)",
+    "content": "| 라우터 | 엔드포인트 | 주요 기능 |\n| --- | --- | --- |\n| auth.py | 5개 | 로그인, 세션, 사용자 CRUD |\n| search.py | 3개 | 키워드, 벡터, 하이브리드 검색 |\n| chat.py | 2개 | RAG 채팅, 세션 관리 |\n| translator.py | 30+개 | PDF 업로드, 번역, 추출, 요약, Q&A, 폴더 |\n| compare.py | 11개 | 비교, 유사도, 규칙 검증, 내보내기 |\n| upload.py | 3개 | DOCX/PDF 변환, 인덱스 재생성 |\n| settings.py | 3개 | 런타임 설정 CRUD |\n| menu.py | 2개 | 메뉴 트리 조회/저장 |",
+    "section_id": "api-라우터",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "서비스 모듈 (28개)",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 서비스 모듈 (28개)",
+    "content": "| 영역 | 모듈 수 | 주요 모듈 |\n| --- | --- | --- |\n| Explorer | 10개 | keyword_search, vector_search, embedding_client, reranker, rag_agent, conversation, query_rewriter, llm_provider, question_router, chat_formatter |\n| Notebook | 6개 | translator_service, md_extractor, ai_summary, notebook_chat, pmt_runner, marking_service |\n| Verify | 4개 | compare_service, similarity_service, rules_engine, score_calculator |\n| 공통 인프라 | 6개 | auth_service, settings_service, analytics_service, backup_service, health_service, session_manager |\n| 변환 도구 | 2개 | docx_converter (표 병합, OMML-MathML), word_preprocessor (COM) |\n\n프론트엔드 구조\n프레임워크 없이 Vanilla JS + 모놀리식 HTML 구조입니다.",
+    "section_id": "서비스-모듈",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "핵심 설계 결정",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 핵심 설계 결정",
+    "content": "| 결정 | 선택 | 근거 |\n| --- | --- | --- |\n| 프레임워크 | Vanilla JS (ES5+) | 폐쇄망에서 npm/빌드 도구 불필요. 브라우저 호환성 최대화. |\n| 페이지 구조 | 서브시스템당 단일 HTML | index.html, translator.html, compare.html, login.html 4파일. |\n| 콘텐츠 로딩 | fetch() + #main-content | 메뉴 클릭 시 HTML 프래그먼트를 동적 삽입. SPA와 유사한 UX. |\n| 상태 관리 | 전역 객체 (AppState) | menuData, searchIndex, currentPage 등 최소 상태만 관리. |\n| 디자인 시스템 | CSS 변수 (tokens.css) | 색상, 간격, 둥글기, 트랜지션 등 토큰화. 다크모드 자동 전환. |",
+    "section_id": "설계-결정",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "JS 모듈 구성",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > JS 모듈 구성",
+    "content": "| 모듈 | 역할 |\n| --- | --- |\n| app.js | 초기화, 콘텐츠 로딩, 브레드크럼, URL 라우팅 |\n| tree-menu.js | 좌측 트리 메뉴 렌더링, 검색 필터, 업로드 |\n| auth.js | 3-role RBAC, 로그인 게이트, 세션 관리 |\n| ai-chat.js | RAG 챗봇 UI, NDJSON 스트리밍, 섹션 네비게이션 |\n| search.js | 전체 텍스트 검색, 하이브리드 검색 UI |\n| editor-core.js | Monaco 에디터 래퍼, 분할 뷰, Strategy 패턴 |\n| admin-settings.js | 관리자 설정 GUI (6탭) |\n| config.js | DISPLAY_CONFIG, AI_CONFIG, AUTH_CONFIG 등 상수 |\n| toast.js | 공통 토스트 알림 |\n| platform-header.js | 공통 헤더 (시스템 전환, 테마, 네비게이션) |",
+    "section_id": "js-모듈-구성",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "CSS 디자인 시스템",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > CSS 디자인 시스템",
+    "content": "16개 CSS 파일이 역할별로 분리되어 있습니다.\ntokens.css 가 모든 디자인 토큰(색상, 간격, 둥글기, 그림자)을 정의하고,\n각 컴포넌트 CSS가 이를 참조합니다. 하드코딩된 색상값은 사용하지 않습니다.\n\n| 파일 | 역할 |\n| --- | --- |\n| tokens.css | 디자인 토큰 (색상, 간격, 둥글기, 트랜지션) |\n| components.css | 공통 컴포넌트 (버튼, 입력, 배지, 스피너, 슬라이더) |\n| modal.css | 모달 오버레이/박스 공통 구조 |\n| content.css | 콘텐츠 영역 타이포그래피, 가이드 po-* 클래스 |\n| auth.css | 인증 모달, 로그인 게이트, 권한별 표시 제어 |",
+    "section_id": "css-디자인-시스템",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "데이터 저장",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 데이터 저장",
+    "content": "파일 기반 저장 + SQLite 조합으로 운용합니다.\n\n| 데이터 | 저장 방식 | 보호 방식 |\n| --- | --- | --- |\n| 메뉴 트리, 설정, 사용자 목록 | JSON 파일 | 원자적 저장 (tmp → rename) |\n| 검색 인덱스 | JSON + FAISS 바이너리 | 재생성 가능 (원본 HTML에서 복원) |\n| 인증/세션 | SQLite (auth.db) | PBKDF2-SHA256 260K iterations |\n| 접속 통계 | SQLite (analytics.db) | 일일 백업 (30일 보존) |\n| Notebook 작업물 | 파일시스템 (사용자별 디렉토리) | data/translator/{username}/{doc_id}/ |\n| 콘텐츠 (웹북) | HTML 파일 | contents/ 디렉토리, 업로드 시 자동 백업 |\n\nSQLite 적합성: 동시 접속 10~30명, 쓰기 빈도 낮음, 데이터 수십 MB 수준이므로\nPostgreSQL 등 외부 DB 없이 SQLite로 충분합니다.\n재설계 시점은 동시 접속 50명 이상, 문서 1,000개 이상, 외부 시스템 연계 시입니다.",
+    "section_id": "데이터-저장",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "보안 설계",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 보안 설계",
+    "content": "| 영역 | 구현 |\n| --- | --- |\n| 비밀번호 저장 | PBKDF2-SHA256, 260,000 iterations, secrets.token_hex(32) 솔트 |\n| 세션 관리 | HttpOnly 쿠키, SameSite=lax, secrets.compare_digest() 비교 |\n| 접근 제어 | 3단계 RBAC (viewer/editor/admin). API 레벨 + CSS 클래스 이중 제어. |\n| 네트워크 | 폐쇄망 전용. CORS origin 환경변수로 제한. 외부 통신 없음. |\n| 데이터 보호 | 원자적 JSON 저장 (tmp → rename). 일일 백업 자동 실행. |",
+    "section_id": "보안-설계",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "운영 준비 상태",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 운영 준비 상태",
+    "content": "운영 안정성 강화(Plan-22) 완료 후 평가 결과입니다.\n\n| 평가 항목 | 점수 | 상세 |\n| --- | --- | --- |\n| 인증/인가 | 8 / 10 | PBKDF2 + RBAC + HttpOnly 쿠키 |\n| 데이터 보호 | 9 / 10 | 원자적 저장, 자동 백업 30일 |\n| API 보안 | 7 / 10 | Depends(require_admin) 전역 적용 |\n| 로깅/모니터링 | 8 / 10 | RotatingFileHandler 10MB x 5, 구조화 로깅 |\n| 에러 처리 | 8 / 10 | Graceful Shutdown, 고착 태스크 리셋 |\n| 프론트엔드 | 8 / 10 | content-visibility 최적화, 수렴 스크롤 |\n| DB 구조 | 8 / 10 | SQLite WAL 모드, 적정 규모 |\n| 서버 구성 | 5 / 10 | 프로세스 관리(NSSM) 미적용 |",
+    "section_id": "운영-준비-상태",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "권장 하드웨어 사양",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 권장 하드웨어 사양",
+    "content": "| 항목 | 권장 | 산정 근거 |\n| --- | --- | --- |\n| RAM | 16 GB | OS+Tomcat 3GB + FastAPI 500MB + 리랭커 2GB + FAISS 100MB + 번역 1GB |\n| 디스크 | 100 GB SSD | 현재 16GB, 연간 증가 약 15GB (문서 + 백업) |\n| CPU | 12코어 이상 | FastAPI 비동기 처리 + 문서 변환 병렬 실행 |\n| GPU | NVIDIA L40 48GB | Ollama LLM 추론, 임베딩, 리랭킹 (Linux 서버) |",
+    "section_id": "권장-사양",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "기술 스택 요약",
+    "url": "contents/guide/architecture.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 기술 스택 요약",
+    "content": "| 영역 | 기술 |\n| --- | --- |\n| 백엔드 | Python 3.11, FastAPI 0.128, Uvicorn (비동기) |\n| 프론트엔드 | Vanilla JS (ES5+), 단일 HTML, CSS 변수 디자인 시스템 |\n| LLM | Ollama + gemma3:27b (추론), gemma3:4b (경량 작업) |\n| 임베딩 | bge-m3 (1024차원, 한/영 혼합) |\n| 리랭커 | bge-reranker-v2-m3 (Cross-encoder) |\n| 벡터 DB | FAISS IndexFlatL2 (인메모리) |\n| PDF 번역 | pdf2zh (레이아웃 보존), PyMuPDF4LLM (마크다운 추출) |\n| 문서 변환 | python-docx + COM 전처리, OMML → MathML 18종 |\n| 데이터 저장 | SQLite (인증/통계) + JSON 파일 (설정/인덱스) |\n| 정적 서버 | Tomcat 7.0 또는 Python http.server |\n\n참고: 기술 스택의 상세 사양과 설정 방법은 시스템 관리자에게 문의하십시오.\n프론트엔드 사용 방법은 좌측 메뉴 사용 가이드 항목을 참조하십시오.",
+    "section_id": "기술-스택",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "시스템 아키텍처"
+    }
+  },
+  {
+    "title": "개발 경과 보고",
+    "url": "contents/guide/dev-progress.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 개발 경과 보고",
+    "content": "정적 웹북에서 지식 플랫폼까지 — 7단계 발전 경과와 향후 방향\n\nDevelopment Progress",
+    "section_id": "개발-경과-보고",
+    "heading_level": 1,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "개발 경과 보고"
+    }
+  },
+  {
+    "title": "플랫폼 개발 경과 및 로드맵",
+    "url": "contents/guide/dev-progress.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 플랫폼 개발 경과 및 로드맵",
+    "content": "2025년 정적 웹북으로 시작하여, RAG 검색, AI 번역, 문서 검증까지\n7단계에 걸쳐 발전해 왔습니다.\n현재 Explorer, Notebook, Verify 3개 서브시스템이 운용 중이며,\nAuthor(AI 저작) 시스템을 설계 중입니다.\n\n7단계 진화\n60+ 파일\n28,000+ 줄\n55+ API\n\n이 문서는 플랫폼이 어디서 출발하여 어디까지 왔고, 앞으로 어디로 가는지를 다룹니다.\n기능 나열이 아닌 개발 경과와 의사결정 배경에 초점을 맞춘 보고 문서입니다.",
+    "section_id": "플랫폼-개발-경과-및-로드맵",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "개발 경과 보고"
+    }
+  },
+  {
+    "title": "발전 경과",
+    "url": "contents/guide/dev-progress.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 발전 경과",
+    "content": "정적 문서 뷰어에서 지식 플랫폼으로 진화한 7단계입니다.\n\n| 단계 | 목표 | 주요 결과 |\n| --- | --- | --- |\n| Phase 1 | 정적 웹북 | DOCX → HTML 변환, 문서 트리 네비게이션, 다크모드 |\n| Phase 2 | RAG 검색 + 에디터 | 하이브리드 검색 (BM25+FAISS), AI 채팅, Monaco 에디터 |\n| Phase 3 | 관리 + 통계 | RBAC 3단계, 관리자 설정 GUI, 접속 통계, 콘텐츠 업로드 |\n| Phase 4 | 번역 시스템 | Notebook 서브시스템 — PDF 번역, 듀얼 패널 뷰어, AI 분석 |\n| Phase 5 | 문서 검증 | Verify 서브시스템 — 비교, 유사도, 21종 규칙 엔진 |\n| Phase 6 | 품질 강화 | 디자인 시스템 (tokens.css), 운영 안정성, 구조화 로깅 |\n| Phase 7 | 플랫폼 통합 | 공통 헤더, 시스템 전환, 플랫폼 가이드, 런처 통합 |",
+    "section_id": "발전-경과",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "개발 경과 보고"
+    }
+  },
+  {
+    "title": "플랫폼 4체제 구성",
+    "url": "contents/guide/dev-progress.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 플랫폼 4체제 구성",
+    "content": "기술 문서 생애주기의 네 단계를 각각의 서브시스템이 담당합니다.\n\n| 시스템 | 역할 | 상태 | 핵심 기능 |\n| --- | --- | --- | --- |\n| Explorer | 읽기 / 소비 | 운용 중 | 하이브리드 RAG 검색, AI 채팅, 문서 트리, 용어집 |\n| Notebook | 이해 / 내재화 | 운용 중 | PDF 번역, AI 요약, Q&A, 마인드맵, 마킹 |\n| Verify | 검증 / 판단 | 운용 중 | 문서 비교, 유사도 검사, 21종 규칙 자동 점검 |\n| Author | 생산 / 창작 | 설계 중 | AI 보조 문서 저작, 요구사항 추적, 참조 인용 (계획) |\n\n플랫폼 4체제 — 기술 문서의 소비, 이해, 검증, 생산 순환\n\n비전: \"폐쇄망 엔지니어를 위한 지식 플랫폼 — 읽고, 이해하고, 검증하고, 만든다.\"\n네 개의 서브시스템이 이 순환을 완성합니다.",
+    "section_id": "플랫폼-구성",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "개발 경과 보고"
+    }
+  },
+  {
+    "title": "개발 규모",
+    "url": "contents/guide/dev-progress.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 개발 규모",
+    "content": "| 영역 | 파일 수 | 코드 줄 수 |\n| --- | --- | --- |\n| JavaScript (프론트엔드) | 14+ 모듈 | 12,000+ 줄 |\n| CSS (디자인 시스템) | 16 파일 | 9,100+ 줄 |\n| Python (백엔드 API/서비스) | 24+ 모듈 | 4,000+ 줄 |\n| Python (변환 도구) | 6 모듈 | 3,000+ 줄 |\n| 합계 | 60+ 파일 | 28,000+ 줄 |\n\n| 항목 | 수치 |\n| --- | --- |\n| API 엔드포인트 | 55+ 개 |\n| 서비스 모듈 (백엔드) | 28개 |\n| 자동화 규칙 (Verify) | 21종 |\n| 항공 용어집 | 26,000+ 항목 |\n| 콘텐츠 카테고리 | 6개 범용 + KF-21 개발백서 |",
+    "section_id": "개발-규모",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "개발 경과 보고"
+    }
+  },
+  {
+    "title": "핵심 기술 성과",
+    "url": "contents/guide/dev-progress.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 핵심 기술 성과",
+    "content": "검색 품질\n\n하이브리드 RAG 검색에서 Recall@5 = 100%, MRR = 0.967을 달성했습니다.\n키워드(BM25)와 벡터(FAISS + bge-m3)를 RRF로 병합하고,\nCross-encoder(bge-reranker-v2-m3)로 리랭킹합니다.\n구조 보존 인덱싱(테이블 → Markdown, 수식 → LaTeX)이 핵심 차별점입니다.\n\n문서 변환 파이프라인\n\nDOCX 변환기가 스타일 기반 heading 감지, 표 병합(colspan/rowspan),\nOMML → MathML 변환(18종 수학 요소)을 지원합니다.\nPDF 변환기는 TOC 자동 감지와 3-pass 퍼지 매칭(threshold 0.80)으로\n문서 구조를 복원합니다.\n\n외부 의존성 제로\n\n인터넷 연결, 외부 클라우드, npm, 빌드 도구 없이 동작합니다.\nPython wheel 패키지 오프라인 설치, Ollama 로컬 LLM,\nFAISS 인메모리 벡터 검색으로 폐쇄망 완전 자립 운용이 가능합니다.",
+    "section_id": "핵심-성과",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "개발 경과 보고"
+    }
+  },
+  {
+    "title": "기술 선택 배경",
+    "url": "contents/guide/dev-progress.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 기술 선택 배경",
+    "content": "주요 기술 결정의 근거입니다.\n\n| 결정 | 선택 | 근거 |\n| --- | --- | --- |\n| 프론트엔드 | Vanilla JS 유지 | 폐쇄망에서 빌드 불가. 작동하는 코드 폐기 비용 > 전환 이득. |\n| 백엔드 | FastAPI 통일 | 비동기 처리, 자동 API 문서, Python ML 생태계 접근. |\n| AI 엔진 | Ollama (로컬) | 폐쇄망 제약. OpenAI API 사용 불가. |\n| 데이터 저장 | SQLite + JSON | 동시 10~30명 규모. 외부 DB 불필요. |\n| 공용 포맷 | Markdown | 추출, 번역, 편집, 인덱싱의 공통 중간 표현. |\n| 시스템 연계 | 독립 운용 우선 | 외부 시스템(K-Spec 등)은 플랫폼 외부에서 연동. |",
+    "section_id": "기술-선택-배경",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "개발 경과 보고"
+    }
+  },
+  {
+    "title": "유사 서비스 비교",
+    "url": "contents/guide/dev-progress.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 유사 서비스 비교",
+    "content": "| 기능 | 본 플랫폼 | NotebookLM | Obsidian |\n| --- | --- | --- | --- |\n| 폐쇄망 동작 | 가능 | 불가 | 가능 |\n| PDF 번역 | 가능 (레이아웃 보존) | 불가 | 불가 |\n| RAG 검색 | 하이브리드 + 리랭킹 | 자체 구현 | 플러그인 필요 |\n| 문서 비교/검증 | 21종 규칙 엔진 | 불가 | 불가 |\n| 도메인 용어집 | 26,000+ 항공 용어 | 불가 | 수동 구축 |\n| 기술 문서 특화 | 수식, 표, 규격 지원 | 범용 | 범용 |\n| 접근 제어 | RBAC 3단계 | Google 계정 | 로컬 전용 |\n\n차별점: 폐쇄망에서 동작하면서 PDF 번역, RAG 검색, 문서 검증을 모두 제공하는\n통합 플랫폼은 현재 유일합니다. 범용 도구로는 불가능한 기술 문서 특화 기능\n(수식 변환, 규격 검증, 항공 용어집)이 핵심 가치입니다.",
+    "section_id": "경쟁-비교",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "개발 경과 보고"
+    }
+  },
+  {
+    "title": "향후 로드맵",
+    "url": "contents/guide/dev-progress.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 향후 로드맵",
+    "content": "| 단계 | 목표 | 상태 | 주요 내용 |\n| --- | --- | --- | --- |\n| Phase A | 품질 향상 | 완료 | 디자인 시스템, 운영 안정성, Notebook 플랫폼 완성 |\n| Phase A+ | 지식 플랫폼 | 완료 | Verify 고도화, 플랫폼 가이드, 관리자 설정 통합 |\n| Phase B | 데이터 아키텍처 | 진행 중 | PDF 입력 통일, Notebook 뷰어 개선, MD 추출 품질 강화 |\n| Phase C | Author MVP | 계획 | AI 보조 문서 저작, 요구사항 추적, 참조 인용 |\n| Phase D | 시스템 연계 | 계획 | 서브시스템 간 데이터 흐름, 크로스 참조 |\n| Phase E | 공통 서비스 | 계획 | 공유 컴포넌트 분리, 인프라 통합 |\n\n설계 원칙: 한 번에 하나의 단계만 진행하며, 각 단계마다 실제 사용자 가치를 전달합니다.\n검증 후 다음 단계로 확장하고, 필요할 때만 분리합니다.",
+    "section_id": "로드맵",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "개발 경과 보고"
+    }
+  },
+  {
+    "title": "Explorer 사용법",
+    "url": "contents/guide/explorer-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Explorer 사용법 > Explorer 사용법",
+    "content": "Knowledge Explorer — 기술 문서 탐색 및 AI 질의 시스템\n\nKnowledge Explorer",
+    "section_id": "explorer-사용법",
+    "heading_level": 1,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Explorer 사용법"
+    }
+  },
+  {
+    "title": "기술 문서 탐색 및 AI 질의 시스템",
+    "url": "contents/guide/explorer-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Explorer 사용법 > 기술 문서 탐색 및 AI 질의 시스템",
+    "content": "Explorer는 등록된 기술 문서를 트리 구조로 탐색하고,\n하이브리드 검색(키워드 + 벡터)으로 원하는 정보를 찾으며,\nAI 채팅을 통해 문서 기반 질의응답을 수행하는 시스템입니다.\n\n문서 탐색\n하이브리드 검색\nAI 질의응답\n북마크\n\nExplorer는 지식 탐색을 위한 세 가지 경로를 제공합니다.\n좌측 트리 메뉴에서 문서를 직접 탐색하거나, 검색으로 키워드·의미 기반 검색을 수행하거나,\nAI 채팅으로 자연어 질문에 대한 답변을 받을 수 있습니다.\n\nExplorer 메인 화면 — 좌측 트리 메뉴, 중앙 콘텐츠, 우측 섹션 네비게이션",
+    "section_id": "기술-문서-탐색-및-ai-질의-시스템",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Explorer 사용법"
+    }
+  },
+  {
+    "title": "문서 탐색",
+    "url": "contents/guide/explorer-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Explorer 사용법 > 문서 탐색",
+    "content": "좌측 Contents 패널의 트리 메뉴에서 문서를 선택하면 중앙 영역에 콘텐츠가 로드됩니다.\n상단에 브레드크럼 경로가 표시되며, 우측 \"On this page\" 패널에서 문서 내 섹션을 확인할 수 있습니다.\n\n| 기능 | 설명 |\n| --- | --- |\n| 트리 메뉴 | 계층형 문서 목록. 폴더를 펼치거나 접어 탐색합니다. 상단 검색창에서 메뉴 내 필터링이 가능합니다. |\n| 브레드크럼 | 현재 문서의 위치를 경로로 표시합니다. 상위 카테고리를 클릭하여 이동할 수 있습니다. |\n| On this page | 문서 내 제목(h1/h2/h3) 목록을 자동 생성합니다. 클릭 시 해당 섹션으로 이동합니다. Auto Track을 켜면 스크롤에 따라 현재 위치가 자동 추적됩니다. |\n| URL 공유 | 현재 문서의 URL을 복사하면 다른 사용자에게 공유할 수 있습니다. 브라우저 뒤로/앞으로도 지원됩니다. |",
+    "section_id": "문서-탐색",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Explorer 사용법"
+    }
+  },
+  {
+    "title": "검색",
+    "url": "contents/guide/explorer-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Explorer 사용법 > 검색",
+    "content": "상단 Search 버튼을 클릭하면 검색 오버레이가 열립니다.\n등록된 전체 문서를 대상으로 검색하며, 결과를 클릭하면 해당 문서의 해당 섹션으로 이동합니다.\n\n| 검색 방식 | 설명 |\n| --- | --- |\n| 키워드 검색 | 입력한 단어가 포함된 문서를 찾습니다. 2글자 이상 입력 시 동작합니다. |\n| 벡터 검색 | bge-m3 임베딩을 사용하여 의미적으로 유사한 문서를 찾습니다. 정확한 단어가 없어도 관련 내용을 검색합니다. |\n| 하이브리드 | 키워드와 벡터 결과를 RRF(Reciprocal Rank Fusion)로 병합합니다. 기본 설정이며, 가장 정확도가 높습니다. |\n\n검색 결과를 클릭하면 해당 문서가 로드되고, 검색어가 본문에 하이라이트 표시됩니다.\n결과에 섹션 정보가 포함된 경우 해당 위치로 자동 스크롤됩니다.\n\n검색 결과 — 키워드 하이라이트 및 섹션 이동",
+    "section_id": "검색",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Explorer 사용법"
+    }
+  },
+  {
+    "title": "AI 채팅",
+    "url": "contents/guide/explorer-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Explorer 사용법 > AI 채팅",
+    "content": "화면 우하단의 채팅 버튼을 클릭하면 AI 채팅 패널이 열립니다.\n등록된 문서를 기반으로 질문에 답변하며, 답변에 출처(문서명, 섹션)가 함께 표시됩니다.\n\nRAG 기반 질의응답\n\n질문을 입력하면 AI가 등록된 문서에서 관련 내용을 검색(RAG)한 뒤,\n해당 내용을 근거로 답변을 생성합니다.\n답변은 실시간 스트리밍으로 표시되며, 출처 링크를 클릭하면 원문 섹션으로 이동합니다.\n\n문서 기반 RAG 답변 — 등록된 문서에서 근거를 찾아 응답\n멀티턴 대화 — 이전 질문의 맥락을 유지하며 후속 질문 가능\n출처 표시 — 답변에 사용된 문서명과 섹션 링크 제공\n실시간 스트리밍 — 답변이 생성되는 대로 표시\n빠른 질문 — 요약, 핵심 정리, 설명 버튼으로 간편 질문\n신뢰도 표시 — 검색 결과가 부족한 경우 안내 메시지 표시\n\nAI 채팅 — 문서 기반 질의응답 및 출처 표시\n\n참고:\nAI 답변은 등록된 문서 범위 내에서 생성됩니다.\n문서에 없는 내용에 대해서는 \"관련 정보를 찾을 수 없습니다\"로 응답하며,\n신뢰도가 낮은 경우 별도 안내가 표시됩니다.",
+    "section_id": "ai-채팅",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Explorer 사용법"
+    }
+  },
+  {
+    "title": "북마크",
+    "url": "contents/guide/explorer-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Explorer 사용법 > 북마크",
+    "content": "문서 내 제목(h1, h2) 옆의 별 아이콘을 클릭하면 해당 섹션이 북마크에 등록됩니다.\n상단 Bookmarks 메뉴에서 저장된 북마크 목록을 확인하고, 클릭하여 해당 위치로 이동할 수 있습니다.\n\n| 항목 | 설명 |\n| --- | --- |\n| 등록 | 제목 옆 별 아이콘(☆) 클릭 → 채워진 별(★)로 변경되며 등록 |\n| 조회 | 상단 Bookmarks 메뉴 클릭 → 오버레이에 목록 표시 |\n| 이동 | 목록에서 항목 클릭 → 해당 문서의 해당 섹션으로 이동 |\n| 저장 | 브라우저 localStorage에 저장. 같은 브라우저에서 유지됩니다. |",
+    "section_id": "북마크",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Explorer 사용법"
+    }
+  },
+  {
+    "title": "화면 설정",
+    "url": "contents/guide/explorer-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Explorer 사용법 > 화면 설정",
+    "content": "| 설정 | 설명 |\n| --- | --- |\n| 다크모드 | 상단 우측 테마 토글 버튼으로 라이트/다크 모드를 전환합니다. 설정은 브라우저에 저장됩니다. |\n| 사이드바 접기 | 좌측 Contents 패널과 우측 On this page 패널을 각각 접거나 펼칠 수 있습니다. 접으면 콘텐츠 영역이 넓어집니다. |\n| 채팅 확장 | AI 채팅 패널을 전체 화면으로 확장할 수 있습니다. |\n\n참고:\n콘텐츠 등록, 메뉴 편집, AI/검색 설정 등 관리자 기능은\n플랫폼 가이드 > 관리자 가이드 를 참조하십시오.",
+    "section_id": "화면-설정",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Explorer 사용법"
+    }
+  },
+  {
+    "title": "Notebook 사용법",
+    "url": "contents/guide/notebook-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Notebook 사용법 > Notebook 사용법",
+    "content": "Research Notebook — 논문 번역 및 문서 분석 시스템\n\nResearch Notebook",
+    "section_id": "notebook-사용법",
+    "heading_level": 1,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Notebook 사용법"
+    }
+  },
+  {
+    "title": "논문 번역 및 문서 분석 시스템",
+    "url": "contents/guide/notebook-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Notebook 사용법 > 논문 번역 및 문서 분석 시스템",
+    "content": "Notebook은 영문 기술 논문 및 규격 PDF를 업로드하여\n페이지별 AI 번역, 요약, Q&A, 마인드맵, 마킹 등\n문서 분석 도구를 제공하는 연구 노트 시스템입니다.\n\nPDF 번역\nAI 요약\nQ&A 챗봇\n마킹·메모\n폴더 관리\n\n사용 흐름은 PDF 업로드 → 문서 열기 → 번역 → AI 분석 → 내보내기 순서입니다.\n원문 PDF와 번역 결과를 나란히 비교하는 듀얼 패널 뷰어를 지원하며,\n우측 도구 패널에서 요약, Q&A, 마인드맵, 마킹 등을 수행합니다.\n\nNotebook 문서 목록 — 업로드, 폴더 관리, 문서 카드",
+    "section_id": "논문-번역-및-문서-분석-시스템",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Notebook 사용법"
+    }
+  },
+  {
+    "title": "문서 관리",
+    "url": "contents/guide/notebook-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Notebook 사용법 > 문서 관리",
+    "content": "PDF 파일을 업로드하면 문서 카드가 생성됩니다.\n폴더를 만들어 문서를 분류하고, 트리 패널에서 계층 구조로 탐색할 수 있습니다.\n\n| 기능 | 설명 |\n| --- | --- |\n| 업로드 | PDF 파일을 드래그앤드롭하거나 업로드 버튼으로 등록합니다. 최대 100MB. |\n| 문서 카드 | 타일/리스트 뷰 전환 가능. 제목 편집, 삭제를 지원합니다. |\n| 폴더 관리 | 폴더 생성, 이름 변경, 삭제. 문서를 드래그앤드롭으로 폴더 간 이동할 수 있습니다. |\n| 트리 패널 | 좌측 오버레이로 폴더 구조를 표시합니다. 핀 고정하면 상시 표시됩니다. |\n| 문서 검색 | 본문 텍스트와 메모를 대상으로 검색합니다. |",
+    "section_id": "문서-관리",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Notebook 사용법"
+    }
+  },
+  {
+    "title": "PDF 뷰어",
+    "url": "contents/guide/notebook-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Notebook 사용법 > PDF 뷰어",
+    "content": "문서 카드를 클릭하면 듀얼 패널 뷰어가 열립니다.\n좌측에 원문 PDF, 우측에 번역 결과 또는 AI 도구가 표시됩니다.\n\n듀얼 패널 뷰어 — 좌측 원문 PDF, 우측 AI 도구 패널\n\n| 기능 | 설명 |\n| --- | --- |\n| 페이지 이동 | 이전/다음 버튼 또는 페이지 번호 표시로 이동합니다. |\n| 확대/축소 | +/- 버튼으로 조절합니다. 클릭 시 기본 크기로 복원됩니다. |\n| 패널 크기 조절 | 좌우 패널 사이의 구분선을 드래그하여 비율을 조정합니다. |\n| 우측 도구 패널 | 우측 아이콘 레일에서 번역, 메모, 용어집, AI 분석 탭을 전환합니다. |",
+    "section_id": "pdf-뷰어",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Notebook 사용법"
+    }
+  },
+  {
+    "title": "번역",
+    "url": "contents/guide/notebook-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Notebook 사용법 > 번역",
+    "content": "두 가지 번역 모드를 제공합니다.\n우측 아이콘 레일에서 모드를 전환하며, 모델 선택 후 번역을 실행합니다.\n\n| 모드 | 엔진 | 특징 |\n| --- | --- | --- |\n| PDF 번역 | pdf2zh | 원문 레이아웃을 보존한 번역 PDF를 생성합니다. 페이지별 또는 범위 지정(최대 5페이지) 번역을 지원합니다. |\n| 웹뷰 번역 | PyMuPDF4LLM + Ollama | PDF에서 텍스트를 추출하여 마크다운으로 번역합니다. 폰트 크기 조절(12~22px), 전체 문서 연속 스크롤, 마크다운 편집을 지원합니다. |\n\n번역 실행 후 상태가 3초 간격으로 갱신되며, 완료 시 우측 패널에 결과가 표시됩니다.\nPDF 모드에서는 스크롤 동기화를 켜면 원문과 번역본이 함께 스크롤됩니다.",
+    "section_id": "번역",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Notebook 사용법"
+    }
+  },
+  {
+    "title": "AI 분석",
+    "url": "contents/guide/notebook-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Notebook 사용법 > AI 분석",
+    "content": "우측 아이콘 레일에서 AI 분석 탭을 선택하면 요약, Q&A, 마인드맵 세 가지 도구를 사용할 수 있습니다.\n최초 사용 시 \"문서 분석\" 버튼을 클릭하여 문서 전체를 분석합니다. 분석은 문서당 1회 수행됩니다.",
+    "section_id": "ai-분석",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Notebook 사용법"
+    }
+  },
+  {
+    "title": "AI 요약",
+    "url": "contents/guide/notebook-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Notebook 사용법 > AI 요약",
+    "content": "문서 전체를 분석하여 요약문, 키워드, 섹션별 요약을 생성합니다.\n문서 크기에 따라 단일 패스 또는 계층적 요약 방식이 자동 선택됩니다.\n\n전체 요약문 — 문서 핵심 내용 요약\n키워드 추출 — 태그 형태로 표시\n섹션별 요약 — 접기/펼치기 가능\n재생성 버튼으로 다시 분석 가능",
+    "section_id": "ai-요약",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Notebook 사용법"
+    }
+  },
+  {
+    "title": "Q&A 챗봇",
+    "url": "contents/guide/notebook-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Notebook 사용법 > Q&A 챗봇",
+    "content": "해당 문서를 기반으로 질문에 답변하는 채팅 인터페이스입니다.\n답변은 실시간 스트리밍으로 표시되며, 출처 페이지 번호가 함께 제공됩니다.\n\n문서 기반 질의응답 — 해당 문서 내용에서 답변 생성\n멀티턴 대화 — 이전 질문 맥락 유지\n출처 페이지 표시 — 클릭 시 해당 페이지로 이동\n빠른 질문 버튼 — 요약, 핵심 내용, 방법론\n\n마인드맵\n문서 구조를 트리 형태로 시각화합니다.\n노드를 클릭하면 AI가 해당 섹션에 대한 설명을 생성합니다.\n확대/축소, 전체 펼치기/접기 컨트롤을 제공합니다.",
+    "section_id": "qa-챗봇",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Notebook 사용법"
+    }
+  },
+  {
+    "title": "마킹·메모",
+    "url": "contents/guide/notebook-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Notebook 사용법 > 마킹·메모",
+    "content": "좌측 원문 PDF에서 텍스트를 선택하면 마킹 도구가 표시됩니다.\n형광펜 색상을 선택하고 메모를 입력하면 해당 위치에 표시가 남습니다.\n\n| 기능 | 설명 |\n| --- | --- |\n| 형광펜 | 노랑, 초록, 빨강, 파랑 4색 중 선택하여 텍스트를 마킹합니다. |\n| 메모 | 마킹에 메모를 추가할 수 있습니다. 마킹 위에 마우스를 올리면 메모가 표시됩니다. |\n| 선택 번역 | 선택한 텍스트를 즉시 번역하는 팝업을 제공합니다. |\n| 선택 요약 | 선택한 텍스트의 요약을 생성합니다. |\n| 메모 패널 | 우측 메모 탭에서 전체 마킹 목록을 확인합니다. 클릭 시 해당 페이지로 이동합니다. |",
+    "section_id": "마킹-메모",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Notebook 사용법"
+    }
+  },
+  {
+    "title": "내보내기",
+    "url": "contents/guide/notebook-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Notebook 사용법 > 내보내기",
+    "content": "상단 도구 모음의 다운로드 메뉴에서 다양한 형식으로 내보낼 수 있습니다.\n번역 상태에 따라 사용 가능한 옵션이 달라집니다.\n\n| 형식 | 조건 | 설명 |\n| --- | --- | --- |\n| 원본 PDF | 항상 가능 | 업로드한 원본 파일 다운로드 |\n| 번역 PDF (페이지) | PDF 번역 완료 시 | 현재 페이지의 번역 PDF 다운로드 |\n| 마크다운 (페이지) | 웹뷰 번역 완료 시 | 현재 페이지의 번역 마크다운 다운로드 |\n| 마크다운 (전체) | 웹뷰 번역 1건 이상 | 전체 문서 번역 마크다운 다운로드 |\n| ZIP | 웹뷰 번역 1건 이상 | 마크다운 + 이미지 에셋 압축 파일 |\n\n마크다운 편집:\n웹뷰 번역이 완료된 페이지에서 편집 버튼을 클릭하면 마크다운 편집기가 열립니다.\n편집 내용은 저장 시 전체 문서에 자동 반영됩니다.\n\n참고:\n번역 및 AI 분석에는 Ollama 모델이 사용됩니다.\n사용 가능한 모델 목록은 시스템 환경에 따라 다르며, 관리자 설정에서 확인할 수 있습니다.",
+    "section_id": "내보내기",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Notebook 사용법"
+    }
+  },
+  {
+    "title": "플랫폼 소개",
+    "url": "contents/guide/platform-overview.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 플랫폼 소개 > 플랫폼 소개",
+    "content": "Smart Document Platform — 항공우주 기술 지식 관리 시스템\n\nSmart Document Platform",
+    "section_id": "플랫폼-소개",
+    "heading_level": 1,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "플랫폼 소개"
+    }
+  },
+  {
+    "title": "항공우주 기술 문서 통합 관리 플랫폼",
+    "url": "contents/guide/platform-overview.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 플랫폼 소개 > 항공우주 기술 문서 통합 관리 플랫폼",
+    "content": "KAI 내부망 환경에서 동작하는 기술 문서 플랫폼입니다.\n외부 클라우드 없이 조직 내 기술 자산을 검색하고,\n해외 논문을 번역·분석하며, 작성 문서의 품질을 검증합니다.\n\n폐쇄망 운용\n온프레미스 AI\nRAG 기반 검색\n4개 서브시스템\n\nSmart Document Platform은 항공우주 기술 문서 관리의 세 가지 과제를 해결합니다.\n첫째, 수천 페이지 기술 문서에서 원하는 정보를 찾는 시간을 줄입니다.\n둘째, 영어 논문과 규격을 한국어로 번역하여 연구 효율을 높입니다.\n셋째, 문서 작성 품질을 자동으로 점검하여 인적 오류를 줄입니다.\n\n플랫폼은 인터넷 연결 없이 조직 내부망에서 동작합니다.\nKAI AI 인프라(DE-Genie/Ollama)를 활용하여 기술 자산이 외부로 유출되지 않으며,\nExplorer, Notebook, Verify 세 개의 서브시스템과 관리자 런처로 구성됩니다.\n\n납품 및 운용 범위: 기체 설계, 항전, 추진, 시험평가 등 KAI 전 사업 분야의 기술 문서를\n단일 인터페이스에서 관리합니다. KF-21 개발백서, 설계 기준, 규격·표준,\n시험평가, 품질인증, 운용정비 등 주요 카테고리가 등록되어 있으며, 관리자 권한으로 콘텐츠를 확장할 수 있습니다.\n\n플랫폼 런처 — 각 서브시스템 진입점. 역할 기반 접근 제어(RBAC)로 권한 관리.",
+    "section_id": "항공우주-기술-문서-통합-관리-플랫폼",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "플랫폼 소개"
+    }
+  },
+  {
+    "title": "핵심 시스템",
+    "url": "contents/guide/platform-overview.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 플랫폼 소개 > 핵심 시스템",
+    "content": "4개 서브시스템이 기술 문서 생애주기 전반을 커버합니다.\n\nExplorer Knowledge Explorer\n\n운용 중\n\n기술 문서 전체를 대상으로 하이브리드 RAG 검색(키워드 + 벡터)을 제공하는 지식 탐색 시스템입니다.\n문서 트리를 통한 직접 탐색과 AI 채팅을 통한 자연어 질의응답을 지원하며,\n검색 결과는 관련 섹션으로 자동 이동합니다.\n\n하이브리드 검색 (FAISS + bge-m3, RRF 병합)\nAI 채팅 — 문서 기반 Q&A (스트리밍)\n계층형 콘텐츠 트리 내비게이션\n섹션 네비게이션 (On this page)\n북마크, 전체 텍스트 검색\n다크모드, 반응형 레이아웃\n멀티턴 대화 (세션 이력)\n쿼리 재작성 (후속 질문 독립화)\n\nExplorer — 문서 트리 + 섹션 네비게이션\n\nExplorer — AI 어시스턴트 (문서 기반 Q&A)\n\nNotebook Research Notebook\n\n운용 중\n\n영문 기술 논문 및 규격 PDF를 업로드하면 페이지별 AI 번역과 함께\n요약, Q&A, 마인드맵, 마킹 등 분석 도구를 제공하는 연구 노트 시스템입니다.\n원문 PDF와 번역 결과를 나란히 비교하는 듀얼 패널 뷰어를 지원합니다.\n\nPDF 번역 (pdf2zh, 레이아웃 보존)\n웹뷰 번역 (마크다운 추출 + Ollama)\nAI 요약 — 크기 적응형 (단일/계층)\nQ&A 챗봇 — 문서 기반 질의응답\n마인드맵 자동 생성\n마킹, 메모 (형광펜 4색)\n폴더 관리, 드래그앤드롭 정리\nZIP 다운로드, 마크다운 편집기\n\nNotebook — 문서 카드 목록 및 폴더 관리\n\nNotebook — 원문 PDF + 우측 AI 도구 패널\n\nVerify Document Verify\n\n운용 중\n\n원본 문서와 수정본을 비교하고, 작성 규칙을 자동 점검하며, 유사도를 검사하는\n통합 문서 검증 시스템입니다. 21종 규칙 엔진이 번호 연속성, 용어 통일, 문장 길이 등을\n검사하고, Acrolinx 방식의 품질 스코어로 문서 완성도를 수치화합니다.\n\n문서 비교 — 단어 수준 Diff + AI 의미 분류\n유사도 검사 (Winnowing + bge-m3 임베딩)\n규칙 검증 — 21종 자동 점검\n품질 스코어링 (Acrolinx 밀도 방식)\n수락/거절 판정 워크플로\n검토 리포트 내보내기 (XLSX, HTML, TXT)\n스크롤바 미니맵 (변경점 위치 시각화)\n세션 이력 관리\n\nVerify — 유사도 검사, 문서 비교, 규칙 검증 세 가지 모드 선택\n\nAuthor Document Author\n\n설계 중\n\n규격 문서 작성을 AI가 보조하는 저작 시스템입니다.\n템플릿 기반 구조 생성, 요구사항 추적, 참조 문서 자동 인용 등이 계획되어 있습니다.\n현재 설계 단계이며, 향후 업데이트를 통해 제공됩니다.",
+    "section_id": "핵심-시스템",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "플랫폼 소개"
+    }
+  },
+  {
+    "title": "플랫폼이 제공하는 가치",
+    "url": "contents/guide/platform-overview.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 플랫폼 소개 > 플랫폼이 제공하는 가치",
+    "content": "| 가치 | 설명 |\n| --- | --- |\n| 정보 접근 단축 | 수천 페이지 기술 문서에서 원하는 정보를 수 초 내 검색. 하이브리드 RAG로 의미 기반 검색 지원. |\n| 언어 장벽 해소 | 영문 논문 및 규격을 한국어로 번역. 원문 레이아웃을 보존하며 전문 용어 정확도 유지. |\n| 보안 내재화 | 폐쇄망 온프레미스 운용. 기술 자산이 외부 클라우드에 전송되지 않아 보안 규정 준수. |\n| 품질 자동 검증 | 21종 규칙 엔진으로 작성 기준 자동 점검. 리뷰 시간 단축, 문서 완성도 수치화. |\n| 통합 지식 관리 | 설계, 시험, 규격, 운용 문서를 단일 인터페이스에서 탐색. 팀 간 지식 공유. |\n| 확장 가능 구조 | 관리자 콘솔에서 콘텐츠, 메뉴, 설정을 관리. 코드 수정 없이 플랫폼 확장 가능. |",
+    "section_id": "플랫폼-가치",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "플랫폼 소개"
+    }
+  },
+  {
+    "title": "기술 사양",
+    "url": "contents/guide/platform-overview.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 플랫폼 소개 > 기술 사양",
+    "content": "| 항목 | 사양 |\n| --- | --- |\n| 운용 환경 | 폐쇄망(Air-gap) 온프레미스, 인터넷 연결 불필요 |\n| 백엔드 | Python 3.11, FastAPI, Uvicorn (비동기 처리) |\n| 프론트엔드 | Vanilla JS (프레임워크 미사용), 단일 HTML 파일 구조 |\n| AI 엔진 | DE-Genie / Ollama (LLM), bge-m3 (임베딩), bge-reranker-v2-m3 (리랭커) |\n| 검색 엔진 | FAISS (벡터) + BM25 (키워드), RRF 하이브리드 병합, Recall@5 = 100% |\n| PDF 번역 | pdf2zh (레이아웃 보존), PyMuPDF4LLM (마크다운 추출) |\n| 접근 제어 | 3단계 RBAC — viewer, editor, admin |\n| 지원 포맷 | 콘텐츠: HTML(웹북) / 업로드: PDF / Verify 입력: DOCX, PDF, 텍스트 |\n| 데이터 저장 | JSON 파일 기반, SQLite(분석), 원자적 저장(data-loss 방지) |\n| 운용 포트 | 백엔드 8000, 프론트엔드 8080 (정적 파일 서버) |\n\n도입 및 관리\n",
+    "section_id": "기술-사양",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "플랫폼 소개"
+    }
+  },
+  {
+    "title": "빠른 시작",
+    "url": "contents/guide/platform-overview.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 플랫폼 소개 > 빠른 시작",
+    "content": "플랫폼은 두 개의 프로세스(백엔드 + 정적 파일 서버)로 구동됩니다. 별도 빌드 과정이나 외부 서비스 연동이 불필요합니다.\n\n| 역할 | 명령 | 접속 주소 |\n| --- | --- | --- |\n| 백엔드 API | cd backend && python main.py | http://localhost:8000 |\n| 프론트엔드 | python -m http.server 8080 | http://localhost:8080 |",
+    "section_id": "빠른-시작",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "플랫폼 소개"
+    }
+  },
+  {
+    "title": "콘텐츠 관리 (관리자)",
+    "url": "contents/guide/platform-overview.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 플랫폼 소개 > 콘텐츠 관리 (관리자)",
+    "content": "관리자 권한으로 로그인하면 Explorer 상단에 Edit 메뉴가 활성화됩니다.\n콘텐츠 파일(HTML 웹북)을 업로드하고, 메뉴 트리를 드래그앤드롭으로 재구성하며,\nAI, 검색, 보안 설정을 GUI에서 조정할 수 있습니다.\n\n콘텐츠 등록: Edit → 파일 업로드 → 메뉴 트리에서 위치 지정\n메뉴 관리: Edit → 메뉴 편집 → 드래그앤드롭으로 순서 조정\n설정 관리: Edit → 관리자 설정 → AI 모델, 검색, 보안, 화면 탭별 조정\n검색 인덱스 재생성: 콘텐츠 업로드 시 자동 재생성 (수동 트리거 가능)",
+    "section_id": "콘텐츠-관리",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "플랫폼 소개"
+    }
+  },
+  {
+    "title": "사용자 계정 및 권한",
+    "url": "contents/guide/platform-overview.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > 플랫폼 소개 > 사용자 계정 및 권한",
+    "content": "계정은 data/users.json 에서 관리하며, 역할(viewer, editor, admin)에 따라\n콘텐츠 조회, 편집, 관리자 기능 접근이 구분됩니다.\n초기 관리자 계정 설정 후 팀별로 viewer 계정을 배포하여 운용합니다.\n\n참고: 각 서브시스템의 상세 사용 방법은 좌측 메뉴 플랫폼 가이드 하위 항목을 참조하십시오.\n운용 중 문의사항은 시스템 관리자에게 연락해 주십시오.",
+    "section_id": "사용자-계정",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "플랫폼 소개"
+    }
+  },
+  {
+    "title": "RAG 검색 기술 보고서",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > RAG 검색 기술 보고서",
+    "content": "하이브리드 검색과 구조 보존 인덱싱으로 Recall@5 100%를 달성한 기술 경과\n\nRAG Technical Report",
+    "section_id": "rag-검색-기술-보고서",
+    "heading_level": 1,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "검색 증강 생성(RAG) 파이프라인",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > 검색 증강 생성(RAG) 파이프라인",
+    "content": "폐쇄망 온프레미스 환경에서 경량 LLM과 하이브리드 검색을 결합하여\n기술 문서 질의응답 시스템을 구현했습니다.\n4단계 진화를 거쳐 Recall@5 100%, MRR 0.967을 달성했습니다.\n\nRecall@5 = 100%\nMRR = 0.967\n4단계 진화\n완전 로컬 동작\n\n이 보고서는 RAG 파이프라인의 설계 판단, 기술적 구현, 실험 결과를 다룹니다.\n\"검색이 왜 잘 되는지\"에 대한 기술적 근거를 제시하는 문서입니다.\n\n핵심 인사이트: 경량 LLM 환경에서는 더 좋은 모델보다 더 좋은 검색이\n답변 품질에 더 큰 영향을 줍니다. 이 인사이트가 파이프라인 설계의 출발점입니다.",
+    "section_id": "검색-증강-생성rag-파이프라인",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "4단계 진화 과정",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > 4단계 진화 과정",
+    "content": "키워드 검색에서 에이전틱 RAG까지 단계적으로 발전했습니다.\n\n| 단계 | 방식 | Recall@5 | 핵심 변경 |\n| --- | --- | --- | --- |\n| Phase 1 | 키워드 검색 (BM25) | 85% | 페이지 단위 인덱싱, 단순 프롬프트 |\n| Phase 2 | 섹션 레벨 청킹 | 90% | h1~h3 기준 분할, 섹션 네비게이션 |\n| Phase 3 | 하이브리드 + 리랭킹 | 100% | FAISS 벡터 + BM25 RRF 병합, Cross-encoder |\n| Phase 4 | 질문 라우팅 + Agentic | 100% | 질문 유형 분류, 쿼리 분해, 반복 검색 |\n\n파이프라인 구조\nRAG 파이프라인 전체 흐름 — 질문 입력부터 응답 생성까지",
+    "section_id": "진화-과정",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "문서 처리 (인덱싱)",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > 문서 처리 (인덱싱)",
+    "content": "콘텐츠 업로드 시 다음 순서로 인덱스를 생성합니다.\n\n| 순서 | 단계 | 처리 내용 |\n| --- | --- | --- |\n| 1 | HTML 파싱 | h1~h3 기준 섹션 분할. 테이블 → GFM Markdown, MathML → LaTeX 변환. |\n| 2 | 텍스트 추출 | 태그 제거 + 구조 보존. 최대 3,200자(~800토큰), 최소 100자 필터링. |\n| 3 | 검색 인덱스 | 섹션별 키워드 인덱스 생성 (search-index.json). |\n| 4 | 벡터 인덱스 | bge-m3로 1024차원 임베딩. FAISS IndexFlatL2에 저장. 배치 32건 단위. |",
+    "section_id": "문서-처리",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "구조 보존 인덱싱",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > 구조 보존 인덱싱",
+    "content": "기술 문서에는 테이블, 수식, 병합셀이 빈번합니다.\n단순 태그 제거는 구조 정보를 파괴하므로, 변환 과정에서 구조를 보존합니다.\n\n| 원본 구조 | 변환 결과 | 효과 |\n| --- | --- | --- |\n| HTML 테이블 | GFM Markdown 테이블 | 행/열 관계 보존. 임베딩 정확도 51.9% (최고). |\n| MathML 수식 | LaTeX 표기 | 230+ 유니코드 매핑. 수학적 의미 보존. |\n| 병합셀 테이블 | Key-Value 형식 | colspan/rowspan 정보를 텍스트로 풀어 표현. |\n\n하이브리드 검색 전략\n키워드(BM25)와 벡터(FAISS)를 RRF로 병합합니다.",
+    "section_id": "구조-보존-인덱싱",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "RRF (Reciprocal Rank Fusion)",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > RRF (Reciprocal Rank Fusion)",
+    "content": "두 검색 결과의 순위를 역수 가중 합산하여 최종 순위를 결정합니다.\n\n| 파라미터 | 값 | 설명 |\n| --- | --- | --- |\n| keyword_weight | 0.3 | 키워드 검색 가중치 |\n| vector_weight | 0.7 | 벡터 검색 가중치 |\n| k (RRF 상수) | 60 | 순위 역수 계산의 분모 오프셋 |\n| MIN_VECTOR_SCORE | 0.48 | 벡터 유사도 하한 (노이즈 차단) |",
+    "section_id": "rrf-병합",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "Cross-encoder 리랭킹",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > Cross-encoder 리랭킹",
+    "content": "RRF 결과 상위 15건(top_k x 3)을 bge-reranker-v2-m3 Cross-encoder로 재정렬하여\n최종 5건을 선정합니다. Cross-encoder는 질의와 문서를 함께 입력받아\nBi-encoder보다 정밀한 관련도를 판단합니다.",
+    "section_id": "리랭킹",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "검색 성능 비교",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > 검색 성능 비교",
+    "content": "| 방식 | Recall@5 | MRR | 비고 |\n| --- | --- | --- | --- |\n| 키워드 단독 (BM25) | 85% | 0.750 | 용어 불일치 시 누락 |\n| 벡터 단독 (bge-m3) | 90% | 0.833 | 의미 검색 가능, 순위 편차 |\n| 하이브리드 (RRF) | 100% | 0.967 | 양쪽 장점 결합 |\n\n20건 테스트셋 기준 (한/영 혼합 기술 질의)",
+    "section_id": "검색-성능",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "질문 라우팅과 고급 RAG",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > 질문 라우팅과 고급 RAG",
+    "content": "질문 유형에 따라 검색 전략을 분기합니다. (Phase 4)\n\n| 유형 | 예시 | 처리 전략 |\n| --- | --- | --- |\n| SIMPLE | \"MIL-STD-961E 목적은?\" | 단일 검색 → 직접 답변 |\n| COMPARE | \"A규격과 B규격의 차이는?\" | 쿼리 분해(1~3개) → 병렬 검색 → 병합 답변 |\n| REASON | \"이 구조의 장단점은?\" | Agentic RAG — 최대 3회 검색-판단-재검색 루프 |\n| CHAT | \"안녕하세요\" | 검색 없이 직접 응답 (5자 미만 자동 분류) |\n\n질문 유형별 처리 전략 분기 (Phase 4)",
+    "section_id": "질문-라우팅",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "Agentic RAG",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > Agentic RAG",
+    "content": "REASON 유형 질문에 대해 LLM이 검색 결과의 충분성을 판단합니다.\n컨텍스트가 부족하면 검색어를 재구성하여 추가 검색을 수행합니다.\n최대 3회 반복 후 수집된 컨텍스트로 최종 답변을 생성합니다.",
+    "section_id": "에이전틱-rag",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "멀티턴 대화 시스템",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > 멀티턴 대화 시스템",
+    "content": "| 설정 | 값 | 설명 |\n| --- | --- | --- |\n| 세션 관리 | 인메모리 LRU | 최대 100세션, 60분 유휴 만료 |\n| 대화 이력 | 최대 50건 | 시스템+어시스턴트+사용자 메시지 |\n| 토큰 예산 | 8,000자 | 시스템 500 + 컨텍스트 5,000 + 이력 2,000 + 질문 500 |\n| 쿼리 재작성 | Ollama | 후속 질문을 독립 쿼리로 변환 (실패 시 원본 사용) |",
+    "section_id": "멀티턴-대화",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "폴백 체인",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > 폴백 체인",
+    "content": "각 단계에서 실패 시 자동으로 대안 경로를 선택합니다.\n\n| 실패 지점 | 폴백 동작 |\n| --- | --- |\n| 벡터 검색 실패 | 키워드 검색으로 전환 |\n| 리랭커 실패 | 원본 RRF 순위 그대로 사용 |\n| 쿼리 재작성 실패 | 원본 질문 + 키워드 결합 |\n| 임베딩 서버 다운 | 키워드 전용 모드 (벡터 비활성) |\n| LLM 타임아웃 (60초) | 에러 메시지 반환, 세션 유지 |",
+    "section_id": "폴백-체인",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "설계 판단 — 일반 RAG와의 차이",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > 설계 판단 — 일반 RAG와의 차이",
+    "content": "| 항목 | 일반 RAG | 본 시스템 |\n| --- | --- | --- |\n| LLM | OpenAI GPT-4, Claude | Ollama gemma3 (로컬, 폐쇄망) |\n| 벡터 DB | Pinecone, Weaviate | FAISS 인메모리 (외부 서비스 불필요) |\n| 세션 저장 | Redis, PostgreSQL | 인메모리 LRU (인프라 최소화) |\n| 패키지 설치 | pip install (인터넷) | 오프라인 wheel 패키지 |\n| 청킹 전략 | 고정 크기 (512토큰) | 섹션 기반 (h1~h3, 의미 단위) |\n| 인덱싱 | 텍스트 추출 (태그 제거) | 구조 보존 (테이블 → MD, 수식 → LaTeX) |",
+    "section_id": "설계-판단",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "한계와 향후 과제",
+    "url": "contents/guide/rag-report.html",
+    "path": "플랫폼 가이드 > 기술 문서 > RAG 검색 기술 보고서 > 한계와 향후 과제",
+    "content": "| 한계 | 향후 방향 |\n| --- | --- |\n| 테스트셋 규모 (20건) | 대규모 평가셋 구축, 사용자 피드백 기반 자동 평가 |\n| 경량 LLM 한국어 정밀도 | 모델 업그레이드 시 프롬프트 재최적화 |\n| 이미지/도면 검색 불가 | 멀티모달 임베딩 도입 검토 |\n| 단일 문서 컬렉션 | 서브시스템별 독립 인덱스 구성 (Plan-25) |\n\n참고: Explorer 검색 사용 방법은 좌측 메뉴 사용 가이드 > Explorer 사용법 을 참조하십시오.",
+    "section_id": "한계와-향후-과제",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "RAG 검색 기술 보고서"
+    }
+  },
+  {
+    "title": "Verify 사용법",
+    "url": "contents/guide/verify-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Verify 사용법 > Verify 사용법",
+    "content": "Document Verify — 문서 검증 시스템\n\nDocument Verify System",
+    "section_id": "verify-사용법",
+    "heading_level": 1,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Verify 사용법"
+    }
+  },
+  {
+    "title": "문서 검증 시스템 소개",
+    "url": "contents/guide/verify-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Verify 사용법 > 문서 검증 시스템 소개",
+    "content": "Verify는 기술 문서의 유사도 검사, 문서 비교, 규칙 검증을 수행하는 통합 검증 도구입니다.\n3대 국제 규격 기반 21종 규칙 엔진과 품질 스코어링을 제공합니다.\n\n유사도 검사\n문서 비교\n규칙 검증\n21종 규칙 엔진\n품질 스코어링\n\nVerify는 세 가지 독립된 검증 모드를 제공합니다.\n모드별로 문서를 업로드하거나 텍스트를 붙여넣어 검증을 실행하며,\n결과는 XLSX, HTML, TXT 형식으로 내보낼 수 있습니다.\n\nVerify 메인 화면 — 세 가지 검증 모드 선택",
+    "section_id": "문서-검증-시스템-소개",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Verify 사용법"
+    }
+  },
+  {
+    "title": "유사도 검사",
+    "url": "contents/guide/verify-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Verify 사용법 > 유사도 검사",
+    "content": "Similarity Check\n\n두 문서 간 텍스트 유사도를 측정합니다.\nWinnowing 핑거프린트로 표면적 복사를 감지하고,\nbge-m3 벡터 임베딩으로 의미적 유사성까지 포착합니다.\n\n하이브리드 유사도 분석 (Winnowing + bge-m3 임베딩)\n유사 구간 하이라이트 표시\n유사도 수치 제공 — 텍스트, 의미, 종합 백분율\n세션별 비교 이력 관리\n\n유사도 검사 결과 — 유사 구간 하이라이트 및 수치 표시",
+    "section_id": "유사도-검사",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Verify 사용법"
+    }
+  },
+  {
+    "title": "문서 비교",
+    "url": "contents/guide/verify-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Verify 사용법 > 문서 비교",
+    "content": "Document Compare\n\n원본과 수정본을 단어 수준으로 비교합니다.\n변경사항은 AI가 삽입, 삭제, 수정, 형식 변경으로 자동 분류하며,\n리뷰어가 각 변경에 대해 수락 또는 거절 판정을 내릴 수 있습니다.\n\n단어 수준 Diff — 변경 위치 정확 표시\nAI 의미 분류 (삽입, 삭제, 수정, 형식)\n수락/거절 판정 워크플로\n스크롤바 미니맵 — 변경점 위치 시각화\n검토 리포트 내보내기 (XLSX, HTML, TXT)\n세션별 비교 이력 관리\n\n문서 비교 결과 — Diff 표시, AI 분류, 수락/거절 판정",
+    "section_id": "문서-비교",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Verify 사용법"
+    }
+  },
+  {
+    "title": "규칙 검증",
+    "url": "contents/guide/verify-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Verify 사용법 > 규칙 검증",
+    "content": "Rule Verification\n\n3대 국제 규격(ASD-STE100, MIL-STD-961E, MIL-STD-38784B)에서 선별한\n21종 규칙으로 문서 품질을 자동 점검합니다.\n검출된 이슈를 심각도별로 분류하고, 밀도 기반 스코어링으로 A~D 등급을 산출합니다.\n\n3대 국제 규격 기반 21종 규칙 엔진\n심각도별 이슈 분류 — 오류, 경고, 제안\nAcrolinx 방식 품질 스코어 (A~D 등급)\n규칙별 ON/OFF 설정\n이슈 클릭 시 해당 위치로 이동\n\n규칙 검증 결과 — 이슈 목록, 품질 스코어, 카테고리별 평가\n\n규칙 엔진 상세\n",
+    "section_id": "규칙-검증",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Verify 사용법"
+    }
+  },
+  {
+    "title": "적용 규격 배경",
+    "url": "contents/guide/verify-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Verify 사용법 > 적용 규격 배경",
+    "content": "규칙 엔진은 항공우주 기술 문서에 널리 적용되는 3대 국제 규격을 분석하여 구축하였습니다.\n세 규격은 각각 작성 명확성, 문서 구조, 매뉴얼 서식을 담당하여 기술 문서 전반을 커버합니다.\n\n| 규격 | 역할 | 분석 | 구현 |\n| --- | --- | --- | --- |\n| ASD-STE100 Issue 7, 2017 | 기술 문서 작성 명확성 표준. 49개 작성 규칙 + 900단어 승인 사전. | 49개 | 12개 (24%) |\n| MIL-STD-961E Rev E, 2008 | 군사/항공 규격 문서 구조 표준. 6섹션 필수 구조, 요구사항 언어 규칙. | 13개 | 9개 (69%) |\n| MIL-STD-38784B Rev B, 2020 | 기술 매뉴얼 서식 표준. 약어, 경고문, 표/그림 참조 규칙. | 10개 | 6개 (60%) |\n\n961E는 구조 검증(제목 패턴, 번호 체계) 중심이라 자동화 적용률이 69%로 높은 반면,\nSTE100은 문맥 판단이 필요한 규칙이 많아 24%에 그칩니다.\n상용 도구인 HyperSTE가 NLP 엔진을 탑재하여 62%를 자동화하는 것과 비교하면,\nNLP 없이 고정밀 규칙만을 선별한 결과입니다.",
+    "section_id": "적용-규격",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Verify 사용법"
+    }
+  },
+  {
+    "title": "규칙 카테고리",
+    "url": "contents/guide/verify-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Verify 사용법 > 규칙 카테고리",
+    "content": "3대 규격에서 72개 규칙을 분석하고, 사내 기준 6종을 더해 최종 21종을 선별하였습니다.\n\n| 카테고리 | 수량 | 출처 | 주요 점검 항목 |\n| --- | --- | --- | --- |\n| STE 작성 규칙 | 8종 | ASD-STE100 | 문장 길이 제한, 수동태 감지, 단락 길이, 경고문 표기, 슬래시 접속사 금지 |\n| MIL 구조 규칙 | 7종 | 961E / 38784B | 필수 섹션 존재, shall/will 위치 제한, 약어 첫 사용 정의, 교차참조 검증 |\n| 사내 기준 | 6종 | 커스텀 | 번호 연속성, 표/그림 캡션, 금지 용어, 용어 일관성, 문장 길이(음절) |",
+    "section_id": "규칙-카테고리",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Verify 사용법"
+    }
+  },
+  {
+    "title": "대표 규칙 예시",
+    "url": "contents/guide/verify-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Verify 사용법 > 대표 규칙 예시",
+    "content": "자주 검출되는 규칙 세 가지를 소개합니다.\n\nSTE-3.1\n절차문 길이 제한 (20단어)\n\nASD-STE100은 절차문을 20단어 이하로 작성하도록 규정합니다.\n긴 문장은 번역 오류를 유발하고 현장 작업자의 이해도를 떨어뜨립니다.\n\n원문: \"Before you start the installation procedure, make sure that all the safety pins are removed and the access panels are open and secured in the up position.\" — 29단어, 초과\n개선: \"Remove all safety pins. Open the access panels and secure them in the up position. Start the installation procedure.\" — 각 10단어 이하\n\nCustom\n번호 연속성 검사\n\n섹션 번호가 건너뛰거나(1.1 → 1.2 → 1.4) 계층이 갑자기 변경되는(3.2.1 → 3.3) 오류를 감지합니다.\n기술 문서에서 번호 누락은 교차참조 오류로 이어집니다.\n\n검출: \"3.1 → 3.2 → 3.4\" — 오류: 번호 3.3 누락\n\n38-A1\n약어 첫 사용 시 풀네임 정의\n\nMIL-STD-961E(4.6.3)와 MIL-STD-38784B(4.8)의 공통 요구사항입니다.\n약어를 처음 사용할 때 풀네임을 함께 표기해야 하며, 미정의 약어는 경고로 분류됩니다.\n\n검출: \"The FCS shall comply with...\" — 경고: FCS 풀네임 미정의",
+    "section_id": "대표-규칙",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Verify 사용법"
+    }
+  },
+  {
+    "title": "자동화 등급과 제외 기준",
+    "url": "contents/guide/verify-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Verify 사용법 > 자동화 등급과 제외 기준",
+    "content": "총 78개 규칙(규격 72개 + 사내 6개)을 자동화 가능성에 따라 세 등급으로 분류하였습니다.\n\n| 등급 | 정밀도 | 구현 | 설명 |\n| --- | --- | --- | --- |\n| A등급 | 90% 이상 | 우선 구현 | 정규식, 사전 기반. 오탐 거의 없음. 예: 문장 길이, 필수 섹션 존재, 약어 정의 |\n| B등급 | 60~90% | 일부 비활성 | 휴리스틱 기반. 오탐 가능성 있어 기본 OFF인 규칙 포함. 예: 수동태, 명사 클러스터 |\n| C등급 | — | 제외 | 인간 판단 또는 고급 NLP 필요. 폐쇄망 환경에서 자동화 불가. 57개 해당 |\n\n폐쇄망 환경 제약:\n형태소 분석, 품사 태깅 등 대규모 NLP 모델을 상시 운용하기 어려운 환경 특성상,\nNLP 의존 규칙 18개(문맥 기반 용어 선택, 동사 형태 판별 등)와\n주관적 판단 규칙 10개는 현 단계에서 제외하였습니다.\n향후 NLP 인프라 확충 시 단계적으로 추가할 수 있습니다.",
+    "section_id": "자동화-등급",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Verify 사용법"
+    }
+  },
+  {
+    "title": "품질 스코어링",
+    "url": "contents/guide/verify-guide.html",
+    "path": "플랫폼 가이드 > 사용 가이드 > Verify 사용법 > 품질 스코어링",
+    "content": "검출된 이슈의 밀도(100단어당 가중 이슈 수)를 기반으로 문서 품질을 수치화합니다.\nAcrolinx의 밀도 기반 스코어링 방식을 채택하였습니다.\n\n| 등급 | 점수 | 판정 |\n| --- | --- | --- |\n| A | 90 – 100 | 우수 — 출판 가능 수준 |\n| B | 70 – 89 | 양호 — 경미한 수정 후 승인 가능 |\n| C | 50 – 69 | 보통 — 상당한 수정 필요 |\n| D | 0 – 49 | 미흡 — 전면 재검토 권장 |\n\n이슈 심각도에 따라 가중치가 다릅니다.\n오류(error)는 5, 경고(warning)는 2, 제안(suggestion)은 1이며,\n규칙 신뢰도(confidence)를 곱하여 최종 밀도를 산출합니다.\n오류 항목을 우선 해결하는 것이 점수 개선에 가장 효과적입니다.\n\n참고:\n각 검증 모드의 상세 조작 방법은 라이브 데모에서 시연합니다.\n문의사항은 시스템 관리자에게 연락해 주십시오.",
+    "section_id": "품질-스코어링",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "Verify 사용법"
+    }
+  },
+  {
+    "title": "문서 검증 규칙 레퍼런스",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > 문서 검증 규칙 레퍼런스",
+    "content": "3개 국제 표준 기반 21종 자동 점검 규칙 상세\n\nVerify Rules Reference",
+    "section_id": "문서-검증-규칙-레퍼런스",
+    "heading_level": 1,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "문서 검증 규칙 엔진",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > 문서 검증 규칙 엔진",
+    "content": "Verify 시스템은 3개 국제 표준(ASD-STE100, MIL-STD-961E, MIL-STD-38784B)에서\n도출한 21종 규칙으로 기술 문서 품질을 자동 점검합니다.\n78건의 원본 조항을 분석하여 33건(42%)을 자동화했으며,\nAcrolinx 방식의 밀도 스코어링으로 품질을 수치화합니다.\n\n3개 국제 표준\n21종 자동 규칙\n78건 분석 / 33건 적용\nA~D 등급 산출\n\n이 문서는 각 규칙이 무엇을 검사하고, 어떤 기준으로 판정하는지를 다루는 실무 레퍼런스입니다.\n\"Verify 사용법\"이 화면 조작을 다루는 반면, 이 문서는 규칙의 내용과 판정 근거에 초점을 맞춥니다.",
+    "section_id": "문서-검증-규칙-엔진",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "참조 표준",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > 참조 표준",
+    "content": "| 표준 | 분량 | 대상 |\n| --- | --- | --- |\n| ASD-STE100 Issue 7 | 382페이지 | Simplified Technical English. 기술 영어 작성 규칙 49건. |\n| MIL-STD-961E Rev E | 111페이지 | 군용 규격서 구조/서식 요구사항 13건. |\n| MIL-STD-38784B Rev B | 138페이지 | 기술교범(TM) 작성 규칙 10건. |\n\n적용 범위: 원본 78건 중 33건(42%)을 자동화했습니다.\n미적용 45건은 NLP 의존(18건), 주관적 판단(10건), 우선순위 낮음(12건), 타 표준 커버(5건) 사유입니다.\n향후 NLP 도입 시 적용률을 40~50%까지 확대할 수 있습니다.",
+    "section_id": "참조-표준",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "Verify 시스템 3가지 모드",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > Verify 시스템 3가지 모드",
+    "content": "Verify 3-모드 허브 — 비교, 유사도, 규칙 검증\n\n| 모드 | 기술 | 용도 |\n| --- | --- | --- |\n| 문서 비교 | jsdiff + AI 의미 분류(6태그) | 원본 vs 수정본 단어 수준 Diff, 변경 유형 자동 분류 |\n| 유사도 검사 | Winnowing (L1) + bge-m3 (L3) | 두 문서 간 구간별 유사도 측정, 유사 구간 하이라이트 |\n| 규칙 검증 | 정규식 + 휴리스틱 (21종) | 작성 기준 자동 점검, 품질 스코어 산출 |",
+    "section_id": "검증-3모드",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "ASD-STE100 적용 규칙 (12건)",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > ASD-STE100 적용 규칙 (12건)",
+    "content": "Simplified Technical English 작성 규칙 중 자동화 가능한 12건입니다.\n\nSTE 1.1\n승인 사전 룩업\n\nSTE 승인 단어 사전에 등록되지 않은 단어를 감지합니다.\n판정: 비승인 단어 사용 시 warning. 구현: 사전 룩업.\n\nSTE 1.5\n기술명 화이트리스트\n\n항공기, 시스템, 부품 등 기술 고유명사를 화이트리스트로 관리합니다. 등록된 기술명은 STE 사전 검사에서 제외됩니다.\n판정: 화이트리스트 등록 여부. 구현: 사전 룩업.\n\nSTE 1.11\n동의어 그룹 매칭\n\n동일 문서 내에서 같은 의미를 다른 단어로 표현하는 경우를 감지합니다 (예: remove / take away).\n판정: 동의어 그룹 내 복수 단어 사용 시 warning. 구현: 동의어 사전 매칭.\n\nSTE 2.1\n명사 클러스터 3단어 제한\n\n연속된 명사가 3단어를 초과하면 가독성이 떨어집니다 (예: \"engine oil filter element\" → 4단어).\n판정: 3단어 초과 시 suggestion. 구현: 정규식. 신뢰도: low (복합 명사 오탐 가능).\n\nSTE 3.6\n수동태 감지\n\n절차문에서 수동태 사용을 감지합니다. STE는 능동태 사용을 권장합니다.\n판정: 수동태 패턴 검출 시 suggestion. 구현: 정규식. 신뢰도: low (be+pp 패턴 한계).\n\nSTE 5.1\n절차문 20단어 제한\n\n절차(Procedure) 유형 문장은 20단어를 초과하지 않아야 합니다.\n판정: 20단어 초과 시 warning. 구현: 단어 수 카운트.\n\nSTE 6.3\n설명문 25단어 제한\n\n설명(Description) 유형 문장은 25단어를 초과하지 않아야 합니다.\n판정: 25단어 초과 시 warning. 구현: 단어 수 카운트.\n\nSTE 6.6\n단락 6문장 제한\n\n하나의 단락이 6문장을 초과하면 분리를 권장합니다.\n판정: 6문장 초과 시 suggestion. 구현: 문장 수 카운트.\n\nSTE 7.1\nWARNING / CAUTION 표기\n\n안전 경고 문구(WARNING, CAUTION)의 표기 형식을 점검합니다.\n판정: 형식 미준수 시 error. 구현: 구조 패턴 매칭.\n\nSTE 8.4~8.7\n단어 수 규칙\n\n목록 항목(list item), 제목(title), 표 셀(table cell) 등의 단어 수 제한입니다.\n판정: 제한 초과 시 warning. 구현: 단어 수 카운트.",
+    "section_id": "ste-규칙",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "MIL-STD-961E 적용 규칙 (9건)",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > MIL-STD-961E 적용 규칙 (9건)",
+    "content": "군용 규격서 구조와 서식 요구사항입니다.\n\n961E-S01\n6섹션 구조 검증\n\n규격서가 표준 6섹션 구조(Scope, Applicable Documents, Requirements, Verification, Packaging, Notes)를 갖추었는지 점검합니다.\n판정: 누락 섹션 발견 시 error. 구현: 구조 패턴 매칭.\n\n961E-S02\n번호 연속성 검증\n\n섹션 번호(1., 1.1, 1.1.1)가 연속적이고 건너뜀 없이 이어지는지 확인합니다.\n판정: 번호 건너뜀 또는 중복 시 error. 구현: 상태 추적.\n\n961E-S03\n약어 풀네임 병기\n\n약어 첫 사용 시 풀네임을 괄호와 함께 표기했는지 점검합니다 (예: \"Light Detection And Ranging (LIDAR)\").\n판정: 미정의 약어 사용 시 warning. 구현: 상태 추적 + 정규식.\n\n961E-S04\nshall / will / should / may 일관성\n\n요구사항에는 shall , 계약자 의무에는 will ,\n권고에는 should , 허용에는 may 를 사용해야 합니다.\n\n판정: 혼용 시 warning. 구현: 정규식 + 수치 카운트.\n\n961E-S05\n표/그림 번호 순차 + 제목\n\nTable 1, Table 2 / Figure 1, Figure 2 번호가 순차적이고, 각각 제목이 있는지 확인합니다.\n판정: 번호 누락 또는 제목 미기재 시 warning. 구현: 정규식 + 상태 추적.\n\n961E-S06\n교차 참조 실존 검증\n\n본문에서 참조하는 섹션, 표, 그림 번호가 실제로 존재하는지 확인합니다.\n판정: 미존재 참조 시 error. 구현: 정규식 + 사전 룩업.\n\n961E-S07~S09\n추가 구조 규칙\n\n요구사항 항목 구조, 참고 문서 형식, 부록 번호 체계를 점검합니다.\n판정: 형식 미준수 시 warning. 구현: 구조 패턴 매칭.",
+    "section_id": "mil-961e-규칙",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "MIL-STD-38784B 적용 규칙 (6건)",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > MIL-STD-38784B 적용 규칙 (6건)",
+    "content": "기술교범 작성 규칙입니다. 일부는 961E/STE 규칙과 통합 적용됩니다.\n\n| 규칙 ID | 규칙명 | 통합 여부 |\n| --- | --- | --- |\n| 38784B-01 | 약어 풀네임 병기 | 961E-S03과 통합 |\n| 38784B-02 | shall / will 구분 | 961E-S04와 통합 |\n| 38784B-03 | WARNING 배치 및 서식 | STE 7.1과 연계, 위치 규칙 추가 |\n| 38784B-04 | CAUTION 배치 및 서식 | WARNING과 동일 패턴 |\n| 38784B-05 | 표 번호 체계 | 961E-S05와 통합 |\n| 38784B-06 | 문장 간결 | STE 5.1/6.3으로 커버 |",
+    "section_id": "mil-38784b-규칙",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "자체 추가 규칙 (6건)",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > 자체 추가 규칙 (6건)",
+    "content": "표준 외에 실무적으로 유용한 규칙을 추가 구현했습니다.\n\n| 규칙 ID | 규칙명 | 설명 |\n| --- | --- | --- |\n| CUSTOM-01 | 용어 통일성 | 동일 개념에 대해 문서 내에서 서로 다른 용어 사용을 감지 |\n| CUSTOM-02 | 빈 섹션 감지 | 제목만 있고 내용이 없는 섹션을 경고 |\n| CUSTOM-03 | TBD/TBR 잔류 | 미확정 항목(To Be Determined/Resolved)이 남아있는지 감지 |\n| CUSTOM-04 | 중복 단락 | 동일하거나 유사한 단락이 반복되는지 검사 |\n| CUSTOM-05 | 숫자 단위 일관성 | 동일 물리량에 대해 서로 다른 단위 사용을 감지 |\n| CUSTOM-06 | 참조 문서 유효성 | 참조된 외부 문서 번호 형식 검증 |\n\n품질 스코어링\nAcrolinx 밀도(density) 방식으로 품질을 수치화합니다.",
+    "section_id": "자체-규칙",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "심각도 및 신뢰도",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > 심각도 및 신뢰도",
+    "content": "| 심각도 | 가중치 | 의미 |\n| --- | --- | --- |\n| error | 5 | 구조적 결함, 반드시 수정 필요 |\n| warning | 2 | 작성 기준 미준수, 수정 권장 |\n| suggestion | 1 | 개선 권고, 선택적 수정 |\n\n| 신뢰도 | 계수 | 의미 |\n| --- | --- | --- |\n| high | 1.0 | 오탐 가능성 낮음 (사전 룩업, 번호 체계) |\n| medium | 0.7 | 대부분 정확 (단어 수, 구조 패턴) |\n| low | 0.4 | 오탐 가능 (수동태 감지, 명사 클러스터) |\n\n규칙 검증 및 스코어링 흐름",
+    "section_id": "심각도-체계",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "점수 산출 방식",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > 점수 산출 방식",
+    "content": "각 위반의 가중 합계를 단어 수로 나누어 밀도(density)를 구하고,\n임계값(기본 5.0) 대비 점수를 산출합니다.\n\n공식: 밀도 = (위반별 severity x confidence 합계) / 단어 수 x 1000\n점수 = 100 x max(0, 1 - 밀도 / 임계값)\n최소 단어 수(MIN_WORDS) = 200. 미달 시 \"분석 불가\" 표시.",
+    "section_id": "점수-산출",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "등급 체계",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > 등급 체계",
+    "content": "| 등급 | 점수 범위 | 의미 |\n| --- | --- | --- |\n| A | 90 ~ 100 | 우수. 주요 위반 없음. |\n| B | 70 ~ 89 | 양호. 경미한 개선 필요. |\n| C | 50 ~ 69 | 보통. 다수 위반 존재. |\n| D | 0 ~ 49 | 미흡. 전면 재검토 필요. |",
+    "section_id": "등급-체계",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "업계 도구 비교",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > 업계 도구 비교",
+    "content": "| 도구 | STE 커버리지 | 특징 |\n| --- | --- | --- |\n| HyperSTE | 62% | STE 전문 상용 도구. NLP 기반 고정밀 분석. |\n| Acrolinx | 범용 | 기업용 문서 품질 플랫폼. 커스텀 규칙 지원. |\n| Vale | YAML 기반 | 오픈소스 linter. YAML 규칙 정의, CI/CD 통합. |\n| 본 시스템 | 24% | STE + MIL-STD 15건 통합. 폐쇄망 동작. 유사도/비교 포함. |\n\n차별점: STE 단독 커버리지는 상용 도구보다 낮지만,\nMIL-STD-961E와 MIL-STD-38784B를 함께 지원하는 도구는 현재 없습니다.\n또한 문서 비교(Diff), 유사도 검사와 규칙 검증을 하나의 시스템에서 통합 제공합니다.",
+    "section_id": "업계-비교",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "구현 방식 분류",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > 구현 방식 분류",
+    "content": "| 구현 방식 | 건수 | 대표 규칙 |\n| --- | --- | --- |\n| 정규식 (Regex) | 10건 | 수동태 감지, shall/will, 약어 패턴 |\n| 수치 카운트 | 5건 | 단어 수 제한, 문장 수 제한 |\n| 사전 룩업 | 4건 | STE 승인 단어, 기술명 화이트리스트 |\n| 구조 패턴 | 8건 | 6섹션 구조, WARNING 배치, 표 번호 |\n| 상태 추적 | 3건 | 번호 연속성, 약어 첫 사용, 교차참조 |\n| 휴리스틱 | 3건 | 명사 클러스터, 용어 통일, 단위 일관성 |\n\n운영 가이드\n\n\n규칙 ON/OFF 설정\n관리자 설정 > Verify 탭에서 개별 규칙을 활성/비활성할 수 있습니다.\n조직의 작성 기준에 맞지 않는 규칙은 비활성하여 불필요한 경고를 줄일 수 있습니다.\n\n약어 오탐 관리\n약어 검사에서 오탐이 발생하면 해당 약어를 화이트리스트에 추가합니다.\n조직 내에서 통용되는 약어(예: KF-21, AESA)는 미리 등록하면 검사 정확도가 향상됩니다.\n\n점수 임계값 조정\nDENSITY_THRESHOLD(기본 5.0)를 조정하여 채점 엄격도를 변경할 수 있습니다.\n임계값을 낮추면 같은 위반 수에서도 점수가 더 낮아져 엄격해집니다.",
+    "section_id": "구현-방식",
+    "heading_level": 2,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
+    }
+  },
+  {
+    "title": "새 규칙 추가",
+    "url": "contents/guide/verify-rules-ref.html",
+    "path": "플랫폼 가이드 > 기술 문서 > 문서 검증 규칙 레퍼런스 > 새 규칙 추가",
+    "content": "backend/rules/ 디렉토리에 JSON 파일을 추가하면\n서버 재시작 시 자동으로 규칙 엔진에 로드됩니다. 코드 수정이 불필요합니다.\n\n참고: Verify 화면 조작 방법은 좌측 메뉴 사용 가이드 > Verify 사용법 을 참조하십시오.",
+    "section_id": "규칙-추가",
+    "heading_level": 3,
+    "metadata": {
+      "doc_category": "플랫폼 가이드",
+      "depth": 4,
+      "parent_doc": "문서 검증 규칙 레퍼런스"
     }
   },
   {

@@ -3,8 +3,8 @@
    =================================== */
 
 (function() {
-    var _backendUrl = (typeof AUTH_CONFIG !== 'undefined' && AUTH_CONFIG.backendUrl)
-        ? AUTH_CONFIG.backendUrl : 'http://localhost:8000';
+    var _backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG)
+        ? AUTH_CONFIG.backendUrl : '';
     var _heartbeatInterval = null;
     var _activeUsersPollInterval = null;
 
