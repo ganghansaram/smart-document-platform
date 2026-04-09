@@ -244,10 +244,24 @@ USB 또는 네트워크로 리눅스 서버에 가져갈 파일 목록입니다.
 | `platform-v1.0.tar` | 약 3GB | 매 버전 | Docker 이미지 |
 | `docker-compose.yml` | <1KB | 변경 시 | 서비스 구성 |
 | `.env.example` | <1KB | 최초 1회 | 설정 템플릿 |
-| `data/` | 가변 | 최초 1회 | 초기 데이터 (계정 등) |
+| `data/` | 가변 | 최초 1회 | 사용자 데이터 (아래 상세 참조) |
 | `contents/` | 가변 | 최초 + 추가 시 | 웹북 콘텐츠 |
 | `models/` | 약 4.4GB | 최초 1회 | AI 모델 (거의 변경 없음) |
 | `backups/` | 가변 | 최초 1회 | 빈 폴더 (백업 저장소) |
+| `deploy.sh` | <1KB | 최초 1회 | 배포 실행 스크립트 |
+| `patch-apply.sh` | <1KB | 최초 1회 | 코드 패치 적용 스크립트 |
+
+**data/ 폴더 필수 파일:**
+
+| 파일/폴더 | 용도 | 없으면 |
+|-----------|------|--------|
+| `auth.db` | 사용자 계정 DB | 로그인 불가 (서버 시작 시 자동 생성됨) |
+| `search-index.json` | 키워드 검색 인덱스 | 문서 검색 안 됨 |
+| `vector-index/` | AI 챗봇용 벡터 인덱스 | AI 챗봇 응답 불가 |
+| `menu.json` | 좌측 트리 메뉴 구조 | 메뉴 비어있음 |
+| `settings.json` | 관리자 설정 | 기본값으로 동작 (문제없음) |
+
+> `contents/`를 복사했으면 `data/search-index.json`, `data/vector-index/`, `data/menu.json`도 반드시 함께 복사해야 합니다.
 
 > **버전 업데이트 시**: `platform-vX.X.tar`와 `docker-compose.yml`(변경 시)만 가져가면 됩니다.
 > data, contents, models 등 볼륨 데이터는 서버에 이미 있으므로 다시 가져갈 필요 없습니다.
@@ -349,6 +363,9 @@ AI 모델, 검색 옵션, 번역 옵션 등은 브라우저에서 관리합니�
 | 서비스 재시작 | `docker compose restart` |
 | 백엔드만 재시작 | `docker compose restart backend` |
 
+> **주의**: `.env` 파일을 수정한 경우 `restart`로는 반영되지 않습니다.
+> 반드시 `docker compose down && docker compose up -d`로 컨테이너를 재생성해야 합니다.
+
 ### 9-2. 상태 확인
 
 | 동작 | 명령어 |
@@ -380,7 +397,8 @@ AI 모델, 검색 옵션, 번역 옵션 등은 브라우저에서 관리합니�
 | 1 | `cd C:\AHS_Proj\smart-document-platform` | 프로젝트 폴더로 이동 |
 | 2 | `docker compose build` | 새 이미지 빌드 (변경분만 처리) |
 | 3 | `docker save -o platform-v1.1.tar smart-document-platform-backend smart-document-platform-nginx` | 이미지 내보내기 |
-| 4 | tar 파일을 USB/네트워크로 리눅스 서버에 전달 | docker-compose.yml 변경 시 함께 전달 |
+| 4 | `docker image prune -f` | 빌드 찌꺼기 정리 (개발 PC 디스크 확보) |
+| 5 | tar 파일을 USB/네트워크로 리눅스 서버에 전달 | docker-compose.yml 변경 시 함께 전달 |
 
 ### 10-2. 리눅스 서버에서 할 일
 
@@ -391,8 +409,9 @@ AI 모델, 검색 옵션, 번역 옵션 등은 브라우저에서 관리합니�
 | 3 | `docker load < platform-v1.1.tar` | 새 이미지 로드 |
 | 4 | docker-compose.yml 변경 시 새 파일로 교체 | `cp new-docker-compose.yml docker-compose.yml` |
 | 5 | `docker compose up -d` | 서비스 시작 |
-| 6 | `docker compose ps` | 둘 다 "Up"이면 성공 |
-| 7 | 브라우저에서 접속하여 정상 동작 확인 | 기존 데이터가 그대로 유지되어야 함 |
+| 6 | `docker image prune -f` | 이전 버전 이미지 정리 (디스크 확보) |
+| 7 | `docker compose ps` | 둘 다 "Up"이면 성공 |
+| 8 | 브라우저에서 접속하여 정상 동작 확인 | 기존 데이터가 그대로 유지되어야 함 |
 
 > **업데이트 시점**: 서비스 종료 시 진행 중이던 번역 작업은 중단되며 자동 재개되지 않습니다.
 > 가능하면 번역 작업이 없는 시간대에 업데이트를 수행합니다.
