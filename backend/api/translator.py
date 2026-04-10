@@ -759,6 +759,6 @@ async def api_save_web_view(
 async def api_list_models(user: dict = Depends(get_current_user)):
     """Ollama 사용 가능 모델 목록"""
     try:
-        return get_ollama_models()
+        return await get_ollama_models()
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Ollama 모델 목록 조회 실패: {e}")

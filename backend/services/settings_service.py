@@ -139,7 +139,9 @@ DEFAULT_SETTINGS: dict = {
 # ── 항목별 재시작 필요 여부 ────────────────────────────────────────────────────
 
 # 서버 재시작 없이 즉시 반영 가능한 항목 경로 (group.key 형식)
+# 실제 판정은 apply_to_config()의 immediate=True 여부로 수행됨 (이 세트는 문서용)
 _NO_RESTART = {
+    "ai.ollama_url", "ai.ollama_model",
     "ai.max_search_results", "ai.max_context_length", "ai.default_search_type",
     "ai.hybrid_keyword_weight", "ai.hybrid_rrf_k", "ai.min_vector_score",
     "ai.reranker_enabled", "ai.reranker_top_k_multiplier", "ai.query_rewrite_enabled",
@@ -165,7 +167,7 @@ _NO_RESTART = {
     "translator.ai_summarize_prompt",
     "frontend",  # prefix match
 }
-# 나머지(ollama_url, ollama_model, embedding_model, session_expiry_hours,
+# 나머지(embedding_model, session_expiry_hours,
 # security.login_required, security.cors_origins) = 재시작 필요
 
 
@@ -236,8 +238,8 @@ def apply_to_config(settings: dict) -> list[str]:
     restart_needed = []
 
     ai = settings.get("ai", {})
-    _set(ai, "ollama_url",            "OLLAMA_URL",                restart_needed)
-    _set(ai, "ollama_model",          "OLLAMA_MODEL",              restart_needed)
+    _set(ai, "ollama_url",            "OLLAMA_URL",                restart_needed, immediate=True)
+    _set(ai, "ollama_model",          "OLLAMA_MODEL",              restart_needed, immediate=True)
     _set(ai, "embedding_model",       "EMBEDDING_MODEL",           restart_needed)
     _set(ai, "llm_provider",          "LLM_PROVIDER",              restart_needed, immediate=True)
     _set(ai, "llm_endpoint",          "LLM_ENDPOINT",              restart_needed, immediate=True)

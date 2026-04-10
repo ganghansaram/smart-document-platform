@@ -14,9 +14,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # ── pip 의존성 (레이어 캐싱 최적화) ──
+# pdf2zh-next는 pymupdf<1.25.3을 요구하지만, 웹뷰 번역용 pymupdf4llm은 pymupdf==1.27.2가 필요함.
+# 해결: pdf2zh-next 먼저 설치(의존성 포함) → pymupdf/pymupdf4llm만 1.27.x로 강제 업그레이드.
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt \
-    && pip install --no-cache-dir --no-deps pdf2zh-next==2.8.2
+    && pip install --no-cache-dir --upgrade PyMuPDF==1.27.2 pymupdf4llm==1.27.2.1
 
 # ── babeldoc ONNX 캐시 (폐쇄망 대응 — 방안 A: 이미지에 포함) ──
 # 빌드 시 다운로드하여 이미지에 번들링 (~500MB)

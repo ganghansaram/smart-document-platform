@@ -2129,12 +2129,13 @@ def _update_index_status(username: str, doc_id: str, status: str):
 # Ollama 모델 목록
 # ══════════════════════════════════════
 
-def get_ollama_models() -> dict:
-    """Ollama 사용 가능 모델 목록"""
-    import requests
-    resp = requests.get(f"{config.OLLAMA_URL}/api/tags", timeout=5)
-    resp.raise_for_status()
-    return resp.json()
+async def get_ollama_models() -> dict:
+    """Ollama 사용 가능 모델 목록 (async — FastAPI 이벤트 루프 블로킹 방지)"""
+    import httpx
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        resp = await client.get(f"{config.OLLAMA_URL}/api/tags")
+        resp.raise_for_status()
+        return resp.json()
 
 
 # ── 마인드맵 (Plan-20 Phase 2) ──

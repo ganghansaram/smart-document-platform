@@ -163,7 +163,7 @@ app.include_router(compare.router, prefix="/api")       # Compare API
 # ── 헬스체크 ──
 
 @app.get("/api/health")
-def health_check():
+async def health_check():
     import shutil
     import sqlite3
     checks = {}
@@ -177,11 +177,12 @@ def health_check():
     except Exception:
         checks["database"] = "error"
 
-    # Ollama 확인
+    # Ollama 확인 (httpx 비동기 — 이벤트 루프 블로킹 방지)
     try:
-        import requests
-        resp = requests.get(f"{config.OLLAMA_URL}/api/tags", timeout=3)
-        checks["ollama"] = "ok" if resp.status_code == 200 else "unreachable"
+        import httpx
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(f"{config.OLLAMA_URL}/api/tags")
+            checks["ollama"] = "ok" if resp.status_code == 200 else "unreachable"
     except Exception:
         checks["ollama"] = "unreachable"
 

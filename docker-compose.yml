@@ -6,6 +6,9 @@ services:
       dockerfile: Dockerfile
     container_name: sdp-backend
     restart: unless-stopped
+    # WSL2 vpnkit 경로 단축 — host.docker.internal을 호스트 게이트웨이로 명시
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
       - EMBEDDING_BACKEND=${EMBEDDING_BACKEND:-local}

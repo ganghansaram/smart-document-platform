@@ -19,9 +19,9 @@ rank-bm25==0.2.2
 kiwipiepy>=0.18.0
 
 # ── Translator (PDF 번역) ──
-# pdf2zh-next: Dockerfile에서 --no-deps로 별도 설치 (pymupdf 버전 충돌 우회)
-PyMuPDF==1.27.2
-pymupdf4llm==1.27.2.1
+pdf2zh-next==2.8.2
+# PyMuPDF/pymupdf4llm은 Dockerfile에서 pdf2zh-next 설치 후 강제 업그레이드
+# (pdf2zh-next는 pymupdf<1.25.3 제약이지만 1.27.2에서도 정상 동작 — 웹뷰 번역 이미지 추출에 필수)
 
 # ── Explorer (문서 변환) ──
 python-docx==1.2.0
