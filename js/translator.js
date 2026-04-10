@@ -72,11 +72,6 @@
         var ZOOM_MIN = 0.5;
         var ZOOM_MAX = 3.0;
 
-        // 클릭 네비게이션 (Phase 6)
-        var _navBoxes = {};        // 페이지별 boxes 캐시: { "1": [...], "2": [...] }
-        var _navScale = 1;         // 현재 PDF 렌더 scale (renderLeftPage에서 갱신)
-        var _navPdfViewport = null; // PDF 원본 viewport (scale=1)
-
         // Scroll sync
         var scrollSyncEnabled = true; // 기본 ON — 좌측 스크롤 시 우측 페이지 동기화
 
@@ -593,10 +588,6 @@
                 var scale = baseScale * zoom;
                 var scaledViewport = page.getViewport({ scale: scale });
 
-                // 클릭 네비게이션용 scale/viewport 저장
-                _navScale = scale;
-                _navPdfViewport = viewport;
-
                 var outputScale = window.devicePixelRatio || 1;
 
                 $leftCanvas.width = Math.floor(scaledViewport.width * outputScale);
@@ -635,8 +626,6 @@
                     }
                     // 마킹 복원
                     if (typeof renderAnnotations === 'function') renderAnnotations();
-                    // 클릭 네비게이션 오버레이 갱신
-                    _renderNavBoxes();
                 }).catch(function() { leftRenderTask = null; });
             });
         }
@@ -1211,8 +1200,6 @@
                 return r.json();
             }).then(function(data) {
                 var md = data.markdown || '';
-                // boxes 캐시 저장
-                _navBoxes[String(currentPage)] = data.page_boxes || [];
                 // frontmatter 제거 (--- ... ---)
                 if (md.startsWith('---')) {
                     var endIdx = md.indexOf('---', 3);
@@ -1230,9 +1217,6 @@
                 $webViewContainer.style.display = 'block';
                 $webViewContent.innerHTML = html;
                 _applyWebFontSize();
-                // 블록에 data-box-index 부여 + 좌측 오버레이 갱신
-                _assignBoxIndices();
-                _renderNavBoxes();
             }).catch(function(err) {
                 console.error('[WebView] load error:', err);
                 $rightPlaceholder.style.display = 'none';
@@ -4561,105 +4545,6 @@
         // 클릭 네비게이션 (Phase 6)
         // 우측 MD 블록 ↔ 좌측 PDF 박스 양방향 동기화
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        // page-header, page-footer는 네비게이션 대상에서 제외
-        var _NAV_SKIP_CLASSES = { 'page-header': 1, 'page-footer': 1 };
-
-        /** 우측 MD 블록에 data-box-index 부여 (순서 매칭) */
-        function _assignBoxIndices() {
-            var boxes = _navBoxes[String(currentPage)];
-            if (!boxes || !boxes.length) return;
-            // content 블록만 필터 (header/footer 제외)
-            var contentBoxes = [];
-            for (var i = 0; i < boxes.length; i++) {
-                if (!_NAV_SKIP_CLASSES[boxes[i]['class']]) contentBoxes.push(boxes[i]);
-            }
-            // 렌더링된 블록 요소 수집 (marked.js가 생성하는 최상위 태그)
-            var blockEls = $webViewContent.querySelectorAll(
-                ':scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5, :scope > h6,' +
-                ':scope > p, :scope > ul, :scope > ol, :scope > table, :scope > blockquote,' +
-                ':scope > figure, :scope > pre, :scope > hr, :scope > div'
-            );
-            var limit = Math.min(contentBoxes.length, blockEls.length);
-            for (var j = 0; j < limit; j++) {
-                blockEls[j].setAttribute('data-box-index', String(contentBoxes[j].index));
-            }
-        }
-
-        /** 좌측 PDF 위에 boxes 오버레이 렌더 */
-        function _renderNavBoxes() {
-            // 기존 오버레이 제거
-            var old = $leftContainer.querySelector('.nav-box-layer');
-            if (old) old.remove();
-
-            if (translateEngine !== 'web') return; // 웹뷰 모드에서만
-
-            var boxes = _navBoxes[String(currentPage)];
-            if (!boxes || !boxes.length || !_navScale) return;
-
-            var layer = document.createElement('div');
-            layer.className = 'nav-box-layer';
-            // annotation-layer와 동일 크기, 절대 위치
-            layer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3;';
-
-            for (var i = 0; i < boxes.length; i++) {
-                var box = boxes[i];
-                if (_NAV_SKIP_CLASSES[box['class']]) continue;
-                var x0 = box.bbox[0] * _navScale;
-                var y0 = box.bbox[1] * _navScale;
-                var w  = (box.bbox[2] - box.bbox[0]) * _navScale;
-                var h  = (box.bbox[3] - box.bbox[1]) * _navScale;
-                var el = document.createElement('div');
-                el.className = 'nav-box';
-                el.setAttribute('data-box-index', String(box.index));
-                el.style.cssText =
-                    'position:absolute;pointer-events:auto;cursor:pointer;border-radius:2px;' +
-                    'left:' + x0 + 'px;top:' + y0 + 'px;width:' + w + 'px;height:' + h + 'px;';
-                layer.appendChild(el);
-            }
-            $leftContainer.appendChild(layer);
-        }
-
-        /** 플래시 효과 — 지정 요소에 잠시 하이라이트 후 제거 */
-        function _navFlash(el, cls) {
-            el.classList.add(cls);
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(function () { el.classList.remove(cls); }, 2000);
-        }
-
-        // ── 우측→좌측: MD 블록 클릭 → PDF box 하이라이트 ──
-        $webViewContent.addEventListener('click', function (e) {
-            var target = e.target.closest('[data-box-index]');
-            if (!target) return;
-            var idx = target.getAttribute('data-box-index');
-            var boxEl = $leftContainer.querySelector('.nav-box[data-box-index="' + idx + '"]');
-            if (boxEl) {
-                // 이전 하이라이트 제거
-                var prev = $leftContainer.querySelectorAll('.nav-box.nav-active');
-                for (var i = 0; i < prev.length; i++) prev[i].classList.remove('nav-active');
-                _navFlash(boxEl, 'nav-active');
-            }
-        });
-
-        // ── 좌측→우측: PDF box 클릭 → MD 블록 스크롤 (이벤트 위임) ──
-        $leftContainer.addEventListener('click', function (e) {
-            var boxEl = e.target.closest('.nav-box');
-            if (!boxEl) return;
-            e.stopPropagation(); // 텍스트 선택/annotation 이벤트 방지
-            var idx = boxEl.getAttribute('data-box-index');
-            var mdEl = $webViewContent.querySelector('[data-box-index="' + idx + '"]');
-            if (mdEl) {
-                // 이전 하이라이트 제거
-                var prev = $webViewContent.querySelectorAll('.nav-md-active');
-                for (var i = 0; i < prev.length; i++) prev[i].classList.remove('nav-md-active');
-                _navFlash(mdEl, 'nav-md-active');
-            }
-        });
-
-        // 문서 전환 시 boxes 캐시 초기화
-        document.addEventListener('nb-doc-switch', function () {
-            _navBoxes = {};
-        });
 
         // Markdown 편집기 (EditorCore 어댑터)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
