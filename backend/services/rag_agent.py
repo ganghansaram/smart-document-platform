@@ -4,6 +4,7 @@ Agentic RAG — 반복적 검색-판단-재검색 루프
 복합 질문에 대해 최대 MAX_ITERATIONS 회 반복하여
 필요한 정보를 수집한 후 최종 응답을 생성한다.
 """
+import asyncio
 import json
 import logging
 from typing import List, Optional
@@ -149,7 +150,8 @@ async def agentic_rag(question: str, search_fn, top_k: int = 5) -> dict:
         logger.info("Agent 검색 (iter %d): '%s'", i + 1, query)
 
         try:
-            new_results = search_fn(query, top_k, skip_rerank=True)
+            # search_fn은 sync 함수이므로 to_thread로 이벤트 루프 블로킹 방지
+            new_results = await asyncio.to_thread(search_fn, query, top_k, True)
             collected_context.extend(new_results)
         except Exception as e:
             logger.warning("Agent 검색 오류 (iter %d): %s", i + 1, e)
@@ -162,7 +164,7 @@ async def agentic_rag(question: str, search_fn, top_k: int = 5) -> dict:
     if not collected_context:
         search_queries.append(question)
         try:
-            collected_context = search_fn(question, top_k, skip_rerank=False)
+            collected_context = await asyncio.to_thread(search_fn, question, top_k, False)
         except Exception:
             pass
 

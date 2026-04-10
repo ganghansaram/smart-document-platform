@@ -1,6 +1,8 @@
 """
 Translator API — PDF 업로드, 페이지별 번역, 문서 관리
 """
+import asyncio
+
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body, Request, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
@@ -208,7 +210,8 @@ async def api_ai_selection(
         raise HTTPException(status_code=400, detail="action은 translate 또는 summarize")
 
     try:
-        return ai_selection_query(text, action, model)
+        # ai_selection_query는 sync requests.post를 사용하므로 to_thread로 이벤트 루프 블로킹 방지
+        return await asyncio.to_thread(ai_selection_query, text, action, model)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

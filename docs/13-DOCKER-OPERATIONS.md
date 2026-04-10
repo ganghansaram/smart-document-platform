@@ -167,6 +167,8 @@ docker image prune -f
 
 생성된 `platform-vX.X.tar`(약 3GB)와 변경된 `docker-compose.yml`을 USB/네트워크로 리눅스 서버에 전달합니다.
 
+> **UID 매칭**: 대상 서버의 데이터 디렉토리 소유자 UID가 1000이 아니면, 빌드 시 `--build-arg APP_UID=<UID>` 지정이 필요합니다 ([§5-2 사용자 UID 확인](#5-2-사용자-uid-확인-중요) 참조). 기존에 같은 UID로 배포되어 운영 중인 서버는 별도 조치 불필요.
+
 ### 3-2. 리눅스 서버에서 할 일
 
 ```bash
@@ -258,7 +260,38 @@ docker --version            # 20.x 이상
 docker compose version      # v2.x 이상
 ```
 
-### 5-2. 디렉토리 준비 및 파일 배치
+### 5-2. 사용자 UID 확인 (중요)
+
+플랫폼 컨테이너는 보안을 위해 **비특권 사용자(`appuser`)로 실행**됩니다. 기본 UID는 **1000**입니다. 배포 디렉토리 소유자 UID와 일치해야 볼륨 마운트된 `data/`, `contents/`, `backups/`에 쓰기 권한을 갖습니다.
+
+```bash
+# 배포 디렉토리의 소유자 UID 확인
+cd /opt/smart-document-platform
+ls -ln data/ | head -3
+# 예: drwxr-xr-x 5 1000 1000 ...     ← UID=1000 (기본값과 일치 → OK)
+# 예: drwxr-xr-x 5 1001 1001 ...     ← UID=1001 (다름 → 아래 조치 필요)
+```
+
+**UID가 1000이 아니면** 배포 전에 두 가지 방법 중 하나를 선택합니다:
+
+**방법 A — 컨테이너 이미지를 해당 UID로 재빌드 (권장)**
+
+tar 파일을 만들기 전 개발 PC에서:
+
+```bash
+docker compose build --build-arg APP_UID=1001 --build-arg APP_GID=1001
+docker save -o platform-vX.X.tar smart-document-platform-backend smart-document-platform-nginx
+```
+
+**방법 B — 서버의 데이터 소유권 변경**
+
+```bash
+sudo chown -R 1000:1000 /opt/smart-document-platform/data /opt/smart-document-platform/contents /opt/smart-document-platform/backups /opt/smart-document-platform/logs
+```
+
+> 기존에 다른 UID로 실행 중이던 서비스가 있으면 방법 B는 권장하지 않습니다. 방법 A가 안전합니다.
+
+### 5-3. 디렉토리 준비 및 파일 배치
 
 ```bash
 sudo mkdir -p /opt/smart-document-platform
@@ -289,7 +322,7 @@ cd /opt/smart-document-platform
 | `menu.json` | 메뉴 비어있음 |
 | `settings.json` | 기본값으로 동작 (문제없음) |
 
-### 5-3. 설정 파일 생성
+### 5-4. 설정 파일 생성
 
 ```bash
 cp .env.example .env
@@ -302,7 +335,7 @@ nano .env
 
 저장 후 편집기 종료 (nano: `Ctrl+O` → `Enter` → `Ctrl+X`).
 
-### 5-4. 배포 실행
+### 5-5. 배포 실행
 
 ```bash
 ./deploy.sh platform-vX.X.tar
@@ -315,7 +348,7 @@ nano .env
 4. 서비스 시작
 5. 미사용 이미지 정리
 
-### 5-5. 접속 확인
+### 5-6. 접속 확인
 
 ```bash
 docker compose ps   # 두 컨테이너 모두 "Up" / "healthy"
@@ -588,6 +621,30 @@ Ollama 서버에 `bge-m3` 모델이 설치되어 있어야 합니다(`ollama lis
 
 `ollama_url`, `ollama_model` 등 일부 항목은 실제로는 재시작 없이 즉시 반영됩니다. UI 라벨이 오래된 분류로 남아있을 수 있으니, **저장 후 기능이 정상 동작하면 재시작하지 않아도 됩니다.** 실제 재시작이 필요한 항목은 `embedding_model`, `security.*`, `session.session_expiry_hours` 정도입니다.
 
+### 12-7. "Permission denied" — 볼륨 파일 쓰기 실패
+
+컨테이너가 비특권 사용자(`appuser`, UID 1000)로 실행되는데, 호스트 디렉토리 소유자가 다르면 발생합니다.
+
+**증상 예시**
+
+```
+docker compose logs backend
+# PermissionError: [Errno 13] Permission denied: '/app/data/auth.db'
+```
+
+**진단**
+
+```bash
+cd /opt/smart-document-platform
+ls -ln data/ | head -3
+# 소유자 UID가 1000이 아니면 원인 확정
+```
+
+**해결** — 두 가지 중 하나 선택 ([§5-2 사용자 UID 확인](#5-2-사용자-uid-확인-중요) 참조)
+
+1. **이미지 재빌드** (권장): 개발 PC에서 `--build-arg APP_UID=<해당 UID>`로 재빌드 후 재배포
+2. **소유권 일괄 변경**: `sudo chown -R 1000:1000 data/ contents/ backups/ logs/`
+
 ---
 
 # PART 4. 부록
@@ -698,6 +755,16 @@ Nginx가 다음 보안 정책을 자동으로 적용합니다.
 | 민감 경로 차단 | `/backend/`, `/models/`, `/tools/`, `/backups/`, `/.env`, `/.git` → 403 |
 | 업로드 제한 | 최대 100MB |
 | 스트리밍 지원 | AI 채팅/Q&A의 NDJSON 스트리밍을 위해 프록시 버퍼링 비활성화 |
+
+**컨테이너 실행 사용자**
+
+백엔드 컨테이너는 보안을 위해 비특권 사용자 `appuser (UID 1000)`로 실행됩니다 (CIS Docker Benchmark). 빌드 시 `APP_UID`/`APP_GID` 빌드 인자로 호스트 사용자 UID에 맞춰 오버라이드할 수 있습니다.
+
+```bash
+docker compose build --build-arg APP_UID=1001 --build-arg APP_GID=1001
+```
+
+UID 불일치 시 볼륨 쓰기가 실패하므로 ([§5-2](#5-2-사용자-uid-확인-중요), [§12-7](#12-7-permission-denied--볼륨-파일-쓰기-실패) 참조), 최초 설치 전 반드시 확인합니다.
 
 ### 14-3. 알려진 제한
 

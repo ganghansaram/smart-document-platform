@@ -157,14 +157,14 @@ async def _search_with_decomposition(question: str, search_query: str, top_k: in
 
     if len(sub_queries) <= 1:
         # 단일 쿼리 → 기존 검색 (리랭킹 포함)
-        return _search_internal(search_query, top_k)
+        return await asyncio.to_thread(_search_internal, search_query, top_k)
 
     # 멀티 쿼리 → 각각 검색 (리랭킹 생략) → 병합 → 원본 질문 기준 리랭킹
     logger.info("멀티 검색: %d 서브쿼리 실행", len(sub_queries))
     per_query_k = max(3, top_k // len(sub_queries) + 1)
     all_results = []
     for sq in sub_queries:
-        results = _search_internal(sq, per_query_k, skip_rerank=True)
+        results = await asyncio.to_thread(_search_internal, sq, per_query_k, True)
         all_results.extend(results)
 
     # 중복 제거
@@ -201,8 +201,8 @@ async def _routed_search(question: str, history: list, top_k: int = 5) -> dict:
     """
     from services.question_router import route_question
 
-    # 쿼리 재작성 (멀티턴)
-    search_query = rewrite_query(question, history)
+    # 쿼리 재작성 (멀티턴) — sync requests.post를 포함하므로 to_thread로 격리
+    search_query = await asyncio.to_thread(rewrite_query, question, history)
 
     # 질문 유형 분류
     route = await route_question(question)
@@ -218,9 +218,9 @@ async def _routed_search(question: str, history: list, top_k: int = 5) -> dict:
             "route": "CHAT",
         }
 
-    # SIMPLE: 기존 단일 패스 RAG
+    # SIMPLE: 기존 단일 패스 RAG — 내부에 sync 임베딩/리랭킹 호출 포함 → to_thread
     if route == "SIMPLE":
-        context = _search_internal(search_query, top_k)
+        context = await asyncio.to_thread(_search_internal, search_query, top_k)
         confidence = "high" if len(context) >= 2 else ("medium" if context else "low")
         return {
             "context": context,
@@ -255,7 +255,7 @@ async def _routed_search(question: str, history: list, top_k: int = 5) -> dict:
         }
 
     # 폴백 → SIMPLE
-    context = _search_internal(search_query, top_k)
+    context = await asyncio.to_thread(_search_internal, search_query, top_k)
     return {
         "context": context,
         "confidence": "medium",
