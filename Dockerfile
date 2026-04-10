@@ -15,7 +15,8 @@ WORKDIR /app
 
 # ── pip 의존성 (레이어 캐싱 최적화) ──
 COPY backend/requirements.txt /app/backend/requirements.txt
-RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt \
+    && pip install --no-cache-dir --no-deps pdf2zh-next==2.8.2
 
 # ── babeldoc ONNX 캐시 (폐쇄망 대응 — 방안 A: 이미지에 포함) ──
 # 빌드 시 다운로드하여 이미지에 번들링 (~500MB)

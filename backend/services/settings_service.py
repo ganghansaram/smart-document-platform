@@ -325,7 +325,6 @@ def apply_to_config(settings: dict) -> list[str]:
 # 환경변수로 보호되는 설정 — os.getenv()가 설정되어 있으면 settings.json 값 무시
 _ENV_PROTECTED = {
     "OLLAMA_URL":    "OLLAMA_URL",
-    "OLLAMA_MODEL":  "OLLAMA_MODEL",
     "CORS_ORIGINS":  "CORS_ORIGINS",
 }
 

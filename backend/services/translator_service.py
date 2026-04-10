@@ -1019,10 +1019,14 @@ async def _run_pmt_pages(username: str, doc_id: str, pages_str: str, page_list: 
         with open(log_path, "a", encoding="utf-8") as lf:
             lf.write(f"[{datetime.now().strftime('%H:%M:%S')}] [{label}] {msg}\n")
 
+    # stdout → 파일 리다이렉트 (PIPE 버퍼 deadlock 방지, 실패 시 로그 보존)
+    stdout_log = _doc_dir(username, doc_id) / f"_pmt_stdout_{label}.log"
+    stdout_fh = open(stdout_log, "w", encoding="utf-8")
+
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
-            stdout=asyncio.subprocess.PIPE,
+            stdout=stdout_fh,
             stderr=asyncio.subprocess.PIPE,
         )
         _active_procs[key] = proc
@@ -1078,9 +1082,13 @@ async def _run_pmt_pages(username: str, doc_id: str, pages_str: str, page_list: 
         if proc.returncode != 0:
             elapsed = time.monotonic() - pmt_start
             _log(f"FAILED (exit {proc.returncode}) | total {elapsed:.1f}s")
-            stdout_data = await proc.stdout.read()
+            stdout_fh.close()
+            log_text = ""
+            try:
+                log_text = stdout_log.read_text(encoding="utf-8", errors="replace")[-500:]
+            except Exception:
+                pass
             shutil.rmtree(tmp_dir, ignore_errors=True)
-            log_text = stdout_data.decode("utf-8", errors="replace")[-500:] if stdout_data else ""
             for pnum in page_list:
                 _mark_page_error(username, doc_id, pnum, f"pdf2zh 실패 (exit {proc.returncode}): {log_text}")
             return
@@ -1168,6 +1176,14 @@ async def _run_pmt_pages(username: str, doc_id: str, pages_str: str, page_list: 
         _active_tasks.pop(key, None)
         _active_procs.pop(key, None)
         _page_progress.pop(key, None)
+        try:
+            stdout_fh.close()
+        except Exception:
+            pass
+        try:
+            stdout_log.unlink(missing_ok=True)
+        except Exception:
+            pass
 
 
 def get_page_translation_status(username: str, doc_id: str, page_num: int) -> Optional[dict]:
