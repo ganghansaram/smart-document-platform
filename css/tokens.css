@@ -15,6 +15,9 @@
 
 /* 루트 변수 - 라이트 테마 */
 :root {
+    /* 브라우저 native UI 컨트롤 테마 힌트 (select 드롭다운·스크롤바 등) */
+    color-scheme: light;
+
     /* 코어 색상 */
     --primary-navy: #001f3f;
     --secondary-navy: #003d7a;
@@ -132,6 +135,12 @@
 
 /* 다크 테마 변수 오버라이드 */
 body[data-theme="dark"] {
+    /* 브라우저 native UI 컨트롤을 다크 테마 변형으로 렌더링
+       → <select> 드롭다운 팝업·스크롤바·체크박스 등이 자동 다크 전환
+       → 이 선언 없으면 native <select> 팝업이 라이트 배경 + 밝은 글자로
+         렌더되어 가독성 손상됨 */
+    color-scheme: dark;
+
     --primary-navy: #121218;
     --secondary-navy: #1a1a2e;
     --dark-gray: #e0e0e0;
