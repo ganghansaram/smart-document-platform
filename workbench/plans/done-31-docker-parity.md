@@ -10,7 +10,7 @@
 |---|---|---|
 | **Phase 1** bind mount | ✅ **완료** (2026-04-11) | override·dev nginx·스크립트 방어선까지 구축. 실측으로 환경 오염까지 제거. |
 | **Phase 4** parity 체크 스크립트 | ✅ **완료** (2026-04-11) | 순서 변경 — Phase 2보다 먼저 진행. 누락 감지로 Phase 2의 원래 목적 흡수. |
-| Phase 3 config 단일화 | 대기 | divergence 근본 해결 단계 |
+| **Phase 3** config 동기화 (Alt B) | ✅ **완료** (2026-04-11) | 원안(포트 감지 로직) 대신 대안 B 채택 — `docker/config.docker.js`를 `js/config.js` 구조와 일치시키고 URL 5개만 override. 이중 파일 구조는 유지하되 parity check로 drift 감시. Phase 1 + 4가 이미 실용 효과의 대부분을 달성한 상태라 대안 B의 낮은 리스크를 선택. 원안은 미래 트리거 발생 시 재검토 가능 (보류). |
 | **Phase 2** COPY 블랙리스트 | ❌ **취소** (2026-04-11) | `.dockerignore`가 backend/nginx Dockerfile 공유 제약으로 원안 실행 불가. 원래 목적은 Phase 4 parity 체크가 더 안전하게 달성. 자세한 분석은 이 문서 하단 "Phase 2 취소 근거" 섹션 참조. |
 
 **순서 변경 이유 (2026-04-11):**
@@ -349,10 +349,10 @@ Phase 4 완료 직후 10건의 양성/음성 테스트 수행. **전부 PASS**.
 |---|---|---|---|
 | **1** bind mount | ✅ 완료 | **없음** (개발 전용) | 파일 삭제 |
 | **2** COPY 블랙리스트 | ❌ 취소 | — | — (실행 안 함) |
-| **3** config 단일화 | 대기 | **조건부 경로 로직 1개 추가** — 테스트 필수 | git revert |
+| **3** config 동기화 (Alt B) | ✅ 완료 | **없음** (docker/config.docker.js만 구조 재정렬, 데이터 값 불변) | git revert |
 | **4** parity 체크 | ✅ 완료 | **없음** (읽기 전용 검증) | 스크립트 삭제 |
 
-**결론**: 완료된 Phase 1·4는 기능 영향 0건. Phase 3는 선택 사항이며 진행 시 Phase 1 bind mount 환경에서 빠른 검증 가능. Phase 2는 공유 `.dockerignore` 제약으로 취소, Phase 4가 동일 목적을 더 안전하게 달성.
+**결론**: 완료된 Phase 1·3(Alt B)·4 모두 기능 영향 0건. Phase 2는 공유 `.dockerignore` 제약으로 취소됐고 Phase 4가 동일 목적을 더 안전하게 달성. Phase 3는 원안(포트 감지) 대신 대안 B(구조 동기화)를 채택하여 drift 감시 체계를 완성.
 
 ---
 
@@ -361,9 +361,9 @@ Phase 4 완료 직후 10건의 양성/음성 테스트 수행. **전부 PASS**.
 1. **Phase 1** ✅ (2026-04-11) — bind mount override, dev nginx 설정, 유령 dockerd 제거, 배포 스크립트 방어선까지 일괄 완료
 2. **Phase 4** ✅ (2026-04-11) — parity 체크 스크립트 (Phase 2 대체), docker-build 스킬 Step 0 통합, 10건 테스트 통과
 3. **Phase 2** ❌ (2026-04-11) — 취소 결정, 근본 이유는 상단 Phase 2 섹션 참조
-4. **Phase 3** 대기 — 현재 parity 체크가 `js/config.js ↔ docker/config.docker.js` 47줄 차이를 경고로 표시 중. Phase 3 진행 시 이 경고가 근본 해소됨. 필요시 진행.
+4. **Phase 3** ✅ (2026-04-11, Alt B) — 원안(포트 감지) 대신 대안 B 채택. `docker/config.docker.js`를 `js/config.js` 구조와 일치시키고 URL 5개만 override. Windows baseline 재검증 + Docker 스모크 테스트 12/12 통과, 회귀 0건. 원안은 미래 트리거 발생 시 재검토용으로 보류.
 
-**현재 상태로도 목표 달성**: Phase 1(개발 중 즉시 반영) + Phase 4(빌드 전 누락 감지) + 배포 스크립트 방어선의 3중 방어가 "로컬 개발 → Docker 이미지" 일관성을 충분히 확보.
+**최종 달성 구조**: Phase 1(개발 중 즉시 반영) + Phase 3 Alt B(구조 동기화된 이중 파일) + Phase 4(빌드 전 drift 감지) + 배포 스크립트 방어선의 **4중 방어선**이 "로컬 개발 → Docker 이미지" 일관성을 체계적으로 확보.
 
 ---
 
@@ -372,9 +372,10 @@ Phase 4 완료 직후 10건의 양성/음성 테스트 수행. **전부 PASS**.
 | 결정 사항 | 결정 | 일자 |
 |---|---|---|
 | `docker-compose.override.yml`을 git 추적할 것인가 | **추적 O** (팀 공유) | 2026-04-11 Phase 1 |
-| Phase 3 포트 감지 로직 형태 | 미정 (Phase 3 진행 시 결정) | — |
+| Phase 3 포트 감지 로직 형태 | **원안 보류** — 대안 B(구조 동기화)로 실용 효과 달성. 원안은 향후 트리거 시 재검토 | 2026-04-11 Phase 3 |
 | Phase 4 parity 스크립트를 Git pre-commit까지 걸 것인가 | `docker-build` 스킬에만 (pre-commit 과잉) | 2026-04-11 Phase 4 |
 | Phase 2 진행 여부 | **취소** (Phase 4로 대체) | 2026-04-11 Phase 4 직전 |
+| Phase 3 실행 방식 | **Alt B 채택** — 원안(포트 감지 로직)은 복잡도·리스크 대비 이득 낮음. 대안 B(js/config.js 복사 + URL override)가 "무조건 개선효과만" 조건에 더 부합. | 2026-04-11 Phase 3 |
 
 ---
 
