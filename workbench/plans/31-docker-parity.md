@@ -318,41 +318,63 @@ Exit: 1 (경고 있음, 정상 동작)
 | 자동으로 포함되면 편함 | 명시적 경고 + 해결 방법 제시로 대체 |
 | `.dockerignore` 의존 위험 | 없음 (Dockerfile 구조 불변) |
 
+##### 전문가 테스트 검증 (2026-04-11)
+
+Phase 4 완료 직후 10건의 양성/음성 테스트 수행. **전부 PASS**.
+
+| # | 테스트 | 결과 | 핵심 검증 |
+|---|---|---|---|
+| 1 | Baseline 현재 상태 | ✅ | 4/4 검사 실행, exit code 1 정확 |
+| 2 | 프론트엔드 자산 누락 3종 (디렉터리/glob/단일파일) | ✅ | 세 유형 모두 감지 |
+| 3 | 신규 폴더 추가 (`fonts/`) | ✅ | 새 폴더 즉시 감지 + 가이드 제공 |
+| 4 | config 상수 divergence 양방향 | ✅ | `NEW_FEATURE_CONFIG` (js→docker 누락), `DISPLAY_CONFIG`/`UPLOAD_CONFIG` (docker→js 누락) 양방향 감지 |
+| 5 | 스크립트 견고성 (Dockerfile 누락, 깨진 JS, 빈 파일) | ✅ | 크래시 없음, 적절한 레벨 반환 (error/warn) |
+| 6 | docker-build 스킬 통합 | ✅ | 4종 검사 + JSON 파싱 정상 |
+| 7 | 스킬 Step 0 exit code 분기 로직 | ✅ | 0/1/2 분기 올바름 |
+| 8 | requirements.txt git 상태 의존 | ✅ | stash/pop으로 수정/미수정 상태 정확 구분 |
+| 9 | 유령 dockerd 재발 감지 | ✅ | `inactive disabled` 확인 + "단일 데몬" 판정 |
+| 10 | 최종 상태 정합성 | ✅ | 테스트 중 line ending 복구 포함 |
+
+**환경 특이사항**: Claude Code Bash 툴에서 `$?`를 직접 쓰면 외부 셸이 먼저 확장함. 스크립트 테스트 시 `\$?`로 이스케이프 필요. 스크립트 자체 동작에는 영향 없음.
+
 ##### 미완 (backlog)
-- [ ] Git `pre-commit` 훅 통합 — 선택 사항, 사용자 경험 확인 후 결정
+- [ ] Git `pre-commit` 훅 통합 — 대부분 커밋(문서·계획서)이 Docker와 무관하므로 과잉 검증이 될 수 있음. 필요성 느낄 때 추가.
 - [ ] Phase 3 이후 `config.docker.js` 관련 검사 로직 단순화
 
 ---
 
 ## 3. 전체 기능 영향성 요약
 
-| Phase | 사용자 노출 기능 영향 | 롤백 난이도 |
+| Phase | 상태 | 사용자 노출 기능 영향 | 롤백 난이도 |
+|---|---|---|---|
+| **1** bind mount | ✅ 완료 | **없음** (개발 전용) | 파일 삭제 |
+| **2** COPY 블랙리스트 | ❌ 취소 | — | — (실행 안 함) |
+| **3** config 단일화 | 대기 | **조건부 경로 로직 1개 추가** — 테스트 필수 | git revert |
+| **4** parity 체크 | ✅ 완료 | **없음** (읽기 전용 검증) | 스크립트 삭제 |
+
+**결론**: 완료된 Phase 1·4는 기능 영향 0건. Phase 3는 선택 사항이며 진행 시 Phase 1 bind mount 환경에서 빠른 검증 가능. Phase 2는 공유 `.dockerignore` 제약으로 취소, Phase 4가 동일 목적을 더 안전하게 달성.
+
+---
+
+## 4. 실제 진행 순서 (2026-04-11 완료분)
+
+1. **Phase 1** ✅ (2026-04-11) — bind mount override, dev nginx 설정, 유령 dockerd 제거, 배포 스크립트 방어선까지 일괄 완료
+2. **Phase 4** ✅ (2026-04-11) — parity 체크 스크립트 (Phase 2 대체), docker-build 스킬 Step 0 통합, 10건 테스트 통과
+3. **Phase 2** ❌ (2026-04-11) — 취소 결정, 근본 이유는 상단 Phase 2 섹션 참조
+4. **Phase 3** 대기 — 현재 parity 체크가 `js/config.js ↔ docker/config.docker.js` 47줄 차이를 경고로 표시 중. Phase 3 진행 시 이 경고가 근본 해소됨. 필요시 진행.
+
+**현재 상태로도 목표 달성**: Phase 1(개발 중 즉시 반영) + Phase 4(빌드 전 누락 감지) + 배포 스크립트 방어선의 3중 방어가 "로컬 개발 → Docker 이미지" 일관성을 충분히 확보.
+
+---
+
+## 5. 결정 기록
+
+| 결정 사항 | 결정 | 일자 |
 |---|---|---|
-| 1 bind mount | **없음** (개발 전용) | 파일 삭제 |
-| 2 COPY 블랙리스트 | **없음** (.dockerignore 잘 관리하면) | Dockerfile revert |
-| 3 config 단일화 | **조건부 경로 로직 1개 추가** — 테스트 필수 | git revert |
-| 4 parity 체크 | **없음** (읽기 전용 검증) | 스크립트 삭제 |
-
-**결론**: Phase 1·2·4는 기능 영향 0건. Phase 3만 검증 필요하며, 검증은 Phase 1 bind mount 환경에서 재빌드 없이 빠르게 반복 가능.
-
----
-
-## 4. 권장 진행 순서
-
-1. **Phase 1만 먼저** — 즉시 체감 효과, 리스크 0. 이 단계만으로도 개발 생산성 대폭 향상
-2. Phase 1 사용해보고 안정되면 Phase 2 (프로젝트 구조 변경 시점에)
-3. Phase 3은 Phase 1 환경에서 안전하게 테스트하며 진행
-4. Phase 4는 Phase 3 완료 직후 (검증 대상이 확정된 후)
-
-**Phase 1만 해도** "로컬에서 고친 걸 도커에 반영하려면 매번 재빌드" 고통이 대부분 해결된다. 나머지는 선택.
-
----
-
-## 5. 열려 있는 결정 사항
-
-- [ ] `docker-compose.override.yml`을 git 추적할 것인가? (팀 공유 vs 개인 자유도)
-- [ ] Phase 3의 포트 감지 로직을 `_isRelative` 말고 `window.location.origin`만으로 할 것인가?
-- [ ] Phase 4 parity 스크립트를 Git pre-commit까지 걸 것인가, `docker-build` 스킬에만 둘 것인가?
+| `docker-compose.override.yml`을 git 추적할 것인가 | **추적 O** (팀 공유) | 2026-04-11 Phase 1 |
+| Phase 3 포트 감지 로직 형태 | 미정 (Phase 3 진행 시 결정) | — |
+| Phase 4 parity 스크립트를 Git pre-commit까지 걸 것인가 | `docker-build` 스킬에만 (pre-commit 과잉) | 2026-04-11 Phase 4 |
+| Phase 2 진행 여부 | **취소** (Phase 4로 대체) | 2026-04-11 Phase 4 직전 |
 
 ---
 
