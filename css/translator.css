@@ -1414,7 +1414,12 @@ body[data-theme="dark"] .card-btn:hover { background: var(--active-color-subtle)
 body[data-theme="dark"] .card-btn.primary { background: var(--active-color); border-color: var(--active-color); color: #fff; }
 
 body[data-theme="dark"] .panel-header { background: var(--panel-bg); }
-body[data-theme="dark"] .panel-header select { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: var(--text-primary); }
+/* 주의: background는 반드시 opaque 값 사용. rgba(white, 0.06) 같은 반투명
+   값을 쓰면 native <select> 팝업의 option 배경도 이 값을 상속받아 밝은
+   배경에 밝은 글자로 렌더되어 가독성 손상됨. var(--white)는 다크모드에서
+   #1e1e2e로 해석되며, 이전 반투명 값이 다크 panel-header 위에 합성됐던
+   시각 결과(#20202a 계열)와 거의 동일하므로 닫힌 상태 모습은 불변. */
+body[data-theme="dark"] .panel-header select { background: var(--white); border-color: rgba(255,255,255,0.12); color: var(--text-primary); }
 /* .toolbar-btn, .mode-toggle 다크 모드 → components.css / compare.css 에서 처리 */
 body[data-theme="dark"] .panel-header .font-scale-value { color: rgba(255,255,255,0.6); }
 body[data-theme="dark"] .translator-page-info { color: rgba(255,255,255,0.6); }
