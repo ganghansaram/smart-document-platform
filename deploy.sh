@@ -10,6 +10,20 @@
 set -e
 cd "$(dirname "$0")"
 
+# ── 프로덕션 전용: 개발용 override 파일 완전 차단 ──
+# docker-compose.override.yml이 존재해도 자동 병합되지 않도록
+# COMPOSE_FILE을 base 파일로 고정한다. 이 스크립트 안의 모든
+# `docker compose` 호출이 이 값을 따른다.
+export COMPOSE_FILE=docker-compose.yml
+
+# ── 사고 방지: override 파일이 혹시 딸려 왔는지 감지 ──
+if [ -f docker-compose.override.yml ]; then
+    echo "WARNING: docker-compose.override.yml 감지됨 — 이 파일은 개발 전용입니다."
+    echo "  프로덕션 배포에는 사용되지 않습니다 (COMPOSE_FILE 고정으로 차단)."
+    echo "  깨끗한 배포 디렉터리를 원하시면 해당 파일을 삭제하세요."
+    echo ""
+fi
+
 TAR_FILE="${1:-platform-v1.0.tar}"
 
 # ── 이미지 tar 확인 ──

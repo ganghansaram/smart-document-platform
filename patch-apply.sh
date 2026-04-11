@@ -8,6 +8,10 @@
 set -e
 cd "$(dirname "$0")"
 
+# ── 프로덕션 전용: 개발용 override 파일 완전 차단 ──
+# docker compose ps 등의 호출이 override의 영향을 받지 않도록 고정
+export COMPOSE_FILE=docker-compose.yml
+
 PATCH_FILE="${1}"
 
 if [ -z "$PATCH_FILE" ] || [ ! -f "$PATCH_FILE" ]; then
@@ -50,9 +54,16 @@ fi
 if [ -d "$PATCH_DIR/frontend" ]; then
     echo "  → sdp-nginx: 프론트엔드 코드 업데이트"
     # nginx 컨테이너의 프론트엔드 경로에 복사
+    # 주의: docker cp가 디렉터리일 때는 `src/.` + `dst/` 패턴을 써야
+    #       중첩(`/app/frontend/css/css`)을 피할 수 있다.
     for item in "$PATCH_DIR/frontend/"*; do
+        [ -e "$item" ] || continue
         name=$(basename "$item")
-        docker cp "$item" "sdp-nginx:/app/frontend/$name"
+        if [ -d "$item" ]; then
+            docker cp "$item/." "sdp-nginx:/app/frontend/$name/"
+        else
+            docker cp "$item" "sdp-nginx:/app/frontend/$name"
+        fi
     done
 fi
 
@@ -63,13 +74,16 @@ if [ -d "$PATCH_DIR/tools" ]; then
 fi
 
 # Docker 설정 파일 (nginx.conf 등)
+# 주의: 이미지 내 실제 경로는 Dockerfile.nginx와 일치해야 한다.
+#   - docker/nginx.conf      → /etc/nginx/conf.d/default.conf  (메인 /etc/nginx/nginx.conf 아님)
+#   - docker/config.docker.js → /app/docker/config.docker.js   (nginx alias 대상)
 if [ -f "$PATCH_DIR/docker/nginx.conf" ]; then
-    echo "  → sdp-nginx: nginx.conf 업데이트"
-    docker cp "$PATCH_DIR/docker/nginx.conf" sdp-nginx:/etc/nginx/nginx.conf
+    echo "  → sdp-nginx: nginx.conf 업데이트 (→ /etc/nginx/conf.d/default.conf)"
+    docker cp "$PATCH_DIR/docker/nginx.conf" sdp-nginx:/etc/nginx/conf.d/default.conf
 fi
 if [ -f "$PATCH_DIR/docker/config.docker.js" ]; then
-    echo "  → sdp-nginx: config.docker.js 업데이트"
-    docker cp "$PATCH_DIR/docker/config.docker.js" sdp-nginx:/app/frontend/js/config.js
+    echo "  → sdp-nginx: config.docker.js 업데이트 (→ /app/docker/config.docker.js)"
+    docker cp "$PATCH_DIR/docker/config.docker.js" sdp-nginx:/app/docker/config.docker.js
 fi
 
 echo ""

@@ -1,0 +1,63 @@
+# ============================================================================
+# Docker Compose Override — 개발 전용 (자동 병합)
+# ============================================================================
+# 목적: 로컬 소스 파일을 컨테이너에 직접 마운트하여 **재빌드 없이** 변경사항이
+#       즉시 반영되도록 한다. `docker compose up`이 이 파일을 자동으로
+#       `docker-compose.yml`과 병합한다.
+#
+# 사용법:
+#   개발 환경 (override 자동 적용):
+#     docker compose up -d
+#
+#   프로덕션 환경 (override 무시, 이미지만 사용):
+#     docker compose -f docker-compose.yml up -d
+#
+# 변경 반영 방법:
+#   - HTML/CSS/JS 수정 → 브라우저 강제 새로고침 (Ctrl+F5 또는 DevTools
+#     "Disable cache" 체크)
+#     * Nginx 캐시 헤더가 7일이라 일반 새로고침은 브라우저 캐시를 계속 사용
+#   - 백엔드 Python 수정 → `docker compose restart backend` (hot-reload 미지원)
+#   - nginx.conf 수정 → `docker compose build nginx && docker compose up -d`
+#   - Dockerfile 수정 → 전체 재빌드
+#
+# 주의:
+#   - `/js/config.js`는 nginx.conf의 alias로 `docker/config.docker.js`를
+#     서빙한다. `js/config.js` 수정은 반영되지 않으므로, 도커 환경용 설정은
+#     `docker/config.docker.js`를 직접 수정해야 한다 (Phase 3에서 단일화 예정).
+#   - backend 마운트는 read-write — Python bytecode(.pyc) 생성 허용.
+#   - 이 파일은 git에 추적되어 팀 전체가 동일한 개발 환경을 공유한다.
+# ============================================================================
+
+services:
+  # ── Nginx (프론트엔드 정적 자산) ──
+  nginx:
+    volumes:
+      # HTML 페이지 (루트 7개)
+      - ./launcher.html:/app/frontend/launcher.html:ro
+      - ./login.html:/app/frontend/login.html:ro
+      - ./index.html:/app/frontend/index.html:ro
+      - ./translator.html:/app/frontend/translator.html:ro
+      - ./compare.html:/app/frontend/compare.html:ro
+      - ./admin.html:/app/frontend/admin.html:ro
+      - ./favicon.svg:/app/frontend/favicon.svg:ro
+
+      # 정적 자산 디렉터리
+      - ./css:/app/frontend/css:ro
+      - ./js:/app/frontend/js:ro
+      - ./docs:/app/frontend/docs:ro
+
+      # Nginx alias 대상 — /js/config.js 요청이 이 파일로 매핑됨
+      # (nginx.conf의 `location = /js/config.js { alias ... }` 블록 참고)
+      - ./docker/config.docker.js:/app/docker/config.docker.js:ro
+
+      # 개발용 nginx 설정 — sendfile off, 캐시 무효화 (WSL2 bind mount 대응)
+      # 프로덕션은 `docker/nginx.conf`가 이미지에 구워져 사용됨
+      - ./docker/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # ── Backend (FastAPI) ──
+  backend:
+    volumes:
+      # 소스 코드 bind mount (rw — Python .pyc 캐시 허용)
+      # 기존 base의 `./logs:/app/backend/logs` 마운트는 서브패스라 그대로 유효
+      - ./backend:/app/backend
+      - ./tools:/app/tools

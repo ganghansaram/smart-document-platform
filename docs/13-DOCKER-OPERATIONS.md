@@ -431,6 +431,46 @@ docker image prune -f
 
 생성된 tar 파일 크기는 약 3GB입니다. USB/네트워크로 리눅스 서버에 전달합니다.
 
+### 6-7. 개발 모드 (bind mount, 재빌드 없이 변경 즉시 반영)
+
+로컬 소스를 수정할 때마다 `docker compose build`를 반복하지 않고, 호스트 파일을 컨테이너에 직접 마운트하여 **즉시 반영**할 수 있습니다. `docker-compose.override.yml`이 이 역할을 담당하며, `docker compose up` 실행 시 자동으로 병합됩니다.
+
+#### 개발 모드 실행 (기본)
+
+```bash
+docker compose up -d
+```
+
+`docker-compose.override.yml`이 자동으로 적용되어:
+- `css/`, `js/`, `docs/`, `*.html`, `favicon.svg` → 호스트 파일 그대로 마운트
+- `backend/`, `tools/` → 호스트 파일 그대로 마운트
+- `docker/nginx.dev.conf` → `sendfile off`, 캐시 무효화 (bind mount 호환 모드)
+- `docker/config.docker.js` → 호스트 파일 그대로 마운트
+
+#### 프로덕션 모드 실행 (override 무시)
+
+리눅스 서버 배포나 이미지 스모크 테스트처럼 **이미지 내 파일만** 쓰려면 base compose 파일을 명시적으로 지정합니다.
+
+```bash
+docker compose -f docker-compose.yml up -d
+```
+
+#### 변경 반영 방법
+
+| 변경 유형 | 반영 방법 |
+|-----------|-----------|
+| HTML / CSS / JS 편집 | 브라우저 **강제 새로고침** (Ctrl+F5) 또는 DevTools "Disable cache" 체크 |
+| 백엔드 Python 편집 | `docker compose restart backend` (`python main.py`는 hot-reload 미지원) |
+| `docker/nginx.dev.conf` 편집 | `docker compose restart nginx` |
+| `docker/nginx.conf` 편집 | 프로덕션 config — 재빌드 필요 (`docker compose build nginx`) |
+| `Dockerfile*` 편집 | 전체 재빌드 (`docker compose build`) |
+
+#### 주의사항
+
+- `/js/config.js`는 Nginx alias로 `docker/config.docker.js`를 서빙합니다. 로컬 `js/config.js`를 수정해도 도커에 반영되지 않으니, 도커용 설정은 `docker/config.docker.js`를 직접 수정하세요 (Plan-31 Phase 3에서 단일화 예정).
+- 개발 모드에서는 `nginx.dev.conf`가 7일 캐시 대신 `no-store`를 사용하므로, 일반 새로고침(F5)으로도 반영이 빠르지만, 브라우저 자체 메모리 캐시가 있으면 강제 새로고침(Ctrl+F5)이 확실합니다.
+- 프로덕션 이미지 빌드·배포 시에는 override를 반드시 제외하세요 (`-f docker-compose.yml` 명시).
+
 ---
 
 # PART 3. 운영 가이드
