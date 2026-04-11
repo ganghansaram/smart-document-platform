@@ -14,6 +14,13 @@ cd backend && python main.py          # http://localhost:8000
 python -m http.server 8080            # http://localhost:8080
 ```
 
+## Docker 운영
+- 가이드: `docs/13-DOCKER-OPERATIONS.md`
+- 개발 (override 자동 적용, bind mount): `docker compose up -d`
+- 프로덕션 (override 배제): `docker compose -f docker-compose.yml up -d`
+- 배포 스크립트: `deploy.sh`, `patch-apply.sh` — `COMPOSE_FILE` 고정과 경로는 Plan-31 Phase 1 방어선 (임의 수정 금지, `memory/feedback_docker_prod_scripts.md` 참조)
+- 검증 시 HTTP 200만으론 부족 — `Last-Modified`·액세스 로그·컨테이너 내부 curl 교차 확인 (`memory/feedback_docker_verification.md`)
+
 ## 서브시스템
 | 시스템 | 진입점 | 설명 |
 |--------|--------|------|
