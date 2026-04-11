@@ -9,9 +9,18 @@
 | Phase | 상태 | 요약 |
 |---|---|---|
 | **Phase 1** bind mount | ✅ **완료** (2026-04-11) | override·dev nginx·스크립트 방어선까지 구축. 실측으로 환경 오염까지 제거. |
-| Phase 2 COPY 블랙리스트 | 대기 | 필요성 느낄 때 진행 |
+| **Phase 4** parity 체크 스크립트 | ✅ **완료** (2026-04-11) | 순서 변경 — Phase 2보다 먼저 진행. 누락 감지로 Phase 2의 원래 목적 흡수. |
 | Phase 3 config 단일화 | 대기 | divergence 근본 해결 단계 |
-| Phase 4 parity 체크 스크립트 | 대기 | Phase 2·3 완료 후 |
+| **Phase 2** COPY 블랙리스트 | ❌ **취소** (2026-04-11) | `.dockerignore`가 backend/nginx Dockerfile 공유 제약으로 원안 실행 불가. 원래 목적은 Phase 4 parity 체크가 더 안전하게 달성. 자세한 분석은 이 문서 하단 "Phase 2 취소 근거" 섹션 참조. |
+
+**순서 변경 이유 (2026-04-11):**
+Phase 1 완료 후 Phase 2 실행 직전 검토에서 다음이 드러남.
+1. `.dockerignore`는 backend/nginx Dockerfile이 공유하므로 "nginx 전용 제외"가 전역 영향 없이 어려움 (backend/·tools/를 제외하면 backend 빌드 깨짐)
+2. BuildKit 파일별 `.dockerignore`나 `COPY --exclude`로 우회 가능하나, 비전문가 관점에선 "깨끗함" 이점 대비 복잡도·리스크 높음
+3. Phase 2의 원래 목적인 "새 폴더 추가 시 Dockerfile 수정 누락 방지"는 **Phase 4 parity 체크가 더 투명하고 안전하게 달성**함
+   - Phase 2 방식: 자동 포함 → 의도치 않은 파일 포함 위험
+   - Phase 4 방식: 명시적 경고 → 사용자가 판단 후 결정
+4. 따라서 Phase 2를 취소하고 Phase 4를 우선 진행.
 
 ---
 
@@ -144,41 +153,32 @@
 
 ---
 
-### Phase 2 — Dockerfile.nginx COPY 블랙리스트 전환
+### Phase 2 — Dockerfile.nginx COPY 블랙리스트 전환 ❌ 취소 (2026-04-11)
 
-**효과**: 새 폴더 추가 시 Dockerfile 수정 불필요
-**노력**: 1시간
-**리스크**: 중간 (`.dockerignore` 누락 시 불필요 파일이 이미지에 들어갈 수 있음)
+> **상태**: 실행 중단 및 계획 취소. 원래 목적은 Phase 4 parity 체크로 흡수됨.
 
-#### 작업
+**취소 근거:**
 
-1. `.dockerignore`에 프론트 제외 항목 추가 검토
-   현재 이미 제외 중: `.git/`, `backend/packages/`, `tests/`, `workbench/`, `.claude/`, `data/`, `contents/`, `models/`, `backups/`, `logs/`, `*.tar`, `.env`, `README.md`, `CLAUDE.md`
-   추가 검토 대상: `memory/`(없음), `.mcp.json`, `.playwright-mcp/`(이미 제외), `Dockerfile*`, `docker-compose*.yml`, `scripts/`(백엔드용), `tools/__pycache__`(이미 제외)
+1. **공유 `.dockerignore` 제약**
+   루트 `.dockerignore`는 backend·nginx 두 Dockerfile 빌드 컨텍스트가 공유한다. nginx 전용으로 `backend/`·`tools/`·`Dockerfile*`·`scripts/`·`*.sh` 등을 제외하려면 backend 빌드가 깨진다 (backend Dockerfile이 이 경로들을 COPY하므로).
 
-2. `Dockerfile.nginx` COPY 블록 교체
-   ```dockerfile
-   # 이전 (화이트리스트)
-   COPY *.html      /app/frontend/
-   COPY favicon.svg /app/frontend/
-   COPY css/        /app/frontend/css/
-   COPY js/         /app/frontend/js/
-   COPY docs/       /app/frontend/docs/
+2. **대안(BuildKit 파일별 `.dockerignore`, `COPY --exclude`)은 비전문가 관점 부적합**
+   - 파일별 `.dockerignore`: BuildKit 기능 의존, 경로 규칙 모호, 제외 목록 관리 부담
+   - `COPY --exclude`: labs 문법, 제외 목록이 한 줄로 복잡해짐
+   - 둘 다 "깨끗함" 이점은 있지만 사용자 관점의 실제 문제(누락 방지)를 더 잘 푸는 해법은 아님
 
-   # 이후 (블랙리스트, .dockerignore 의존)
-   COPY . /app/frontend/
-   ```
+3. **Phase 2의 원래 가치는 Phase 4가 더 안전하게 달성**
+   | 항목 | Phase 2 (자동 포함) | Phase 4 (명시적 경고) |
+   |---|---|---|
+   | 새 파일 누락 방지 | ✅ 자동 | ✅ 사용자에게 경고 |
+   | 의도치 않은 파일 포함 위험 | ⚠ 있음 | 없음 |
+   | 투명성 | 낮음 (암묵적 동작) | 높음 (명시 경고) |
+   | 비전문가 이해도 | 낮음 | 높음 |
 
-3. 빌드 후 이미지 내부 검증
-   ```bash
-   docker run --rm smart-document-platform-nginx:latest ls -la /app/frontend/
-   ```
-   → 프론트 파일만 있고 backend/, workbench/ 등이 없어야 함
+4. **Phase 1 bind mount가 개발 중 일관성은 이미 해결**
+   프로덕션 빌드 시 누락만 감지하면 충분. Phase 4 parity 체크가 이 역할을 전담.
 
-#### 기능 영향성
-- `.dockerignore` 완전성에 의존. 누락 시 이미지에 불필요 파일 포함 → 이미지 크기 증가
-- 파일 권한/소유자는 현재와 동일 (nginx 사용자)
-- 런타임 동작 0 변경
+**대체 조치:** Phase 4 parity 체크 스크립트(`scripts/check-docker-parity.py`)가 프론트엔드 자산 커버리지 검사 항목을 포함한다. 새 파일/폴더가 `Dockerfile.nginx`의 COPY 패턴에 포함되지 않으면 빌드 전에 경고한다.
 
 ---
 
@@ -275,6 +275,52 @@ const AI_CONFIG = {
 
 #### 기능 영향성
 - **0건**. 검증 스크립트는 파일을 읽기만 함
+
+#### Phase 4 실행 결과 (2026-04-11)
+
+##### 구현
+- `scripts/check-docker-parity.py` 신규 (Python 3, stdlib만)
+- `.claude/skills/docker-build/SKILL.md § 0` 추가 — Step 0 사전 점검 단계
+
+##### 구현된 검사 항목 4종
+1. **프론트엔드 자산 커버리지** — 프로젝트 루트의 프론트엔드 파일/폴더가 `docker/Dockerfile.nginx`의 COPY 패턴에 전부 포함되는지. 휴리스틱: 파일 확장자(*.html/.svg/.ico/.png/.webmanifest 등) + 특수 파일명(manifest.json/robots.txt 등) + 디렉터리명(css/js/docs/fonts/assets 등).
+2. **`js/config.js` ↔ `docker/config.docker.js` 동기화** — top-level `XXX_CONFIG` 상수 집합 비교 + 라인 수 차이 체크. Phase 3 완료 시 `docker/config.docker.js` 부재는 정상으로 판정.
+3. **`backend/requirements.txt` 변경 감지** — `git status`로 수정 여부 확인. 수정됐으면 patch-apply.sh로는 반영 불가, 전체 이미지 재빌드 필요 경고.
+4. **이중 Docker 데몬 감지** — `systemctl is-active docker` + `docker info`로 네이티브 dockerd와 Docker Desktop 병존 여부 확인. Phase 1 유령 컨테이너 사건 재발 방지.
+
+##### 종료 코드 체계
+- `0` 모두 정상 → 빌드 진행
+- `1` 경고 있음 → 사용자 확인 후 진행
+- `2` 오류 있음 → 빌드 중단 권장
+
+##### 검증 (양성/음성 테스트)
+
+**양성 테스트 (현재 상태에서 실행):**
+```
+[1] OK   프론트엔드 자산 커버리지 — 루트 10건 전부 커버
+[2] WARN config.js ↔ config.docker.js — 47줄 차이 감지 (Phase 3 대기 상태)
+[3] WARN backend/requirements.txt — 수정됨, 재빌드 필요 (기존 작업)
+[4] OK   이중 Docker 데몬 — Docker Desktop 단일
+Exit: 1 (경고 있음, 정상 동작)
+```
+
+**음성 테스트 (Dockerfile.nginx에서 `COPY docs/` 임시 제거):**
+```
+[1] WARN 프론트엔드 자산 커버리지 — 누락: docs
+(원상복구 후 OK)
+```
+→ 누락 감지 정확, false negative 없음.
+
+##### Phase 2 원래 목적 달성 매핑
+| 원래 Phase 2 의도 | Phase 4 구현 방식 |
+|---|---|
+| 새 폴더 추가 시 Dockerfile 수정 누락 방지 | `check_frontend_coverage` 검사 |
+| 자동으로 포함되면 편함 | 명시적 경고 + 해결 방법 제시로 대체 |
+| `.dockerignore` 의존 위험 | 없음 (Dockerfile 구조 불변) |
+
+##### 미완 (backlog)
+- [ ] Git `pre-commit` 훅 통합 — 선택 사항, 사용자 경험 확인 후 결정
+- [ ] Phase 3 이후 `config.docker.js` 관련 검사 로직 단순화
 
 ---
 
