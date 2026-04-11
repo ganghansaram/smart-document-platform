@@ -1138,7 +1138,7 @@
             if (_rightPdfCache[pg]) {
                 rightPdfDoc = _rightPdfCache[pg];
                 $rightPlaceholder.style.display = 'none';
-                $rightContainer.style.display = 'inline-block';
+                $rightContainer.style.display = 'block';
                 renderRightPage(1);
                 _preloadAdjacentPages(pg);
                 return;
@@ -1158,7 +1158,7 @@
                 // 페이지가 이미 전환됐으면 렌더 스킵
                 if (currentPage !== pg) return;
                 $rightPlaceholder.style.display = 'none';
-                $rightContainer.style.display = 'inline-block';
+                $rightContainer.style.display = 'block';
                 renderRightPage(1);
                 _preloadAdjacentPages(pg);
             }).catch(function(err) {
@@ -1262,7 +1262,7 @@
             _showDualPanel();
             $rightPlaceholder.style.display = 'none';
             $webViewContainer.style.display = 'none';
-            $rightContainer.style.display = 'inline-block';
+            $rightContainer.style.display = 'block';
 
             // 레거시 translated.pdf 캐시 재사용 (매 페이지 전환 시 재다운로드 방지)
             if (legacyPdfDoc) {
@@ -1661,7 +1661,7 @@
             } else if (rightPdfDoc && hasLegacyTranslation && !pageStatusCache[String(currentPage)]) {
                 // 레거시 PDF 유지, 해당 페이지 렌더링
                 $rightPlaceholder.style.display = 'none';
-                $rightContainer.style.display = 'inline-block';
+                $rightContainer.style.display = 'block';
                 renderRightPage(currentPage);
                 updateToolbarForStatus('legacy');
             } else {

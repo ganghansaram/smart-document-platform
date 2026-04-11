@@ -1000,10 +1000,11 @@ body[data-theme="dark"] .rail-btn.active {
 }
 body[data-theme="dark"] .side-panel { background: var(--white); }
 
-/* 양측 패널 공통 */
+/* 양측 패널 공통 — 좌/우 패널 모두 중앙정렬 (좌=block 흐름, 우=column flex 모두에서 작동) */
 .viewer-panel .pdf-page-container {
     position: relative;
-    display: inline-block;
+    display: block;
+    margin-inline: auto;
     box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
 
@@ -2914,4 +2915,3 @@ body[data-theme="dark"] #mm-svg path {
     width: 14px;
     height: 14px;
 }
-
