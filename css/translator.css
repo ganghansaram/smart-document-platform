@@ -2384,7 +2384,7 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: var(--color-h
 /* 노드 텍스트 스타일 — pill shape 배경 + 클릭 어포던스 */
 #mm-svg foreignObject div {
     cursor: pointer;
-    background: var(--bg-gray);
+    background: rgba(0, 0, 0, 0.05);
     padding: 3px 10px;
     border-radius: 14px;
     font-size: 12px;
@@ -2393,7 +2393,7 @@ body[data-theme="dark"] .ts-search-item-snippet mark { background: var(--color-h
     transition: var(--transition-fast);
 }
 #mm-svg foreignObject div:hover {
-    background: var(--hover-bg);
+    background: rgba(0, 0, 0, 0.10);
 }
 body[data-theme="dark"] #mm-svg foreignObject div {
     background: rgba(255,255,255,0.08);
