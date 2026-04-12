@@ -221,6 +221,8 @@ def get_public_settings() -> dict:
     result["verify_verdict_high"] = vfy.get("sim_verdict_high", 60)
     # 현재 활성 LLM 모델명 (프론트엔드 표시용)
     result["ai_model_name"] = _config.LLM_MODEL_ID or _config.OLLAMA_MODEL
+    # Notebook 전용 모델 (번역 드롭다운 기본 선택용)
+    result["notebook_model"] = _config.TRANSLATOR_MODEL or _config.LLM_MODEL_ID or _config.OLLAMA_MODEL
     # 환경 메타 정보 (프론트엔드 조건부 UI 표시용)
     env_overrides = [k for k, v in _ENV_PROTECTED.items() if os.getenv(v) is not None]
     result["_meta"] = {
@@ -282,7 +284,7 @@ def apply_to_config(settings: dict) -> list[str]:
     _set(sec, "cors_origins",   "CORS_ORIGINS",   restart_needed)
 
     rdr = settings.get("translator", {})
-    _set(rdr, "translation_model",    "TRANSLATOR_TRANSLATION_MODEL",  restart_needed, immediate=True)
+    _set(rdr, "translation_model",    "TRANSLATOR_MODEL",              restart_needed, immediate=True)
     _set(rdr, "custom_prompt",        "TRANSLATOR_CUSTOM_PROMPT",       restart_needed, immediate=True)
     _set(rdr, "disable_rich_text",    "TRANSLATOR_DISABLE_RICH_TEXT",   restart_needed, immediate=True)
     _set(rdr, "translate_table_text", "TRANSLATOR_TRANSLATE_TABLE",     restart_needed, immediate=True)

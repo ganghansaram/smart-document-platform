@@ -691,7 +691,7 @@ def ai_selection_query(text: str, action: str, model: Optional[str] = None) -> s
     else:
         raise ValueError(f"지원하지 않는 액션: {action}")
 
-    use_model = model or config.TRANSLATOR_TRANSLATION_MODEL or config.OLLAMA_MODEL
+    use_model = model or config.TRANSLATOR_MODEL or config.OLLAMA_MODEL
 
     resp = requests.post(
         f"{config.OLLAMA_URL}/api/generate",
@@ -919,7 +919,7 @@ def start_page_translation(username: str, doc_id: str, pages: str, model: Option
         if key.startswith(doc_id + ":") and not task.done():
             raise RuntimeError("이 문서에서 이미 번역이 진행 중입니다")
 
-    effective_model = model or config.TRANSLATOR_TRANSLATION_MODEL or config.OLLAMA_MODEL
+    effective_model = model or config.TRANSLATOR_MODEL or config.OLLAMA_MODEL
 
     # 범위 내 모든 페이지 상태를 translating으로 기록
     page_status = meta.get("page_status", {})
@@ -1316,7 +1316,7 @@ def start_web_translation(username: str, doc_id: str, page_num: int,
     if key in _web_active_tasks and not _web_active_tasks[key].done():
         raise RuntimeError("이 페이지에서 웹 뷰 번역이 진행 중입니다")
 
-    effective_model = model or config.TRANSLATOR_TRANSLATION_MODEL or config.OLLAMA_MODEL
+    effective_model = model or config.TRANSLATOR_MODEL or config.OLLAMA_MODEL
 
     # meta.json에 웹 번역 상태 기록
     page_status = meta.get("page_status", {})

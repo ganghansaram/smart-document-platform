@@ -731,7 +731,7 @@ pdf2zh --ollama --ollama-model gemma3:4b --ollama-host http://localhost:11434 \
 |------|--------|------|
 | `TRANSLATOR_DATA_DIR` | `data/translator` | 문서 저장 디렉토리 |
 | `TRANSLATOR_MAX_PDF_SIZE` | `100MB` | 업로드 최대 크기 |
-| `TRANSLATOR_TRANSLATION_MODEL` | `""` (OLLAMA_MODEL 폴백) | PMT 번역 모델 |
+| `TRANSLATOR_MODEL` | `""` (OLLAMA_MODEL 폴백) | Notebook 전용 모델 (번역+요약 공용) |
 | `TRANSLATOR_PAGE_TIMEOUT` | `300` (5분) | 페이지별 번역 타임아웃 |
 | `TRANSLATOR_PMT_TIMEOUT` | `3600` (1시간) | 레거시 통번역 타임아웃 |
 | `TRANSLATOR_MAX_CONCURRENT` | `4` | 동시 번역 최대 수 (GPU 부하 제한) |
@@ -758,7 +758,7 @@ pdf2zh --ollama --ollama-model gemma3:4b --ollama-host http://localhost:11434 \
 
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
-| `TRANSLATOR_AI_SUMMARY_MODEL` | `""` (OLLAMA_MODEL 폴백) | 요약 전용 모델 |
+| `TRANSLATOR_MODEL` | (위 참조) | 요약에도 동일 모델 사용 (Plan-32에서 통합) |
 | `TRANSLATOR_AI_SUMMARY_THRESHOLD` | `0` (=12,000자) | 직접/계층적 요약 전환 임계값 |
 | `TRANSLATOR_AI_QA_THRESHOLD` | `0` (=12,000자) | 전체/섹션 선별 컨텍스트 전환 임계값 |
 

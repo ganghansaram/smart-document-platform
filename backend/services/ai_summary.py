@@ -233,7 +233,7 @@ async def generate_mindmap_tree(
     """LLM으로 마인드맵 트리 생성. 실패 시 None (폴백은 호출자가 처리)."""
     if provider is None:
         provider = get_provider()
-        model_override = getattr(config, "TRANSLATOR_AI_SUMMARY_MODEL", "")
+        model_override = getattr(config, "TRANSLATOR_MODEL", "")
         if model_override:
             from services.llm_provider import OllamaProvider
             provider = OllamaProvider(config.OLLAMA_URL, model_override)
@@ -288,7 +288,7 @@ async def generate_summary(
 
     provider = get_provider()
     # 요약 전용 모델이 설정되어 있으면 별도 Ollama 인스턴스 생성
-    model_name_override = getattr(config, "TRANSLATOR_AI_SUMMARY_MODEL", "")
+    model_name_override = getattr(config, "TRANSLATOR_MODEL", "")
     if model_name_override:
         from services.llm_provider import OllamaProvider
         provider = OllamaProvider(config.OLLAMA_URL, model_name_override)

@@ -77,7 +77,7 @@ VERIFY_HISTORY_MAX = 10
 # Translator 설정
 TRANSLATOR_DATA_DIR = str(Path(__file__).parent.parent / "data" / "translator")
 TRANSLATOR_MAX_PDF_SIZE = 100 * 1024 * 1024  # 100MB
-TRANSLATOR_TRANSLATION_MODEL = ""  # 빈값이면 OLLAMA_MODEL 폴백
+TRANSLATOR_MODEL = ""  # Notebook 전용 모델 (번역+요약 공용). 빈값이면 OLLAMA_MODEL 폴백
 TRANSLATOR_PMT_TIMEOUT = 3600  # 60분, 레거시 통번역 타임아웃
 TRANSLATOR_PAGE_TIMEOUT = 300  # 5분, 페이지별 번역 타임아웃
 TRANSLATOR_MAX_CONCURRENT = 4  # 동시 번역 최대 수 (GPU 부하 제한)
@@ -111,7 +111,7 @@ TRANSLATOR_WEB_TABLE_STRATEGY = "lines_strict" # PyMuPDF 표 감지 전략
 TRANSLATOR_WEB_DEBUG = False                   # 디버그: 추출 중간 결과 파일 저장
 
 # Translator AI 요약·Q&A
-TRANSLATOR_AI_SUMMARY_MODEL = ""               # 빈값이면 OLLAMA_MODEL 폴백
+# 요약 모델: TRANSLATOR_MODEL 공용 (Plan-32에서 TRANSLATOR_AI_SUMMARY_MODEL 통합)
 TRANSLATOR_AI_SUMMARY_THRESHOLD = 0            # 0 = 기본값(12000자), >0 = 수동 지정. 이하 → 단일패스, 초과 → 계층적
 TRANSLATOR_AI_QA_THRESHOLD = 0                 # 0 = 기본값(12000자), >0 = 수동 지정. 이하 → 직접주입, 초과 → 섹션선별
 

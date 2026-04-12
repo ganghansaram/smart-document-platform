@@ -336,7 +336,7 @@ TRANSLATOR_WEB_FORMULA_MODE = "image" # 수식 처리 ("latex"/"image"/"off")
 TRANSLATOR_WEB_IMAGE_DPI = 150        # 이미지 추출 해상도
 
 # AI 요약/Q&A 설정
-TRANSLATOR_AI_SUMMARY_MODEL = ""      # 요약 전용 모델 (빈값 = OLLAMA_MODEL 폴백)
+# 요약 모델은 TRANSLATOR_MODEL 공용 (Plan-32에서 통합)
 TRANSLATOR_AI_SUMMARY_THRESHOLD = 0   # 직접/계층적 요약 전환 임계값 (0=12000자)
 TRANSLATOR_AI_QA_THRESHOLD = 0        # 전체/섹션 선별 컨텍스트 전환 임계값
 

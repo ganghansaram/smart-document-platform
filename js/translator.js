@@ -270,7 +270,8 @@
                         .then(function(r) { return r.json(); })
                         .catch(function() { return {}; })
                         .then(function(pub) {
-                            defaultModel = '';
+                            var f = pub.frontend || {};
+                            defaultModel = f.notebook_model || '';
                             populateModelSelect();
                         });
                 })
