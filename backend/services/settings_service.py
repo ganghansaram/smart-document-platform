@@ -219,6 +219,8 @@ def get_public_settings() -> dict:
     vfy = s.get("verify", DEFAULT_SETTINGS.get("verify", {}))
     result["verify_verdict_low"] = vfy.get("sim_verdict_low", 30)
     result["verify_verdict_high"] = vfy.get("sim_verdict_high", 60)
+    # 현재 활성 LLM 모델명 (프론트엔드 표시용)
+    result["ai_model_name"] = _config.LLM_MODEL_ID or _config.OLLAMA_MODEL
     # 환경 메타 정보 (프론트엔드 조건부 UI 표시용)
     env_overrides = [k for k, v in _ENV_PROTECTED.items() if os.getenv(v) is not None]
     result["_meta"] = {

@@ -850,6 +850,11 @@ async function loadRuntimeSettings() {
         if (typeof AUTH_CONFIG !== 'undefined') {
             if (f.login_required !== undefined) AUTH_CONFIG.loginRequired = f.login_required;
         }
+        // 챗봇 헤더에 현재 LLM 모델명 표시
+        if (f.ai_model_name) {
+            var modelEl = document.getElementById('ai-model-name');
+            if (modelEl) modelEl.textContent = '(Powered by ' + f.ai_model_name + ')';
+        }
     } catch (e) {
         // 백엔드 미연결 시 config.js 기본값 유지
     }

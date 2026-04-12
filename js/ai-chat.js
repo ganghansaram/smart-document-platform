@@ -83,10 +83,11 @@ function initAIChat() {
     // 빠른 질문 버튼
     initQuickActions();
 
-    // 브랜드명 표시
+    // 모델명 표시 (런타임 설정 로드 전 기본값, 로드 후 app.js에서 덮어씀)
     var modelNameEl = document.getElementById('ai-model-name');
     if (modelNameEl) {
-        modelNameEl.textContent = '(Powered by DE-Genie)';
+        var defaultModel = (typeof AI_CONFIG !== 'undefined' && AI_CONFIG.model) ? AI_CONFIG.model : 'AI';
+        modelNameEl.textContent = '(Powered by ' + defaultModel + ')';
     }
 
     // 현재 섹션 추적 시작
