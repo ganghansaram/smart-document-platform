@@ -25,24 +25,24 @@ var _pendingRestartItems = [];
 // ── 설정 스키마 (서브시스템별 재구성 — Plan-32) ──────────────────────────────
 var SETTINGS_SCHEMA = {
     systems: [
-        // ── 관리 ──
+        // ── 운영 ──
         {
             id: 'users',
             label: '계정 관리',
             custom: true,
-            group: '관리',
+            group: '운영',
         },
         {
             id: 'dashboard',
             label: '대시보드',
             custom: true,
-            group: '관리',
+            group: '운영',
         },
-        // ── 공통 ──
+        // ── 설정 ──
         {
             id: 'common',
             label: '공통',
-            group: '공통',
+            group: '설정',
             tabs: [
                 {
                     tabId: 'tab-common',
@@ -77,7 +77,7 @@ var SETTINGS_SCHEMA = {
         {
             id: 'explorer',
             label: 'Explorer',
-            group: 'Explorer',
+            group: '설정',
             tabs: [
                 {
                     tabId: 'tab-explorer-content',
@@ -185,7 +185,7 @@ var SETTINGS_SCHEMA = {
         {
             id: 'notebook',
             label: 'Notebook',
-            group: 'Notebook',
+            group: '설정',
             tabs: [
                 {
                     tabId: 'tab-notebook-translation',
@@ -273,7 +273,7 @@ var SETTINGS_SCHEMA = {
         {
             id: 'verify',
             label: 'Verify',
-            group: 'Verify',
+            group: '설정',
             tabs: [
                 {
                     tabId: 'tab-verify-similarity',
