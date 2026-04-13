@@ -463,7 +463,7 @@
             }
 
             // ── 패널 콘텐츠 렌더링 ──
-            function renderParagraphs(panel, paragraphs) {
+            function renderParagraphs(panel, paragraphs, pageMap) {
                 // placeholder 제거, 텍스트 콘텐츠 삽입
                 var ph = panel.querySelector('.panel-placeholder');
                 if (ph) ph.remove();
@@ -475,7 +475,15 @@
                 if (old) old.remove();
 
                 var html = '<div class="cp-text-content">';
+                var lastPage = null;
                 for (var i = 0; i < paragraphs.length; i++) {
+                    // 페이지 구분선 삽입
+                    if (pageMap && pageMap[i] && pageMap[i] !== lastPage) {
+                        if (lastPage !== null) {
+                            html += '<div class="cp-page-break"><span>Page ' + pageMap[i] + '</span></div>';
+                        }
+                        lastPage = pageMap[i];
+                    }
                     html += '<div class="cp-paragraph" data-index="' + i + '">'
                         + escapeHTML(paragraphs[i]) + '</div>';
                 }
@@ -563,7 +571,7 @@
             var verdictBoundHigh = 60;   // 보통/주의 경계
 
             // ── 문서 로드 완료 처리 ──
-            function onDocumentLoaded(side, filename, paragraphs) {
+            function onDocumentLoaded(side, filename, paragraphs, pageMap) {
                 var panel = getPanel(side);
                 var label = getLabel(side);
                 var removeBtn = getRemoveBtn(side);
@@ -572,13 +580,14 @@
                     file: null,
                     text: paragraphs.join('\n'),
                     paragraphs: paragraphs,
-                    filename: filename
+                    filename: filename,
+                    pageMap: pageMap || null
                 };
 
                 label.textContent = filename;
                 label.title = filename;
                 removeBtn.classList.add('visible');
-                renderParagraphs(panel, paragraphs);
+                renderParagraphs(panel, paragraphs, pageMap);
                 updateActionButtons();
             }
 
@@ -614,7 +623,7 @@
                     return res.json();
                 })
                 .then(function(data) {
-                    onDocumentLoaded(side, data.filename, data.paragraphs);
+                    onDocumentLoaded(side, data.filename, data.paragraphs, data.page_map);
                 })
                 .catch(function(err) {
                     restorePlaceholder(side);
@@ -1400,7 +1409,7 @@
                         label.textContent = docState[side].filename;
                         label.title = docState[side].filename;
                         removeBtn.classList.add('visible');
-                        renderParagraphs(panel, docState[side].paragraphs);
+                        renderParagraphs(panel, docState[side].paragraphs, docState[side].pageMap);
                     } else {
                         showPlaceholderDOM(side);
                     }
@@ -1565,8 +1574,16 @@
                 var inTable = false;
                 var tableRows = [];
 
+                var _pendingPage = null; // <!-- Page N --> 마커 대기
                 for (var i = 0; i < lines.length; i++) {
                     var line = lines[i];
+
+                    // 페이지 마커 감지: <!-- Page N -->
+                    var pageMatch = line.match(/<!--\s*Page\s+(\d+)\s*-->/);
+                    if (pageMatch) {
+                        _pendingPage = pageMatch[1];
+                        continue;
+                    }
 
                     // 빈 줄
                     if (!line.trim()) {
@@ -1574,10 +1591,15 @@
                         continue;
                     }
 
-                    // 수평선
+                    // 수평선 — 페이지 마커가 직전에 있으면 페이지 구분선으로 변환
                     if (/^---+$/.test(line.trim())) {
                         if (inTable) { html += simTableToHtml(tableRows); inTable = false; tableRows = []; }
-                        html += '<hr>';
+                        if (_pendingPage) {
+                            html += '<div class="cp-page-break"><span>Page ' + _pendingPage + '</span></div>';
+                            _pendingPage = null;
+                        } else {
+                            html += '<hr>';
+                        }
                         continue;
                     }
 
@@ -2355,7 +2377,7 @@
                 // 패널 원래 렌더링 복원 (양쪽 모두 파일이 있는 경우)
                 ['a', 'b'].forEach(function(side) {
                     if (docState[side].paragraphs.length > 0) {
-                        renderParagraphs(getPanel(side), docState[side].paragraphs);
+                        renderParagraphs(getPanel(side), docState[side].paragraphs, docState[side].pageMap);
                     }
                 });
 
@@ -2882,7 +2904,7 @@
                     ['a', 'b'].forEach(function(side) {
                         if (docState[side].paragraphs.length === 0) return;
                         var panel = getPanel(side);
-                        renderParagraphs(panel, docState[side].paragraphs);
+                        renderParagraphs(panel, docState[side].paragraphs, docState[side].pageMap);
                         var paras = panel.querySelectorAll('.cp-paragraph');
                         paras.forEach(function(p) {
                             p.setAttribute('contenteditable', 'true');
@@ -2955,12 +2977,12 @@
 
                 // 재렌더 + 재비교
                 if (docState.a.paragraphs.length > 0) {
-                    renderParagraphs(panelBodyA, docState.a.paragraphs);
+                    renderParagraphs(panelBodyA, docState.a.paragraphs, docState.a.pageMap);
                 } else {
                     restorePlaceholder('a');
                 }
                 if (docState.b.paragraphs.length > 0) {
-                    renderParagraphs(panelBodyB, docState.b.paragraphs);
+                    renderParagraphs(panelBodyB, docState.b.paragraphs, docState.b.pageMap);
                 } else {
                     restorePlaceholder('b');
                 }
@@ -4555,7 +4577,7 @@
 
                 // 인라인 하이라이트 제거: 원래 텍스트로 복원
                 if (docState.a.paragraphs.length > 0) {
-                    renderParagraphs(panelBodyA, docState.a.paragraphs);
+                    renderParagraphs(panelBodyA, docState.a.paragraphs, docState.a.pageMap);
                 }
 
                 showValidationUI(false);

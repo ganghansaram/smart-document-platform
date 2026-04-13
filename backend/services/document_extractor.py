@@ -80,12 +80,20 @@ def _from_text(text: str) -> dict:
 
 
 def _from_docx(file_bytes: bytes) -> dict:
-    """DOCX → 듀얼 포맷"""
+    """DOCX → 듀얼 포맷 (lastRenderedPageBreak 기반 페이지 구분)"""
     from docx import Document
+    from docx.oxml.ns import qn
     doc = Document(io.BytesIO(file_bytes))
 
     md_parts = []
+    current_page = 1
+    has_page_breaks = False
     for para in doc.paragraphs:
+        # Word가 저장한 페이지 경계 마커 감지
+        if para._element.findall('.//' + qn('w:lastRenderedPageBreak')):
+            current_page += 1
+            has_page_breaks = True
+            md_parts.append(f"\n<!-- Page {current_page} -->\n\n---\n")
         text = para.text.strip()
         if not text:
             continue
@@ -110,7 +118,7 @@ def _from_docx(file_bytes: bytes) -> dict:
     return {
         "markdown": md,
         "plain_text": plain,
-        "page_count": None,
+        "page_count": current_page if has_page_breaks else None,
         "is_scanned": False,
     }
 
@@ -146,7 +154,7 @@ def _from_pdf(file_bytes: bytes) -> dict:
 
     doc.close()
 
-    # 페이지 순서대로 합치기
+    # 페이지 순서대로 합치기 (페이지 번호 마커 포함)
     md_pages = []
     for page_idx in range(page_count):
         if page_idx in text_md_map:
@@ -154,7 +162,13 @@ def _from_pdf(file_bytes: bytes) -> dict:
         elif page_idx in scan_md_map:
             md_pages.append(scan_md_map[page_idx])
 
-    md = "\n\n---\n\n".join(md_pages)
+    # 페이지 구분: <!-- Page N --> 마커 + 수평선
+    md_parts = []
+    for i, page_md in enumerate(md_pages, 1):
+        if i > 1:
+            md_parts.append(f"\n\n<!-- Page {i} -->\n\n---\n")
+        md_parts.append(page_md)
+    md = "\n".join(md_parts)
     plain = _md_to_plain(md)
 
     return {

@@ -64,6 +64,7 @@ async def api_compare_upload(
         "format": ext.lstrip("."),
         "paragraphs": result["paragraphs"],
         "page_count": result["page_count"],
+        "page_map": result.get("page_map"),
     }
 
 

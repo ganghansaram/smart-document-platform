@@ -37,26 +37,44 @@ def extract_text(file_bytes: bytes, ext: str) -> dict:
 
 
 def _extract_docx(file_bytes: bytes) -> dict:
-    """python-docx로 단락별 텍스트 추출"""
+    """python-docx로 단락별 텍스트 추출 (lastRenderedPageBreak 기반 page_map)"""
     doc = Document(io.BytesIO(file_bytes))
-    paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
-    return {"paragraphs": paragraphs, "page_count": None}
+    from docx.oxml.ns import qn
+    paragraphs = []
+    page_map = []
+    current_page = 1
+    for p in doc.paragraphs:
+        # Word가 저장한 페이지 경계 마커 감지
+        if p._element.findall('.//' + qn('w:lastRenderedPageBreak')):
+            current_page += 1
+        if p.text.strip():
+            paragraphs.append(p.text)
+            page_map.append(current_page)
+    # 마커가 하나도 없으면 page_map 무의미 → None 처리
+    page_count = current_page if current_page > 1 else None
+    return {
+        "paragraphs": paragraphs,
+        "page_count": page_count,
+        "page_map": page_map if current_page > 1 else None,
+    }
 
 
 def _extract_pdf(file_bytes: bytes) -> dict:
-    """PyMuPDF로 페이지별 → 단락별 텍스트 추출"""
+    """PyMuPDF로 페이지별 → 단락별 텍스트 추출 (page_map 포함)"""
     doc = fitz.open(stream=file_bytes, filetype="pdf")
     paragraphs = []
-    for page in doc:
+    page_map = []
+    for page_num, page in enumerate(doc, 1):
         blocks = page.get_text("blocks")  # (x0,y0,x1,y1,text,block_no,block_type)
         for b in blocks:
             if b[6] == 0:  # text block
                 text = b[4].strip()
                 if text:
                     paragraphs.append(text)
+                    page_map.append(page_num)
     page_count = len(doc)
     doc.close()
-    return {"paragraphs": paragraphs, "page_count": page_count}
+    return {"paragraphs": paragraphs, "page_count": page_count, "page_map": page_map}
 
 
 # ══════════════════════════════════════════
