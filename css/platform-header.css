@@ -25,18 +25,21 @@
     width: auto;
 }
 
-/* 로고 링크 (Explorer용 클릭 가능 로고) */
-.ph-logo-link {
-    text-decoration: none;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+/* 클릭 가능한 타이틀 */
+.ph-title-clickable {
+    cursor: pointer;
     transition: opacity 0.2s ease;
 }
+.ph-title-clickable:hover {
+    opacity: 0.85;
+}
 
-.ph-logo-link:hover {
-    opacity: 0.9;
+/* 클릭 가능한 로고 이미지 */
+.platform-header-logo img[style*="cursor"] {
+    transition: opacity 0.2s ease;
+}
+.platform-header-logo img[style*="cursor"]:hover {
+    opacity: 0.85;
 }
 
 .platform-header-logo h1 {

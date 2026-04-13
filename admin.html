@@ -32,6 +32,7 @@
     var _headerResult = initPlatformHeader({
         title: 'Settings',
         currentSystem: 'settings',
+        titleClick: function() { _adminSwitchSystem('users'); },
         navItems: [],
         showThemeToggle: true,
         onAuth: function(user) {

@@ -33,28 +33,36 @@ function initPlatformHeader(config) {
     var header = document.createElement('header');
     header.className = 'platform-header';
 
-    // Logo
+    // Logo — 로고(런처 이동) + 타이틀(시스템 홈) 독립 클릭
     var logo = document.createElement('div');
     logo.className = 'platform-header-logo';
-    if (config.logoClick) {
-        var logoLink = document.createElement('a');
-        logoLink.href = '#';
-        logoLink.className = 'ph-logo-link';
-        logoLink.innerHTML = '<img src="css/images/team_logo.svg" alt="KAI">';
-        var h1 = document.createElement('h1');
-        h1.textContent = title;
-        logoLink.appendChild(h1);
-        logoLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            config.logoClick();
+
+    var logoImg = document.createElement('img');
+    logoImg.src = 'css/images/team_logo.svg';
+    logoImg.alt = 'Digital Engineering Team';
+
+    // 로고 클릭 → 런처 이동 (런처 자체에서는 비활성)
+    if (config.currentSystem !== 'platform') {
+        logoImg.style.cursor = 'pointer';
+        logoImg.addEventListener('click', function() {
+            window.location.href = 'launcher.html';
         });
-        logo.appendChild(logoLink);
-    } else {
-        logo.innerHTML = '<img src="css/images/team_logo.svg" alt="KAI">';
-        var h1 = document.createElement('h1');
-        h1.textContent = title;
-        logo.appendChild(h1);
     }
+    logo.appendChild(logoImg);
+
+    // 타이틀 클릭 → 각 시스템 홈 (titleClick 또는 logoClick 폴백)
+    var titleClickFn = config.titleClick || config.logoClick || null;
+    var h1 = document.createElement('h1');
+    h1.textContent = title;
+    if (titleClickFn) {
+        h1.className = 'ph-title-clickable';
+        h1.addEventListener('click', function(e) {
+            e.preventDefault();
+            titleClickFn();
+        });
+    }
+    logo.appendChild(h1);
+
     header.appendChild(logo);
 
     // System switcher

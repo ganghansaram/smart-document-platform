@@ -11,6 +11,7 @@
         var header = initPlatformHeader({
             title: 'Research Notebook',
             currentSystem: 'translator',
+            titleClick: function() { showList(); },
             navItems: [
                 { id: 'back-list', label: 'Home', hidden: true },
                 { id: 'search-trigger', label: 'Search', onClick: function() { openSearchOverlay(); } },

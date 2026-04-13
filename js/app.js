@@ -23,7 +23,7 @@ async function initializeApp() {
         initPlatformHeader({
             title: 'Knowledge Explorer',
             currentSystem: 'explorer',
-            logoClick: function() { loadContent('contents/home.html'); },
+            titleClick: function() { loadContent('contents/home.html'); },
             authRequired: false,
             onLogout: function() { handleLogout(); },
             showThemeToggle: true,
