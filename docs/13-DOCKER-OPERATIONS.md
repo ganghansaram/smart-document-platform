@@ -154,66 +154,89 @@ Ollama 서버가 연결되지 않아도 기본 기능(문서 탐색, 검색, 번
 
 ## 3. 버전 업데이트 (전체 이미지)
 
-`Dockerfile`, `requirements.txt`, `docker-compose.yml`이 변경된 경우 전체 이미지를 교체합니다.
+서버에서 운영 중인 플랫폼을 새 버전으로 교체하는 절차입니다.
 
-### 3-1. 개발 PC에서 할 일
+### 3-1. 반출 파일 준비
 
-```bash
-cd C:\AHS_Proj\smart-document-platform
-docker compose build
-docker save -o platform-vX.X.tar smart-document-platform-backend smart-document-platform-nginx
-docker image prune -f
-```
+빌드 시 개발자(Claude)가 **이번에 가져갈 파일 목록**을 안내합니다.
+매번 동일하지 않으며, 변경 내용에 따라 달라집니다. 아래는 전체 목록과 조건입니다.
 
-생성된 `platform-vX.X.tar`(약 3GB)와 변경된 `docker-compose.yml`을 USB/네트워크로 리눅스 서버에 전달합니다.
+| 파일 | 매번 필수 | 조건부 | 설명 |
+|------|:--------:|:-----:|------|
+| `platform-vX.X.tar` | O | | Docker 이미지 (약 4GB) |
+| `docker-compose.yml` | | O | compose 구조가 변경된 경우 |
+| `deploy.sh` | | O | 스크립트가 변경된 경우 |
+| `patch-apply.sh` | | O | 스크립트가 변경된 경우 |
+| `data/` | | O | DB 스키마, 규칙 JSON, 인덱스 등이 변경된 경우 |
+| `contents/` | | O | 가이드, 웹북 콘텐츠가 변경된 경우 |
+| `models/` | | O | AI 모델이 변경된 경우 (드묾) |
+| `.env` | | | 서버에서 직접 관리 — 가져가지 않음 |
 
-> **UID 매칭**: 대상 서버의 데이터 디렉토리 소유자 UID가 1000이 아니면, 빌드 시 `--build-arg APP_UID=<UID>` 지정이 필요합니다 ([§5-2 사용자 UID 확인](#5-2-사용자-uid-확인-중요) 참조). 기존에 같은 UID로 배포되어 운영 중인 서버는 별도 조치 불필요.
+> **빌드 결과 안내에 "반출 파일 목록"이 포함됩니다.** 해당 목록에 있는 파일만 USB/네트워크로 서버에 전달하면 됩니다.
 
 ### 3-2. 리눅스 서버에서 할 일
 
+아래 절차를 **위에서 아래로 순서대로** 실행합니다.
+
+**Step 1. 서비스 종료**
+
 ```bash
 cd /opt/smart-document-platform
-
-# 1. 파일 배치 (권한 필요 시 sudo mv 사용 — PART 4 참조)
-#    platform-vX.X.tar, docker-compose.yml(변경 시), .env.example(변경 시)
-
-# 2. docker-compose.yml 교체 (변경된 경우만)
-cp docker-compose.yml docker-compose.yml.bak
-sudo cp /path/to/new/docker-compose.yml docker-compose.yml
-
-# 3. .env 정리 — .env.example과 비교하여 제거/추가된 항목 반영
-#    (기존 .env는 절대 덮어쓰지 말고, 필요한 줄만 수정)
-diff .env .env.example   # 차이 확인
-nano .env                # 필요한 수정 적용
-
-# 4. 기존 서비스 종료
 docker compose down
-
-# 5. 배포 스크립트 실행 (이미지 로드 → 시작 → 정리)
-./deploy.sh platform-vX.X.tar
-
-# 6. 상태 확인
-docker compose ps
 ```
 
-브라우저에서 접속하여 기존 데이터가 유지되는지, 변경된 기능이 정상 동작하는지 확인합니다.
+**Step 2. 파일 덮어쓰기**
 
-**`.env` 정리 주의사항**
-
-업데이트 시 `.env.example`에서 제거된 항목이 있으면 기존 `.env`에서도 제거해야 합니다. 예를 들어 이전 버전에서 `OLLAMA_MODEL`이 `.env`로 관리되었다가 관리자 UI로 이관되면, 기존 `.env`에 남아있는 `OLLAMA_MODEL=...` 줄을 삭제해야 합니다(그대로 두면 환경변수가 관리자 UI 값을 덮어쓰는 문제 발생 가능).
-
-한 줄만 자동 삭제 예시:
+반출 목록에 있는 파일만 복사합니다. 권한 오류 시 `sudo cp`를 사용합니다 ([PART 4](#13-파일-전송-주의사항) 참조).
 
 ```bash
-sed -i '/^OLLAMA_MODEL=/d' .env
+# 예시: 이번 반출 목록이 tar + docker-compose.yml + data/ + contents/ 인 경우
+cp -f platform-vX.X.tar /opt/smart-document-platform/
+cp -f docker-compose.yml /opt/smart-document-platform/
+cp -rf data/ /opt/smart-document-platform/
+cp -rf contents/ /opt/smart-document-platform/
 ```
+
+> `.env`는 덮어쓰지 않습니다. 서버 환경에 맞게 직접 관리하는 파일입니다.
+
+**Step 3. .env 확인 (필요한 경우만)**
+
+빌드 안내에 ".env 수정 필요"라고 명시된 경우에만 수행합니다.
+
+```bash
+nano /opt/smart-document-platform/.env
+# 안내받은 항목만 수정 → Ctrl+O → Enter(저장) → Ctrl+X(종료)
+```
+
+**Step 4. 배포 실행**
+
+```bash
+cd /opt/smart-document-platform
+./deploy.sh platform-vX.X.tar
+```
+
+`deploy.sh`가 자동으로 수행하는 작업:
+1. Docker 이미지 로드
+2. `.env` 존재 확인
+3. 데이터 디렉토리 생성 (없는 경우)
+4. 서비스 시작
+5. 미사용 이미지 정리
+
+**Step 5. 확인**
+
+```bash
+docker compose ps          # 두 컨테이너 모두 "Up" / "healthy"
+curl -s http://localhost/api/health   # {"status":"ok"} 확인
+```
+
+브라우저에서 `http://서버주소`에 접속하여 로그인, 각 서브시스템 동작을 확인합니다.
 
 ### 3-3. 롤백
 
-문제 발생 시 이전 버전으로 되돌립니다.
+문제 발생 시 이전 버전의 tar 파일로 되돌립니다.
 
 ```bash
-cp docker-compose.yml.bak docker-compose.yml
+cd /opt/smart-document-platform
 ./deploy.sh platform-v[이전버전].tar
 ```
 
