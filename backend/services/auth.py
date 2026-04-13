@@ -34,6 +34,7 @@ def init_db():
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             role TEXT NOT NULL DEFAULT 'admin',
+            allowed_ip TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS sessions (
@@ -43,6 +44,12 @@ def init_db():
             expires_at TEXT NOT NULL
         );
     """)
+    # 기존 DB 마이그레이션: allowed_ip 컬럼 추가
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN allowed_ip TEXT NOT NULL DEFAULT ''")
+        conn.commit()
+    except Exception:
+        pass  # 이미 존재
     conn.close()
 
 
@@ -66,12 +73,12 @@ def verify_password(password: str, stored_hash: str) -> bool:
 
 # ── 사용자 CRUD ───────────────────────────────────────────
 
-def create_user(username: str, password: str, role: str = "admin") -> dict:
+def create_user(username: str, password: str, role: str = "admin", allowed_ip: str = "") -> dict:
     conn = _get_conn()
     try:
         conn.execute(
-            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-            (username, hash_password(password), role),
+            "INSERT INTO users (username, password_hash, role, allowed_ip) VALUES (?, ?, ?, ?)",
+            (username, hash_password(password), role, allowed_ip.strip()),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
@@ -96,13 +103,13 @@ def authenticate(username: str, password: str) -> Optional[dict]:
 def list_users() -> list:
     conn = _get_conn()
     try:
-        rows = conn.execute("SELECT id, username, role, created_at FROM users ORDER BY id").fetchall()
+        rows = conn.execute("SELECT id, username, role, allowed_ip, created_at FROM users ORDER BY id").fetchall()
         return [dict(r) for r in rows]
     finally:
         conn.close()
 
 
-def update_user(user_id: int, username: str = None, password: str = None, role: str = None) -> Optional[dict]:
+def update_user(user_id: int, username: str = None, password: str = None, role: str = None, allowed_ip: str = None) -> Optional[dict]:
     conn = _get_conn()
     try:
         parts, params = [], []
@@ -112,6 +119,8 @@ def update_user(user_id: int, username: str = None, password: str = None, role: 
             parts.append("password_hash = ?"); params.append(hash_password(password))
         if role is not None:
             parts.append("role = ?"); params.append(role)
+        if allowed_ip is not None:
+            parts.append("allowed_ip = ?"); params.append(allowed_ip.strip())
         if not parts:
             return None
         params.append(user_id)
@@ -134,7 +143,26 @@ def delete_user(user_id: int) -> bool:
 
 
 def _user_dict(row) -> dict:
-    return {"id": row["id"], "username": row["username"], "role": row["role"], "created_at": row["created_at"]}
+    return {
+        "id": row["id"], "username": row["username"], "role": row["role"],
+        "allowed_ip": row["allowed_ip"] if "allowed_ip" in row.keys() else "",
+        "created_at": row["created_at"],
+    }
+
+
+def check_ip_allowed(user_id: int, client_ip: str) -> bool:
+    """허용 IP 검증. allowed_ip가 비어있으면 제한 없음."""
+    conn = _get_conn()
+    try:
+        row = conn.execute("SELECT allowed_ip FROM users WHERE id = ?", (user_id,)).fetchone()
+        if not row:
+            return False
+        allowed = (row["allowed_ip"] or "").strip()
+        if not allowed:
+            return True
+        return client_ip == allowed
+    finally:
+        conn.close()
 
 
 # ── 세션 ──────────────────────────────────────────────────

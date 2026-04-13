@@ -6,9 +6,10 @@ from pydantic import BaseModel
 from typing import Optional
 
 from services.auth import (
-    authenticate, create_session, delete_session, get_session_user,
-    create_user, list_users, update_user, delete_user,
+    authenticate, check_ip_allowed, create_session, delete_session,
+    get_session_user, create_user, list_users, update_user, delete_user,
 )
+from services.analytics import get_client_ip
 from dependencies import require_admin
 import config
 
@@ -24,21 +25,26 @@ class UserCreateRequest(BaseModel):
     username: str
     password: str
     role: str = "admin"
+    allowed_ip: str = ""
 
 
 class UserUpdateRequest(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
     role: Optional[str] = None
+    allowed_ip: Optional[str] = None
 
 
 # ── 공개 엔드포인트 ──────────────────────────────────────
 
 @router.post("/auth/login")
-def login(body: LoginRequest, response: Response):
+def login(body: LoginRequest, request: Request, response: Response):
     user = authenticate(body.username, body.password)
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="아이디 또는 패스워드가 올바르지 않습니다.")
+    client_ip = get_client_ip(request)
+    if not check_ip_allowed(user["id"], client_ip):
+        raise HTTPException(status_code=403, detail="접속이 불가합니다. 관리자에게 문의하세요.")
     token = create_session(user["id"])
     response.set_cookie(
         key="session_token",
@@ -79,7 +85,7 @@ def get_users(user: dict = Depends(require_admin)):
 @router.post("/auth/users")
 def add_user(body: UserCreateRequest, user: dict = Depends(require_admin)):
     try:
-        new_user = create_user(body.username, body.password, body.role)
+        new_user = create_user(body.username, body.password, body.role, body.allowed_ip)
         return {"success": True, "user": new_user}
     except Exception as e:
         if "UNIQUE" in str(e):
@@ -89,7 +95,7 @@ def add_user(body: UserCreateRequest, user: dict = Depends(require_admin)):
 
 @router.put("/auth/users/{user_id}")
 def edit_user(user_id: int, body: UserUpdateRequest, user: dict = Depends(require_admin)):
-    updated = update_user(user_id, body.username, body.password, body.role)
+    updated = update_user(user_id, body.username, body.password, body.role, body.allowed_ip)
     if not updated:
         raise HTTPException(status_code=404, detail="User not found")
     return {"success": True, "user": updated}

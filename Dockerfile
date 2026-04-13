@@ -40,15 +40,15 @@ RUN rm -rf /app/backend/packages
 RUN mkdir -p /app/backend/temp /app/backend/logs \
     && chown -R appuser:appuser /app
 
-# ── babeldoc ONNX 캐시 다운로드 (appuser 권한) ──
-# HOME을 appuser로 설정하여 ~/.cache/babeldoc에 저장
+# ── babeldoc 전체 캐시 다운로드 (appuser 권한) ──
+# ONNX 모델 + CMap + 폰트 + tiktoken — 폐쇄망 배포 시 런타임 다운로드 불가하므로 빌드 시 포함
 ENV HOME=/home/appuser
 USER appuser
 RUN python -c "\
-from babeldoc.docvision.doclayout import OnnxModel; \
-OnnxModel.from_pretrained(); \
-print('babeldoc ONNX model cached')" 2>/dev/null || \
-    echo "WARN: babeldoc cache skipped (model download failed — will retry at runtime)"
+from babeldoc.assets.assets import warmup; \
+warmup(); \
+print('babeldoc full cache ready (ONNX + fonts + CMap + tiktoken)')" || \
+    echo "WARN: babeldoc cache failed — pdf2zh will not work in air-gapped environments"
 
 WORKDIR /app/backend
 

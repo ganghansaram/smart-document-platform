@@ -1161,7 +1161,7 @@ function _renderUsersPanel(area) {
         '<div class="admin-section">' +
             '<h3 class="admin-section-title">사용자 목록</h3>' +
             '<table class="admin-users-table">' +
-                '<thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>' +
+                '<thead><tr><th>ID</th><th>Username</th><th>Role</th><th>IP</th><th>Created</th><th>Actions</th></tr></thead>' +
                 '<tbody id="admin-users-tbody"></tbody>' +
             '</table>' +
         '</div>' +
@@ -1175,6 +1175,7 @@ function _renderUsersPanel(area) {
                     '<option value="editor">editor</option>' +
                     '<option value="admin">admin</option>' +
                 '</select>' +
+                '<input type="text" class="form-input admin-input" id="admin-new-user-ip" placeholder="허용 IP (선택)">' +
                 '<button class="btn btn-primary admin-btn admin-btn-save" id="admin-add-user-btn">추가</button>' +
             '</div>' +
         '</div>';
@@ -1185,6 +1186,9 @@ function _renderUsersPanel(area) {
         _addUser(backendUrl);
     });
     document.getElementById('admin-new-user-pw').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') _addUser(backendUrl);
+    });
+    document.getElementById('admin-new-user-ip').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') _addUser(backendUrl);
     });
 }
@@ -1205,9 +1209,10 @@ async function _loadUsersTable(backendUrl) {
                 '<td>' + u.id + '</td>' +
                 '<td>' + _escHtml(u.username) + '</td>' +
                 '<td><span class="badge admin-role-badge role-' + u.role + '">' + u.role + '</span></td>' +
+                '<td>' + (u.allowed_ip || '-') + '</td>' +
                 '<td>' + (u.created_at || '-') + '</td>' +
                 '<td class="admin-users-actions">' +
-                    '<button class="admin-btn-sm" data-action="edit" data-id="' + u.id + '" data-name="' + _escHtml(u.username) + '" data-role="' + u.role + '">Edit</button>' +
+                    '<button class="admin-btn-sm" data-action="edit" data-id="' + u.id + '" data-name="' + _escHtml(u.username) + '" data-role="' + u.role + '" data-ip="' + _escHtml(u.allowed_ip || '') + '">Edit</button>' +
                     '<button class="admin-btn-sm admin-btn-danger" data-action="delete" data-id="' + u.id + '" data-name="' + _escHtml(u.username) + '">Delete</button>' +
                 '</td>';
             tbody.appendChild(tr);
@@ -1215,7 +1220,7 @@ async function _loadUsersTable(backendUrl) {
 
         tbody.querySelectorAll('[data-action="edit"]').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                _editUserInline(backendUrl, this.dataset.id, this.dataset.name, this.dataset.role);
+                _editUserInline(backendUrl, this.dataset.id, this.dataset.name, this.dataset.role, this.dataset.ip);
             });
         });
         tbody.querySelectorAll('[data-action="delete"]').forEach(function(btn) {
@@ -1224,7 +1229,7 @@ async function _loadUsersTable(backendUrl) {
             });
         });
     } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="5">Failed to load users</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6">Failed to load users</td></tr>';
     }
 }
 
@@ -1232,9 +1237,11 @@ async function _addUser(backendUrl) {
     var nameEl = document.getElementById('admin-new-user-name');
     var pwEl = document.getElementById('admin-new-user-pw');
     var roleEl = document.getElementById('admin-new-user-role');
+    var ipEl = document.getElementById('admin-new-user-ip');
     var username = nameEl.value.trim();
     var password = pwEl.value;
     var role = roleEl.value;
+    var allowed_ip = ipEl.value.trim();
 
     if (!username || !password) {
         _showNotice('error', 'Username and password are required.');
@@ -1246,11 +1253,12 @@ async function _addUser(backendUrl) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ username: username, password: password, role: role })
+            body: JSON.stringify({ username: username, password: password, role: role, allowed_ip: allowed_ip })
         });
         if (r.ok) {
             nameEl.value = '';
             pwEl.value = '';
+            ipEl.value = '';
             _loadUsersTable(backendUrl);
             _showNotice('ok', '✓ 사용자가 추가되었습니다: ' + _escHtml(username));
         } else {
@@ -1262,7 +1270,7 @@ async function _addUser(backendUrl) {
     }
 }
 
-function _editUserInline(backendUrl, userId, currentName, currentRole) {
+function _editUserInline(backendUrl, userId, currentName, currentRole, currentIp) {
     var existing = document.getElementById('admin-edit-user-overlay');
     if (existing) existing.remove();
 
@@ -1276,13 +1284,17 @@ function _editUserInline(backendUrl, userId, currentName, currentRole) {
                 '<label class="admin-field-label">New Password <span style="font-weight:normal;opacity:.6">(leave empty to keep)</span></label>' +
                 '<input type="password" class="form-input admin-input" id="admin-edit-pw" autocomplete="new-password">' +
             '</div>' +
-            '<div class="admin-field" style="margin-bottom:16px">' +
+            '<div class="admin-field" style="margin-bottom:12px">' +
                 '<label class="admin-field-label">Role</label>' +
                 '<select class="form-select admin-select" id="admin-edit-role">' +
                     '<option value="viewer"' + (currentRole === 'viewer' ? ' selected' : '') + '>viewer</option>' +
                     '<option value="editor"' + (currentRole === 'editor' ? ' selected' : '') + '>editor</option>' +
                     '<option value="admin"' + (currentRole === 'admin' ? ' selected' : '') + '>admin</option>' +
                 '</select>' +
+            '</div>' +
+            '<div class="admin-field" style="margin-bottom:16px">' +
+                '<label class="admin-field-label">허용 IP <span style="font-weight:normal;opacity:.6">(비워두면 제한 없음)</span></label>' +
+                '<input type="text" class="form-input admin-input" id="admin-edit-ip" value="' + _escHtml(currentIp || '') + '">' +
             '</div>' +
             '<div style="display:flex;gap:8px;justify-content:flex-end">' +
                 '<button class="btn btn-secondary admin-btn admin-btn-reset" id="admin-edit-cancel">Cancel</button>' +
@@ -1299,9 +1311,11 @@ function _editUserInline(backendUrl, userId, currentName, currentRole) {
     document.getElementById('admin-edit-save').addEventListener('click', function() {
         var newPw = document.getElementById('admin-edit-pw').value;
         var newRole = document.getElementById('admin-edit-role').value;
+        var newIp = document.getElementById('admin-edit-ip').value.trim();
         var body = {};
         if (newPw) body.password = newPw;
         if (newRole !== currentRole) body.role = newRole;
+        if (newIp !== (currentIp || '')) body.allowed_ip = newIp;
         if (Object.keys(body).length === 0) { close(); return; }
 
         fetch(backendUrl + '/api/auth/users/' + userId, {
