@@ -209,16 +209,36 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     gap: 0;
     color: var(--text-light);
     height: 100%;
-    border: 2px dashed transparent;
-    border-radius: var(--radius-md);
-    transition: border-color var(--transition-normal), background var(--transition-normal);
+    border: none;
+    transition: background var(--transition-normal);
+    position: relative;
 }
 
-.panel-placeholder:hover {
-    border-color: var(--border-color);
+/* 콘텐츠 감싸는 점선 박스 (pseudo-element) */
+.panel-placeholder::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px;
+    height: 260px;
+    max-width: 80%;
+    max-height: 70%;
+    border: 1.5px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+    opacity: 0.5;
+    transition: opacity var(--transition-normal), border-color var(--transition-normal), background var(--transition-normal);
+    pointer-events: none;
 }
 
-.panel-placeholder.dragover {
+.panel-placeholder:hover::before {
+    opacity: 1;
+    border-color: var(--active-color);
+}
+
+.panel-placeholder.dragover::before {
+    opacity: 1;
     border-color: var(--active-color);
     background: var(--active-color-subtle);
 }
@@ -229,15 +249,23 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     color: var(--medium-gray);
     opacity: 0.45;
     margin-bottom: 14px;
+    position: relative;
+    z-index: 1;
 }
 
 .panel-placeholder-desc {
     font-size: 13px;
     color: var(--text-light);
     margin-bottom: 16px;
+    position: relative;
+    z-index: 1;
 }
 
 /* 주요 액션: 파일 선택 버튼 — .btn .btn-primary 기반, 아이콘 크기만 유지 */
+.placeholder-upload-btn {
+    position: relative;
+    z-index: 1;
+}
 .placeholder-upload-btn svg {
     width: 14px;
     height: 14px;
@@ -251,6 +279,8 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     margin: 14px 0 2px;
     font-size: 11px;
     color: var(--medium-gray);
+    position: relative;
+    z-index: 1;
 }
 
 .placeholder-paste-link {
@@ -265,6 +295,8 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     cursor: pointer;
     text-decoration: none;
     transition: opacity var(--transition-fast);
+    position: relative;
+    z-index: 1;
 }
 
 .placeholder-paste-link:hover {
@@ -282,6 +314,8 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     font-size: 11px;
     color: var(--medium-gray);
     margin-top: 14px;
+    position: relative;
+    z-index: 1;
 }
 
 /* ── 텍스트 붙여넣기 모드 ── */
