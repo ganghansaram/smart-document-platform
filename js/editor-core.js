@@ -580,7 +580,7 @@ var EditorCore = (function () {
                 inner.style.minHeight = '0';
                 inner.innerHTML =
                     '<div class="editor-loading-overlay" id="ec-loading">' +
-                        '<div class="spinner spinner-lg"></div>' +
+                        '<div class="network-spinner"><svg viewBox="0 0 32 50" fill="none"><line x1="8" y1="30" x2="18" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><line x1="18" y1="15" x2="24" y2="35" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><line x1="24" y1="35" x2="8" y2="30" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><circle class="ns-node-1" cx="8" cy="30" r="3.5" fill="currentColor"/><circle class="ns-node-2" cx="18" cy="15" r="3.5" fill="currentColor"/><circle class="ns-node-3" cx="24" cy="35" r="3.5" fill="currentColor"/><circle class="ns-particle" r="2" fill="currentColor" opacity="0.8"/></svg></div>' +
                         '<div class="loading-text">Loading editor...</div>' +
                     '</div>' +
                     '<div class="monaco-split-container">' +

@@ -186,11 +186,7 @@
     transition: opacity 0.3s ease;
 }
 
-/* 에디터 로딩 스피너 색상 override (.spinner 공통 기반) */
-.editor-loading-overlay .spinner {
-    border-color: var(--border-color);
-    border-top-color: var(--primary-navy);
-}
+/* 에디터 로딩 — .network-spinner (components.css 공통), 색상은 currentColor 자동 */
 
 .editor-loading-overlay .loading-text {
     font-size: 14px;

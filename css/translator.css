@@ -1379,14 +1379,7 @@ body[data-theme="dark"] .side-panel { background: var(--white); }
 }
 
 /* Spinner */
-.page-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border-color);
-    border-top-color: var(--active-color);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
+/* page-spinner → .network-spinner (components.css 공통) */
 
 /* ── Transitions ── */
 body.fade-in { animation: fadeIn 0.4s ease forwards; }

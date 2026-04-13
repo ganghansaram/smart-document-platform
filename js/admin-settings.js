@@ -344,7 +344,7 @@ async function renderAdminSettings() {
     var container = document.getElementById('main-content');
     if (!container) return;
 
-    container.innerHTML = '<div class="admin-settings-page"><div class="admin-settings-loading"><div class="spinner admin-spinner"></div>설정 로드 중...</div></div>';
+    container.innerHTML = '<div class="admin-settings-page"><div class="admin-settings-loading"><div class="network-spinner"><svg viewBox="0 0 32 50" fill="none"><line x1="8" y1="30" x2="18" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><line x1="18" y1="15" x2="24" y2="35" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><line x1="24" y1="35" x2="8" y2="30" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><circle class="ns-node-1" cx="8" cy="30" r="3.5" fill="currentColor"/><circle class="ns-node-2" cx="18" cy="15" r="3.5" fill="currentColor"/><circle class="ns-node-3" cx="24" cy="35" r="3.5" fill="currentColor"/><circle class="ns-particle" r="2" fill="currentColor" opacity="0.8"/></svg></div>설정 로드 중...</div></div>';
     if (typeof updateSectionNav === 'function') updateSectionNav();
 
     var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
@@ -846,7 +846,7 @@ function _renderMenuTab() {
         '<div class="admin-section">' +
             '<h3 class="admin-section-title">\uBA54\uB274 \uAD6C\uC870 \uD3B8\uC9D1</h3>' +
             '<div class="menu-editor">' +
-                '<div class="menu-editor-loading"><div class="spinner admin-spinner"></div> \uBA54\uB274 \uB85C\uB4DC \uC911...</div>' +
+                '<div class="menu-editor-loading"><div class="network-spinner"><svg viewBox="0 0 32 50" fill="none"><line x1="8" y1="30" x2="18" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><line x1="18" y1="15" x2="24" y2="35" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><line x1="24" y1="35" x2="8" y2="30" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><circle class="ns-node-1" cx="8" cy="30" r="3.5" fill="currentColor"/><circle class="ns-node-2" cx="18" cy="15" r="3.5" fill="currentColor"/><circle class="ns-node-3" cx="24" cy="35" r="3.5" fill="currentColor"/><circle class="ns-particle" r="2" fill="currentColor" opacity="0.8"/></svg></div> \uBA54\uB274 \uB85C\uB4DC \uC911...</div>' +
             '</div>' +
         '</div>';
 
