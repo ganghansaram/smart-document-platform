@@ -228,7 +228,7 @@ POST /api/compare/validate { paragraphs[], preset? }
 프론트엔드: 이슈 하이라이트 + 사이드바 목록 표시
 ```
 
-### 5.2 내장 규칙 6종
+### 5.2 자체 규칙 6종
 
 | 규칙 ID | 카테고리 | 설명 |
 |---------|---------|------|
@@ -238,6 +238,8 @@ POST /api/compare/validate { paragraphs[], preset? }
 | `forbidden_terms` | terminology | 금지 용어 감지 (대체어 제안) |
 | `inconsistent_terms` | terminology | 동일 그룹 내 복수 용어 사용 감지 (최빈 용어 통일 권장) |
 | `sentence_length` | readability | 문장 길이 초과 (기본 80자) |
+
+> 위 6종은 `backend/rules/custom.json`에 정의된 자체 규칙이다. 이 외에 ASD-STE100 기반 8종(`ste-writing.json`)과 MIL-STD 기반 7종(`mil-structure.json`)이 추가로 탑재되어 **총 21종 규칙**을 제공한다. 표준 규칙의 상세 분석은 [12-VERIFY-SYSTEM.md](12-VERIFY-SYSTEM.md) 참조.
 
 ### 5.3 규칙 관리
 

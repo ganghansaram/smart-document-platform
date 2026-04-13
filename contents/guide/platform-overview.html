@@ -268,8 +268,24 @@
 <h2 class="po-section-title" id="도입-및-관리">도입 및 관리</h2>
 
 <h3 id="빠른-시작">빠른 시작</h3>
-<p>플랫폼은 두 개의 프로세스(백엔드 + 정적 파일 서버)로 구동됩니다. 별도 빌드 과정이나 외부 서비스 연동이 불필요합니다.</p>
+<p>플랫폼은 두 가지 방식으로 배포할 수 있습니다. 별도 빌드 과정이나 외부 서비스 연동이 불필요합니다.</p>
 
+<p><strong>방법 A: Docker (권장)</strong></p>
+<table class="po-spec-table">
+    <thead>
+        <tr><th style="width:20%">역할</th><th style="width:45%">명령</th><th>접속 주소</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>전체 스택</td>
+            <td><code>docker compose up -d</code></td>
+            <td>http://localhost</td>
+        </tr>
+    </tbody>
+</table>
+<p>Nginx 리버스 프록시가 프론트엔드와 백엔드를 단일 포트(80)로 통합합니다.</p>
+
+<p><strong>방법 B: 로컬 Python</strong></p>
 <table class="po-spec-table">
     <thead>
         <tr><th style="width:20%">역할</th><th style="width:45%">명령</th><th>접속 주소</th></tr>

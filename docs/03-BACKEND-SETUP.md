@@ -188,11 +188,15 @@ kiwipiepy>=0.18.0
 
 # Translator (PDF 번역)
 pdf2zh-next==2.8.2
-PyMuPDF==1.25.2
+# PyMuPDF/pymupdf4llm은 pdf2zh-next의 의존성으로 자동 설치
+# Docker 환경에서는 Dockerfile에서 별도 업그레이드
 
 # Explorer (문서 변환)
 python-docx==1.2.0
 openpyxl>=3.1.0
+
+# Verify (유사도 검사 — 스캔 PDF OCR)
+rapidocr-onnxruntime==1.4.4
 
 # Ollama 클라이언트
 ollama==0.6.1
@@ -215,7 +219,13 @@ ollama==0.6.1
 
 > **pywin32**: Word 장절번호 자동 평문화용. Word 설치 환경에서만 동작.
 
+> **rapidocr-onnxruntime**: Verify 유사도 검사에서 스캔 PDF의 텍스트를 OCR로 추출하는 데 사용.
+
+> **PyMuPDF**: pdf2zh-next 설치 시 의존성으로 자동 설치됨. Docker 환경에서는 웹뷰 이미지 추출을 위해 Dockerfile에서 별도 업그레이드.
+
 > **참고**: `backend/packages/` 폴더에는 위 패키지 외에 pdf2zh-next의 의존성(babeldoc, DocLayout-YOLO 등)과 Notebook 기능에 필요한 패키지(pymupdf4llm 등)가 함께 포함되어 있습니다. `pip download`로 자동 수집됩니다.
+
+> **Docker 배포**: Docker 기반 배포를 원하는 경우 [13-DOCKER-OPERATIONS.md](13-DOCKER-OPERATIONS.md)를 참조하세요. 이 문서의 Step 2~6은 로컬 Python 환경 기준입니다.
 
 ---
 

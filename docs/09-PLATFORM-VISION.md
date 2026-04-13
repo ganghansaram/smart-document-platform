@@ -1,6 +1,6 @@
 # Smart Document Platform — 비전 및 로드맵
 
-> **최종 갱신**: 2026-04-01
+> **최종 갱신**: 2026-04-13
 > **대상**: 한국항공우주산업(KAI) 재료공정팀(주관), 공정개발팀(협업)
 > **환경**: 에어갭(Air-gapped) 사내 네트워크, 자체 호스팅 전제
 
@@ -36,7 +36,8 @@ Phase 3 (완료)  : 관리 기능 + 통계         → "운영하는 시스템"
 Phase 4 (완료)  : 비교/번역/다중 시스템     → "기술 문서 활용 플랫폼"
 Phase 5 (완료)  : 품질 향상 + 지식 저장소   → "지식 활용 플랫폼"
 Phase 6 (완료)  : 디자인 시스템 리파인먼트   → "세련된 플랫폼"
-Phase 7 (진행중) : 비교/검증 고도화 + 전략   → "실무 검증 플랫폼"
+Phase 7 (완료)  : Verify 고도화 + Docker + 운영 안정화 → "실무 검증 플랫폼"
+Phase 8 (진행중) : Author MVP + 시스템 연계  → "구조화 문서 합성 플랫폼"
 ```
 
 ### 1.2 핵심 제약
@@ -317,29 +318,29 @@ Verify + Author 추가 시 (2026 Q2~Q3)
 
 **리브랜딩**: Compare → **Verify**. "비교"는 기능 중 하나이고, 시스템의 본질은 **"문서 품질을 검증하고 판단하는 것"**이다.
 
-**현재 상태**: 핵심 완료, 고도화 진행 중 (Plan-23)
+**현재 상태**: 핵심 완료 (Plan-23 Phase 0~5)
 
 | 기능 | 상태 |
 |------|------|
 | 듀얼 패널 diff (단어 수준 하이라이트) | ✅ |
 | AI 의미 분류 (Ollama, 6태그 → 3그룹) | ✅ |
 | 수락/거절 판정 + 벌크 처리 | ✅ |
-| 규칙 검증 모드 (6종 규칙, 프리셋/커스텀) | ✅ |
-| 검토 리포트 내보내기 (.txt) | ✅ |
+| 규칙 검증 모드 (21종 규칙, 프리셋/커스텀) | ✅ |
+| 검토 리포트 내보내기 (XLSX/HTML/TXT) | ✅ |
 | 스크롤바 미니맵, 텍스트 붙여넣기, 갭 정렬 | ✅ |
-| **유사도 검사 모드** (크로스링구얼, bge-m3) | ⏳ Plan-23 Phase 1 |
-| **내보내기 확장** (Excel/HTML) | ⏳ Plan-23 Phase 2 |
-| **요구사항 문장 분류** (shall/should/may) | ⏳ Plan-23 Phase 3 |
-
-**현업 요구**:
-- 카피킬러 유사 기능: 사내 스펙이 외부 영문 원문 참조로 작성되어, 자사 스펙 제정 시 표절 리스크 사전 점검 필요
-- 한국어↔영어 크로스링구얼 의미 유사도 검사 — bge-m3 다국어 임베딩으로 폐쇄망 구현 가능
+| **3-모드 허브** (비교/유사도/규칙 검증 모드 전환) | ✅ Plan-23 Phase 0 |
+| **유사도 검사 모드** (Winnowing L1 + bge-m3 L3, 크로스링구얼) | ✅ Plan-23 Phase 1 |
+| **내보내기 확장** (Excel/HTML/TXT) | ✅ Plan-23 Phase 2 |
+| **인텔리전스 패널** (스코어카드·구조·용어), 요구사항 분류 | ✅ Plan-23 Phase 3 |
+| **표준 기반 규칙 엔진** (STE 8종 + MIL 7종 + 자체 6종 = 21종) | ✅ Plan-23 Phase 5 |
+| **Acrolinx 밀도 방식 스코어링** | ✅ Plan-23 Phase 5 |
+| **세션 이력** (비교/검증 결과 자동 저장) | ✅ Plan-23 Phase 4 |
 
 **향후 방향**:
-- **유사도 검사 모드**: 세 번째 모드로 추가 (비교/검증/유사도). 1:N 문서 대조, 문장 수준 유사도 분석.
 - **Author 연계**: Author에서 생성한 초안을 Verify로 보내 원문 대비 유사도/규칙 검사.
+- **잔여 고도화**: TND 분석, 캘리브레이션, suppress 기능, 프리셋 확장 (backlog)
 
-상세: `workbench/plans/23-compare-enhancement.md`
+상세: `workbench/plans/done-23-compare-enhancement.md`
 
 ### 6.3 Translator + Notebook — PDF 번역 · 개인 지식 저장소
 
@@ -525,22 +526,32 @@ Plan 20: Document Intelligence (마인드맵)                ✅
 달성: "번역 도구" → "개인 지식 도우미"
 ```
 
-### Phase B: Verify 고도화 + 데이터 관리 기준 (2026 Q2, 현재) — 🔨 진행 중
+### Phase B: Verify 고도화 + Docker + 운영 안정화 (2026 Q1~Q2) — ✅ 완료
 
 ```
-Plan 23: Verify(Compare) 시스템 고도화                  🔨 계획 수립
-  Phase 1: 유사도 검사 모드 (크로스링구얼, bge-m3)      ← 핵심 신규
-  Phase 2: 내보내기 확장 (Excel/HTML)
-  Phase 3: 규칙 검증 고도화 (shall/should/may 분류)
+Plan 23: Verify(Compare) 시스템 고도화                  ✅ Phase 0~5 핵심 완료
+  Phase 0: 3-모드 허브 (비교/유사도/규칙 검증)          ✅
+  Phase 1: 유사도 검사 (Winnowing L1 + bge-m3 L3)     ✅
+  Phase 2: 내보내기 확장 (XLSX/HTML/TXT)               ✅
+  Phase 3: 인텔리전스 패널 + 요구사항 분류              ✅
+  Phase 4: 세션 이력 (Step 1)                          ✅
+  Phase 5: 표준 기반 규칙 엔진 (STE + MIL, 21종)       ✅
+  잔여: TND/캘리브레이션/suppress/프리셋 → backlog
 
-데이터 관리 기준 수립:                                   ⏳ 계획 필요
-  - 문서 ID 체계 통일 (4개 시스템 교차 참조)
-  - 메타데이터 스키마 표준화
-  - 파일 → DB 전환 기준 정의
+Plan 27: Docker 컨테이너화                              ✅ 완료
+  Nginx 리버스 프록시 + FastAPI 컨테이너, 폐쇄망 단일 포트 전환
 
-Compare → Verify 리브랜딩 (UI 명칭, 런처 카드)
+Plan 28: 플랫폼 가이드 확장                             ✅ 완료
+  기술 문서 4건 추가, admin 권한별 메뉴 필터링
 
-목표: "비교 도구" → "문서 품질 게이트"
+Plan 29: Notebook 좌측 패널 페이지넘김 복원              ✅ 완료
+Plan 30: 관리자 설정 체계 정비                          ✅ 완료
+  탭 11→8, 항목 63→29, AI 모델 전역화, Docker/Windows 양립
+
+Plan 31: Docker Parity                                  ✅ 완료
+  4중 방어선 (bind mount, config 동기화, parity 체크)
+
+목표: "비교 도구" → "문서 품질 게이트" + Docker 운영 안정성
 ```
 
 ### Phase C: Author MVP (2026 Q2~Q3)
@@ -684,15 +695,19 @@ Phase A~A+ 완료로 지식 플랫폼의 기반이 갖춰졌다. 플랫폼은 **
 
 ### 11.3 확장 방향 — 3개 축
 
-#### 축 1: Verify 고도화 (즉시 착수)
+#### 축 1: Verify 고도화 — ✅ 완료 (Plan-23)
 
-사용자 요청이 발생하고 있으므로 즉시 대응.
+Plan-23 Phase 0~5 핵심 완료.
 
-| 기능 | 목적 | 계획 |
-|------|------|------|
-| 유사도 검사 모드 | 외부 원문 대비 표절/유사 구간 식별 (한↔영 크로스링구얼) | Plan-23 Phase 1 |
-| 내보내기 확장 | 공식 검토 리포트 (Excel/HTML) | Plan-23 Phase 2 |
-| 요구사항 문장 분류 | shall/should/may 자동 분류 | Plan-23 Phase 3 |
+| 기능 | 목적 | 상태 |
+|------|------|:----:|
+| 3-모드 허브 | 비교/유사도/규칙 검증 모드 전환 | ✅ |
+| 유사도 검사 | Winnowing L1 + bge-m3 L3, 6종 지표, 크로스링구얼 | ✅ |
+| 내보내기 확장 | XLSX/HTML/TXT 다형식 검토 리포트 | ✅ |
+| 인텔리전스 패널 | 스코어카드·구조·용어, 요구사항 분류(shall/should/may) | ✅ |
+| 표준 기반 규칙 엔진 | STE 8종 + MIL 7종 + 자체 6종 = 21종 | ✅ |
+| Acrolinx 스코어링 | 밀도 방식 문서 품질 점수 | ✅ |
+| 세션 이력 | 비교/검증 결과 서버 저장·재열람 | ✅ |
 
 #### 축 2: Author 시스템 구축 (Verify 검증 후)
 
@@ -718,9 +733,13 @@ Phase A~A+ 완료로 지식 플랫폼의 기반이 갖춰졌다. 플랫폼은 **
 ### 11.4 실행 순서
 
 ```
-[즉시]  Verify 고도화 (Plan-23)        ←── 사용자 요청 대응
+[완료]  Verify 고도화 (Plan-23)         ←── 5모드 허브 + 21종 규칙 + 유사도 + 스코어링
+[완료]  Docker 전환 (Plan-27)           ←── Nginx + 폐쇄망 단일 포트
+[완료]  플랫폼 가이드 (Plan-28)         ←── 기술 문서 + 권한별 필터링
+[완료]  Notebook 페이지넘김 (Plan-29)   ←── UX 일관성 복원
+[완료]  관리자 설정 정비 (Plan-30)      ←── 업계 표준 콘솔 + AI 모델 전역화
+[완료]  Docker Parity (Plan-31)         ←── 로컬↔도커 동기화 방어선
 [병행]  데이터 관리 기준 수립            ←── 아키텍처 원칙 확립
-[병행]  Compare → Verify 리브랜딩       ←── 런처/헤더 명칭 변경
   ↓
 [Q2~3] Author MVP (Plan-24)            ←── 비교 매트릭스 + 초안 생성
   ↓
@@ -810,15 +829,18 @@ Phase A~A+ 완료로 지식 플랫폼의 기반이 갖춰졌다. 플랫폼은 **
 
 | 기능 | 상태 |
 |------|:----:|
+| 3-모드 허브 (비교/유사도/규칙 검증) | ✅ |
 | 듀얼 패널 diff (단어 수준, 갭 정렬) | ✅ |
 | AI 의미 분류 (6태그 → 3그룹) | ✅ |
 | 수락/거절 + 벌크 처리 | ✅ |
-| 규칙 검증 모드 (6종, 프리셋/커스텀) | ✅ |
-| 리포트 내보내기 (.txt) | ✅ |
+| 유사도 검사 (Winnowing L1 + bge-m3 L3, 6종 지표) | ✅ |
+| 규칙 검증 (21종 — STE 8 + MIL 7 + 자체 6) | ✅ |
+| Acrolinx 밀도 방식 스코어링 | ✅ |
+| 인텔리전스 패널 (스코어카드·구조·용어) | ✅ |
+| 리포트 내보내기 (XLSX/HTML/TXT) | ✅ |
 | 미니맵, 텍스트 붙여넣기, 동기 스크롤 | ✅ |
-| **유사도 검사 모드** (크로스링구얼) | ⏳ Plan-23 |
-| **내보내기 확장** (Excel/HTML) | ⏳ Plan-23 |
-| **요구사항 문장 분류** (shall/should/may) | ⏳ Plan-23 |
+| 세션 이력 (서버 저장·재열람) | ✅ |
+| 잔여 고도화 (TND/캘리브레이션/suppress/프리셋) | ⏳ backlog |
 
 #### Author
 
@@ -845,6 +867,10 @@ Phase A~A+ 완료로 지식 플랫폼의 기반이 갖춰졌다. 플랫폼은 **
 | 플랫폼 헤더/푸터 | ✅ |
 | 원자 쓰기 + graceful shutdown | ✅ |
 | 헬스체크 + 백업 | ✅ |
+| Docker + Nginx 배포 (폐쇄망 단일 포트) | ✅ |
+| Docker ↔ 로컬 Parity 체크 | ✅ |
+| 플랫폼 가이드 (기술 문서 메뉴, 권한별 필터링) | ✅ |
+| 관리자 콘솔 (업계 표준 좌측 사이드바, 탭 8개) | ✅ |
 | 관리자 설정 Launcher 통합 | ⏳ |
 | 데이터 관리 기준 수립 | ⏳ |
 | 런처 4체제 전환 (Explorer/Notebook/Verify/Author) | ⏳ |
@@ -882,8 +908,15 @@ Phase A~A+ 완료로 지식 플랫폼의 기반이 갖춰졌다. 플랫폼은 **
 | 20 | Document Intelligence | ✅ 완료 |
 | 21 | 디자인 시스템 리파인먼트 | ✅ 완료 |
 | 22 | 운영 안정성 강화 | ✅ 완료 |
-| **23** | **Verify(Compare) 고도화** | **🔨 계획 수립** |
+| **23** | **Verify(Compare) 고도화** | **✅ Phase 0~5 완료** |
 | **24** | **Author 시스템** | **🔨 설계 완료** |
+| 25 | 데이터 아키텍처 | ⏳ 설계 논의 |
+| 26 | Notebook 뷰어+파이프라인 | ⏳ Phase 4~5 보류 |
+| **27** | **Docker 컨테이너화** | **✅ 완료** |
+| **28** | **플랫폼 가이드 확장** | **✅ 완료** |
+| **29** | **Notebook 페이지넘김 복원** | **✅ 완료** |
+| **30** | **관리자 설정 체계 정비** | **✅ 완료** |
+| **31** | **Docker Parity** | **✅ 완료** |
 
 ---
 
@@ -891,8 +924,11 @@ Phase A~A+ 완료로 지식 플랫폼의 기반이 갖춰졌다. 플랫폼은 **
 
 | 문서 | 위치 | 내용 |
 |------|------|------|
-| Plan 23: Verify(Compare) 고도화 | `workbench/plans/23-compare-enhancement.md` | 유사도 검사, 내보내기, 규칙 고도화 |
+| Plan 23: Verify(Compare) 고도화 | `workbench/plans/done-23-compare-enhancement.md` | 5모드 허브, 유사도(Winnowing+bge-m3), 21종 규칙, 스코어링, 내보내기 |
 | Plan 24: Author 시스템 | `workbench/plans/24-author-system.md` | 구조화 문서 합성, 비교 매트릭스, 초안 생성 |
+| Plan 27: Docker 컨테이너화 | `workbench/plans/done-27-docker-migration.md` | Nginx 리버스 프록시, 폐쇄망 단일 포트 |
+| Plan 30: 관리자 설정 정비 | `workbench/plans/done-30-docker-settings-cleanup.md` | 업계 표준 콘솔, AI 모델 전역화 |
+| Plan 31: Docker Parity | `workbench/plans/done-31-docker-parity.md` | bind mount, parity 체크, config 동기화 |
 | Compare 시스템 상세 | `docs/11-COMPARE-SYSTEM.md` | 비교 서브시스템 기술 문서 |
 | 의미비교 연구 | `docs/research-semantic-comparison.md` | 한국어 기술문서 의미분류 연구 주제 |
 | K-Spec 아키텍처 컨텍스트 | `docs/architecture-context.md` | K-Spec + 문서 분석 서비스 + NLP 벤치마크 |
@@ -902,4 +938,4 @@ Phase A~A+ 완료로 지식 플랫폼의 기반이 갖춰졌다. 플랫폼은 **
 
 ---
 
-*최종 갱신: 2026-04-01*
+*최종 갱신: 2026-04-13*

@@ -32,7 +32,7 @@
      서버 구성
      ======================================== -->
 <h2 class="po-section-title" id="서버-구성">서버 구성</h2>
-<p class="po-section-subtitle">2대 서버, 3개 프로세스로 운용합니다.</p>
+<p class="po-section-subtitle">2대 서버, 3개 프로세스로 운용합니다. Docker 배포 시 Nginx가 프론트엔드를 대체하여 단일 포트(80)로 통합됩니다.</p>
 
 <div style="margin: 16px 0 4px;">
     <img src="images/arch-system.svg" alt="시스템 구성도" style="max-width: 380px; display: block; margin: 0 auto;">
@@ -51,7 +51,7 @@
         <tbody>
             <tr>
                 <td><strong>프론트엔드</strong></td>
-                <td>Windows VM :8080<br><small>Tomcat 또는 Python http.server</small></td>
+                <td>Windows VM :8080<br><small>Tomcat / Python http.server / Docker+Nginx :80</small></td>
                 <td>HTML, JS, CSS 정적 파일 서빙. 프레임워크 없이 Vanilla JS로 구성.</td>
             </tr>
             <tr>

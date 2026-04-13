@@ -83,14 +83,25 @@
 
 ## 빠른 시작
 
-### 1. 프론트엔드 실행
+### 방법 A: Docker (권장)
+
+```bash
+docker compose up -d
+# → http://localhost 으로 접속
+```
+
+> 상세 설정 및 폐쇄망 배포는 [DOCKER-OPERATIONS](docs/13-DOCKER-OPERATIONS.md) 참조.
+
+### 방법 B: 로컬 Python
+
+#### 1. 프론트엔드 실행
 
 ```bash
 cd smart-document-platform
 python -m http.server 8080
 ```
 
-### 2. 백엔드 실행 (AI/편집/인증 기능)
+#### 2. 백엔드 실행 (AI/편집/인증 기능)
 
 ```bash
 cd backend
@@ -98,10 +109,10 @@ pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-### 3. 접속
+### 접속
 
-- Launcher: `http://localhost:8080/launcher.html`
-- Explorer: `http://localhost:8080/`
+- Launcher: `http://localhost:8080/launcher.html` (로컬) / `http://localhost/launcher.html` (Docker)
+- Explorer: `http://localhost:8080/` (로컬) / `http://localhost/` (Docker)
 - Notebook(Translator): `http://localhost:8080/translator.html`
 - Verify(Compare): `http://localhost:8080/compare.html`
 
@@ -140,6 +151,7 @@ python tools/create-admin.py
 | 문서 | 설명 |
 |------|------|
 | [PRODUCTION-READINESS](docs/10-PRODUCTION-READINESS.md) | 운영 준비도 평가, 장비 사양, 배포 아키텍처 |
+| [DOCKER-OPERATIONS](docs/13-DOCKER-OPERATIONS.md) | Docker 배포 자동화, 컨테이너 운영, 패치 적용 |
 | [GIT-GUIDE](docs/08-GIT-GUIDE.md) | Git 사용법, GitHub 연동, 브랜치 전략 |
 | [PLATFORM-VISION](docs/09-PLATFORM-VISION.md) | 플랫폼 발전 방향, 로드맵 |
 
@@ -246,6 +258,7 @@ smart-document-platform/
 │       ├── similarity_engine.py  # 유사도 검사 (Winnowing + 시맨틱 임베딩)
 │       ├── rule_engine.py        # 문서 규칙 검증 엔진 (21종)
 │       ├── export_service.py     # 검토 리포트 내보내기 (XLSX/HTML/TXT)
+│       ├── doc_converter.py      # 문서 변환 (DOCX/PDF → HTML)
 │       ├── document_extractor.py # 문서 텍스트 추출 (HTML/PDF/DOCX)
 │       ├── keyword_search.py     # 키워드 검색 (BM25)
 │       ├── vector_search.py      # FAISS 벡터 검색 + RRF 병합
@@ -262,6 +275,10 @@ smart-document-platform/
 │       ├── auth.py               # 인증 서비스 (세션, 패스워드 해싱)
 │       ├── analytics.py          # 통계 서비스 (SQLite, 대시보드 집계)
 │       └── settings_service.py   # settings.json CRUD, 런타임 반영
+│   └── rules/              # 규칙 엔진 정의 (Verify)
+│       ├── custom.json     # 자체 규칙 6종
+│       ├── mil-structure.json # MIL-STD 구조 규칙 7종
+│       └── ste-writing.json   # ASD-STE100 작성 규칙 8종
 ├── models/                 # 로컬 리랭커 모델 (bge-reranker-v2-m3)
 ├── tools/                  # 유틸리티 스크립트
 │   ├── build-search-index.py  # 검색 인덱스 생성
@@ -272,6 +289,11 @@ smart-document-platform/
 │   ├── excel-to-menu.py       # Excel→메뉴 구조 변환
 │   ├── import-glossary.py     # 용어집 임포트
 │   └── converter/             # 문서 변환기 (DOCX/PDF → HTML)
+├── Dockerfile              # FastAPI 백엔드 컨테이너
+├── docker-compose.yml      # 프로덕션 오케스트레이션
+├── docker/                 # Docker 설정 (Nginx Dockerfile, conf)
+├── deploy.sh               # 전체 이미지 배포 스크립트
+├── patch-apply.sh          # 패치 적용 스크립트
 └── docs/                   # 문서
     ├── 01-QUICK-START.md      # 빠른 시작
     ├── 02-INSTALLATION.md     # Tomcat 설치
@@ -285,6 +307,7 @@ smart-document-platform/
     ├── 10-PRODUCTION-READINESS.md # 운영 준비도
     ├── 11-COMPARE-SYSTEM.md   # Verify(Compare) 비교 모드
     ├── 12-VERIFY-SYSTEM.md    # Verify 규칙 엔진
+    ├── 13-DOCKER-OPERATIONS.md # Docker 배포 및 운영
     └── RAG-TECHNICAL-REPORT.md # RAG 기술 보고서
 ```
 

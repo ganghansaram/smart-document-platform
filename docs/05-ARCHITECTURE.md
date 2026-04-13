@@ -139,11 +139,20 @@ Smart Document Platform 백엔드 시스템 설계 및 배포 문서 — Explore
 |------|------|------|
 | fastapi | 0.128.3 | REST API 프레임워크 |
 | uvicorn | 0.40.0 | ASGI 서버 |
-| requests | 2.32.3 | Ollama API 호출 |
+| pydantic | 2.12.5 | 데이터 검증 |
+| pydantic-settings | 2.13.1 | 설정 관리 |
 | python-multipart | 0.0.22 | 파일 업로드 지원 |
-| faiss-cpu | ≥1.7.4 | FAISS 벡터 검색 |
-| numpy | ≥1.24.0 | 벡터 연산 |
-| sentence-transformers | ≥2.2.2 | Cross-encoder 리랭커 |
+| requests | 2.32.3 | HTTP 클라이언트 |
+| httpx | ≥0.27.0 | 비동기 HTTP (LLM 프로바이더) |
+| faiss-cpu | 1.12.0 | FAISS 벡터 검색 |
+| sentence-transformers | 5.1.2 | Cross-encoder 리랭커 |
+| rank-bm25 | 0.2.2 | BM25 키워드 검색 |
+| kiwipiepy | ≥0.18.0 | 한국어 형태소 분석 |
+| ollama | 0.6.1 | Ollama 클라이언트 |
+| pdf2zh-next | 2.8.2 | PDF 번역 엔진 (PDFMathTranslate) |
+| python-docx | 1.2.0 | DOCX 변환 |
+| openpyxl | ≥3.1.0 | Excel 파일 처리 |
+| rapidocr-onnxruntime | 1.4.4 | 스캔 PDF OCR (Verify) |
 
 ---
 
@@ -189,6 +198,7 @@ smart-document-platform/
 │   │   ├── llm_provider.py         # LLM 프로바이더 추상화 (Ollama/OpenAI 호환)
 │   │   ├── llm_client.py           # LLM 응답 생성 래퍼 (동기/스트리밍)
 │   │   ├── korean_tokenizer.py     # 한국어 형태소 분석 (kiwipiepy, 폴백: 공백 분리)
+│   │   ├── doc_converter.py         # 문서 변환 (DOCX/PDF → HTML)
 │   │   ├── document_extractor.py   # 문서 텍스트 추출 (HTML/PDF/DOCX)
 │   │   ├── settings_service.py     # settings.json CRUD, 런타임 config 적용
 │   │   ├── analytics.py            # 접속 통계 서비스 (SQLite, 대시보드 집계)
@@ -204,6 +214,12 @@ smart-document-platform/
 │   │   ├── similarity_engine.py    # 유사도 검사 (Winnowing L1 + bge-m3 시맨틱 L3)
 │   │   ├── rule_engine.py          # 문서 규칙 검증 엔진 (21종 규칙)
 │   │   └── export_service.py       # 검토 리포트 내보내기 (XLSX/HTML/TXT)
+│   │
+│   ├── rules/                      # 규칙 엔진 정의 (Verify)
+│   │   ├── _schema.json            # 규칙 JSON 스키마
+│   │   ├── custom.json             # 자체 규칙 6종
+│   │   ├── mil-structure.json      # MIL-STD 문서 구조 규칙 7종
+│   │   └── ste-writing.json        # ASD-STE100 작성 규칙 8종
 │   │
 │   └── packages/                   # 오프라인 설치용 wheel 파일
 │       └── (pip download 결과물)
@@ -236,6 +252,8 @@ smart-document-platform/
 │   ├── html_to_text.py             # HTML→검색텍스트 (테이블→MD, MathML→LaTeX)
 │   ├── excel-to-menu.py            # 엑셀 → menu.json 변환
 │   ├── create-admin.py             # CLI admin 계정 생성/관리
+│   ├── daily-backup.py             # 일일 백업 (SQLite + settings + translator, 30일 보존)
+│   ├── import-glossary.py          # 용어집 임포트
 │   └── converter/                  # 문서 변환기 (DOCX/PDF → HTML, 수식 변환, COM 전처리 포함)
 │
 ├── index.html                     # Explorer (문서 탐색)
@@ -288,7 +306,17 @@ smart-document-platform/
 │   ├── compare.css                # Verify 전용 스타일
 │   └── images/                    # UI 이미지 (로고, 배너 등)
 │
-└── contents/                      # Explorer HTML 콘텐츠
+├── contents/                      # Explorer HTML 콘텐츠
+│
+├── Dockerfile                     # FastAPI 백엔드 컨테이너
+├── docker-compose.yml             # 프로덕션 오케스트레이션 (Nginx + Backend)
+├── docker-compose.override.yml    # 개발 환경 오버라이드 (bind mount)
+├── docker/                        # Docker 관련 설정
+│   ├── Dockerfile.nginx           # Nginx 리버스 프록시 컨테이너
+│   ├── nginx.conf                 # 프로덕션 Nginx 설정
+│   └── nginx.dev.conf             # 개발 Nginx 설정
+├── deploy.sh                      # 전체 이미지 배포 스크립트
+└── patch-apply.sh                 # 패치(프론트엔드만) 적용 스크립트
 ```
 
 ---
