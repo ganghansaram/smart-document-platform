@@ -17,7 +17,7 @@
 .platform-header-logo {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 8px;
 }
 
 .platform-header-logo img {
@@ -31,7 +31,7 @@
     color: #fff;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 8px;
     transition: opacity 0.2s ease;
 }
 

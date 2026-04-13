@@ -40,7 +40,7 @@ function initPlatformHeader(config) {
         var logoLink = document.createElement('a');
         logoLink.href = '#';
         logoLink.className = 'ph-logo-link';
-        logoLink.innerHTML = '<img src="css/images/kai_logo.png" alt="KAI">';
+        logoLink.innerHTML = '<img src="css/images/team_logo.svg" alt="KAI">';
         var h1 = document.createElement('h1');
         h1.textContent = title;
         logoLink.appendChild(h1);
@@ -50,7 +50,7 @@ function initPlatformHeader(config) {
         });
         logo.appendChild(logoLink);
     } else {
-        logo.innerHTML = '<img src="css/images/kai_logo.png" alt="KAI">';
+        logo.innerHTML = '<img src="css/images/team_logo.svg" alt="KAI">';
         var h1 = document.createElement('h1');
         h1.textContent = title;
         logo.appendChild(h1);
