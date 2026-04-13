@@ -186,8 +186,8 @@
     transition: opacity 0.3s ease;
 }
 
-/* .loading-spinner — .spinner .spinner-lg 기반, 색상 override만 유지 */
-.editor-loading-overlay .loading-spinner {
+/* 에디터 로딩 스피너 색상 override (.spinner 공통 기반) */
+.editor-loading-overlay .spinner {
     border-color: var(--border-color);
     border-top-color: var(--primary-navy);
 }

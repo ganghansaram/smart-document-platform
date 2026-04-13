@@ -395,19 +395,7 @@ body[data-theme="dark"] .tree-item .item-icon.icon-settings {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
-.upload-spinner {
-    width: 40px;
-    height: 40px;
-    margin: 0 auto 20px;
-    border: 3px solid var(--border-color);
-    border-top-color: var(--primary-navy);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+/* upload-spinner → .spinner .spinner-lg (components.css 공통) */
 
 .upload-progress-box p {
     margin: 0;

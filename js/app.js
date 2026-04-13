@@ -525,7 +525,7 @@ function showLoadingOverlay(container) {
 
     var overlay = document.createElement('div');
     overlay.className = 'loading-overlay';
-    overlay.innerHTML = '<div class="loading-spinner"></div><span class="loading-text">Loading...</span>';
+    overlay.innerHTML = '<div class="spinner spinner-lg"></div><span class="loading-text">Loading...</span>';
     container.style.position = 'relative';
     container.appendChild(overlay);
 }

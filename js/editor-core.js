@@ -580,7 +580,7 @@ var EditorCore = (function () {
                 inner.style.minHeight = '0';
                 inner.innerHTML =
                     '<div class="editor-loading-overlay" id="ec-loading">' +
-                        '<div class="spinner spinner-lg loading-spinner"></div>' +
+                        '<div class="spinner spinner-lg"></div>' +
                         '<div class="loading-text">Loading editor...</div>' +
                     '</div>' +
                     '<div class="monaco-split-container">' +
