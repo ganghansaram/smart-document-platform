@@ -499,6 +499,8 @@
                 if (loading) loading.remove();
                 var old = panel.querySelector('.cp-text-content');
                 if (old) old.remove();
+                var oldMd = panel.querySelector('.sim-md-view');
+                if (oldMd) oldMd.remove();
 
                 var html = '<div class="cp-text-content">';
                 var lastPage = null;
@@ -1731,7 +1733,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         target_text: simState.a.plain_text,
-                        reference_text: simState.b.plain_text
+                        reference_text: simState.b.plain_text,
+                        target_markdown: simState.a.markdown || '',
+                        reference_markdown: simState.b.markdown || ''
                     }),
                     credentials: 'include'
                 })
@@ -2464,9 +2468,28 @@
 
                 var iA = 0, iB = 0;
                 var changeOrder = buildChangeOrder(changes, parasA, parasB);
+                var pmA = docState.a.pageMap, pmB = docState.b.pageMap;
+                var lastPageA = null, lastPageB = null;
 
                 for (var k = 0; k < changeOrder.length; k++) {
                     var entry = changeOrder[k];
+
+                    // 페이지 구분선 삽입 (A side)
+                    var idxA = entry.iA !== undefined ? entry.iA : (entry.change ? entry.change.indexA : undefined);
+                    if (pmA && idxA !== undefined && pmA[idxA]) {
+                        if (pmA[idxA] !== lastPageA) {
+                            if (lastPageA !== null) htmlA += '<div class="cp-page-break"><span>Page ' + pmA[idxA] + '</span></div>';
+                            lastPageA = pmA[idxA];
+                        }
+                    }
+                    // 페이지 구분선 삽입 (B side)
+                    var idxB = entry.iB !== undefined ? entry.iB : (entry.change ? entry.change.indexB : undefined);
+                    if (pmB && idxB !== undefined && pmB[idxB]) {
+                        if (pmB[idxB] !== lastPageB) {
+                            if (lastPageB !== null) htmlB += '<div class="cp-page-break"><span>Page ' + pmB[idxB] + '</span></div>';
+                            lastPageB = pmB[idxB];
+                        }
+                    }
 
                     if (entry.type === 'equal') {
                         htmlA += '<div class="cp-paragraph" data-index="' + entry.iA + '">' + escapeHTML(parasA[entry.iA]) + '</div>';
@@ -2507,6 +2530,8 @@
             function replaceContent(panel, html) {
                 var old = panel.querySelector('.cp-text-content');
                 if (old) old.remove();
+                var oldMd = panel.querySelector('.sim-md-view');
+                if (oldMd) oldMd.remove();
                 var ph = panel.querySelector('.panel-placeholder');
                 if (ph) ph.remove();
                 var loading = panel.querySelector('.cp-upload-loading');

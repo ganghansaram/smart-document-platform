@@ -248,6 +248,8 @@ async def api_similarity(
 
     threshold_high = body.get("threshold_high")
     threshold_medium = body.get("threshold_medium")
+    target_markdown = body.get("target_markdown") or None
+    reference_markdown = body.get("reference_markdown") or None
 
     try:
         import asyncio
@@ -257,6 +259,8 @@ async def api_similarity(
             reference_text=reference_text,
             threshold_high=threshold_high,
             threshold_medium=threshold_medium,
+            target_markdown=target_markdown,
+            reference_markdown=reference_markdown,
         )
     except Exception as e:
         logger.exception("유사도 검사 실패")

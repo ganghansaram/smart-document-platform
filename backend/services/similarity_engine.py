@@ -106,6 +106,8 @@ def run_similarity(
     reference_text: str,
     threshold_high: Optional[float] = None,
     threshold_medium: Optional[float] = None,
+    target_markdown: Optional[str] = None,
+    reference_markdown: Optional[str] = None,
 ) -> dict:
     """다층 파이프라인으로 유사도 비교를 수행한다.
 
@@ -123,12 +125,16 @@ def run_similarity(
         config, "VERIFY_SIMILARITY_THRESHOLD_MEDIUM", DEFAULT_THRESHOLD_MEDIUM
     )
 
-    # 0. 문장 분리
-    target_sents = split_sentences(target_text)
-    ref_sents = split_sentences(reference_text)
+    # 0. 문장 분리 (markdown이 있으면 페이지 마커 추출)
+    target_sents, target_page_breaks = split_sentences(
+        target_markdown or target_text, extract_pages=bool(target_markdown)
+    )
+    ref_sents, ref_page_breaks = split_sentences(
+        reference_markdown or reference_text, extract_pages=bool(reference_markdown)
+    )
 
     if not target_sents or not ref_sents:
-        return _empty_result(target_sents, ref_sents)
+        return _empty_result(target_sents, ref_sents, target_page_breaks, ref_page_breaks)
 
     M, N = len(target_sents), len(ref_sents)
     logger.info("유사도 검사 시작: 대상 %d문장, 참조 %d문장", M, N)
@@ -273,8 +279,8 @@ def run_similarity(
         "matches": merged,
         "target_sentences": target_sents,
         "reference_sentences": ref_sents,
-        "display_html_a": _build_tagged_html(target_sents),
-        "display_html_b": _build_tagged_html(ref_sents),
+        "display_html_a": _build_tagged_html(target_sents, target_page_breaks),
+        "display_html_b": _build_tagged_html(ref_sents, ref_page_breaks),
     }
 
 
@@ -411,19 +417,58 @@ def compute_similarity_matrix(target_sents: list, ref_sents: list) -> np.ndarray
 # 문장 분리 (기존 유지)
 # ══════════════════════════════════════════
 
-def split_sentences(text: str) -> list:
-    """텍스트를 문장 단위로 분리한다."""
+def split_sentences(text: str, extract_pages: bool = False) -> tuple:
+    """텍스트를 문장 단위로 분리한다.
+
+    Args:
+        text: 분리할 텍스트 (markdown일 경우 <!-- Page N --> 마커 포함 가능)
+        extract_pages: True면 페이지 마커를 추출하여 page_breaks 반환
+
+    Returns:
+        (sentences, page_breaks) 튜플.
+        page_breaks: {sent_idx: page_num} 딕셔너리 (페이지 경계 문장 인덱스 → 페이지 번호)
+    """
     if not text or not text.strip():
-        return []
+        return [], {}
 
-    paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
+    page_breaks = {}
+    current_page = None
+    next_page = None
+    _page_re = re.compile(r'<!--\s*Page\s+(\d+)\s*-->')
+
+    paragraphs = []
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        # 페이지 마커 감지
+        if extract_pages:
+            pm = _page_re.match(stripped)
+            if pm:
+                next_page = int(pm.group(1))
+                continue
+            # 수평선 (--- 등)은 페이지 마커 뒤에 오면 건너뜀
+            if next_page is not None and re.match(r'^---+$', stripped):
+                continue
+        paragraphs.append(stripped)
+        # 이 단락의 첫 문장이 새 페이지의 시작
+        if next_page is not None:
+            page_breaks[len(paragraphs) - 1] = next_page
+            current_page = next_page
+            next_page = None
+
     sentences = []
-    for para in paragraphs:
+    sent_page_breaks = {}
+    for pi, para in enumerate(paragraphs):
+        sent_start_idx = len(sentences)
         sents = _sentence_split(para)
+        sents = [s for s in sents if len(s.split()) >= 2]
         sentences.extend(sents)
+        # 이 단락이 페이지 경계이면 첫 문장에 마킹
+        if pi in page_breaks and sents:
+            sent_page_breaks[sent_start_idx] = page_breaks[pi]
 
-    sentences = [s for s in sentences if len(s.split()) >= 2]
-    return sentences
+    return sentences, sent_page_breaks
 
 
 def _sentence_split(text: str) -> list:
@@ -552,20 +597,23 @@ def _compute_summary(matches: list, bp_matches: list, target_sents: list) -> dic
     }
 
 
-def _build_tagged_html(sentences: list) -> str:
+def _build_tagged_html(sentences: list, page_breaks: dict = None) -> str:
     """문장 배열을 data-sent-idx 태깅된 HTML로 변환한다.
 
     백엔드에서 확정적으로 태깅하므로 프론트에서 매핑 불필요.
+    page_breaks가 있으면 해당 sent_idx 앞에 페이지 구분선을 삽입한다.
     """
     import html as html_mod
     parts = []
     for i, sent in enumerate(sentences):
+        if page_breaks and i in page_breaks:
+            parts.append(f'<div class="cp-page-break"><span>Page {page_breaks[i]}</span></div>')
         escaped = html_mod.escape(sent)
         parts.append(f'<p data-sent-idx="{i}" class="sim-sent">{escaped}</p>')
     return "\n".join(parts)
 
 
-def _empty_result(target_sents, ref_sents):
+def _empty_result(target_sents, ref_sents, target_page_breaks=None, ref_page_breaks=None):
     """빈 결과"""
     total = len(target_sents) if target_sents else 0
     return {
@@ -582,6 +630,6 @@ def _empty_result(target_sents, ref_sents):
         "matches": [],
         "target_sentences": target_sents or [],
         "reference_sentences": ref_sents or [],
-        "display_html_a": _build_tagged_html(target_sents or []),
-        "display_html_b": _build_tagged_html(ref_sents or []),
+        "display_html_a": _build_tagged_html(target_sents or [], target_page_breaks),
+        "display_html_b": _build_tagged_html(ref_sents or [], ref_page_breaks),
     }
