@@ -75,7 +75,7 @@
 
         // Scroll sync
         var scrollSyncEnabled = true; // 기본 ON — 좌측 스크롤 시 우측 페이지 동기화
-
+        var scrollSyncing = false;  // 재진입 방지
 
         // ── DOM refs ──
         var $viewList       = document.getElementById('view-list');
@@ -1742,7 +1742,26 @@
             $scrollSyncBtn.classList.toggle('active', scrollSyncEnabled);
         });
 
+        function syncScroll(source, target) {
+            if (!scrollSyncEnabled || scrollSyncing) return;
+            scrollSyncing = true;
+            var maxS = source.scrollHeight - source.clientHeight;
+            var maxT = target.scrollHeight - target.clientHeight;
+            if (maxS > 0 && maxT > 0) {
+                var ratio = source.scrollTop / maxS;
+                target.scrollTop = ratio * maxT;
+            }
+            scrollSyncing = false;
+        }
+
+        // 스크롤 동기화: panel-scroll 요소에 부착 (panel 자체는 overflow:hidden)
         var $rightScroll = document.getElementById('right-scroll');
+        $leftScroll.addEventListener('scroll', function() {
+            syncScroll($leftScroll, $rightScroll);
+        });
+        $rightScroll.addEventListener('scroll', function() {
+            syncScroll($rightScroll, $leftScroll);
+        });
 
         // ══════════════════════════════════════
         // Annotations (마킹/형광펜)
