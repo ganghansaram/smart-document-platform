@@ -394,7 +394,7 @@
     "title": "서버 구성",
     "url": "contents/guide/architecture.html",
     "path": "플랫폼 가이드 > 기술 문서 > 시스템 아키텍처 > 서버 구성",
-    "content": "2대 서버, 3개 프로세스로 운용합니다.\n\n시스템 구성도 — 프론트엔드, 백엔드, AI 엔진 3계층 구조\n\n| 계층 | 서버 | 역할 |\n| --- | --- | --- |\n| 프론트엔드 | Windows VM :8080 Tomcat 또는 Python http.server | HTML, JS, CSS 정적 파일 서빙. 프레임워크 없이 Vanilla JS로 구성. |\n| 백엔드 | Windows VM :8000 FastAPI + Uvicorn | 인증, 검색, 채팅, 번역, 비교, 설정 등 55+ API 엔드포인트 제공. |\n| AI 엔진 | Linux GPU :11434 Ollama (NVIDIA L40-48Q) | LLM 추론(gemma3), 임베딩(bge-m3), 리랭킹(bge-reranker-v2-m3). |\n\n설계 원칙: 프론트엔드는 백엔드 없이도 기본 문서 열람이 가능합니다.\nAI 채팅, 검색, 번역 등 고급 기능만 백엔드 + AI 엔진이 필요합니다.\n이 계층 분리 덕분에 장비 구성에 따라 기능을 단계적으로 도입할 수 있습니다.",
+    "content": "2대 서버, 3개 프로세스로 운용합니다. Docker 배포 시 Nginx가 프론트엔드를 대체하여 단일 포트(80)로 통합됩니다.\n\n시스템 구성도 — 프론트엔드, 백엔드, AI 엔진 3계층 구조\n\n| 계층 | 서버 | 역할 |\n| --- | --- | --- |\n| 프론트엔드 | Windows VM :8080 Tomcat / Python http.server / Docker+Nginx :80 | HTML, JS, CSS 정적 파일 서빙. 프레임워크 없이 Vanilla JS로 구성. |\n| 백엔드 | Windows VM :8000 FastAPI + Uvicorn | 인증, 검색, 채팅, 번역, 비교, 설정 등 55+ API 엔드포인트 제공. |\n| AI 엔진 | Linux GPU :11434 Ollama (NVIDIA L40-48Q) | LLM 추론(gemma3), 임베딩(bge-m3), 리랭킹(bge-reranker-v2-m3). |\n\n설계 원칙: 프론트엔드는 백엔드 없이도 기본 문서 열람이 가능합니다.\nAI 채팅, 검색, 번역 등 고급 기능만 백엔드 + AI 엔진이 필요합니다.\n이 계층 분리 덕분에 장비 구성에 따라 기능을 단계적으로 도입할 수 있습니다.",
     "section_id": "서버-구성",
     "heading_level": 2,
     "metadata": {
@@ -550,7 +550,7 @@
     "title": "개발 경과 보고",
     "url": "contents/guide/dev-progress.html",
     "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 개발 경과 보고",
-    "content": "정적 웹북에서 지식 플랫폼까지 — 7단계 발전 경과와 향후 방향\n\nDevelopment Progress",
+    "content": "정적 웹북에서 지식 플랫폼까지 — 8단계 발전 경과와 향후 방향\n\nDevelopment Progress",
     "section_id": "개발-경과-보고",
     "heading_level": 1,
     "metadata": {
@@ -563,7 +563,7 @@
     "title": "플랫폼 개발 경과 및 로드맵",
     "url": "contents/guide/dev-progress.html",
     "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 플랫폼 개발 경과 및 로드맵",
-    "content": "2025년 정적 웹북으로 시작하여, RAG 검색, AI 번역, 문서 검증까지\n7단계에 걸쳐 발전해 왔습니다.\n현재 Explorer, Notebook, Verify 3개 서브시스템이 운용 중이며,\nAuthor(AI 저작) 시스템을 설계 중입니다.\n\n7단계 진화\n60+ 파일\n28,000+ 줄\n55+ API\n\n이 문서는 플랫폼이 어디서 출발하여 어디까지 왔고, 앞으로 어디로 가는지를 다룹니다.\n기능 나열이 아닌 개발 경과와 의사결정 배경에 초점을 맞춘 보고 문서입니다.",
+    "content": "2025년 정적 웹북으로 시작하여, RAG 검색, AI 번역, 문서 검증, Docker 컨테이너화까지\n8단계에 걸쳐 발전해 왔습니다.\n현재 Explorer, Notebook, Verify 3개 서브시스템이 운용 중이며,\nAuthor(AI 저작) 시스템을 설계 중입니다.\n\n8단계 진화\n60+ 파일\n28,000+ 줄\n55+ API\n\n이 문서는 플랫폼이 어디서 출발하여 어디까지 왔고, 앞으로 어디로 가는지를 다룹니다.\n기능 나열이 아닌 개발 경과와 의사결정 배경에 초점을 맞춘 보고 문서입니다.",
     "section_id": "플랫폼-개발-경과-및-로드맵",
     "heading_level": 2,
     "metadata": {
@@ -576,7 +576,7 @@
     "title": "발전 경과",
     "url": "contents/guide/dev-progress.html",
     "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 발전 경과",
-    "content": "정적 문서 뷰어에서 지식 플랫폼으로 진화한 7단계입니다.\n\n| 단계 | 목표 | 주요 결과 |\n| --- | --- | --- |\n| Phase 1 | 정적 웹북 | DOCX → HTML 변환, 문서 트리 네비게이션, 다크모드 |\n| Phase 2 | RAG 검색 + 에디터 | 하이브리드 검색 (BM25+FAISS), AI 채팅, Monaco 에디터 |\n| Phase 3 | 관리 + 통계 | RBAC 3단계, 관리자 설정 GUI, 접속 통계, 콘텐츠 업로드 |\n| Phase 4 | 번역 시스템 | Notebook 서브시스템 — PDF 번역, 듀얼 패널 뷰어, AI 분석 |\n| Phase 5 | 문서 검증 | Verify 서브시스템 — 비교, 유사도, 21종 규칙 엔진 |\n| Phase 6 | 품질 강화 | 디자인 시스템 (tokens.css), 운영 안정성, 구조화 로깅 |\n| Phase 7 | 플랫폼 통합 | 공통 헤더, 시스템 전환, 플랫폼 가이드, 런처 통합 |",
+    "content": "정적 문서 뷰어에서 지식 플랫폼으로 진화한 8단계입니다.\n\n| 단계 | 목표 | 주요 결과 |\n| --- | --- | --- |\n| Phase 1 | 정적 웹북 | DOCX → HTML 변환, 문서 트리 네비게이션, 다크모드 |\n| Phase 2 | RAG 검색 + 에디터 | 하이브리드 검색 (BM25+FAISS), AI 채팅, Monaco 에디터 |\n| Phase 3 | 관리 + 통계 | RBAC 3단계, 관리자 설정 GUI, 접속 통계, 콘텐츠 업로드 |\n| Phase 4 | 번역 시스템 | Notebook 서브시스템 — PDF 번역, 듀얼 패널 뷰어, AI 분석 |\n| Phase 5 | 문서 검증 | Verify 서브시스템 — 비교, 유사도, 21종 규칙 엔진 |\n| Phase 6 | 품질 강화 | 디자인 시스템 (tokens.css), 운영 안정성, 구조화 로깅 |\n| Phase 7 | Verify 고도화 + 플랫폼 통합 | 21종 규칙 엔진, 유사도 검사, 스코어링, 공통 헤더, 플랫폼 가이드 |\n| Phase 8 | Docker + 운영 안정화 | Nginx+FastAPI 컨테이너화, 관리자 설정 정비(8탭), Docker Parity |",
     "section_id": "발전-경과",
     "heading_level": 2,
     "metadata": {
@@ -654,7 +654,7 @@
     "title": "향후 로드맵",
     "url": "contents/guide/dev-progress.html",
     "path": "플랫폼 가이드 > 기술 문서 > 개발 경과 보고 > 향후 로드맵",
-    "content": "| 단계 | 목표 | 상태 | 주요 내용 |\n| --- | --- | --- | --- |\n| Phase A | 품질 향상 | 완료 | 디자인 시스템, 운영 안정성, Notebook 플랫폼 완성 |\n| Phase A+ | 지식 플랫폼 | 완료 | Verify 고도화, 플랫폼 가이드, 관리자 설정 통합 |\n| Phase B | 데이터 아키텍처 | 진행 중 | PDF 입력 통일, Notebook 뷰어 개선, MD 추출 품질 강화 |\n| Phase C | Author MVP | 계획 | AI 보조 문서 저작, 요구사항 추적, 참조 인용 |\n| Phase D | 시스템 연계 | 계획 | 서브시스템 간 데이터 흐름, 크로스 참조 |\n| Phase E | 공통 서비스 | 계획 | 공유 컴포넌트 분리, 인프라 통합 |\n\n설계 원칙: 한 번에 하나의 단계만 진행하며, 각 단계마다 실제 사용자 가치를 전달합니다.\n검증 후 다음 단계로 확장하고, 필요할 때만 분리합니다.",
+    "content": "| 단계 | 목표 | 상태 | 주요 내용 |\n| --- | --- | --- | --- |\n| Phase A | 품질 향상 | 완료 | 디자인 시스템, 운영 안정성, Notebook 플랫폼 완성 |\n| Phase A+ | 지식 플랫폼 | 완료 | Verify 고도화(21종 규칙, 유사도, 스코어링), 플랫폼 가이드, 관리자 설정 통합 |\n| Phase B | Docker + 운영 | 완료 | Docker 컨테이너화(Nginx+FastAPI), 관리자 설정 정비(8탭), Docker Parity 방어선 |\n| Phase C | Author MVP | 계획 | AI 보조 문서 저작, 요구사항 추적, 참조 인용 |\n| Phase D | 시스템 연계 | 계획 | 서브시스템 간 데이터 흐름, 크로스 참조 |\n| Phase E | 공통 서비스 | 계획 | 공유 컴포넌트 분리, 인프라 통합 |\n\n설계 원칙: 한 번에 하나의 단계만 진행하며, 각 단계마다 실제 사용자 가치를 전달합니다.\n검증 후 다음 단계로 확장하고, 필요할 때만 분리합니다.",
     "section_id": "로드맵",
     "heading_level": 2,
     "metadata": {
@@ -953,7 +953,7 @@
     "title": "빠른 시작",
     "url": "contents/guide/platform-overview.html",
     "path": "플랫폼 가이드 > 사용 가이드 > 플랫폼 소개 > 빠른 시작",
-    "content": "플랫폼은 두 개의 프로세스(백엔드 + 정적 파일 서버)로 구동됩니다. 별도 빌드 과정이나 외부 서비스 연동이 불필요합니다.\n\n| 역할 | 명령 | 접속 주소 |\n| --- | --- | --- |\n| 백엔드 API | cd backend && python main.py | http://localhost:8000 |\n| 프론트엔드 | python -m http.server 8080 | http://localhost:8080 |",
+    "content": "플랫폼은 두 가지 방식으로 배포할 수 있습니다. 별도 빌드 과정이나 외부 서비스 연동이 불필요합니다.\n\n방법 A: Docker (권장)\n\n| 역할 | 명령 | 접속 주소 |\n| --- | --- | --- |\n| 전체 스택 | docker compose up -d | http://localhost |\n\nNginx 리버스 프록시가 프론트엔드와 백엔드를 단일 포트(80)로 통합합니다.\n\n방법 B: 로컬 Python\n\n| 역할 | 명령 | 접속 주소 |\n| --- | --- | --- |\n| 백엔드 API | cd backend && python main.py | http://localhost:8000 |\n| 프론트엔드 | python -m http.server 8080 | http://localhost:8080 |",
     "section_id": "빠른-시작",
     "heading_level": 3,
     "metadata": {

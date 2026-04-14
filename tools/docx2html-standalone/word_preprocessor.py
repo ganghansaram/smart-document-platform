@@ -40,7 +40,7 @@ def preprocess_docx(input_path: str, output_path: str = None) -> str:
 
     if output_path is None:
         temp_dir = _get_temp_dir()
-        fd, output_path = tempfile.mkstemp(suffix=".docx", prefix="preprocessed_", dir=temp_dir)
+        fd, output_path = tempfile.mkstemp(suffix=".docx_1", prefix="preprocessed_", dir=temp_dir)
         os.close(fd)
     else:
         output_path = str(Path(output_path).resolve())
@@ -59,18 +59,22 @@ def preprocess_docx(input_path: str, output_path: str = None) -> str:
         _update_fields(doc)
 
         # SaveAs2: FileFormat 12 = docx
+        # DRM 우회: .docx_1 확장자로 저장 후 rename (.docx → DRM 후킹 대상)
         doc.SaveAs2(output_path, FileFormat=12)
-        logger.info("DOCX 전처리 완료: %s", output_path)
-        return output_path
+        final_path = output_path[:-2]  # .docx_1 → .docx
+        os.rename(output_path, final_path)
+        logger.info("DOCX 전처리 완료: %s", final_path)
+        return final_path
 
     except Exception as e:
         logger.warning("DOCX 전처리 실패 (원본 사용): %s", e)
         # 실패 시 임시 파일 정리
-        if output_path != input_path and os.path.exists(output_path):
-            try:
-                os.unlink(output_path)
-            except OSError:
-                pass
+        for p in (output_path, output_path[:-2]):
+            if p != input_path and os.path.exists(p):
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
         return input_path
 
     finally:
