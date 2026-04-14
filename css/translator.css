@@ -757,6 +757,8 @@ body[data-theme="dark"] .doc-view-btn.active {
 /* 요약 탭: 섹션 아코디언 펼침 시 스크롤 */
 #ai-tab-summary {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     min-height: 0;
 }
@@ -2520,6 +2522,8 @@ body[data-theme="dark"] #mm-svg path {
     padding: var(--space-xl) var(--space-md);
     gap: var(--space-sm);
     text-align: center;
+    flex: 1;
+    min-height: 0;
 }
 .ai-state-msg {
     color: var(--text-light);
