@@ -60,7 +60,7 @@ body {
     position: relative;
     width: calc(100% + 64px);
     margin: -32px -32px 20px;
-    height: 195px;
+    height: 200px;
     overflow: hidden;
     flex-shrink: 0;
     pointer-events: none;
@@ -88,6 +88,14 @@ body {
     color: #fff;
     text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
     letter-spacing: -0.5px;
+}
+
+.hero-overlay-sub {
+    font-size: 13.5px;
+    color: rgba(255, 255, 255, 0.65);
+    margin-top: 5px;
+    letter-spacing: 0.3px;
+    font-weight: 400;
 }
 
 .hero-banner-fade {

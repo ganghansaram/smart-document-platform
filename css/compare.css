@@ -524,6 +524,10 @@ body.cp-resizing {
     display: none !important;
 }
 
+.compare-body.mode-hub {
+    padding: 0 0 0;
+}
+
 .mode-hub .compare-main {
     display: flex;
 }
@@ -540,9 +544,10 @@ body.cp-resizing {
     display: none;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 36px;
     padding: var(--space-xl);
+    overflow-y: auto;
 }
 
 .mode-hub .verify-hub {
@@ -2883,4 +2888,179 @@ body[data-theme="dark"] .vd-header-btn:hover { background: rgba(255,255,255,0.08
     counter-reset: para;
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   Verify 히어로 배너 — 분석 그리드 + glow + grain (CSS only)
+   ══════════════════════════════════════════════════════════════ */
+
+.verify-hero {
+    position: relative;
+    width: calc(100% + 64px);
+    margin: -32px -32px 20px;
+    height: 200px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: linear-gradient(150deg, #091e30 0%, #0f2d47 40%, #133a55 70%, #0d2a40 100%);
+    pointer-events: none;
+    user-select: none;
+}
+
+/* 정밀 그리드 */
+.verify-hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(80,160,200,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(80,160,200,0.05) 1px, transparent 1px);
+    background-size: 44px 44px;
+    z-index: 1;
+}
+
+/* Glow blobs */
+.verify-hero-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(50px);
+    will-change: transform, opacity;
+    z-index: 2;
+}
+.verify-hero-glow-1 {
+    width: 300px; height: 250px;
+    top: -50px; right: 5%;
+    background: radial-gradient(ellipse, rgba(60,160,200,0.2) 0%, transparent 70%);
+    animation: vGlow1 18s ease-in-out infinite;
+}
+.verify-hero-glow-2 {
+    width: 200px; height: 180px;
+    bottom: -30px; left: 20%;
+    background: radial-gradient(ellipse, rgba(40,130,180,0.15) 0%, transparent 70%);
+    animation: vGlow2 22s ease-in-out infinite;
+}
+.verify-hero-glow-3 {
+    width: 160px; height: 160px;
+    top: 20%; left: 55%;
+    background: radial-gradient(ellipse, rgba(80,180,220,0.1) 0%, transparent 70%);
+    animation: vGlow3 15s ease-in-out infinite;
+}
+@keyframes vGlow1 {
+    0%, 100% { transform: translate(0, 0); opacity: 0.6; }
+    30%      { transform: translate(-40px, 20px); opacity: 1; }
+    70%      { transform: translate(20px, -10px); opacity: 0.7; }
+}
+@keyframes vGlow2 {
+    0%, 100% { transform: translate(0, 0); opacity: 0.5; }
+    50%      { transform: translate(30px, -15px); opacity: 0.9; }
+}
+@keyframes vGlow3 {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+    40%      { transform: translate(-20px, 10px) scale(1.15); opacity: 0.8; }
+    80%      { transform: translate(10px, -5px) scale(0.95); opacity: 0.5; }
+}
+
+/* 원형 링 */
+.verify-hero-ring {
+    position: absolute;
+    border: 1px solid rgba(80,180,220,0.06);
+    border-radius: 50%;
+    z-index: 2;
+}
+.verify-hero-ring-1 { width: 200px; height: 200px; top: 5px; right: 60px; }
+.verify-hero-ring-2 { width: 130px; height: 130px; top: 40px; right: 95px; }
+
+/* 분석 노드 */
+.verify-hero-nodes { position: absolute; inset: 0; z-index: 3; }
+.verify-hero-node {
+    position: absolute;
+    border-radius: 50%;
+    z-index: 4;
+}
+.verify-hero-node-1 {
+    width: 6px; height: 6px; top: 30%; right: 18%;
+    background: rgba(80,200,230,0.7);
+    box-shadow: 0 0 12px 3px rgba(80,200,230,0.25);
+    animation: vNode 3.5s ease-in-out infinite;
+}
+.verify-hero-node-2 {
+    width: 5px; height: 5px; top: 55%; right: 30%;
+    background: rgba(80,180,210,0.6);
+    box-shadow: 0 0 10px 2px rgba(80,180,210,0.2);
+    animation: vNode 4.5s ease-in-out 1s infinite;
+}
+.verify-hero-node-3 {
+    width: 4px; height: 4px; top: 22%; right: 38%;
+    background: rgba(100,200,230,0.5);
+    box-shadow: 0 0 8px 2px rgba(100,200,230,0.15);
+    animation: vNode 5s ease-in-out 2s infinite;
+}
+.verify-hero-node-4 {
+    width: 5px; height: 5px; top: 45%; right: 12%;
+    background: rgba(70,190,220,0.55);
+    box-shadow: 0 0 10px 2px rgba(70,190,220,0.2);
+    animation: vNode 4s ease-in-out 0.5s infinite;
+}
+@keyframes vNode {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50%      { opacity: 1;   transform: scale(1.3); }
+}
+
+/* 연결선 */
+.verify-hero-lines {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+}
+.verify-hero-lines svg { width: 100%; height: 100%; }
+
+/* Grain 텍스처 */
+.verify-hero-grain {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    opacity: 0.3;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
+}
+
+/* 텍스트 오버레이 */
+.verify-hero-overlay {
+    position: absolute;
+    bottom: 28px;
+    left: 48px;
+    z-index: 8;
+}
+.verify-hero-overlay h2 {
+    font-size: 32px;
+    font-weight: 300;
+    color: #fff;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
+    letter-spacing: -0.5px;
+}
+.verify-hero-overlay p {
+    font-size: 13.5px;
+    color: rgba(255, 255, 255, 0.65);
+    margin-top: 5px;
+    letter-spacing: 0.3px;
+}
+
+/* 하단 페이드 */
+.verify-hero-fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: linear-gradient(to top, var(--bg-gray), transparent);
+    z-index: 9;
+}
+
+/* 다크모드 */
+body[data-theme="dark"] .verify-hero {
+    background: linear-gradient(150deg, #060f1a 0%, #0a1e30 40%, #0e2a3f 70%, #091a2c 100%);
+}
+body[data-theme="dark"] .verify-hero-glow-1 { opacity: 0.5; }
+body[data-theme="dark"] .verify-hero-glow-2 { opacity: 0.4; }
+body[data-theme="dark"] .verify-hero-glow-3 { opacity: 0.3; }
 
