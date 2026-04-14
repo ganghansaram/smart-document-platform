@@ -91,6 +91,8 @@ function initBannerSlideshow() {
             img.src = slideData.src;
             img.alt = 'KF-21 이미지 ' + (index + 1);
             img.onload = function() { this.classList.add('loaded'); };
+            // 첫 슬라이드만 GPU 레이어 승격 (Ken Burns용)
+            if (index === 0) img.style.willChange = 'transform';
             slide.appendChild(img);
         }
 
@@ -212,6 +214,9 @@ function goToSlide(index) {
     var prevIndex = currentSlide;
     var prevSlide = slides[prevIndex];
     prevSlide.classList.remove('active');
+    // GPU 레이어 해제 (이전 슬라이드)
+    var prevImg = prevSlide.querySelector('img');
+    if (prevImg) prevImg.style.willChange = '';
     if (prevSlide.dataset.type === 'video') {
         var prevVideo = prevSlide.querySelector('video');
         setTimeout(function() {
@@ -225,6 +230,9 @@ function goToSlide(index) {
     // 다음 슬라이드 활성화
     currentSlide = index;
     slides[currentSlide].classList.add('active');
+    // GPU 레이어 승격 (활성 슬라이드 — Ken Burns 애니메이션 최적화)
+    var nextImg = slides[currentSlide].querySelector('img');
+    if (nextImg) nextImg.style.willChange = 'transform';
     if (dots.length > 0) {
         dots[currentSlide].classList.add('active');
     }

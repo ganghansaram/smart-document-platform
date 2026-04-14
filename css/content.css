@@ -828,7 +828,6 @@ body[data-theme="dark"] .search-glossary-abbr {
     opacity: 0;
     transition: opacity 0.5s ease-in;
     transform: scale(1);
-    will-change: transform;
 }
 
 .banner-slide img.loaded {
