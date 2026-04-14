@@ -58,7 +58,7 @@ function initTreeSearch() {
  * 메뉴 데이터 로드
  */
 function loadMenuData() {
-    fetch('data/menu.json')
+    fetch('data/menu.json?t=' + Date.now())
         .then(response => {
             if (!response.ok) {
                 throw new Error('메뉴 데이터를 불러올 수 없습니다.');
@@ -710,7 +710,7 @@ async function uploadDocument(file, targetUrl, backendUrl, menuPath) {
  * menu.json 갱신 후 트리를 다시 렌더링하고, 업로드된 문서를 표시
  */
 function reloadTreeMenuAndLoad(outputPath) {
-    fetch('data/menu.json')
+    fetch('data/menu.json?t=' + Date.now())
         .then(function(response) {
             if (!response.ok) throw new Error('메뉴 데이터 갱신 실패');
             return response.json();

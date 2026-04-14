@@ -248,7 +248,7 @@ function generateSectionLinks() {
     var container = document.getElementById('section-links');
     if (!container) return;
 
-    fetch('data/menu.json')
+    fetch('data/menu.json?t=' + Date.now())
         .then(function(response) { return response.json(); })
         .then(function(menuData) {
             // 통계 스트립 생성
