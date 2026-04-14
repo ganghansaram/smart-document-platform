@@ -436,6 +436,11 @@ body[data-theme="dark"] .tree-item .item-icon.icon-settings {
     border-bottom: none;
 }
 
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 .step-icon {
     width: 22px;
     height: 22px;
