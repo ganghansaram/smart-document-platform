@@ -235,7 +235,8 @@
         "label": "참고 자료",
         "children": [
           {
-            "label": "관련 규격"
+            "label": "관련 규격",
+            "url": "contents/KF-21-개발백서/참고-자료/관련-규격/관련-규격.html"
           },
           {
             "label": "참고 문헌"

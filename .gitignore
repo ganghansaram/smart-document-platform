@@ -37,6 +37,9 @@ backups/
 # ML Models (large binary files)
 models/
 
+# Offline packages (pip wheel cache)
+backend/packages/
+
 # Vector index (build artifacts)
 data/vector-index.faiss
 data/vector-index_meta.json
