@@ -64,6 +64,7 @@ echo ""
 
 # ── 4. 서비스 시작 ──
 echo "[4/4] 서비스 시작..."
+docker compose down 2>/dev/null || true
 docker compose up -d
 echo ""
 
