@@ -5,12 +5,27 @@
 - **모놀리식 HTML** — 각 서브시스템은 단일 HTML 파일 (inline JS/CSS)
 - **빌드 시스템 없음** — 번들러, 트랜스파일러 사용하지 않음
 
-## 실행 환경
-```bash
-# 백엔드 (FastAPI)
-cd backend && python main.py          # http://localhost:8000
+## 배포 환경 (3종)
+| 환경 | 구성 | 용도 |
+|------|------|------|
+| **개발 PC (집)** | Windows + WSL2 + Docker Desktop | 개발·테스트, `localhost:80` |
+| **회사 리눅스 VM** | Ubuntu 24.04 + Docker | 주 서비스, tar 이미지 배포 |
+| **회사 Windows PC** | 톰캣 + Python 백엔드 (Docker 없음) | 대안 서비스, 프로젝트 디렉토리 통째 복사 |
 
-# 프론트엔드 (정적 서버)
+- 코드는 Docker 전용 기능에 의존하지 않아야 함 (Windows 직접 실행도 지원)
+- 프론트엔드는 정적 파일 — 톰캣/Nginx/http.server 어디서든 서빙 가능
+- 백엔드는 `python main.py`로 직접 실행 가능 (Docker 없이도)
+
+## 실행 방법
+```bash
+# ── Docker (개발 PC / 회사 리눅스) ──
+docker compose up -d                  # http://localhost:80
+# override가 소스 bind mount → 코드 수정 즉시 반영
+# 프론트엔드: Ctrl+F5, 백엔드: docker compose restart backend
+# 개발 PC Docker→Ollama 접근 불가 (WSL 제한) → AI 기능 테스트 시 아래 방식 사용
+
+# ── 직접 실행 (회사 Windows / AI 기능 테스트) ──
+cd backend && python main.py          # http://localhost:8000
 python -m http.server 8080            # http://localhost:8080
 ```
 
@@ -18,6 +33,7 @@ python -m http.server 8080            # http://localhost:8080
 - 가이드: `docs/13-DOCKER-OPERATIONS.md`
 - 개발 (override 자동 적용, bind mount): `docker compose up -d`
 - 프로덕션 (override 배제): `docker compose -f docker-compose.yml up -d`
+- 환경 변수: `.env`에서 `CORS_ORIGINS`, `OLLAMA_URL`, `PORT` 등 관리
 - 배포 스크립트: `deploy.sh`, `patch-apply.sh` — `COMPOSE_FILE` 고정과 경로는 Plan-31 Phase 1 방어선 (임의 수정 금지, `memory/feedback_docker_prod_scripts.md` 참조)
 - 검증 시 HTTP 200만으론 부족 — `Last-Modified`·액세스 로그·컨테이너 내부 curl 교차 확인 (`memory/feedback_docker_verification.md`)
 

@@ -12,7 +12,7 @@ services:
     environment:
       - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
       - EMBEDDING_BACKEND=${EMBEDDING_BACKEND:-local}
-      - CORS_ORIGINS=http://localhost
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
       - KMP_DUPLICATE_LIB_OK=TRUE
       - DOCKER_ENV=true
     volumes:
