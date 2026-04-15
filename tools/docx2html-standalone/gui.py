@@ -186,6 +186,15 @@ class DocxConverterGUI:
         )
         self.run_btn.pack(side="left", padx=(0, 8))
 
+        self.preprocess_btn = tk.Button(
+            btn_frame, text="전처리만", font=self.FONT_SM,
+            bg=self.BG_INPUT, fg=self.FG_SUB,
+            activebackground="#3a3a54", activeforeground=self.FG,
+            relief="flat", cursor="hand2", padx=12, pady=4,
+            state="disabled", command=self._run_preprocess_only
+        )
+        self.preprocess_btn.pack(side="left", padx=(0, 8))
+
         self.open_btn = tk.Button(
             btn_frame, text="폴더 열기", font=self.FONT_SM,
             bg=self.BG_INPUT, fg=self.FG_SUB,
@@ -198,7 +207,8 @@ class DocxConverterGUI:
         # 하단 안내
         notes = (
             "※ 변환 대상 파일이 Word에서 열려 있으면 닫아주세요.\n"
-            "   원본 파일은 변경되지 않습니다."
+            "   원본 파일은 변경되지 않습니다.\n"
+            "   DRM 환경: '전처리만' → DRM 해제 → '변환' 순서로 진행"
         )
         tk.Label(
             root, text=notes, font=self.FONT_SM,
@@ -273,6 +283,7 @@ class DocxConverterGUI:
         self.input_var.set(path)
         self.output_var.set(str(Path(path).parent))
         self.run_btn.config(state="normal")
+        self.preprocess_btn.config(state="normal")
         self.open_btn.config(state="disabled")
         self.status_var.set("")
         self.status_label.config(fg=self.FG_SUB)
@@ -342,8 +353,15 @@ class DocxConverterGUI:
                         preprocessed = preprocess_docx(str(input_path))
                         if preprocessed != str(input_path):
                             actual_input = Path(preprocessed)
-                    except Exception:
-                        pass
+                            self.root.after(0, lambda: self._set_status(
+                                "전처리 완료. HTML 변환 중...", self.FG_SUB))
+                        else:
+                            self.root.after(0, lambda: self._set_status(
+                                "전처리 건너뜀 (원본 사용). HTML 변환 중...", self.FG_SUB))
+                    except Exception as e:
+                        err_msg = str(e)
+                        self.root.after(0, lambda m=err_msg: self._set_status(
+                            f"전처리 실패: {m} — 원본으로 변환 계속", self.ERROR))
 
                 # 변환
                 self.root.after(0, lambda: self._set_status("HTML 변환 중...", self.FG_SUB))
@@ -396,8 +414,63 @@ class DocxConverterGUI:
         self._reset_progress()
         self._set_status(f"오류: {msg}", self.ERROR)
 
+    def _run_preprocess_only(self):
+        """전처리만 수행 (DRM 환경용 2단계 모드)"""
+        src = self.input_var.get()
+        if not src or not os.path.isfile(src):
+            self.status_var.set("파일을 찾을 수 없습니다.")
+            self.status_label.config(fg=self.ERROR)
+            return
+
+        input_path = Path(src).resolve()
+        default_name = f"{input_path.stem}_preprocessed.docx"
+
+        save_path = filedialog.asksaveasfilename(
+            title="전처리 결과 저장 위치",
+            initialdir=str(input_path.parent),
+            initialfile=default_name,
+            defaultextension=".docx",
+            filetypes=[("Word 문서", "*.docx")]
+        )
+        if not save_path:
+            return
+
+        # UI 잠금
+        self.run_btn.config(state="disabled")
+        self.preprocess_btn.config(state="disabled", text="전처리 중...")
+        self.browse_btn.config(state="disabled")
+        self.open_btn.config(state="disabled")
+        self._set_status("장절번호 전처리 중...", self.FG_SUB)
+        self._set_progress(0.3)
+        self.root.update()
+
+        def worker():
+            try:
+                from word_preprocessor import preprocess_only
+                result_path = preprocess_only(str(input_path), save_path)
+
+                if result_path:
+                    self.root.after(0, lambda: self._on_preprocess_done(result_path))
+                else:
+                    self.root.after(0, lambda: self._on_error(
+                        "전처리 실패. 로그를 확인하세요."))
+            except Exception as e:
+                self.root.after(0, lambda: self._on_error(str(e)))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_preprocess_done(self, result_path):
+        self._unlock_ui()
+        self._set_progress(1.0)
+        self._set_status(
+            f"전처리 완료: {Path(result_path).name}\n"
+            f"DRM 해제 후 '변환' 버튼으로 HTML 변환하세요.",
+            self.SUCCESS)
+        self.open_btn.config(state="normal")
+
     def _unlock_ui(self):
         self.run_btn.config(state="normal", text="변환")
+        self.preprocess_btn.config(state="normal", text="전처리만")
         self.browse_btn.config(state="normal")
 
     # ── 상태/진행률 ─────────────────────────────────────────────

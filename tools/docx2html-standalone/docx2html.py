@@ -46,6 +46,8 @@ def run_cli(args=None):
                         help='HTML 내 이미지 경로 접두사 (기본: 상대경로)')
     parser.add_argument('--no-preprocess', action='store_true',
                         help='장절번호 평문화 건너뛰기')
+    parser.add_argument('--preprocess-only', action='store_true',
+                        help='전처리만 수행 (DRM 환경용, .docx 출력)')
     parser.add_argument('--verbose', action='store_true',
                         help='상세 로그 출력')
 
@@ -85,6 +87,23 @@ def run_cli(args=None):
     else:
         output_path = output_dir / input_path.with_suffix('.html').name
 
+    # 전처리 전용 모드
+    if parsed.preprocess_only:
+        preprocess_out = output_dir / f"{input_path.stem}_preprocessed.docx"
+        try:
+            from word_preprocessor import preprocess_only
+            result_path = preprocess_only(str(input_path), str(preprocess_out))
+            if result_path:
+                logger.info("전처리 완료: %s", result_path)
+                print(str(result_path))
+                return 0
+            else:
+                logger.error("전처리 실패")
+                return 1
+        except Exception as e:
+            logger.error("전처리 중 오류: %s", e)
+            return 1
+
     # 전처리 (장절번호 평문화)
     actual_input = input_path
     if not parsed.no_preprocess:
@@ -96,6 +115,7 @@ def run_cli(args=None):
                 logger.info("전처리 완료: %s", actual_input)
         except Exception as e:
             logger.warning("전처리 실패 (원본 사용): %s", e)
+            print(f"[경고] 전처리 실패: {e} — 원본 파일로 변환합니다.", file=sys.stderr)
 
     # 변환 실행
     try:

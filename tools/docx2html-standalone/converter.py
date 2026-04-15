@@ -116,7 +116,7 @@ class DocxConverter:
             result.error_message = f"파일을 찾을 수 없습니다: {input_path}"
             return result
 
-        if input_path.suffix.lower() != '.docx':
+        if input_path.suffix.lower() not in ('.docx', '.docx_1'):
             result.error_message = f"지원하지 않는 파일 형식입니다: {input_path.suffix}"
             return result
 
@@ -330,47 +330,136 @@ class DocxConverter:
                     yield doc.tables[table_idx]
                     table_idx += 1
 
+    # 본문 스타일 ID — 폰트 크기 폴백에서 제외 (오감지 방지)
+    _BODY_STYLE_IDS = frozenset({
+        'Normal', 'BodyText', 'BodyText2', 'BodyText3',
+        'ListParagraph', 'ListBullet', 'ListNumber',
+        'NoSpacing', 'Quote', 'FootnoteText', 'EndnoteText',
+    })
+
     def _detect_heading_level(self, paragraph):
         """
-        문단의 제목 레벨 감지
+        문단의 제목 레벨 감지 (4단계 캐스케이드)
 
-        Args:
-            paragraph: Paragraph 객체
+        우선순위:
+          1. outlineLvl (OOXML 스펙 정의, 로케일 무관)
+          2. style_id  (로케일 무관, config 매핑 + 정규식)
+          3. style.name (config 매핑 + 정규식, 로케일 의존)
+          4. 폰트 크기  (최후 수단, 본문 스타일이면 스킵)
 
         Returns:
-            str: HTML 태그 (h1, h2, h3, p)
+            str: HTML 태그 (h1~h6 또는 p)
         """
+        # Tier 1: outlineLvl (OOXML 스펙 — 가장 권위 있는 신호)
+        tag = self._check_outline_level(paragraph)
+        if tag:
+            return tag
+
+        # Tier 2: style_id (로케일 무관)
+        tag = self._check_style_id(paragraph)
+        if tag:
+            return tag
+
+        # Tier 3: style.name (config 매핑 + 정규식)
+        tag = self._check_style_name(paragraph)
+        if tag:
+            return tag
+
+        # Tier 4: 폰트 크기 (최후 수단, 본문 스타일이면 스킵)
+        tag = self._check_font_size(paragraph)
+        if tag:
+            return tag
+
+        return 'p'
+
+    def _check_outline_level(self, paragraph):
+        """Tier 1: outlineLvl — 단락 XML 직접 조회 + 스타일 상속 체인"""
+        # 단락 자체의 pPr에서 outlineLvl 확인
+        pPr = paragraph._element.find(qn('w:pPr'))
+        if pPr is not None:
+            outline = pPr.find(qn('w:outlineLvl'))
+            if outline is not None:
+                val = int(outline.get(qn('w:val')))
+                if val <= 8:
+                    return f'h{min(val + 1, 6)}'
+                return None  # val=9 → 본문
+
+        # 스타일 정의의 pPr에서 outlineLvl 확인 (상속 체인 탐색)
+        style = paragraph.style
+        depth = 0
+        while style is not None and depth < 10:
+            style_elem = style.element
+            if style_elem is not None:
+                style_pPr = style_elem.find(qn('w:pPr'))
+                if style_pPr is not None:
+                    outline = style_pPr.find(qn('w:outlineLvl'))
+                    if outline is not None:
+                        val = int(outline.get(qn('w:val')))
+                        if val <= 8:
+                            return f'h{min(val + 1, 6)}'
+                        return None  # val=9 → 본문
+            style = style.base_style
+            depth += 1
+
+        return None
+
+    def _check_style_id(self, paragraph):
+        """Tier 2: style_id — 로케일 무관 매핑"""
+        if not paragraph.style or not paragraph.style.style_id:
+            return None
+
+        style_id = paragraph.style.style_id
         style_mapping = self.config.get('style_mapping', {})
-        priority = style_mapping.get('priority', 'style_first')
 
-        tag_from_style = None
-        tag_from_font = None
+        # config의 by_style_id 매핑 조회
+        by_style_id = style_mapping.get('by_style_id', {})
+        tag = by_style_id.get(style_id)
+        if tag:
+            return tag
 
-        # 스타일 기반 감지
+        # 정규식 폴백: "Heading1" ~ "Heading9"
+        match = re.match(r'^Heading(\d+)$', style_id)
+        if match:
+            return f'h{min(int(match.group(1)), 6)}'
+
+        return None
+
+    def _check_style_name(self, paragraph):
+        """Tier 3: style.name — config 매핑 + 정규식"""
+        if not paragraph.style or not paragraph.style.name:
+            return None
+
+        style_name = paragraph.style.name
+        style_mapping = self.config.get('style_mapping', {})
         by_style = style_mapping.get('by_style', {})
-        if paragraph.style and paragraph.style.name:
-            style_name = paragraph.style.name
-            tag_from_style = by_style.get(style_name)
 
-            # 매핑에 없으면 스타일명에서 숫자 자동 추출 (Heading 4, 제목 5 등)
-            if not tag_from_style:
-                match = re.match(r'^(?:Heading|제목)\s*(\d+)$', style_name, re.IGNORECASE)
-                if match:
-                    level = min(int(match.group(1)), 6)
-                    tag_from_style = f'h{level}'
+        tag = by_style.get(style_name)
+        if tag and tag != 'p':
+            return tag
 
-        # 폰트 크기 기반 감지
+        # 정규식 폴백: "Heading N", "제목 N" 등
+        match = re.match(r'^(?:Heading|제목)\s*(\d+)$', style_name, re.IGNORECASE)
+        if match:
+            return f'h{min(int(match.group(1)), 6)}'
+
+        return None
+
+    def _check_font_size(self, paragraph):
+        """Tier 4: 폰트 크기 — 최후 수단. 본문 스타일이면 스킵."""
+        # 본문 스타일이면 폰트 크기와 무관하게 헤딩 아님
+        if paragraph.style and paragraph.style.style_id in self._BODY_STYLE_IDS:
+            return None
+
+        style_mapping = self.config.get('style_mapping', {})
         by_font_size = style_mapping.get('by_font_size', {})
         font_size = self._get_paragraph_font_size(paragraph)
         if font_size:
             font_size_str = str(int(font_size))
-            tag_from_font = by_font_size.get(font_size_str)
+            tag = by_font_size.get(font_size_str)
+            if tag and tag != 'p':
+                return tag
 
-        # 우선순위에 따라 결정
-        if priority == 'style_first':
-            return tag_from_style or tag_from_font or by_font_size.get('default', 'p')
-        else:
-            return tag_from_font or tag_from_style or by_font_size.get('default', 'p')
+        return None
 
     def _get_paragraph_font_size(self, paragraph):
         """

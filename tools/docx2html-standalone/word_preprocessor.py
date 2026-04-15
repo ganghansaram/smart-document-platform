@@ -59,23 +59,82 @@ def preprocess_docx(input_path: str, output_path: str = None) -> str:
         _update_fields(doc)
 
         # SaveAs2: FileFormat 12 = docx
-        # DRM 우회: .docx_1 확장자로 저장 후 rename (.docx → DRM 후킹 대상)
+        # DRM 우회: .docx_1 확장자로 저장 — rename 하지 않음
+        # python-docx는 ZIP 시그니처로 읽으므로 확장자 무관
         doc.SaveAs2(output_path, FileFormat=12)
-        final_path = output_path[:-2]  # .docx_1 → .docx
-        os.rename(output_path, final_path)
-        logger.info("DOCX 전처리 완료: %s", final_path)
-        return final_path
+        logger.info("DOCX 전처리 완료: %s", output_path)
+        return output_path
 
     except Exception as e:
         logger.warning("DOCX 전처리 실패 (원본 사용): %s", e)
         # 실패 시 임시 파일 정리
-        for p in (output_path, output_path[:-2]):
-            if p != input_path and os.path.exists(p):
-                try:
-                    os.unlink(p)
-                except OSError:
-                    pass
+        if output_path != input_path and os.path.exists(output_path):
+            try:
+                os.unlink(output_path)
+            except OSError:
+                pass
         return input_path
+
+    finally:
+        try:
+            if doc is not None:
+                doc.Close(False)
+        except Exception:
+            pass
+        try:
+            if word is not None:
+                word.Quit()
+        except Exception:
+            pass
+        try:
+            pythoncom.CoUninitialize()
+        except Exception:
+            pass
+
+
+def preprocess_only(input_path: str, output_path: str) -> str:
+    """전처리만 수행하여 .docx로 저장 (DRM 환경용 2단계 모드)
+
+    1단계: 이 함수로 장절번호 평문화된 .docx 생성
+    2단계: 사용자가 DRM 해제 후, 해제된 .docx를 변환기에 넣어 HTML 변환
+
+    Args:
+        input_path: 원본 DOCX 파일 경로
+        output_path: 결과 저장 경로 (.docx)
+
+    Returns:
+        저장된 파일 경로. 실패 시 None.
+    """
+    try:
+        import win32com.client
+        import pythoncom
+    except ImportError:
+        logger.error("pywin32 미설치 — 전처리를 수행할 수 없습니다.")
+        return None
+
+    input_path = str(Path(input_path).resolve())
+    output_path = str(Path(output_path).resolve())
+
+    word = None
+    doc = None
+    try:
+        pythoncom.CoInitialize()
+        word = win32com.client.Dispatch("Word.Application")
+        word.Visible = False
+        word.DisplayAlerts = False
+
+        doc = word.Documents.Open(input_path, ReadOnly=True)
+
+        _flatten_heading_numbers(doc)
+        _update_fields(doc)
+
+        doc.SaveAs2(output_path, FileFormat=12)
+        logger.info("전처리 전용 저장 완료: %s", output_path)
+        return output_path
+
+    except Exception as e:
+        logger.error("전처리 실패: %s", e)
+        return None
 
     finally:
         try:

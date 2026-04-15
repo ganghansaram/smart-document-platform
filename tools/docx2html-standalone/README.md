@@ -20,6 +20,14 @@ Word 문서(.docx)를 HTML로 변환하는 독립 실행 프로그램입니다.
 4. **변환** 클릭
 5. 완료 후 **폴더 열기**로 결과 확인
 
+#### DRM 환경에서 장절번호가 누락될 때
+
+회사 DRM이 적용된 환경에서는 전처리 임시 파일이 암호화되어 장절번호가 빠질 수 있습니다. 이 경우 2단계 워크플로우를 사용하세요:
+
+1. **전처리만** 클릭 → 저장 위치 선택 → 장절번호가 평문화된 `.docx` 생성
+2. 생성된 파일을 **DRM 해제** (보안 해제)
+3. 해제된 파일을 다시 선택 → **장절번호 전처리** 체크 해제 → **변환** 클릭
+
 ### CLI 모드 (명령줄)
 
 ```cmd
@@ -35,6 +43,7 @@ docx2html.exe <입력파일.docx> [옵션]
 | `--image-dir` | 이미지 폴더명 | {파일명}_images |
 | `--image-prefix` | HTML 내 이미지 경로 접두사 | 상대경로 자동 |
 | `--no-preprocess` | 장절번호 전처리 건너뛰기 | - |
+| `--preprocess-only` | 전처리만 수행 (DRM 환경용, .docx 출력) | - |
 | `--verbose` | 상세 로그 출력 | - |
 
 #### 종료 코드
@@ -59,6 +68,11 @@ docx2html.exe 매뉴얼.docx --html-name content.html --image-dir img --image-pr
 
 REM 장절번호 전처리 없이 변환
 docx2html.exe 매뉴얼.docx --no-preprocess
+
+REM 전처리만 수행 (DRM 환경용 2단계 워크플로우)
+docx2html.exe 매뉴얼.docx --preprocess-only
+REM → 매뉴얼_preprocessed.docx 생성 → DRM 해제 후 아래 명령으로 변환
+docx2html.exe 매뉴얼_preprocessed.docx --no-preprocess
 
 REM 상세 로그
 docx2html.exe 매뉴얼.docx --verbose
@@ -91,9 +105,22 @@ echo 변환 완료
 - HTML은 `<body>` 내용만 포함 (fragment)하며, 별도 `<html>`/`<head>` 감싸기가 필요할 수 있습니다.
 - 이미지 파일명은 내용 해시 기반이므로 동일 이미지는 중복 저장되지 않습니다.
 
+## 헤딩 감지 방식
+
+문서의 제목(h1~h6)을 다음 우선순위로 감지합니다:
+
+| 순위 | 방식 | 설명 |
+|------|------|------|
+| 1 | outlineLvl (OOXML) | Word 내부 개요 수준. 가장 정확하며 로케일 무관 |
+| 2 | style_id | "Heading1" 등 내부 스타일 ID. 로케일 무관 |
+| 3 | style.name | "제목 1", "Heading 1" 등 표시 이름 |
+| 4 | 폰트 크기 | 최후 수단. 본문 스타일(Normal 등)은 제외 |
+
+커스텀 스타일이라도 Word에서 개요 수준을 설정했다면 정상 감지됩니다. `config.json`의 `style_mapping` 섹션에서 매핑을 추가/변경할 수 있습니다.
+
 ## 기능
 
-- Word 스타일 → HTML 태그 매핑 (제목, 본문, 리스트 등)
+- Word 스타일 → HTML 태그 매핑 (h1~h6, 본문, 리스트 등)
 - 표 변환 (병합 셀 지원: colspan, rowspan)
 - 이미지 추출 (JPEG, PNG, EMF, WMF 등)
 - 수식 변환 (OMML → MathML)
@@ -114,5 +141,7 @@ build.bat
 | 증상 | 원인 | 해결 |
 |------|------|------|
 | "장절번호 전처리를 건너뜁니다" | Word 미설치 | `--no-preprocess` 사용 또는 Word 설치 |
+| 장절번호가 HTML에 누락 | DRM이 전처리 파일 암호화 | "전처리만" → DRM 해제 → 변환 (2단계) |
+| 헤딩 서식이 뒤죽박죽 | Word에서 스타일 미적용 (폰트 크기만 변경) | Word에서 "제목 1" 등 스타일 적용 권장 |
 | 이미지가 HTML에 포함되지 않음 | Word 도형/그리기 객체 | Word에서 해당 도형 → "그림(PNG)"으로 변환 후 재변환 |
 | CLI에서 출력이 안 보임 | `--windowed` 빌드 | `--verbose` 추가 또는 출력을 파일로 리다이렉트 |
