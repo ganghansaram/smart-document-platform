@@ -315,11 +315,12 @@ mv workbench/plans/36-explorer-upload-fix.md workbench/plans/done-36-explorer-up
 - [x] `/api/reindex`, `/api/index-status` 정상 (회귀 없음)
 - [x] 기존 페이지 200 정상 (`/index.html`, `/launcher.html`)
 
-### Phase 4 빌드·배포 (일부 완료)
+### Phase 4 빌드·배포 ✅ 완료 (2026-04-21)
 - [x] v2.5 tar 빌드 (`platform-v2.5.tar`, 4.0GB, 2026-04-20 23:17)
-- [x] Docker builder 캐시 정리 (`docker builder prune`)
-- [ ] 회사 VM 배포 (`./deploy.sh platform-v2.5.tar`) — **원격 PC 실행 대기**
-- [ ] 원격 PC 업로드 성공 확인 (반드시 Ctrl+F5 선행)
+- [x] Docker builder 캐시 정리
+- [x] 회사 VM 배포 (`./deploy.sh platform-v2.5.tar`)
+- [x] **원격 PC 업로드 성공** — Ctrl+F5 캐시 리프레시 후 `/api/document-submit` 정상 동작
+- **원인-해결 사이클 종결**: 보안장비 URL 필터 회피 확인
 
 ### Phase 5·6 마무리 (진행 대기)
 - [ ] 커밋 D: 엔드포인트 리네이밍 본조치
@@ -402,6 +403,12 @@ mv workbench/plans/36-explorer-upload-fix.md workbench/plans/done-36-explorer-up
 - 2회차 개별 테스트 (30초 간격): **`/api/upload` 단독 차단 확정**
 - 나머지 엔드포인트(`/api/reindex`, `/api/translator/upload`, `/api/compare/upload`, `/api/documents/upload`)는 모두 빠른 4xx 응답으로 통과
 - 대조군 `/api/diag/upload-test` 200 OK 확인
+
+### 2026-04-21 — Phase 4-3·4-4 완료 (회사 배포 + 원격 검증)
+- 회사 리눅스 VM에 `platform-v2.5.tar` 배포 완료
+- 원격 PC 첫 시도 시 `/api/upload`로 요청 나감 → **브라우저 JS 캐시 이슈** (nginx 정적 자산 7일 `immutable` 정책)
+- Ctrl+F5 캐시 리프레시 후 재시도 → **업로드 성공**
+- 결론: 엔드포인트 리네이밍으로 회사 보안장비 URL 필터 회피 확정
 
 ### 2026-04-20 — Phase 4-1·4-2 완료 (v2.5 tar 빌드)
 - `docker-release` 스킬로 `platform-v2.5.tar` 생성 (4.0GB, 23:17 생성)
