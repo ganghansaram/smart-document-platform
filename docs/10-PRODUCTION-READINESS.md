@@ -454,7 +454,7 @@ KV 캐시 (8K 컨텍스트):       ~4GB
           │  │ 정적 파일 서빙  │    │ /api/chat    챗봇  ────┼──┼──→ GPU 서버
           │  │ 접속 로그       │    │ /api/auth    인증      │  │   Ollama API
           │  │ gzip 압축      │    │ /api/translator 번역 ──┼──┼──→ (:11434)
-          │  └────────────────┘    │ /api/upload  업로드    │  │
+          │  └────────────────┘    │ /api/document-submit ─┐│  │
           │                        │ /api/settings 설정     │  │
           │                        │                        │  │
           │                        │ bge-reranker (CPU)     │  │

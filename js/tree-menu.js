@@ -666,7 +666,8 @@ async function uploadDocument(file, targetUrl, backendUrl, menuPath) {
     showStepProgress(true, 'upload');
 
     try {
-        var response = await fetch(backendUrl + '/api/upload', {
+        // /api/document-submit — 회사 DLP가 /api/upload 차단 (Plan-35)
+        var response = await fetch(backendUrl + '/api/document-submit', {
             method: 'POST',
             body: formData,
             credentials: 'include'

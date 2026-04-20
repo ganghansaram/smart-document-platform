@@ -47,7 +47,7 @@
 │  - /api/chat            AI 채팅 API (Ollama 연동)        │
 │  - /api/auth/*          인증 API (login/logout/users)    │
 │  - /api/save-document   문서 저장 API (admin)            │
-│  - /api/upload          문서 업로드/변환 API (admin)     │
+│  - /api/document-submit 문서 업로드/변환 API (admin)     │
 │  - /api/reindex         검색 인덱스 재생성 API (admin)   │
 │  - /api/translator/*    Translator/Notebook API           │
 │  - /api/compare/*      Compare 문서 비교/검증 API        │

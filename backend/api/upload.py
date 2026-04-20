@@ -296,7 +296,9 @@ def update_menu_json(menu_path: list, url: str) -> bool:
     return True
 
 
-@router.post("/upload")
+# Path is `/document-submit` (not `/upload`) — 회사 보안장비(DLP)가
+# `/api/upload` URL을 차단함 (Plan-35 조사로 확정). 변경 시 상당한 조사 비용 발생.
+@router.post("/document-submit")
 async def upload_document(
     file: UploadFile = File(...),
     target_path: str = Form(...),

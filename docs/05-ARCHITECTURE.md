@@ -39,7 +39,7 @@ Smart Document Platform 백엔드 시스템 설계 및 배포 문서 — Explore
 │  │  - index.html   │───▶│  POST /api/search           │    │
 │  │  - js/*.js      │    │  POST /api/chat             │    │
 │  │  - css/*.css    │    │  POST /api/save-document 🔒 │    │
-│  │  - contents/*   │    │  POST /api/upload        🔒 │    │
+│  │  - contents/*   │    │  POST /api/document-submit 🔒│    │
 │  └─────────────────┘    │  POST /api/reindex       🔒 │    │
 │                         │  /api/auth/* (login/users)   │    │
 │                         │  POST /api/analytics/*  통계 API              │    │
@@ -174,7 +174,7 @@ smart-document-platform/
 │   │   ├── search.py               # POST /api/search
 │   │   ├── chat.py                 # POST /api/chat
 │   │   ├── document.py             # POST /api/save-document (admin)
-│   │   ├── upload.py              # POST /api/upload, /api/reindex (admin)
+│   │   ├── upload.py              # POST /api/document-submit, /api/reindex (admin)
 │   │   ├── settings.py            # 설정 API (GET/POST /api/settings, /api/settings/public)
 │   │   ├── analytics.py           # 통계 API (heartbeat, dashboard)
 │   │   ├── menu.py                # 메뉴 관리 API (GET/POST /api/menu)
@@ -415,7 +415,7 @@ POST /api/chat/feedback
 | 기능 | 권한 | 비고 |
 |------|------|------|
 | 콘텐츠 열람, 검색, AI 채팅, 북마크, 테마, 용어집 | 공개 | 로그인 불필요 |
-| 문서 업로드 (`POST /api/upload`) | admin | httponly 쿠키 인증 |
+| 문서 업로드 (`POST /api/document-submit`) | admin | httponly 쿠키 인증 |
 | 문서 편집/저장 (`POST /api/save-document`) | admin | |
 | 백업 복원 (`POST /api/restore-document`) | admin | |
 | 인덱스 재생성 (`POST /api/reindex`) | admin | |
@@ -464,7 +464,7 @@ Response:
 ### 4.5 문서 업로드/변환 API
 
 ```
-POST /api/upload
+POST /api/document-submit
 Content-Type: multipart/form-data
 
 Request:

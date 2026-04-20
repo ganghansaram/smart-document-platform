@@ -299,19 +299,21 @@ mv workbench/plans/36-explorer-upload-fix.md workbench/plans/done-36-explorer-up
   - launcher.html → 200 ✓
   - 백엔드 로그 에러 없음 ✓
 
-### Phase 2 리네이밍 (진행 대기)
-- [ ] `backend/api/upload.py:299` 데코레이터 수정 (`/upload` → `/document-submit`)
-- [ ] `js/tree-menu.js:669` fetch URL 수정
-- [ ] `grep -rn '/api/upload\b' backend/ js/ docs/ contents/guide/ css/ data/` 잔존 참조 검증
-- [ ] 필요 시 잔존 참조 추가 수정
+### Phase 2 리네이밍 ✅ 완료 (2026-04-20)
+- [x] `backend/api/upload.py:299` → `/document-submit` + Plan-35 설명 주석 추가
+- [x] `js/tree-menu.js:669` → `/api/document-submit` + Plan-35 설명 주석 추가
+- [x] 잔존 참조 검증 — 코드·설명 주석·파일 경로 구분 완료
+- [x] 문서 3종 갱신: `docs/05-ARCHITECTURE.md` (3곳), `docs/03-BACKEND-SETUP.md`, `docs/10-PRODUCTION-READINESS.md`
 
-### Phase 3 로컬 검증 (진행 대기)
-- [ ] 로컬 Docker 재빌드 + 재기동
-- [ ] 집 개발 PC에서 Explorer 업로드 성공
-- [ ] F12 Network: 요청 URL `/api/document-submit` 확인
-- [ ] 한글 파일명/경로 성공
-- [ ] 기존 파일 백업 동작
-- [ ] 검색·벡터 인덱스 갱신 확인
+### Phase 3 로컬 검증 ✅ 완료 (2026-04-20)
+- [x] 로컬 Docker 재빌드 + healthy 재기동
+- [x] **E2E 업로드 성공**: 한글 DOCX `테스트문서.docx` (36.7KB) → 200 OK, 258ms
+- [x] NDJSON 스트리밍 5개 이벤트 순차 수신 (`conversion:started → completed → search_index:skipped → vector_index:skipped → done:completed`)
+- [x] 변환 HTML 생성 + 접근 가능 (`/contents/e2e-real/e2e-real.html` 200)
+- [x] 파일명 한글 UTF-8 보존 (37KB → 문단 4, h1×1, h2×1 감지)
+- [x] 구 경로 `/api/upload` 404 확인 (완전 제거)
+- [x] `/api/reindex`, `/api/index-status` 정상 (회귀 없음)
+- [x] 기존 페이지 200 정상 (`/index.html`, `/launcher.html`)
 
 ### Phase 4 빌드·배포 (진행 대기)
 - [ ] v2.5 tar 빌드 (`docker save -o platform-v2.5.tar ...`)
@@ -366,11 +368,29 @@ mv workbench/plans/36-explorer-upload-fix.md workbench/plans/done-36-explorer-up
 
 ---
 
-## §B. Phase 2 변경 파일 최종 목록 (실행 후 기록)
+## §B. Phase 2 변경 파일 최종 목록 (2026-04-20 기록)
 
-(Phase 0 결과 + Phase 2-3 grep 결과 반영)
+### 코드 (필수, URL 리네이밍)
+| 파일 | 위치 | 변경 |
+|------|------|------|
+| `backend/api/upload.py` | L299 | `@router.post("/upload")` → `@router.post("/document-submit")` + Plan-35 설명 주석 |
+| `js/tree-menu.js` | L669 | `fetch(backendUrl + '/api/upload', ...)` → `/api/document-submit` + Plan-35 설명 주석 |
 
-(대기 중)
+### 문서 현행화 (3파일, 5곳)
+| 파일 | 변경 |
+|------|------|
+| `docs/05-ARCHITECTURE.md` | 다이어그램 2곳 + 권한 표 + API 스펙 (`POST /api/upload` → `/api/document-submit`) |
+| `docs/03-BACKEND-SETUP.md` | 백엔드 API 목록 다이어그램 |
+| `docs/10-PRODUCTION-READINESS.md` | 운영 아키텍처 다이어그램 |
+
+### 변경하지 않은 것 (의도적)
+| 항목 | 이유 |
+|------|------|
+| `backend/api/upload.py` 파일명 | 내부 모듈명, 외부 URL 아님 |
+| `upload_document()` 함수명 | 내부 함수명, 외부 계약 아님 |
+| `UPLOAD_CONFIG`, `UPLOAD_TEMP_DIR` 변수명 | 내부 식별자 |
+| `/api/reindex`, `/api/index-status` | Phase 0에서 통과 확인 |
+| `workbench/plans/done-35-...md` 내 `/api/upload` 언급 | 과거 시점 사실 기록 |
 
 ---
 
@@ -381,6 +401,13 @@ mv workbench/plans/36-explorer-upload-fix.md workbench/plans/done-36-explorer-up
 - 2회차 개별 테스트 (30초 간격): **`/api/upload` 단독 차단 확정**
 - 나머지 엔드포인트(`/api/reindex`, `/api/translator/upload`, `/api/compare/upload`, `/api/documents/upload`)는 모두 빠른 4xx 응답으로 통과
 - 대조군 `/api/diag/upload-test` 200 OK 확인
+
+### 2026-04-20 — Phase 2·3 완료 (리네이밍 + 로컬 검증)
+- 코드 2파일 리네이밍, 문서 3파일 현행화
+- Docker 재빌드 + healthy
+- Playwright 브라우저 E2E: 한글 DOCX 업로드 → 변환 → HTML 생성 전 과정 성공
+- 회귀 없음: `/api/reindex` 401, `/api/health` 200, launcher/index 정상
+- 구 경로 `/api/upload` 404 확인
 
 ### 2026-04-20 — Phase 1 완료 (커밋 `19cfdb6`)
 - 삭제 파일: `upload-diag.html`, `backend/api/upload_diag.py`, `test-upload-standalone/` 전체, `workbench/upload-debug-guide.md`
