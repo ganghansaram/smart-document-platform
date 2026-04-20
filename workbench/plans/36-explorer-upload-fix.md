@@ -279,39 +279,52 @@ mv workbench/plans/36-explorer-upload-fix.md workbench/plans/done-36-explorer-up
 
 ## 체크리스트 (실행 중 업데이트)
 
-### Phase 0 범위 스캔
-- [ ] 원격 PC에서 스캔 스크립트 실행
-- [ ] 결과를 §A에 기록
+### Phase 0 범위 스캔 ✅ 완료 (2026-04-20)
+- [x] 원격 PC에서 스캔 스크립트 실행
+- [x] 결과를 §A에 기록 (`/api/upload` 단일 차단 확정)
 
-### Phase 1 롤백
-- [ ] `upload-diag.html` 삭제
-- [ ] `backend/api/upload_diag.py` 삭제
-- [ ] `test-upload-standalone/` 삭제
-- [ ] 기타 조사 산출물 판단 완료
-- [ ] `backend/main.py` 2줄 revert
-- [ ] 롤백 후 재빌드 + 404 검증
+### Phase 1 롤백 ✅ 완료 (2026-04-20, 커밋 `19cfdb6`)
+- [x] `upload-diag.html` 삭제
+- [x] `backend/api/upload_diag.py` 삭제
+- [x] `test-upload-standalone/` 삭제 (5 파일)
+- [x] 기타 조사 산출물 판단 완료
+  - `workbench/upload-debug-guide.md` 삭제 (done-35 §7로 내용 이관)
+  - `add-firewall-rule.ps1` 유지 (Plan-35 무관, 일반 유틸)
+- [x] `backend/main.py` 2줄 revert (import + include_router)
+- [x] 롤백 후 재빌드 + 404 검증
+  - upload-diag.html → 404 ✓
+  - /api/diag/echo → 404 ✓
+  - /api/health → 200 ✓
+  - /api/upload (무인증) → 401 ✓ (기능 건재)
+  - launcher.html → 200 ✓
+  - 백엔드 로그 에러 없음 ✓
 
-### Phase 2 리네이밍
-- [ ] `backend/api/upload.py` 수정
-- [ ] `js/tree-menu.js` 수정
-- [ ] Phase 0 기반 추가 파일 수정
-- [ ] grep 잔존 참조 검증
+### Phase 2 리네이밍 (진행 대기)
+- [ ] `backend/api/upload.py:299` 데코레이터 수정 (`/upload` → `/document-submit`)
+- [ ] `js/tree-menu.js:669` fetch URL 수정
+- [ ] `grep -rn '/api/upload\b' backend/ js/ docs/ contents/guide/ css/ data/` 잔존 참조 검증
+- [ ] 필요 시 잔존 참조 추가 수정
 
-### Phase 3 로컬 검증
-- [ ] 로컬 Docker 업로드 성공
+### Phase 3 로컬 검증 (진행 대기)
+- [ ] 로컬 Docker 재빌드 + 재기동
+- [ ] 집 개발 PC에서 Explorer 업로드 성공
+- [ ] F12 Network: 요청 URL `/api/document-submit` 확인
 - [ ] 한글 파일명/경로 성공
 - [ ] 기존 파일 백업 동작
-- [ ] 검색·벡터 인덱스 갱신
+- [ ] 검색·벡터 인덱스 갱신 확인
 
-### Phase 4 빌드·배포
-- [ ] v2.5 tar 빌드
-- [ ] 회사 VM 배포
+### Phase 4 빌드·배포 (진행 대기)
+- [ ] v2.5 tar 빌드 (`docker save -o platform-v2.5.tar ...`)
+- [ ] 회사 VM 배포 (`./deploy.sh platform-v2.5.tar`)
 - [ ] 원격 PC 업로드 성공 확인
 
-### Phase 5·6 마무리
-- [ ] 커밋 3분할
-- [ ] IT 문의 전달
+### Phase 5·6 마무리 (진행 대기)
+- [ ] 커밋 D: 엔드포인트 리네이밍 본조치
+- [ ] Plan-36 → done-36 파일명 변경
+- [ ] 커밋 E: 계획서 완료 처리
+- [ ] IT팀 문의 (done-35 §7-4 템플릿)
 - [ ] MEMORY.md 갱신
+- [ ] 기존 tar (v2.3, v2.4) 정리 판단
 - [ ] Plan-36 → done-36 이름 변경
 - [ ] tar 정리 판단
 
@@ -358,3 +371,28 @@ mv workbench/plans/36-explorer-upload-fix.md workbench/plans/done-36-explorer-up
 (Phase 0 결과 + Phase 2-3 grep 결과 반영)
 
 (대기 중)
+
+---
+
+## §C. 실행 로그
+
+### 2026-04-20 — Phase 0 완료
+- 1회차 배치 스캔: 큐 간섭 의심 (여러 경로에서 연쇄 타임아웃)
+- 2회차 개별 테스트 (30초 간격): **`/api/upload` 단독 차단 확정**
+- 나머지 엔드포인트(`/api/reindex`, `/api/translator/upload`, `/api/compare/upload`, `/api/documents/upload`)는 모두 빠른 4xx 응답으로 통과
+- 대조군 `/api/diag/upload-test` 200 OK 확인
+
+### 2026-04-20 — Phase 1 완료 (커밋 `19cfdb6`)
+- 삭제 파일: `upload-diag.html`, `backend/api/upload_diag.py`, `test-upload-standalone/` 전체, `workbench/upload-debug-guide.md`
+- 수정 파일: `backend/main.py` (import 1줄 + include_router 1줄 제거)
+- 유지 결정: `add-firewall-rule.ps1` (플랫폼 일반 유틸)
+- 로컬 재빌드 결과: 두 이미지 성공, 컨테이너 healthy
+- 엔드포인트 검증 통과 (상단 체크리스트 참조)
+- 백엔드 에러 로그 없음
+
+### 커밋 이력 (Plan-35/36 작업)
+| 커밋 | 내용 |
+|------|------|
+| `318d2c8` | Plan-35/36 계획서 추가 |
+| `8d3ab2f` | 진단 도구 추가 (v2.4 반영) |
+| `19cfdb6` | Phase 0 완료 + Phase 1 진단 도구 철거 |
