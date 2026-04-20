@@ -84,6 +84,9 @@ data/translator/
 # Test outputs
 pmt_test_out/
 
+# Backend runtime temp (업로드 처리 중 임시 파일)
+backend/temp/
+
 # Playwright MCP
 .playwright-mcp/
 
