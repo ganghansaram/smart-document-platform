@@ -423,3 +423,41 @@ mv workbench/plans/36-explorer-upload-fix.md workbench/plans/done-36-explorer-up
 | `318d2c8` | Plan-35/36 계획서 추가 |
 | `8d3ab2f` | 진단 도구 추가 (v2.4 반영) |
 | `19cfdb6` | Phase 0 완료 + Phase 1 진단 도구 철거 |
+| `e9f1eea` | Plan-36 체크리스트·실행 로그 갱신 |
+| `68a8e70` | **Phase 2·3 본조치** — 엔드포인트 리네이밍 + 문서 현행화 + E2E 검증 |
+
+---
+
+## §D. 전문가 피드백 (Phase 3 완료 후, 2026-04-20)
+
+### 코드 전문가 관점
+
+**변경의 최소성·정합성**
+- 공개 URL 한 개(`/api/upload` → `/document-submit`)만 변경. 내부 모듈·함수·변수명 모두 유지
+- 라우터 등록 로직·인증(`require_editor`)·변환 파이프라인·NDJSON 스트리밍 모두 무변경
+- 양 파일(`backend/api/upload.py:299`, `js/tree-menu.js:669`)에 Plan-35 설명 주석 추가 → 향후 롤백 방지
+
+**테스트 커버리지**
+- 단위: 빌드 성공, Python 구문 검증
+- 통합: Docker healthy, 6개 엔드포인트 응답 검증 (신/구 경로, reindex, index-status, health, launcher)
+- E2E (Playwright): 한글 DOCX 업로드 → NDJSON 5개 이벤트 → 변환 HTML 생성·접근
+
+**잠재 이슈 (낮은 리스크)**
+- 클라이언트 캐시: 브라우저에 기존 `tree-menu.js`가 캐시되면 `POST /api/upload`(404)로 요청 → "백엔드 서버 연결 불가" 토스트 노출. 대응: v2.5 배포 후 사용자에게 **Ctrl+F5 강제 새로고침** 안내 필요.
+
+### UI/UX 전문가 관점
+
+**사용자 체감 변화** — 0
+- 사용자는 URL 경로를 보지 않음. 업로드 버튼 → 파일 선택 → 진행 모달 → 결과 페이지 로드까지 동일
+- 진행 모달의 단계별 메시지 유지
+
+**UX 리스크**
+- 배포 직후 캐시된 구 JS 사용자: 과거와 동일한 "백엔드 연결 불가" 메시지 관찰 가능 → 운영 공지 필수
+
+**접근성·가이드**
+- `contents/guide/` 내 가이드 문서에는 API URL 직접 언급 없음 (grep 확인)
+- 추가 UI 텍스트 수정 불필요
+
+### 남은 불확실성
+
+**리네이밍이 회사 보안장비도 통과하는지는 Phase 4 원격 PC 검증 후에만 확정**. 집 개발 PC에는 DLP 없음.
