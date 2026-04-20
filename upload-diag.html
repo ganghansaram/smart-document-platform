@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload Diagnostic — Plan-35</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --surface: #fff; --text: #212529; --border: #dee2e6;
+    --ok: #198754; --fail: #dc3545; --warn: #fd7e14; --muted: #6c757d;
+    --accent: #2c5282; --locked: #e9ecef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a2e; --surface: #22223a; --text: #e0e0e0; --border: #3a3a5c;
+      --ok: #4ade80; --fail: #f87171; --warn: #fb923c; --muted: #9ca3af;
+      --accent: #63a0e0; --locked: #2a2a44;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text);
+    max-width: 800px; margin: 0 auto; padding: 24px 16px;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+
+  .step {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; margin-bottom: 12px;
+    transition: opacity 0.2s;
+  }
+  .step.locked { opacity: 0.45; pointer-events: none; }
+  .step.active { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent); }
+  .step.done { border-color: var(--ok); }
+  .step.failed { border-color: var(--fail); }
+
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-weight: 700;
+    font-size: 0.8rem; background: var(--border); color: var(--text); flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+  }
+  .step.active .step-num { background: var(--accent); color: #fff; }
+  .step.done .step-num { background: var(--ok); color: #fff; }
+  .step.failed .step-num { background: var(--fail); color: #fff; }
+
+  .step-title { font-weight: 600; font-size: 0.95rem; }
+  .step-desc { color: var(--muted); font-size: 0.82rem; margin-bottom: 12px; padding-left: 40px; }
+  .step-actions { padding-left: 40px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  .btn {
+    padding: 8px 20px; border: 1px solid var(--accent); border-radius: 6px;
+    background: var(--accent); color: #fff; cursor: pointer;
+    font-size: 0.9rem; font-weight: 600;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-next {
+    padding: 8px 24px; border: 1px solid var(--ok); border-radius: 6px;
+    background: var(--ok); color: #fff; cursor: pointer;
+    font-size: 0.9rem; font-weight: 600; display: none;
+  }
+  .btn-next:hover { opacity: 0.9; }
+  .btn-file { position: relative; overflow: hidden; }
+  .btn-file input[type="file"] {
+    position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+    opacity: 0; cursor: pointer;
+  }
+  .btn-secondary {
+    padding: 6px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); color: var(--text); cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .btn-secondary:hover { background: var(--border); }
+
+  .result {
+    margin-top: 10px; padding: 10px 12px; border-radius: 6px;
+    font-size: 0.82rem; font-family: 'Consolas', 'Monaco', monospace;
+    white-space: pre-wrap; word-break: break-all; display: none;
+    line-height: 1.5;
+  }
+  .result.ok { display: block; background: color-mix(in srgb, var(--ok) 12%, var(--surface)); border: 1px solid var(--ok); }
+  .result.fail { display: block; background: color-mix(in srgb, var(--fail) 12%, var(--surface)); border: 1px solid var(--fail); }
+  .result.warn { display: block; background: color-mix(in srgb, var(--warn) 12%, var(--surface)); border: 1px solid var(--warn); }
+  .result.running { display: block; background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+  .label-ok { color: var(--ok); font-weight: 700; }
+  .label-fail { color: var(--fail); font-weight: 700; }
+  .label-warn { color: var(--warn); font-weight: 700; }
+
+  .toolbar { margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0 8px; }
+  .section-label { font-size: 0.78rem; color: var(--muted); font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .file-info { font-size: 0.82rem; color: var(--muted); }
+
+  .summary { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 16px; }
+  .summary h3 { font-size: 1rem; margin-bottom: 8px; }
+  .summary-row { display: flex; gap: 8px; align-items: center; font-size: 0.85rem; padding: 3px 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-ok { background: var(--ok); }
+  .dot-fail { background: var(--fail); }
+  .dot-warn { background: var(--warn); }
+  .dot-pending { background: var(--border); }
+</style>
+</head>
+<body>
+
+<h1>Upload Diagnostic</h1>
+<p class="subtitle">Plan-35 — Explorer 업로드 장애 진단 (임시 페이지, 조치 완료 후 제거)</p>
+
+<div class="section-label">Network / Browser Layer</div>
+
+<!-- Step 1 -->
+<div class="step active" id="s1">
+  <div class="step-header">
+    <div class="step-num">1</div>
+    <div class="step-title">Nginx 정적 파일 + config.js 치환</div>
+  </div>
+  <div class="step-desc">GET /js/config.js — Nginx 도달 여부 + config.docker.js 치환 확인</div>
+  <div class="step-actions">
+    <button class="btn" id="btn1" onclick="runStep(1)">Step 1 실행</button>
+    <button class="btn-next" id="next1" onclick="goNext(1)">Step 2 진행 &#8594;</button>
+  </div>
+  <div class="result" id="r1"></div>
+</div>
+
+<!-- Step 2 -->
+<div class="step locked" id="s2">
+  <div class="step-header">
+    <div class="step-num">2</div>
+    <div class="step-title">API 프록시 (GET)</div>
+  </div>
+  <div class="step-desc">GET /api/health — Nginx → backend 프록시 확인</div>
+  <div class="step-actions">
+    <button class="btn" id="btn2" onclick="runStep(2)">Step 2 실행</button>
+    <button class="btn-next" id="next2" onclick="goNext(2)">Step 3 진행 &#8594;</button>
+  </div>
+  <div class="result" id="r2"></div>
+</div>
+
+<!-- Step 3 -->
+<div class="step locked" id="s3">
+  <div class="step-header">
+    <div class="step-num">3</div>
+    <div class="step-title">인증 세션</div>
+  </div>
+  <div class="step-desc">GET /api/auth/me (credentials: include) — 쿠키 전송 + 인증 확인</div>
+  <div class="step-actions">
+    <button class="btn" id="btn3" onclick="runStep(3)">Step 3 실행</button>
+    <button class="btn-next" id="next3" onclick="goNext(3)">Step 4 진행 &#8594;</button>
+  </div>
+  <div class="result" id="r3"></div>
+</div>
+
+<!-- Step 4 -->
+<div class="step locked" id="s4">
+  <div class="step-header">
+    <div class="step-num">4</div>
+    <div class="step-title">POST 메서드</div>
+  </div>
+  <div class="step-desc">POST /api/diag/echo — POST 요청이 서버에 도달하는지</div>
+  <div class="step-actions">
+    <button class="btn" id="btn4" onclick="runStep(4)">Step 4 실행</button>
+    <button class="btn-next" id="next4" onclick="goNext(4)">Step 5 진행 &#8594;</button>
+  </div>
+  <div class="result" id="r4"></div>
+</div>
+
+<!-- Step 5 -->
+<div class="step locked" id="s5">
+  <div class="step-header">
+    <div class="step-num">5</div>
+    <div class="step-title">multipart 파일 전송</div>
+  </div>
+  <div class="step-desc">POST /api/diag/upload-test — 파일 수신만 확인 (저장/변환 없음)</div>
+  <div class="step-actions">
+    <button class="btn btn-file" id="btn5">
+      파일 선택 후 실행
+      <input type="file" id="testFile" onchange="runStep5(this.files[0])">
+    </button>
+    <span class="file-info" id="fileInfo"></span>
+  </div>
+  <div class="result" id="r5"></div>
+</div>
+
+<hr class="divider">
+<div class="section-label">Server Processing Layer</div>
+
+<!-- Step 6~7: 안내만 -->
+<div class="step locked" id="s6">
+  <div class="step-header">
+    <div class="step-num">6</div>
+    <div class="step-title">문서 변환 + 인덱싱 (실제 업로드)</div>
+  </div>
+  <div class="step-desc">Step 1~5 모두 통과하면, Explorer 트리 메뉴에서 실제 문서 업로드를 시도하세요.</div>
+  <div class="step-actions">
+    <span style="font-size:0.82rem;color:var(--muted)">Step 5 통과 후 안내가 표시됩니다</span>
+  </div>
+  <div class="result" id="r6"></div>
+</div>
+
+<!-- Summary -->
+<div class="summary" id="summary">
+  <h3>진단 요약</h3>
+  <div id="summaryRows" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;"></div>
+</div>
+
+<!-- Report Code (타이핑 공유용) -->
+<div class="report-box" id="reportBox" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:12px;">
+  <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px;">리포트 코드 (이 한 줄만 공유하면 됩니다)</div>
+  <code id="reportCode" style="display:block;background:var(--bg);padding:10px 12px;border-radius:6px;font-size:0.95rem;font-weight:600;letter-spacing:0.3px;word-break:break-all;user-select:all;cursor:text;"></code>
+</div>
+
+<div class="toolbar">
+  <button class="btn-secondary" onclick="resetAll()">처음부터 다시</button>
+</div>
+
+<script>
+var results = {};
+var currentStep = 1;
+var TOTAL_STEPS = 5;
+var detectedBackendUrl = '';  // Step 1에서 config.js로부터 추출, Step 4~5에서 사용
+
+var STEP_NAMES = {
+  1: 'Nginx 정적 파일 + config.js 치환',
+  2: 'API 프록시 (GET)',
+  3: '인증 세션',
+  4: 'POST 메서드',
+  5: 'multipart 파일 전송',
+  6: '문서 변환 + 인덱싱'
+};
+
+function el(id) { return document.getElementById(id); }
+
+function setResult(id, cls, html) {
+  var e = el(id);
+  e.className = 'result ' + cls;
+  e.innerHTML = html;
+}
+
+function record(step, data) {
+  data.timestamp = new Date().toISOString();
+  results['step' + step] = data;
+}
+
+function markStep(n, state) {
+  var s = el('s' + n);
+  s.className = 'step ' + state;
+}
+
+function showNext(n) {
+  var btn = el('next' + n);
+  if (btn) btn.style.display = 'inline-block';
+}
+
+function goNext(fromStep) {
+  // 현재 단계 완료 표시
+  var s = el('s' + fromStep);
+  if (s.classList.contains('active')) {
+    s.classList.remove('active');
+  }
+
+  var next = fromStep + 1;
+  if (next > TOTAL_STEPS + 1) return;
+
+  // 다음 단계 활성화
+  var ns = el('s' + next);
+  if (ns) {
+    ns.classList.remove('locked');
+    ns.classList.add('active');
+  }
+  currentStep = next;
+
+  // 스크롤
+  if (ns) ns.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function stepDone(n, passed) {
+  markStep(n, passed ? 'done' : 'failed');
+  el('btn' + n).disabled = true;
+  if (passed) {
+    showNext(n);
+  }
+  updateSummary();
+
+  // Step 5 통과 시 Step 6 안내
+  if (n === 5 && passed) {
+    var s6 = el('s6');
+    s6.classList.remove('locked');
+    s6.classList.add('done');
+    setResult('r6', 'ok',
+      '<span class="label-ok">Step 1~5 모두 통과</span>\n\n' +
+      '네트워크/브라우저 레이어에는 문제가 없습니다.\n' +
+      'Explorer (index.html)에서 실제 문서 업로드를 시도하세요.\n' +
+      '그래도 실패한다면 기존 업로드 코드 자체에 문제가 있는 것입니다.'
+    );
+  }
+}
+
+function updateSummary() {
+  var box = el('summary');
+  var rows = el('summaryRows');
+  box.style.display = 'block';
+
+  // 시각적 요약
+  var html = '';
+  for (var i = 1; i <= TOTAL_STEPS; i++) {
+    var r = results['step' + i];
+    var dot = 'dot-pending';
+    var label = '-';
+    if (r) {
+      if (r.error) { dot = 'dot-fail'; label = 'FAIL'; }
+      else if (r.status >= 200 && r.status < 400) { dot = 'dot-ok'; label = 'OK'; }
+      else if (r.status === 401) { dot = 'dot-warn'; label = '401'; }
+      else { dot = 'dot-fail'; label = r.status; }
+    }
+    html += '<div class="summary-row"><div class="dot ' + dot + '"></div><strong>' + i + '</strong> ' + label + '</div>';
+  }
+  rows.innerHTML = html;
+
+  // 한 줄 리포트 (타이핑 공유용)
+  var code = buildReportCode();
+  el('reportCode').textContent = code;
+  el('reportBox').style.display = 'block';
+}
+
+function buildReportCode() {
+  // 형식: "1:OK 2:OK 3:OK 4:FAIL(url) 5:- cfg:localhost:8000"
+  var parts = [];
+  for (var i = 1; i <= TOTAL_STEPS; i++) {
+    var r = results['step' + i];
+    if (!r) { parts.push(i + ':-'); continue; }
+    if (r.error) {
+      // 에러 메시지의 핵심만 (Failed to fetch, CORS 등)
+      var shortErr = r.error.length > 30 ? r.error.substring(0, 30) : r.error;
+      parts.push(i + ':FAIL(' + shortErr + ')');
+    } else if (r.status === 401) {
+      parts.push(i + ':401');
+    } else if (r.status >= 200 && r.status < 400) {
+      parts.push(i + ':OK');
+    } else {
+      parts.push(i + ':' + r.status);
+    }
+  }
+  // config 정보 추가
+  var s1 = results['step1'];
+  if (s1 && s1.uploadBackendUrl !== undefined) {
+    parts.push('cfg:' + (s1.uploadBackendUrl || '(empty)'));
+  }
+  return parts.join(' ');
+}
+
+// ── Step runners ──
+
+function runStep(n) {
+  if (n === 1) runStep1();
+  else if (n === 2) runStep2();
+  else if (n === 3) runStep3();
+  else if (n === 4) runStep4();
+}
+
+async function runStep1() {
+  el('btn1').disabled = true;
+  setResult('r1', 'running', 'GET /js/config.js ...');
+  var t0 = performance.now();
+  try {
+    var r = await fetch('/js/config.js?t=' + Date.now(), { cache: 'no-store' });
+    var ms = Math.round(performance.now() - t0);
+    var body = await r.text();
+
+    var allUrls = [];
+    var re = /backendUrl\s*:\s*['"]([^'"]*)['"]/g;
+    var m;
+    while ((m = re.exec(body)) !== null) allUrls.push(m[1]);
+
+    var isDocker = allUrls.length > 0 && allUrls.every(function(u) { return u === ''; });
+    var hasLocalhost = allUrls.some(function(u) { return u.indexOf('localhost') !== -1; });
+
+    var info = '<span class="label-ok">PASS</span> — ' + r.status + ' ' + r.statusText + ' (' + ms + 'ms)\n\n';
+    info += 'backendUrl values found: ' + JSON.stringify(allUrls) + '\n';
+
+    // UPLOAD_CONFIG의 backendUrl 추출 (기존 업로드와 동일한 판정 로직)
+    var uploadMatch = body.match(/UPLOAD_CONFIG\s*=\s*\{[^}]*backendUrl\s*:\s*['"]([^'"]*)['"]/s);
+    detectedBackendUrl = uploadMatch ? uploadMatch[1] : (allUrls.length > 0 ? allUrls[0] : '');
+
+    info += 'UPLOAD_CONFIG.backendUrl: "' + detectedBackendUrl + '"\n';
+    info += '→ Step 4~5에서 이 값으로 요청합니다 (기존 업로드와 동일 경로)\n\n';
+
+    if (isDocker) {
+      info += '<span class="label-ok">config.docker.js 적용됨</span> — 모든 backendUrl이 빈 문자열 (상대경로)';
+      setResult('r1', 'ok', info);
+      record(1, { status: r.status, ms: ms, backendUrls: allUrls, isDocker: true, uploadBackendUrl: detectedBackendUrl });
+      stepDone(1, true);
+    } else if (hasLocalhost) {
+      info += '<span class="label-fail">치환 실패!</span> — localhost가 포함됨. 원본 config.js가 노출되고 있음';
+      setResult('r1', 'fail', info);
+      record(1, { status: r.status, ms: ms, backendUrls: allUrls, isDocker: false, uploadBackendUrl: detectedBackendUrl });
+      stepDone(1, false);
+    } else {
+      info += '<span class="label-warn">확인 필요</span> — 예상치 못한 값';
+      setResult('r1', 'warn', info);
+      record(1, { status: r.status, ms: ms, backendUrls: allUrls, isDocker: false, uploadBackendUrl: detectedBackendUrl });
+      stepDone(1, true);
+    }
+  } catch (e) {
+    var ms = Math.round(performance.now() - t0);
+    setResult('r1', 'fail', '<span class="label-fail">FAIL</span> — Nginx 도달 불가\n\n' + e.message);
+    record(1, { error: e.message, ms: ms });
+    stepDone(1, false);
+  }
+}
+
+async function runStep2() {
+  el('btn2').disabled = true;
+  setResult('r2', 'running', 'GET /api/health ...');
+  var t0 = performance.now();
+  try {
+    var r = await fetch('/api/health?t=' + Date.now());
+    var ms = Math.round(performance.now() - t0);
+    var body = await r.text();
+    var json;
+    try { json = JSON.parse(body); } catch(_) { json = body; }
+
+    if (r.ok) {
+      setResult('r2', 'ok', '<span class="label-ok">PASS</span> — ' + r.status + ' (' + ms + 'ms)\n\n' + JSON.stringify(json, null, 2));
+      record(2, { status: r.status, ms: ms, body: json });
+      stepDone(2, true);
+    } else {
+      setResult('r2', 'fail', '<span class="label-fail">FAIL</span> — ' + r.status + ' ' + r.statusText + ' (' + ms + 'ms)\n\n' + body);
+      record(2, { status: r.status, ms: ms, body: json });
+      stepDone(2, false);
+    }
+  } catch (e) {
+    var ms = Math.round(performance.now() - t0);
+    setResult('r2', 'fail', '<span class="label-fail">FAIL</span> — Nginx→backend 프록시 실패\n\n' + e.message);
+    record(2, { error: e.message, ms: ms });
+    stepDone(2, false);
+  }
+}
+
+async function runStep3() {
+  el('btn3').disabled = true;
+  setResult('r3', 'running', 'GET /api/auth/me ...');
+  var t0 = performance.now();
+  try {
+    var r = await fetch('/api/auth/me', { credentials: 'include' });
+    var ms = Math.round(performance.now() - t0);
+    var body = await r.text();
+    var json;
+    try { json = JSON.parse(body); } catch(_) { json = body; }
+
+    if (r.status === 200) {
+      setResult('r3', 'ok', '<span class="label-ok">PASS</span> — 인증됨 (' + ms + 'ms)\n\nuser: ' + JSON.stringify(json, null, 2));
+      record(3, { status: r.status, ms: ms, body: json });
+      stepDone(3, true);
+    } else if (r.status === 401) {
+      setResult('r3', 'warn', '<span class="label-warn">401 Unauthorized</span> — 로그인 필요 (' + ms + 'ms)\n\n먼저 로그인 페이지에서 로그인 후, 이 페이지로 돌아와 "처음부터 다시" 버튼을 눌러주세요.');
+      record(3, { status: r.status, ms: ms, body: json });
+      stepDone(3, false);
+    } else {
+      setResult('r3', 'fail', '<span class="label-fail">FAIL</span> — ' + r.status + ' (' + ms + 'ms)\n\n' + body);
+      record(3, { status: r.status, ms: ms, body: json });
+      stepDone(3, false);
+    }
+  } catch (e) {
+    var ms = Math.round(performance.now() - t0);
+    setResult('r3', 'fail', '<span class="label-fail">FAIL</span> — 요청 실패\n\n' + e.message);
+    record(3, { error: e.message, ms: ms });
+    stepDone(3, false);
+  }
+}
+
+async function runStep4() {
+  el('btn4').disabled = true;
+  var url = detectedBackendUrl + '/api/diag/echo';
+  setResult('r4', 'running', 'POST ' + url + ' ...');
+  var t0 = performance.now();
+  try {
+    var r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'diag-test' }),
+      credentials: 'include'
+    });
+    var ms = Math.round(performance.now() - t0);
+    var body = await r.text();
+    var json;
+    try { json = JSON.parse(body); } catch(_) { json = body; }
+
+    if (r.ok) {
+      setResult('r4', 'ok', '<span class="label-ok">PASS</span> — POST 도달 확인 (' + ms + 'ms)\n요청 URL: ' + url + '\n\n' + JSON.stringify(json, null, 2));
+      record(4, { status: r.status, ms: ms, body: json, requestUrl: url });
+      stepDone(4, true);
+    } else {
+      setResult('r4', 'fail', '<span class="label-fail">FAIL</span> — ' + r.status + ' (' + ms + 'ms)\n요청 URL: ' + url + '\n\n' + body);
+      record(4, { status: r.status, ms: ms, body: json, requestUrl: url });
+      stepDone(4, false);
+    }
+  } catch (e) {
+    var ms = Math.round(performance.now() - t0);
+    setResult('r4', 'fail', '<span class="label-fail">FAIL</span> — POST 요청 실패\n요청 URL: ' + url + '\n\n' + e.message);
+    record(4, { error: e.message, ms: ms, requestUrl: url });
+    stepDone(4, false);
+  }
+}
+
+async function runStep5(file) {
+  if (!file) return;
+  el('fileInfo').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+  el('btn5').style.pointerEvents = 'none';
+  el('btn5').style.opacity = '0.4';
+  var url = detectedBackendUrl + '/api/diag/upload-test';
+  setResult('r5', 'running', 'POST ' + url + ' ...');
+  var t0 = performance.now();
+  try {
+    var fd = new FormData();
+    fd.append('file', file);
+
+    var r = await fetch(url, {
+      method: 'POST',
+      body: fd,
+      credentials: 'include'
+    });
+    var ms = Math.round(performance.now() - t0);
+    var body = await r.text();
+    var json;
+    try { json = JSON.parse(body); } catch(_) { json = body; }
+
+    if (r.ok) {
+      setResult('r5', 'ok', '<span class="label-ok">PASS</span> — multipart 전송 성공 (' + ms + 'ms)\n요청 URL: ' + url + '\n\n' + JSON.stringify(json, null, 2));
+      record(5, { status: r.status, ms: ms, body: json, fileName: file.name, fileSize: file.size, requestUrl: url });
+      stepDone(5, true);
+    } else {
+      setResult('r5', 'fail', '<span class="label-fail">FAIL</span> — ' + r.status + ' (' + ms + 'ms)\n요청 URL: ' + url + '\n\n' + body);
+      record(5, { status: r.status, ms: ms, body: json, fileName: file.name, fileSize: file.size, requestUrl: url });
+      stepDone(5, false);
+    }
+  } catch (e) {
+    var ms = Math.round(performance.now() - t0);
+    setResult('r5', 'fail', '<span class="label-fail">FAIL</span> — multipart 전송 실패\n요청 URL: ' + url + '\n\n' + e.message);
+    record(5, { error: e.message, ms: ms, fileName: file.name, fileSize: file.size, requestUrl: url });
+    stepDone(5, false);
+  }
+}
+
+// ── Reset ──
+function resetAll() {
+  results = {};
+  currentStep = 1;
+  for (var i = 1; i <= 6; i++) {
+    var s = el('s' + i);
+    if (s) s.className = (i === 1) ? 'step active' : 'step locked';
+    var r = el('r' + i);
+    if (r) { r.className = 'result'; r.innerHTML = ''; }
+    var b = el('btn' + i);
+    if (b) { b.disabled = false; b.style.pointerEvents = ''; b.style.opacity = ''; }
+    var n = el('next' + i);
+    if (n) n.style.display = 'none';
+  }
+  el('fileInfo').textContent = '';
+  el('testFile').value = '';
+  el('summary').style.display = 'none';
+  el('summaryRows').innerHTML = '';
+}
+</script>
+
+</body>
+</html>

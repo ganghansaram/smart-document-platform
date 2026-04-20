@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload Standalone Test — Plan-35</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --surface: #fff; --text: #212529; --border: #dee2e6;
+    --ok: #198754; --fail: #dc3545; --warn: #fd7e14; --muted: #6c757d;
+    --accent: #2c5282;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a2e; --surface: #22223a; --text: #e0e0e0; --border: #3a3a5c;
+      --ok: #4ade80; --fail: #f87171; --warn: #fb923c; --muted: #9ca3af;
+      --accent: #63a0e0;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text);
+    max-width: 820px; margin: 0 auto; padding: 20px 16px 40px;
+  }
+  h1 { font-size: 1.45rem; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 18px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; margin-bottom: 14px;
+  }
+  .card h2 {
+    font-size: 1rem; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .btn {
+    padding: 8px 18px; border: 1px solid var(--accent); border-radius: 6px;
+    background: var(--accent); color: #fff; cursor: pointer;
+    font-size: 0.9rem; font-weight: 600;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  input[type=file] {
+    padding: 6px; font-size: 0.88rem;
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    max-width: 100%;
+  }
+  .drop {
+    border: 2px dashed var(--border); border-radius: 6px;
+    padding: 18px; text-align: center; color: var(--muted);
+    font-size: 0.88rem; margin-bottom: 10px;
+    transition: background .15s, border-color .15s;
+  }
+  .drop.hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .result {
+    margin-top: 10px; padding: 10px 12px; border-radius: 6px;
+    font-size: 0.8rem; font-family: Consolas, 'Courier New', monospace;
+    white-space: pre-wrap; word-break: break-all;
+    background: var(--bg); border: 1px solid var(--border);
+    max-height: 340px; overflow: auto; line-height: 1.45;
+  }
+  .result.ok { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, var(--surface)); }
+  .result.fail { border-color: var(--fail); background: color-mix(in srgb, var(--fail) 10%, var(--surface)); }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 0.72rem; font-weight: 700;
+  }
+  .badge.ok { background: var(--ok); color: #fff; }
+  .badge.fail { background: var(--fail); color: #fff; }
+  .badge.warn { background: var(--warn); color: #fff; }
+  progress { width: 100%; height: 8px; }
+  .progress-wrap { margin: 8px 0; display: none; }
+  .link {
+    display: inline-block; margin-top: 8px;
+    color: var(--accent); text-decoration: none; font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .link:hover { text-decoration: underline; }
+  .dot {
+    display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--muted);
+  }
+  .dot.ok { background: var(--ok); }
+  .dot.fail { background: var(--fail); }
+  .small { font-size: 0.78rem; color: var(--muted); }
+  code { font-family: Consolas, 'Courier New', monospace; font-size: 0.85em; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 6px; }
+  th, td { border: 1px solid var(--border); padding: 5px 8px; text-align: left; }
+  th { background: var(--bg); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Upload Standalone Test</h1>
+<p class="sub">Plan-35 격리 테스트 — 플랫폼 레이어 없이 DOCX 업로드·변환 검증</p>
+
+<!-- 서버 상태 -->
+<div class="card">
+  <h2><span class="dot" id="sdot"></span>서버 상태</h2>
+  <div class="result" id="healthBox">확인 중...</div>
+</div>
+
+<!-- 방식 A: JS fetch -->
+<div class="card">
+  <h2>방식 A — JavaScript XHR (Explorer와 동일 계층)</h2>
+  <div class="drop" id="drop">이 영역에 DOCX 파일을 끌어다 놓거나, 아래에서 선택</div>
+  <div class="row">
+    <input type="file" id="fileA" accept=".docx">
+    <button class="btn" id="btnA">업로드 (XHR)</button>
+    <span class="small" id="fileInfoA"></span>
+  </div>
+  <div class="progress-wrap" id="progWrap">
+    <progress id="prog" value="0" max="100"></progress>
+    <div class="small" id="progText"></div>
+  </div>
+  <div class="result" id="resA" style="display:none"></div>
+  <div id="previewA"></div>
+</div>
+
+<!-- 방식 B: HTML form 직전송 -->
+<div class="card">
+  <h2>방식 B — HTML form 직전송 (JS 배제)</h2>
+  <p class="small" style="margin-bottom:8px;">브라우저가 직접 처리합니다. 응답 JSON이 새 탭에 열립니다.</p>
+  <form method="POST" action="/upload" enctype="multipart/form-data" target="_blank">
+    <div class="row">
+      <input type="file" name="file" accept=".docx" required>
+      <button class="btn" type="submit">업로드 (form)</button>
+    </div>
+  </form>
+</div>
+
+<!-- 해석 가이드 -->
+<div class="card">
+  <h2>결과 해석</h2>
+  <table>
+    <thead><tr><th>A (XHR)</th><th>B (form)</th><th>해석</th></tr></thead>
+    <tbody>
+      <tr><td>OK</td><td>OK</td><td>플랫폼 측 코드/설정 차이 → Explorer 업로드와 diff</td></tr>
+      <tr><td>FAIL</td><td>OK</td><td>브라우저 JS 레이어 (fetch/FormData/CSP)</td></tr>
+      <tr><td>OK</td><td>FAIL</td><td>(드문 경우) form 인코딩·리다이렉트 정책</td></tr>
+      <tr><td>FAIL</td><td>FAIL</td><td>방화벽·바인딩·변환기 — <code>server.log</code>, F12 Network 확인</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:10px;">원격 PC 테스트 시 서버 IP는 서비스 PC의 <code>ipconfig</code>로 확인.</p>
+</div>
+
+<script>
+(function(){
+  var el = function(id){ return document.getElementById(id); };
+  var sdot = el('sdot'), healthBox = el('healthBox');
+  var fileA = el('fileA'), btnA = el('btnA'), fileInfoA = el('fileInfoA');
+  var drop = el('drop');
+  var progWrap = el('progWrap'), prog = el('prog'), progText = el('progText');
+  var resA = el('resA'), previewA = el('previewA');
+
+  // 서버 상태
+  fetch('/health', { cache: 'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      var ok = !!j.converter_ready;
+      sdot.className = 'dot ' + (ok ? 'ok' : 'fail');
+      healthBox.textContent = JSON.stringify(j, null, 2);
+      if (!ok) {
+        healthBox.className = 'result fail';
+      }
+    })
+    .catch(function(e){
+      sdot.className = 'dot fail';
+      healthBox.className = 'result fail';
+      healthBox.textContent = '서버 응답 없음: ' + e.message;
+    });
+
+  // 파일 선택 정보
+  fileA.addEventListener('change', function(){
+    var f = fileA.files[0];
+    fileInfoA.textContent = f ? (f.name + ' — ' + (f.size/1024).toFixed(1) + ' KB') : '';
+  });
+
+  // 드래그앤드롭
+  ['dragenter','dragover'].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('hover'); });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('hover'); });
+  });
+  drop.addEventListener('drop', function(e){
+    var f = e.dataTransfer.files[0];
+    if (f) {
+      try {
+        var dt = new DataTransfer();
+        dt.items.add(f);
+        fileA.files = dt.files;
+        fileA.dispatchEvent(new Event('change'));
+      } catch (_) {
+        fileInfoA.textContent = '드래그앤드롭 미지원 — 파일 선택 버튼을 사용하세요';
+      }
+    }
+  });
+
+  // 업로드
+  btnA.addEventListener('click', function(){
+    var f = fileA.files[0];
+    if (!f) { fileInfoA.textContent = '먼저 파일을 선택하세요'; return; }
+
+    var fd = new FormData();
+    fd.append('file', f);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/upload');
+    btnA.disabled = true;
+    progWrap.style.display = 'block';
+    prog.value = 0; progText.textContent = '';
+    resA.style.display = 'none';
+    resA.className = 'result';
+    previewA.innerHTML = '';
+
+    xhr.upload.onprogress = function(e){
+      if (e.lengthComputable) {
+        var pct = Math.round(e.loaded * 100 / e.total);
+        prog.value = pct;
+        progText.textContent = '업로드 중: ' + pct + '% (' +
+          (e.loaded/1024).toFixed(1) + ' / ' + (e.total/1024).toFixed(1) + ' KB)';
+      }
+    };
+    xhr.upload.onload = function(){ progText.textContent = '업로드 완료 — 서버 변환 대기...'; };
+
+    var t0 = performance.now();
+    xhr.onload = function(){
+      btnA.disabled = false;
+      var ms = Math.round(performance.now() - t0);
+      var body; var parsed = false;
+      try { body = JSON.parse(xhr.responseText); parsed = true; } catch (_) { body = xhr.responseText; }
+      var ok = xhr.status === 200 && parsed && body && body.success;
+      resA.style.display = 'block';
+      resA.className = 'result ' + (ok ? 'ok' : 'fail');
+      var badge = ok ? '<span class="badge ok">PASS</span>' : '<span class="badge fail">FAIL</span>';
+      var header = badge + ' HTTP ' + xhr.status + ' (client ' + ms + 'ms)\n\n';
+      resA.innerHTML = header + (parsed ? escapeHtml(JSON.stringify(body, null, 2)) : escapeHtml(String(body)));
+
+      if (ok && body.output_url) {
+        previewA.innerHTML = '<a class="link" href="' + body.output_url +
+          '" target="_blank">변환 결과 HTML 열기 →</a>';
+      }
+    };
+    xhr.onerror = function(){
+      btnA.disabled = false;
+      resA.style.display = 'block';
+      resA.className = 'result fail';
+      resA.innerHTML = '<span class="badge fail">ERROR</span> 네트워크 오류\n\n' +
+        '가능 원인:\n' +
+        '  • 서버가 꺼져 있음\n' +
+        '  • 방화벽 차단 (포트 8080 inbound)\n' +
+        '  • 잘못된 호스트 주소\n';
+    };
+    xhr.send(fd);
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>]/g, function(c){
+      return c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;';
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
