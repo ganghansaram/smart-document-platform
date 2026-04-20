@@ -317,15 +317,39 @@ mv workbench/plans/36-explorer-upload-fix.md workbench/plans/done-36-explorer-up
 
 ---
 
-## §A. Phase 0 결과 (실행 후 기록)
+## §A. Phase 0 결과 (2026-04-20)
 
-(대기 중)
+### A-1. 1회차 — 배치 스캔 (큐 간섭 의심)
 
-형식 예시:
-```
-OK /api/upload 200 4ms        ← 통과 시
-FAIL /api/upload TimeoutError 19003ms  ← 차단 시
-```
+원격 PC에서 6개 경로 연속 실행:
+
+| 경로 | 1회 | 2회 | 비고 |
+|------|------|------|------|
+| `/api/upload` | ERR_CONNECTION_RESET 18908ms | ERR_CONNECTION_TIMED_OUT 21005ms | 타임아웃 |
+| `/api/reindex` | ERR_CONNECTION_TIMED_OUT 21012ms | ERR_CONNECTION_TIMED_OUT 21005ms | 타임아웃 |
+| `/api/translator/upload` | ERR_CONNECTION_TIMED_OUT 21005ms | 400 7794ms | **불일치** |
+| `/api/compare/upload` | 422 빠름 | 422 빠름 | 통과 |
+| `/api/documents/upload` | 404 빠름 | 404 빠름 | 통과 |
+
+모순: `/api/compare/upload`에도 "upload" 포함됐는데 통과. URL 단순 문자열 매칭 룰이 아님. 사용자 가설 = **앞선 차단 요청의 큐 간섭이 후속까지 번짐**.
+
+### A-2. 2회차 — 개별 테스트 (각 경로 30초 간격)
+
+개별 실행 결과:
+
+- `/api/upload` — **프리징(타임아웃)** ← 차단 확정
+- `/api/reindex` — 빠른 4xx 응답 (통과)
+- `/api/translator/upload` — 빠른 4xx 응답 (통과)
+- `/api/compare/upload` — 빠른 4xx 응답 (통과)
+- `/api/documents/upload` — 빠른 404 (통과)
+- `/api/diag/upload-test` — 200 (대조군, 통과)
+
+→ **차단 대상: `/api/upload` 1개 확정**. 1회차의 다른 경로 타임아웃은 큐 간섭으로 판명.
+
+### A-3. Phase 2 리네이밍 대상
+
+- `/api/upload` → `/api/document-submit` (단일)
+- 다른 엔드포인트 변경 불필요
 
 ---
 
