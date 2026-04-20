@@ -315,10 +315,11 @@ mv workbench/plans/36-explorer-upload-fix.md workbench/plans/done-36-explorer-up
 - [x] `/api/reindex`, `/api/index-status` 정상 (회귀 없음)
 - [x] 기존 페이지 200 정상 (`/index.html`, `/launcher.html`)
 
-### Phase 4 빌드·배포 (진행 대기)
-- [ ] v2.5 tar 빌드 (`docker save -o platform-v2.5.tar ...`)
-- [ ] 회사 VM 배포 (`./deploy.sh platform-v2.5.tar`)
-- [ ] 원격 PC 업로드 성공 확인
+### Phase 4 빌드·배포 (일부 완료)
+- [x] v2.5 tar 빌드 (`platform-v2.5.tar`, 4.0GB, 2026-04-20 23:17)
+- [x] Docker builder 캐시 정리 (`docker builder prune`)
+- [ ] 회사 VM 배포 (`./deploy.sh platform-v2.5.tar`) — **원격 PC 실행 대기**
+- [ ] 원격 PC 업로드 성공 확인 (반드시 Ctrl+F5 선행)
 
 ### Phase 5·6 마무리 (진행 대기)
 - [ ] 커밋 D: 엔드포인트 리네이밍 본조치
@@ -401,6 +402,14 @@ mv workbench/plans/36-explorer-upload-fix.md workbench/plans/done-36-explorer-up
 - 2회차 개별 테스트 (30초 간격): **`/api/upload` 단독 차단 확정**
 - 나머지 엔드포인트(`/api/reindex`, `/api/translator/upload`, `/api/compare/upload`, `/api/documents/upload`)는 모두 빠른 4xx 응답으로 통과
 - 대조군 `/api/diag/upload-test` 200 OK 확인
+
+### 2026-04-20 — Phase 4-1·4-2 완료 (v2.5 tar 빌드)
+- `docker-release` 스킬로 `platform-v2.5.tar` 생성 (4.0GB, 23:17 생성)
+- 포함 이미지: `smart-document-platform-backend`, `smart-document-platform-nginx`
+- 전체 레이어 캐시 활용, Phase 2·3 변경분만 재빌드
+- Docker builder prune 완료
+- 기존 `platform-v2.3.tar`, `platform-v2.4.tar` 존재 — 삭제 대기
+- `docker-compose.yml`, `deploy.sh` 변경 없음 → 재전송 불필요
 
 ### 2026-04-20 — Phase 2·3 완료 (리네이밍 + 로컬 검증)
 - 코드 2파일 리네이밍, 문서 3파일 현행화
