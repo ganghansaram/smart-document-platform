@@ -21,6 +21,19 @@
 - `js/app.js:630` 섹션 래핑이 h1/h2 기준 → cascade 로 deeper heading 많아질 시 content-visibility 효과 저하 가능
 - h1~h3 확장 vs 현행 유지 판단 — Compare 의존 조사 및 실데이터 기반 판단 후 결정
 
+## DOCX 변환기 — LO 전처리 후 heading 매칭 손실 (swa_kor 류)
+
+> 출처: Plan-37 Phase 3 Docker smoke 검증에서 발견 (2026-04-21)
+
+- `SWA_Sample_KOR.docx` 류: 원본에 `toc 1/2/3` 스타일 복제 단락 41개 + Heading 58개
+- LibreOffice 전처리 시 TOC 단락이 자동 삭제됨 (LO 특성)
+- 남은 Heading 58개 중 converter 가 14개만 heading 으로 감지 (44개 손실)
+- 골든(Word COM 전처리 없이): 53 heading / LO 경로: 14 heading
+- 원인 후보:
+  - Heading 스타일의 outlineLvl 정보 유실
+  - style_id 가 `Heading3` 등으로 정확히 박혀있는데 `_check_style_id` 매칭 누락 여부
+- 조사·수정 시점: Phase 4 (numbering.xml 파서) 구현 중 재조사 권장
+
 ## DOCX 변환기 — `v:shape` 이미지 추출 실패 (KI-002)
 
 > 출처: Plan-37 Phase 0 시맨틱 게이트 발견 (2026-04-21)

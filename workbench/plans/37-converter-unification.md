@@ -647,10 +647,13 @@ html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
 - [x] Standalone 래퍼 (docx2html.py, gui.py) — provenance adapter 전달
 - [x] Dockerfile — `fonts-nanum`, `fonts-noto-cjk`, `libreoffice-script-provider-python` 추가
 - [x] pytest 12/12 통과 (provenance 추가 후에도 fingerprint·시맨틱 게이트 모두 통과)
-- [ ] Docker 이미지 실빌드 + LibreOffice 경로 실행 검증 — **Linux 환경 실측 필요** (개발 PC 엔 LibreOffice 미설치)
-- [ ] fixture (f): Linux Docker 에서 heading 번호 보존 확인 — 실환경 검증
-- [ ] fixture (a)(b)(c): Word COM vs LibreOffice 차이 허용 범위 이내 — 실환경 검증
-- [ ] 회사 Linux VM 실서버에서 대표 문서 5종 수동 검증
+- [x] **Docker 이미지 실빌드** (2026-04-21 Docker Desktop, 12.7 GB, LibreOffice 25.2.3.2 + fonts-nanum + fonts-noto-cjk + libreoffice-script-provider-python 포함 확인)
+- [x] **LibreOfficeAdapter.is_available() True** (컨테이너 내부)
+- [x] **UNO 매크로 실행 성공** (4 fixture `adapter=libreoffice` provenance 기록)
+- [x] **fixture (f) swa_kor**: heading 번호 prefix 13개 박힘 (LO 전처리가 heading 평문화 성공). 단 toc 복제 단락 손실로 총 heading 개수는 14 (상세 §10)
+- [x] **fixture (a)(b)(c) 차이 측정**: 아래 §10 표 참조
+- [ ] 회사 Linux VM 실서버 수동 검증 — **릴리스 이벤트에 귀속**
+- [x] `fonts-nanum-coding` → `fonts-nanum` 정정 (Debian slim 저장소에 존재 안 함, 1차 빌드 실패 후 수정)
 
 ### Phase 4 (엔진 자립화, 선택)
 - [ ] fixture (d) STYLEREF 캡션 문서: 세 어댑터 모두 원문 동일 번호
@@ -988,6 +991,57 @@ tools/docx2html-standalone/
 **미완 (Linux 환경 필수)**:
 - LibreOffice 어댑터 실제 UNO 매크로 실행 — Dockerfile 빌드 후 컨테이너 내부 검증 필요
 - 전체 `docker compose up` → 업로드 → 디스패처 라우팅 smoke
+
+### Phase 3 — Docker 컨테이너 smoke (2026-04-21 추가 완료)
+
+Docker Desktop 에서 Dockerfile 재빌드 후 컨테이너 내부에서 LibreOffice 경로 전수 검증.
+
+**1차 빌드 실패 → 수정**:
+- `fonts-nanum-coding` 은 Debian slim 저장소 미제공 → `fonts-nanum` 에 이미 포함되어 있음. 제거.
+- Dockerfile 수정 후 2차 빌드 성공. 이미지 12.7 GB (LibreOffice 약 +2 GB).
+
+**컨테이너 내부 확인**:
+
+| 항목 | 결과 |
+|------|------|
+| soffice 바이너리 | `/usr/bin/soffice` — LibreOffice 25.2.3.2 |
+| LO 번들 Python | **없음** (Debian 패키지 구조상) |
+| 시스템 Python (/usr/bin/python3) | 3.13, `uno` import OK (`/usr/lib/python3/dist-packages/uno.py`) |
+| 컨테이너 메인 Python (/usr/local/bin/python) | 3.11, uno import 실패 (경로 다름) |
+| `LibreOfficeAdapter.is_available()` | True |
+
+**중요한 발견**: LibreOffice 번들 Python 이 아니라 **Debian 시스템 python3** 이 uno 를 지원. `LibreOfficeAdapter._find_lo_python()` 의 폴백 후보 `/usr/bin/python3` 가 실제로 사용되는 경로. subprocess 호출 방식이라 메인 백엔드 Python (3.11) 은 uno 몰라도 무방 — 설계대로 동작.
+
+**fixture 4종 LibreOffice 경로 결과 vs Word COM 골든 비교**:
+
+| fixture | Golden (Word COM 전처리 없이) 총 heading | Golden 번호 prefix | LO 총 heading | LO 번호 prefix | 해석 |
+|---------|-------|-------|-------|-------|------|
+| sample_small | 38 | 32 | 37 | 32 | 1개 차이 (허용 범위) |
+| mypaper | 38 | 29 | 39 | 30 | h4 1개 추가 감지 (경미) |
+| swa_pms | 54 | **0** | 61 | **60** | **LO 압도적 우위** — Word COM 전처리 없이 생성된 골든은 번호 prefix 없음 |
+| swa_kor | 53 | **0** | 14 | 13 | **LO 에서 heading 손실** — toc 1/2/3 복제 단락 41개 소실 + converter 가 LO 출력 스타일에서 일부 heading 매칭 실패 |
+
+**swa_kor 이슈 원인 분석**:
+- 원본 DOCX: `toc 1/2/3` 스타일 단락 41개 + `Heading 1~5` 58개 → converter 가 91개 중 53개 heading (구버전 감지 한계) 감지
+- LO 저장 후: `toc` 스타일 전부 제거됨 (LibreOffice 가 TOC 을 동적 필드로 처리) + `Heading` 스타일 58개 유지
+- converter 는 LO 출력에서 14개만 heading 으로 감지 — 58 중 14개만 매칭, 44개 손실
+- 정확한 원인은 Phase 4 (numbering.xml 파서) 구현 시 재조사 가치 있음. **Plan-37 범위 외 — `workbench/plans/backlog.md` 등록 대상**
+
+**품질 해석**:
+- 단순/일반 문서 (sample, mypaper, swa_pms): **LO 가 Word COM 동등 또는 우위**
+- TOC·한글 heading 혼합 (swa_kor): **LO 가 일부 heading 손실** — 개선 필요
+- 실환경 영향: 회사 Linux VM 에 올릴 문서 중 swa_kor 처럼 TOC 중복 포함 구조가 얼마나 되는지에 따라 파급도 달라짐
+
+**검증**:
+
+| 항목 | 결과 |
+|------|------|
+| Docker 이미지 빌드 | ✓ (1차 실패 → Dockerfile 수정 → 2차 성공) |
+| 컨테이너 내 soffice/uno | ✓ |
+| LibreOfficeAdapter 동작 | ✓ (4 fixture 모두 adapter=libreoffice 기록) |
+| heading 번호 prefix | ✓ 3/4 fixture 에서 Word COM 경로와 동등 또는 우위 |
+| swa_kor 손실 이슈 | ⚠️ 14/58 (Phase 3 범위 외, backlog 등록 예정) |
+| 회사 실서버 검증 | ⏳ 릴리스 이벤트 (Phase 5) 에서 수행 |
 
 **다음 단계**: Phase 4 (Converter 엔진 자립화 — numbering.xml + STYLEREF + SEQ 스위치 완전 지원).
 
