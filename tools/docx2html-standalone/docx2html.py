@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-DOCX → HTML 독립 변환기
+DOCX → HTML 독립 변환기 (래퍼)
 
 듀얼 모드:
   - 인자 없이 실행 → GUI
   - 인자 있으면   → CLI
+
+엔진 위치 (Plan-37 Phase 2):
+  - 개발 모드 (직접 실행): `../converter/` 를 sys.path 에 추가
+  - PyInstaller 번들: `sys._MEIPASS` 에 엔진 파일들이 복사되어 있음 (spec 참조)
 """
 
 import sys
@@ -15,8 +19,26 @@ import logging
 from pathlib import Path
 
 
+def _setup_engine_import_path():
+    """엔진 모듈을 import 할 수 있도록 sys.path 설정.
+
+    - PyInstaller 번들 (sys.frozen=True): `_MEIPASS` 에 엔진 파일이 이미 복사되어
+      있으므로 추가 작업 불필요.
+    - 개발 모드: `../converter/` 를 sys.path 에 삽입하여 엔진 파일 로드 가능.
+    """
+    if getattr(sys, 'frozen', False):
+        return  # PyInstaller 번들은 _MEIPASS 에서 자동 해결
+    engine_dir = Path(__file__).resolve().parent.parent / 'converter'
+    engine_str = str(engine_dir)
+    if engine_str not in sys.path:
+        sys.path.insert(0, engine_str)
+
+
+_setup_engine_import_path()
+
+
 def get_base_dir():
-    """PyInstaller 번들 또는 스크립트 디렉토리 반환"""
+    """PyInstaller 번들 또는 스크립트 디렉토리 반환 (레거시 호환)"""
     return Path(getattr(sys, '_MEIPASS', Path(__file__).parent))
 
 

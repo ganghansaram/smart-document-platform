@@ -20,8 +20,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-# 테스트 대상 모듈 경로
-sys.path.insert(0, str(Path(__file__).parent))
+# Plan-37 Phase 2: 엔진이 ../converter/ 로 이관됨. 해당 경로도 sys.path 에 포함.
+_HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(_HERE))
+sys.path.insert(0, str(_HERE.parent / 'converter'))
 
 
 def create_test_docx(output_path):

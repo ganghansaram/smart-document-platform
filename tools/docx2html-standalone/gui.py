@@ -4,6 +4,9 @@
 DOCX → HTML 변환기 GUI (Tkinter)
 
 심플하고 정렬된 UI. 폰트 크기 일관성 유지.
+
+엔진 위치 (Plan-37 Phase 2): docx2html.py 와 동일하게 `../converter/` 참조.
+GUI 단독 실행 (python gui.py) 시에도 엔진 로드 가능하도록 sys.path 설정.
 """
 
 import os
@@ -12,6 +15,14 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from pathlib import Path
+
+
+# 엔진 모듈 import 가능하도록 sys.path 설정 (PyInstaller 번들 제외)
+if not getattr(sys, 'frozen', False):
+    _engine_dir = Path(__file__).resolve().parent.parent / 'converter'
+    _engine_str = str(_engine_dir)
+    if _engine_str not in sys.path:
+        sys.path.insert(0, _engine_str)
 
 
 class DocxConverterGUI:
