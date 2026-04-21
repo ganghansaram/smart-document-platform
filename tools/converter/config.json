@@ -56,6 +56,9 @@
     "remove_empty_paragraphs": true,
     "convert_smart_quotes": true
   },
+  "numbering": {
+    "resolver_mode": "prefer_cached"
+  },
   "output": {
     "fragment_only": true,
     "encoding": "utf-8",
