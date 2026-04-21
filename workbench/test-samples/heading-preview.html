@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Heading Preview (Plan-37 Phase 1e)</title>
+<link rel="stylesheet" href="../../css/tokens.css">
+<link rel="stylesheet" href="../../css/content.css">
+<link rel="stylesheet" href="../../css/bookmarks.css">
+<style>
+  body { padding: 32px; max-width: 900px; margin: 0 auto; }
+  .toggle { margin-bottom: 20px; }
+  .demo-section { margin-top: 30px; padding: 16px; border: 1px dashed var(--border-color); }
+</style>
+</head>
+<body>
+<div class="toggle">
+  <button onclick="document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark'">
+    테마 토글
+  </button>
+</div>
+<div id="main-content" class="main-content">
+  <h1 id="h1-1">h1 — 문서 제목 (Heading 1)</h1>
+  <p>본문 샘플 텍스트입니다.</p>
+  <h2 id="h2-1">h2 — 섹션 (Heading 2)</h2>
+  <p>섹션 본문입니다.</p>
+  <h3 id="h3-1">h3 — 하위 섹션 (Heading 3)</h3>
+  <p>하위 섹션 본문입니다.</p>
+  <h4 id="h4-1">h4 — 세부 항목 (Heading 4)</h4>
+  <p>세부 항목 본문입니다.</p>
+  <h5 id="h5-1">h5 — 세부 세부 항목 (Heading 5)</h5>
+  <p>h5 본문입니다. Plan-37 cascade 로 새로 등장 가능.</p>
+  <h6 id="h6-1">h6 — 최하위 항목 (Heading 6)</h6>
+  <p>h6 본문입니다. 일반적으로 주석·레이블 수준.</p>
+  <div class="demo-section">
+    <h5>데모 섹션 내 h5</h5>
+    <p>하위 컨텍스트에서도 h5 가 제대로 보이는지 확인.</p>
+  </div>
+</div>
+</body>
+</html>

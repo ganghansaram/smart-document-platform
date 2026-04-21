@@ -275,7 +275,7 @@ function injectBookmarkIcons() {
     var pagePath = AppState.currentPage;
     if (!pagePath) return;
 
-    var headings = mainContent.querySelectorAll('h1[id], h2[id], h3[id], h4[id]');
+    var headings = mainContent.querySelectorAll('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]');
 
     headings.forEach(function(heading) {
         // 이미 아이콘이 있으면 스킵

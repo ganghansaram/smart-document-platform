@@ -215,7 +215,9 @@ body[data-theme="dark"] .bookmarks-clear-all:hover {
 h1:hover .bookmark-icon,
 h2:hover .bookmark-icon,
 h3:hover .bookmark-icon,
-h4:hover .bookmark-icon {
+h4:hover .bookmark-icon,
+h5:hover .bookmark-icon,
+h6:hover .bookmark-icon {
     opacity: 1;
 }
 

@@ -279,6 +279,24 @@ body[data-theme="dark"] .main-content .page-header h1.ph-icon-glossary::before {
     margin-bottom: 10px;
 }
 
+.main-content h5 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--dark-gray);
+    margin-top: 20px;
+    margin-bottom: 8px;
+}
+
+.main-content h6 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-top: 16px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
 /* 문단 */
 .main-content p {
     margin-bottom: 16px;
