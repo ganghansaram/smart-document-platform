@@ -6,7 +6,9 @@ Word 문서(.docx)를 HTML로 변환하는 독립 실행 프로그램입니다.
 
 - **Windows 10/11** (64-bit)
 - Python 설치 **불필요** (EXE에 포함)
-- 장절번호 전처리 사용 시: **Microsoft Word** 설치 필요
+- Microsoft Word 설치: **선택** — 없어도 대부분의 문서는 변환되지만,
+  자동번호가 `numbering.xml` 로만 정의된 구조에서 전처리가 있으면 더 정확
+- DRM 적용 환경: 업로드 전 **DRM 해제 필수** (서버/EXE 가 DRM 을 풀지 않음)
 
 ## 사용법
 
@@ -121,11 +123,26 @@ echo 변환 완료
 ## 기능
 
 - Word 스타일 → HTML 태그 매핑 (h1~h6, 본문, 리스트 등)
+- **자동번호 재현** — `numbering.xml` 기반으로 "1.1.2" 등 다단계 번호 자체 생성 (Word 없는 환경에서도 대부분 동작)
+- **복합 캡션** — "그림 3-1" 처럼 STYLEREF + SEQ 합성 필드 정확 재현
+- **SEQ 스위치 지원** — `\r` (reset), `\s` (heading 기준 리셋), `\c` (repeat), `\* ARABIC/ROMAN/alphabetic`
 - 표 변환 (병합 셀 지원: colspan, rowspan)
-- 이미지 추출 (JPEG, PNG, EMF, WMF 등)
+- 이미지 추출 (JPEG, PNG, EMF, WMF 등, 내용 해시 중복 제거)
 - 수식 변환 (OMML → MathML)
-- 장절번호 평문화 (Word COM, 선택적)
+- 장절번호 평문화 (Word COM, 선택적 — 가용 시 자동 사용)
 - 각주/미주 변환
+- **출력 HTML 에 provenance 주석 embed** — 변환기 버전·일시 영구 기록 (재변환·디버깅 추적용)
+
+## 출력 메타데이터 (provenance)
+
+생성된 HTML 의 첫 줄에 아래와 같은 주석이 자동 삽입됩니다:
+
+```html
+<!-- converter: smart-doc-platform/docx-converter 1.4.0 | adapter: word_com | date: 2026-04-21T14:30:00+00:00 -->
+```
+
+- `adapter` 값: `word_com` (정상 전처리) / `word_com_failed` / `word_com_error` / `skip` (`--no-preprocess` 사용 시)
+- 고객 제보 시 HTML 앞머리만 붙여 보내면 어느 버전·어떤 환경에서 변환됐는지 즉시 확인 가능
 
 ## 빌드 (개발자용)
 
@@ -134,14 +151,18 @@ pip install -r requirements.txt
 build.bat
 ```
 
-결과: `dist/docx2html.exe` (~23MB)
+결과: `dist/docx2html.exe` (~24 MB)
+
+**참고**: 엔진 코드는 `../converter/` 에 있으며, `docx2html.spec` 의 `pathex` 설정으로 자동 번들됩니다. 빌드 전 `../converter/` 디렉토리가 존재해야 합니다.
 
 ## 문제 해결
 
 | 증상 | 원인 | 해결 |
 |------|------|------|
-| "장절번호 전처리를 건너뜁니다" | Word 미설치 | `--no-preprocess` 사용 또는 Word 설치 |
-| 장절번호가 HTML에 누락 | DRM이 전처리 파일 암호화 | "전처리만" → DRM 해제 → 변환 (2단계) |
-| 헤딩 서식이 뒤죽박죽 | Word에서 스타일 미적용 (폰트 크기만 변경) | Word에서 "제목 1" 등 스타일 적용 권장 |
-| 이미지가 HTML에 포함되지 않음 | Word 도형/그리기 객체 | Word에서 해당 도형 → "그림(PNG)"으로 변환 후 재변환 |
+| "장절번호 전처리를 건너뜁니다" | Word 미설치 | Word 설치 (선택) 또는 `--no-preprocess` 사용 — 대부분의 문서는 자체 번호 생성으로 정상 변환됨 |
+| 장절번호가 HTML에 누락 | DRM 이 전처리 파일 암호화 (구 EXE) | 현 버전은 `.docx_1` 확장자로 DRM 우회. 여전히 문제면 "전처리만" → DRM 해제 → 변환 (2단계) |
+| 복합 캡션 "그림 3-1" 이 "그림 1" 로 표시 | STYLEREF 가 해당 heading 을 못 찾음 | Word 에서 heading 1 스타일 적용 확인, F9 로 필드 업데이트 후 저장 |
+| 헤딩 서식이 뒤죽박죽 | Word에서 스타일 미적용 (폰트 크기만 변경) | Word 에서 "제목 1" 등 스타일 적용 권장 |
+| 이미지가 HTML에 포함되지 않음 | Word 도형/그리기 객체 (`v:shape`) | Word 에서 해당 도형 → "그림(PNG)"으로 변환 후 재변환 |
 | CLI에서 출력이 안 보임 | `--windowed` 빌드 | `--verbose` 추가 또는 출력을 파일로 리다이렉트 |
+| Windows Defender 등이 EXE 를 탐지 | PyInstaller 생성 EXE 의 알려진 false positive | 사내 AV 화이트리스트 등록. EXE 자체는 안전 |

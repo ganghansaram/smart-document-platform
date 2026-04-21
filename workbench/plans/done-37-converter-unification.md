@@ -666,10 +666,19 @@ html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
 - [x] Phase 1~3 fixture 무회귀: pytest 12/12 통과 (기본 prefer_cached 모드)
 - [ ] Standalone 재배포본 외부 업체 제보 샘플 재검증 → **릴리스 이벤트 (Phase 5)**
 
-### Phase 5 (문서)
-- [ ] `docs/14-CONVERTER-ARCHITECTURE.md` 작성
-- [ ] standalone README/email-draft 갱신
-- [ ] MEMORY.md 관련 섹션 업데이트
+### Phase 5 (문서 + 마감) ✅ **완료** (2026-04-22)
+- [x] `docs/14-CONVERTER-ARCHITECTURE.md` 작성 (500+ 줄, 4 Part / 12 섹션)
+- [x] `tools/docx2html-standalone/README.md` 슬림화 + Phase 4 반영
+- [x] `tools/docx2html-standalone/email-draft.md` v1.4 공지 템플릿 갱신
+- [x] `memory/MEMORY.md` — 전처리 어댑터·NumberingResolver·STYLEREF·Provenance 섹션 추가
+- [x] `memory/MEMORY.md` 완료 플랜 목록에 Plan-37 등록
+- [x] 계획서 파일명 `37-*` → `done-37-*` 변경
+- [x] 문서 내부 파일경로 링크 9건 전수 유효성 검증
+- [x] pytest 12/12 최종 재확인
+
+### Plan-37 전체 완료 (2026-04-21~22, 2일)
+
+Phase 0~5 전 구간 완료. Standalone 재배포본 실서버 검증은 **릴리스 이벤트**에서 수행.
 
 ---
 
