@@ -629,9 +629,10 @@ html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
 - [x] 브라우저 렌더링 검증 (playwright, light/dark 스크린샷) (Phase 1e)
 - [x] `pytest tools/converter/tests/` 12건 전부 통과 (cascade 적용 후 golden 재생성)
 
-### Phase 2 (standalone 비우기)
-- [ ] `tools/converter/` 가 유일한 엔진 디렉토리 (standalone 디렉토리에 엔진 파일 없음)
-- [ ] standalone exe 재빌드 결과 = 기존 exe (대표 문서 3종, 바이트 일치)
+### Phase 2 (standalone 비우기) ✅ **완료** (2026-04-21)
+- [x] `tools/converter/` 가 유일한 엔진 디렉토리 (standalone 엔진 파일 5종 완전 삭제)
+- [x] standalone wrapper (`docx2html.py`) 로 변환 시 플랫폼 golden 과 본문 동등 (3/3 fixture, 이미지 경로명만 차이 — fixture id vs 파일명)
+- [ ] standalone exe 재빌드 결과 = 기존 exe (대표 문서 3종, 바이트 일치) — **빌드 환경에서 실행 필요** (PyInstaller 실행 보류)
 
 ### Phase 3 (LibreOffice 어댑터)
 - [ ] Docker 이미지 빌드 성공, LibreOffice + 한글 폰트 + `--safe-mode` 플래그 포함
@@ -853,6 +854,54 @@ standalone 의 cascade 코드를 그대로 이식했더니 mypaper 헤딩이 38 
 | 브라우저 h1~h6 렌더링 | **OK** (light/dark) |
 
 **다음 단계**: Phase 2 (standalone 엔진 파일 5종 삭제 + `docx2html.spec` pathex/datas 조정) 착수 가능.
+
+### Phase 2 완료 — 2026-04-21
+
+**변경**:
+- **삭제 (5종)**: `tools/docx2html-standalone/{converter.py, word_preprocessor.py, omml_to_mathml.py, utils.py, config.json}` + `__pycache__/`, `build/`
+- **수정 (4종)**:
+  - `docx2html.py` — 상단에 `_setup_engine_import_path()` 추가. `frozen=False` 시 `../converter` 를 `sys.path` 삽입. PyInstaller 번들에선 `_MEIPASS` 자동 해결
+  - `gui.py` — 상단에 동일 패턴 적용 (단독 실행 지원)
+  - `test_heading_detection.py` — `sys.path` 에 `../converter` 추가
+  - `build.bat` — CLI 인자 대신 `.spec` 기반 (`pyinstaller --clean docx2html.spec`)
+- **재작성 (1종)**:
+  - `docx2html.spec` — `pathex=[../converter]`, `datas=[(../converter/config.json, '.')]`, `hiddenimports=[converter, omml_to_mathml, utils, preprocess, preprocess.word_com, word_preprocessor, win32com, pythoncom, pywintypes]`
+
+**최종 디렉토리 구조**:
+```
+tools/docx2html-standalone/
+├─ README.md                 (문서)
+├─ build.bat                 (빌드 스크립트)
+├─ dist/docx2html.exe        (이전 빌드본 유지)
+├─ docx2html.py              (CLI/GUI 진입점, 래퍼)
+├─ docx2html.spec            (PyInstaller 설정)
+├─ email-draft.md            (고객 공지 템플릿)
+├─ gui.py                    (Tkinter GUI, 래퍼)
+├─ plan.md                   (standalone 초기 설계)
+├─ requirements.txt          (deps)
+└─ test_heading_detection.py (수동 테스트 스크립트)
+```
+엔진 파일은 0개, 모두 `../converter/` 참조.
+
+**검증**:
+
+| 항목 | 결과 |
+|------|------|
+| standalone `docx2html.py` 직접 실행 — sample_20260317.docx | ✓ 변환 성공, 본문 golden 과 바이트 일치 (이미지 폴더명만 다름) |
+| standalone — SWA_PMS.docx | ✓ 본문 33359B 바이트 일치 |
+| standalone — SWA_Sample_KOR.docx | ✓ 본문 31672B 바이트 일치 |
+| standalone — MyPaper.docx | ✓ 본문 바이트 수 차이 84B (이미지 경로 길이 차이 — `MyPaper_..._images` vs `mypaper_images`, fixture id 효과) |
+| platform pytest 12건 | ✓ 전부 통과 (standalone 변경이 플랫폼에 영향 없음) |
+| standalone 엔진 파일 개수 | 0 |
+
+**의도적 보류**: PyInstaller 재빌드는 빌드 환경에서 실제 수행해야 함 (Windows + pyinstaller + 10분+ 소요). `.spec` 파일은 준비 완료. 회사 배포용 빌드 시점에 실행.
+
+**서브시스템 영향 검증**:
+- 플랫폼 (`backend/api/upload.py`, `tools/converter/tests/`) — 독립, 영향 없음
+- 기존 `dist/docx2html.exe` — 보존 (이전 엔진 번들본, 재빌드 전까지 유효)
+- `test_heading_detection.py` — sys.path 만 조정, 로직 불변
+
+**다음 단계**: Phase 3 (LibreOffice 어댑터 추가 + 디스패처 도입) 착수 가능.
 
 ---
 
