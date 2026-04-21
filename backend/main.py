@@ -30,6 +30,7 @@ async def lifespan(app):
     init_analytics_db()
     apply_settings_on_startup()  # settings.json → config 적용
     _reset_stuck_tasks()
+    _cleanup_stale_preprocessed()
     yield
     # ── shutdown ──
     await _graceful_shutdown()
@@ -85,6 +86,22 @@ def _reset_stuck_tasks():
             pass
     if reset_count:
         logger.info("고착 태스크 %d건 리셋 (translating/generating → pending)", reset_count)
+
+
+def _cleanup_stale_preprocessed():
+    """서버 크래시로 남은 preprocessed_*.docx_1 임시파일 청소 (24h 이상)"""
+    try:
+        import sys
+        from pathlib import Path
+        converter_dir = Path(__file__).parent.parent / "tools" / "converter"
+        if str(converter_dir) not in sys.path:
+            sys.path.insert(0, str(converter_dir))
+        from preprocess import cleanup_stale_temp_files
+        removed = cleanup_stale_temp_files()
+        if removed:
+            logger.info("stale preprocessed 임시파일 %d건 정리", removed)
+    except Exception as e:
+        logger.warning("preprocessed temp cleanup 실패 (무시): %s", e)
 
 
 async def _graceful_shutdown():

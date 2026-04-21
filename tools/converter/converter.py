@@ -7,6 +7,7 @@ DOCX to HTML Converter - 변환 로직
 import json
 import os
 import re
+import sys
 import hashlib
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -44,9 +45,10 @@ class DocxConverter:
         self._shape_warnings = []  # 추출 불가 도형/그리기 경고 목록
 
     def _load_config(self, config_path):
-        """설정 파일 로드"""
+        """설정 파일 로드 (PyInstaller 번들 호환)"""
         if config_path is None:
-            base_dir = Path(__file__).parent
+            # PyInstaller 번들에선 sys._MEIPASS, 일반 실행엔 __file__ 기준
+            base_dir = Path(getattr(sys, '_MEIPASS', Path(__file__).parent))
             config_path = base_dir / "config.json"
 
         try:
@@ -91,18 +93,22 @@ class DocxConverter:
             }
         }
 
-    def convert(self, input_path, output_path=None, options=None):
+    def convert(self, input_path, output_path=None, options=None,
+                image_dir_name=None, image_prefix=None):
         """
         Word 문서를 HTML로 변환
 
         Args:
-            input_path: 입력 .docx 파일 경로
+            input_path: 입력 .docx (또는 .docx_1 — DRM 우회용) 파일 경로
             output_path: 출력 .html 파일 경로 (선택)
             options: 변환 옵션 오버라이드 (선택)
+            image_dir_name: 이미지 폴더명 오버라이드 (기본: {파일명}_images)
+            image_prefix: HTML 내 이미지 경로 접두사 (기본: 상대경로 자동)
 
         Returns:
             ConversionResult: 변환 결과 정보
         """
+        self._image_prefix = image_prefix
         result = ConversionResult(input_path)
         input_path = Path(input_path)
 
@@ -111,7 +117,9 @@ class DocxConverter:
             result.error_message = f"파일을 찾을 수 없습니다: {input_path}"
             return result
 
-        if input_path.suffix.lower() != '.docx':
+        # .docx_1 은 Windows DRM 재적용 우회용 — python-docx 는 ZIP 시그니처로
+        # 읽으므로 확장자 무관하게 동작
+        if input_path.suffix.lower() not in ('.docx', '.docx_1'):
             result.error_message = f"지원하지 않는 파일 형식입니다: {input_path.suffix}"
             return result
 
@@ -137,7 +145,10 @@ class DocxConverter:
             # 이미지 추출
             image_map = {}
             if merged_options.get('extract_images', True):
-                image_dir = get_image_dir(output_path)
+                if image_dir_name:
+                    image_dir = output_path.parent / image_dir_name
+                else:
+                    image_dir = get_image_dir(output_path)
                 image_map = self._process_images(doc, image_dir, output_path)
                 result.stats['images'] = len(image_map)
 
@@ -322,47 +333,163 @@ class DocxConverter:
                     yield doc.tables[table_idx]
                     table_idx += 1
 
+    # 본문 스타일 ID — heading 오감지 방지
+    # Word 의 style_id 는 내부 코드 (예: Normal='a') 이므로 style.name 도 함께 검사
+    _BODY_STYLE_IDS = frozenset({
+        'Normal', 'BodyText', 'BodyText2', 'BodyText3',
+        'ListParagraph', 'ListBullet', 'ListNumber',
+        'NoSpacing', 'Quote', 'FootnoteText', 'EndnoteText',
+    })
+    _BODY_STYLE_NAMES = frozenset({
+        'Normal', '본문',
+        'Body Text', 'Body Text 2', 'Body Text 3',
+        'List Paragraph', 'List Bullet', 'List Number',
+        'No Spacing', 'Quote', 'Footnote Text', 'Endnote Text',
+    })
+
+    def _is_body_style(self, paragraph):
+        """단락이 본문 스타일인지 판정. style_id 와 name 양쪽 검사."""
+        if not paragraph.style:
+            return False
+        if paragraph.style.style_id in self._BODY_STYLE_IDS:
+            return True
+        if paragraph.style.name in self._BODY_STYLE_NAMES:
+            return True
+        return False
+
     def _detect_heading_level(self, paragraph):
         """
-        문단의 제목 레벨 감지
+        문단의 제목 레벨 감지 (4단계 캐스케이드)
 
-        Args:
-            paragraph: Paragraph 객체
+        우선순위:
+          1. outlineLvl (OOXML 스펙 정의, 로케일 무관)
+          2. style_id  (로케일 무관, config 매핑 + 정규식)
+          3. style.name (config 매핑 + 정규식, 로케일 의존)
+          4. 폰트 크기  (최후 수단, 본문 스타일이면 스킵)
 
         Returns:
-            str: HTML 태그 (h1, h2, h3, p)
+            str: HTML 태그 (h1~h6 또는 p)
         """
+        # Tier 1: outlineLvl (OOXML 스펙 — 가장 권위 있는 신호)
+        tag = self._check_outline_level(paragraph)
+        if tag:
+            return tag
+
+        # Tier 2: style_id (로케일 무관)
+        tag = self._check_style_id(paragraph)
+        if tag:
+            return tag
+
+        # Tier 3: style.name (config 매핑 + 정규식)
+        tag = self._check_style_name(paragraph)
+        if tag:
+            return tag
+
+        # Tier 4: 폰트 크기 (최후 수단, 본문 스타일이면 스킵)
+        tag = self._check_font_size(paragraph)
+        if tag:
+            return tag
+
+        return 'p'
+
+    def _check_outline_level(self, paragraph):
+        """Tier 1: outlineLvl — 단락 XML 직접 조회 + 스타일 상속 체인.
+
+        본문 스타일(_BODY_STYLE_IDS/_BODY_STYLE_NAMES)에 속하는 단락은
+        outlineLvl 이 지정되어 있어도 heading 으로 인식하지 않는다 — 일부
+        Word 템플릿이 TOC 용으로 본문 단락에 outlineLvl 을 지정하는 경우
+        오감지 방지.
+        """
+        # 본문 스타일이면 outlineLvl 존재 여부와 무관하게 heading 아님
+        if self._is_body_style(paragraph):
+            return None
+
+        # 단락 자체의 pPr에서 outlineLvl 확인
+        pPr = paragraph._element.find(qn('w:pPr'))
+        if pPr is not None:
+            outline = pPr.find(qn('w:outlineLvl'))
+            if outline is not None:
+                val = int(outline.get(qn('w:val')))
+                if val <= 8:
+                    return f'h{min(val + 1, 6)}'
+                return None  # val=9 → 본문
+
+        # 스타일 정의의 pPr에서 outlineLvl 확인 (상속 체인 탐색)
+        style = paragraph.style
+        depth = 0
+        while style is not None and depth < 10:
+            style_elem = style.element
+            if style_elem is not None:
+                style_pPr = style_elem.find(qn('w:pPr'))
+                if style_pPr is not None:
+                    outline = style_pPr.find(qn('w:outlineLvl'))
+                    if outline is not None:
+                        val = int(outline.get(qn('w:val')))
+                        if val <= 8:
+                            return f'h{min(val + 1, 6)}'
+                        return None  # val=9 → 본문
+            style = style.base_style
+            depth += 1
+
+        return None
+
+    def _check_style_id(self, paragraph):
+        """Tier 2: style_id — 로케일 무관 매핑"""
+        if not paragraph.style or not paragraph.style.style_id:
+            return None
+
+        style_id = paragraph.style.style_id
         style_mapping = self.config.get('style_mapping', {})
-        priority = style_mapping.get('priority', 'style_first')
 
-        tag_from_style = None
-        tag_from_font = None
+        # config의 by_style_id 매핑 조회
+        by_style_id = style_mapping.get('by_style_id', {})
+        tag = by_style_id.get(style_id)
+        if tag:
+            return tag
 
-        # 스타일 기반 감지
+        # 정규식 폴백: "Heading1" ~ "Heading9"
+        match = re.match(r'^Heading(\d+)$', style_id)
+        if match:
+            return f'h{min(int(match.group(1)), 6)}'
+
+        return None
+
+    def _check_style_name(self, paragraph):
+        """Tier 3: style.name — config 매핑 + 정규식"""
+        if not paragraph.style or not paragraph.style.name:
+            return None
+
+        style_name = paragraph.style.name
+        style_mapping = self.config.get('style_mapping', {})
         by_style = style_mapping.get('by_style', {})
-        if paragraph.style and paragraph.style.name:
-            style_name = paragraph.style.name
-            tag_from_style = by_style.get(style_name)
 
-            # 매핑에 없으면 스타일명에서 숫자 자동 추출 (Heading 4, 제목 5 등)
-            if not tag_from_style:
-                match = re.match(r'^(?:Heading|제목)\s*(\d+)$', style_name, re.IGNORECASE)
-                if match:
-                    level = min(int(match.group(1)), 6)
-                    tag_from_style = f'h{level}'
+        tag = by_style.get(style_name)
+        if tag and tag != 'p':
+            return tag
 
-        # 폰트 크기 기반 감지
+        # 정규식 폴백: "Heading N", "제목 N" 등
+        match = re.match(r'^(?:Heading|제목)\s*(\d+)$', style_name, re.IGNORECASE)
+        if match:
+            return f'h{min(int(match.group(1)), 6)}'
+
+        return None
+
+    def _check_font_size(self, paragraph):
+        """Tier 4: 폰트 크기 — 최후 수단. 본문 스타일이면 스킵."""
+        # 본문 스타일이면 폰트 크기와 무관하게 헤딩 아님
+        if self._is_body_style(paragraph):
+            return None
+
+        style_mapping = self.config.get('style_mapping', {})
         by_font_size = style_mapping.get('by_font_size', {})
         font_size = self._get_paragraph_font_size(paragraph)
         if font_size:
             font_size_str = str(int(font_size))
-            tag_from_font = by_font_size.get(font_size_str)
+            tag = by_font_size.get(font_size_str)
+            if tag and tag != 'p':
+                return tag
 
-        # 우선순위에 따라 결정
-        if priority == 'style_first':
-            return tag_from_style or tag_from_font or by_font_size.get('default', 'p')
-        else:
-            return tag_from_font or tag_from_style or by_font_size.get('default', 'p')
+        return None
 
     def _get_paragraph_font_size(self, paragraph):
         """
@@ -949,9 +1076,13 @@ class DocxConverter:
                         with open(image_path, 'wb') as f:
                             f.write(image_data)
 
-                        # 상대 경로 계산
-                        rel_path = os.path.relpath(image_path, output_path.parent)
-                        rel_path = rel_path.replace('\\', '/')
+                        # 경로 계산: image_prefix 지정 시 접두사+파일명, 아니면 상대경로 자동
+                        if getattr(self, '_image_prefix', None):
+                            prefix = self._image_prefix.rstrip('/')
+                            rel_path = f"{prefix}/{filename}"
+                        else:
+                            rel_path = os.path.relpath(image_path, output_path.parent)
+                            rel_path = rel_path.replace('\\', '/')
 
                         image_map[rel_id] = rel_path
                         self.logger.debug(f"이미지 추출: {filename}")
