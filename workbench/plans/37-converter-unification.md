@@ -608,20 +608,30 @@ html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
 
 ## 5. 수용 기준 (Acceptance Criteria)
 
-### Phase 0 (회귀 방어망)
-- [ ] fixture (a)(b)(c) 최소 골든 HTML 확정·커밋
-- [ ] `test_conversion.py` 바이트 diff 테스트 통과
-- [ ] `semantic_checks.py` — caption id 중복·dead link·이미지 누락·SEQ 미해결 전부 0건
+### Phase 0 (회귀 방어망) ✅ **완료** (2026-04-21)
+- [x] fixture 4종 골든 HTML 확정·커밋 (sample_small / mypaper / swa_pms / swa_kor)
+- [x] `test_conversion.py` 바이트 diff 테스트 통과 (pytest 12건 5.35초)
+- [x] `semantic_checks.py` — caption id 중복·dead link·이미지 누락·SEQ 미해결 전부 0건 (known_issues 제외)
+- [x] Compare 서브시스템 converter 의존 조사 — **의존 0건** 확인
+- [x] 회귀 감지 smoke test (태그 주입 / dead link 주입 모두 즉시 탐지)
+- [x] pytest 경로 + pytest 없는 standalone runner 양방향 검증
+- [x] `known_issues.md` — KI-001/002/003 문서화, `backlog.md` 에 KI-002 등록
 
-### Phase 1~2 (엔진 통합)
+### Phase 1 (엔진 이식) ✅ **완료** (2026-04-21)
+- [x] cascade 4단계 감지 이식 (Phase 1a) + body-style guard 추가
+- [x] `config.json` 확장 (by_style_id, h4~h6, priority 제거) (Phase 1b)
+- [x] `word_preprocessor` → `preprocess/word_com.py` 이관 + shim 유지 (Phase 1c)
+- [x] `.docx_1` 고아 파일 정리 훅 (`backend/main.py` lifespan) (Phase 1c)
+- [x] `convert()` kwargs (image_dir_name / image_prefix) + sys._MEIPASS + .docx_1 입력 (Phase 1d)
+- [x] 플랫폼 CSS h5/h6 (content.css) + 북마크 hover (bookmarks.css) (Phase 1e)
+- [x] `js/bookmarks.js:278` 셀렉터 h1~h6 확장 (Phase 1e)
+- [x] `tools/build-search-index.py` 점검 — HEADING_LEVELS=[1,2,3] 의도적 유지 (Phase 1e)
+- [x] 브라우저 렌더링 검증 (playwright, light/dark 스크린샷) (Phase 1e)
+- [x] `pytest tools/converter/tests/` 12건 전부 통과 (cascade 적용 후 golden 재생성)
+
+### Phase 2 (standalone 비우기)
 - [ ] `tools/converter/` 가 유일한 엔진 디렉토리 (standalone 디렉토리에 엔진 파일 없음)
-- [ ] Explorer 업로드 경로 변경 없이 동작 (기존 import도 shim으로 유지)
-- [ ] fixture (a)(b)(c) cascade 변환 결과가 Phase 0 골든과 일치
-- [ ] 시맨틱 품질 게이트 통과
-- [ ] **플랫폼 CSS 에 h5/h6 스타일 및 북마크 hover 룰 추가 완료** (Phase 1e)
-- [ ] Explorer 브라우저 미리보기에서 h5/h6 렌더링 어색하지 않음
 - [ ] standalone exe 재빌드 결과 = 기존 exe (대표 문서 3종, 바이트 일치)
-- [ ] `pytest tools/converter/tests/` 전체 통과
 
 ### Phase 3 (LibreOffice 어댑터)
 - [ ] Docker 이미지 빌드 성공, LibreOffice + 한글 폰트 + `--safe-mode` 플래그 포함
@@ -732,7 +742,121 @@ html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
 
 ---
 
-## 10. 참고 자료
+## 10. 진행 이력 (Progress Log)
+
+### Phase 0 완료 — 2026-04-21
+
+**커밋**:
+- `3b4cd64` 추가 [Plan-37] DOCX 변환기 통합 계획서 작성 (+743줄)
+- `65b8221` 추가 [Plan-37] Phase 0 회귀 방어망 인프라 구축 (+2,990줄, 39 파일)
+
+**구축된 인프라** (`tools/converter/tests/`, 총 1,065줄):
+
+| 파일 | 역할 |
+|------|------|
+| `_paths.py` | 경로·fixture 카탈로그·KNOWN_ISSUES 공통 상수 (pytest 의존성 없음) |
+| `conftest.py` | pytest 공통 설정, fixture parametrize |
+| `semantic_checks.py` | 시맨틱 품질 게이트 4종 (295줄) |
+| `test_conversion.py` | pytest 12건 (fingerprint + 시맨틱 + 골든 baseline) |
+| `run_tests.py` | pytest 없이 돌아가는 standalone runner (폐쇄망 호환) |
+| `regenerate_golden.py` | 골든 HTML 재생성 스크립트 |
+| `known_issues.md` | 발견된 결함 3건 문서화 |
+
+**fixture 골든 통계**:
+
+| fixture | 헤딩 | 표 | 이미지 | 용도 |
+|---------|------|----|----|------|
+| sample_small | 38 | 8 | 3 | 빠른 smoke test |
+| mypaper | 38 | 17 | 4 | 수식·캡션 (논문) |
+| swa_pms | 54 | 23 | 7 | 대형 규격서 |
+| swa_kor | 53 | 24 | 10 | 한글 heading |
+
+**주요 발견**:
+
+1. **Compare 서브시스템 converter 의존도 = 0건**
+   - `backend/services/compare_service.py` 는 `python-docx` + `PyMuPDF` 로 원본 직접 파싱
+   - Phase 1e 의 Compare 대응 범위 없음 → 공수 절감
+
+2. **시맨틱 게이트가 3건의 실제 결함 즉시 포착**
+   - **KI-001** `mypaper`: 원본 저자가 "표 16" 을 두 번 사용 (원본 결함, `backlog` 이관 대상 아님)
+   - **KI-002** `swa_kor`: converter 가 이미지 10개 추출만 하고 HTML 삽입 0건 (`v:shape` 처리 버그, 기존 `contents/samples/` HTML 에도 동일 증상) — **Plan-37 범위 외 진짜 버그**, `backlog.md` 등록 완료
+   - **KI-003** `mypaper`: heading 레벨 h1→h4 점프 (원본 비표준, warning)
+
+3. **현 converter 기본 동작**: `WORD_COM_PREPROCESS=False` (config.py:71) → 전처리 없이 converter 직행이 기본. 현 플랫폼 업로드 경로도 그대로 동작.
+
+4. **헤딩 ID 부재**: converter 가 heading 태그에 id 를 부여하지 않음. `js/bookmarks.js:278` 의 `h1[id]` 셀렉터가 실제로는 매칭하지 않는 상태. Plan-37 범위 외.
+
+**검증**:
+
+| 항목 | 결과 |
+|------|------|
+| pytest 12건 (4 fixture × 3 test) | **All PASSED** (5.35초) |
+| Standalone runner | **OK** (pytest 미설치 환경도 동작) |
+| 회귀 감지 smoke test — 태그 주입 | **정상 FAIL** (`text_hash` · `text_length` 감지) |
+| 회귀 감지 smoke test — dead link 주입 | **정상 FAIL** (`caption_ref_dead` 감지) |
+| `backend/api/upload.py` 호환성 | 변경 없이 기존 경로 정상 |
+
+**다음 단계**: Phase 1 (역이식) 착수 가능 상태.
+
+### Phase 1 완료 — 2026-04-21
+
+**반영 위치**:
+- `tools/converter/converter.py` — cascade 4단계 + `_BODY_STYLE_IDS`/`_BODY_STYLE_NAMES` + `_is_body_style()` guard + `sys._MEIPASS` + `image_dir_name`/`image_prefix` + `.docx_1` 수용
+- `tools/converter/config.json` — `by_style_id` 신설, `priority` 제거, h4~h6 매핑 추가
+- `tools/converter/preprocess/` (신설 패키지) — `__init__.py`, `word_com.py` (preprocess_docx + preprocess_only + cleanup_stale_temp_files)
+- `tools/converter/word_preprocessor.py` — shim 재작성 (re-export)
+- `backend/main.py` — lifespan 에 `_cleanup_stale_preprocessed()` 추가
+- `css/content.css` — `.main-content h5`, `.main-content h6` 스타일 추가
+- `css/bookmarks.css:218` — h5/h6 hover 룰 확장
+- `js/bookmarks.js:278` — 셀렉터 h1~h6 로 확장
+- `tools/build-search-index.py` — 변경 없음 (HEADING_LEVELS=[1,2,3] 의도적 유지 확인)
+
+**핵심 발견 — cascade 오감지 방지 (중요)**:
+standalone 의 cascade 코드를 그대로 이식했더니 mypaper 헤딩이 38 → **116** 으로 급증. 원인은 `Normal` 스타일 단락 129개 중 **98개에 `outlineLvl val=1`** 이 지정되어 있어서 Tier 1 (outlineLvl) 이 본문을 h2 로 오감지.
+
+**해결**: `_is_body_style()` 헬퍼 신설 — Tier 1 (outlineLvl) 과 Tier 4 (font size) 양쪽에서 **본문 스타일 guard**. `style_id` + `style.name` 양쪽 검사 (Word 내부 ID 는 로케일·템플릿별 상이: Normal→'a' 등).
+
+결과: fixture 4종 모두 Phase 0 골든과 동일 헤딩 개수 유지하면서도 cascade 의 진가 확보:
+
+| fixture | 총 헤딩 | h1 | h2 | h3 | h4 | h5 | h6 |
+|---------|--------|----|----|----|----|----|----|
+| sample_small | 38 | 10 | 22 | 6 | 0 | 0 | 0 |
+| **mypaper** | 38 | 1 | 0 | 5 | **32** | 0 | 0 |
+| swa_pms | 54 | 3 | 10 | 28 | **13** | 0 | 0 |
+| swa_kor | 53 | 3 | 10 | 29 | **11** | 0 | 0 |
+
+이전 legacy 에선 h4 가 **0개**였지만 cascade 로 mypaper 는 h4=32 (논문의 "1.1", "1.2" 같은 부섹션) 가 정확히 감지됨.
+
+**서브시스템 영향 검증**:
+- `backend/api/upload.py` — 변경 없이 기존 `from word_preprocessor import preprocess_docx` 정상 동작 (shim)
+- `pdf_converter.py` — 제거된 `priority` 키 참조 안 함 (grep 0건), 영향 없음
+- `js/bookmarks.js` localStorage — 플랫폼 pre-launch 라 저장된 북마크 0건, 마이그레이션 불필요
+- `js/figure-popup.js` — 기존 `[data-fig-ref]` 구조 유지, 영향 없음
+- `backend/services/compare_service.py` — converter 미사용 (Phase 0 확인), 영향 없음
+- 검색 인덱서 `HEADING_LEVELS=[1,2,3]` — 섹션 분할 기준은 의도 유지, h4~h6 은 섹션 내부 컨텐츠로 포함
+
+**브라우저 렌더링 검증** (playwright, file:// 제한으로 http.server 8899 사용):
+- h1 32px → h2 26px → h3 21px → h4 18px → h5 16px → h6 14px 계층 정확
+- 다크 테마에서 h5/h6 색상 자동 전환 확인 (`rgb(224,224,224)`)
+- 스크린샷: `workbench/screenshots/phase1e-heading-{light,dark}.png`
+
+**검증**:
+
+| 항목 | 결과 |
+|------|------|
+| pytest 12건 (4 fixture × 3 test) | **All PASSED** (11.75초) |
+| 시맨틱 게이트 (cascade 적용 후) | 신규 error 0건, known 그대로 유지 |
+| Standalone runner | **OK** |
+| Shim import 경로 (`from word_preprocessor import *`) | **OK** — `preprocess.word_com` 으로 re-export |
+| backend `_cleanup_stale_preprocessed` 로드 | **OK** |
+| PdfConverter config 호환 | **OK** (priority/by_style_id 미사용) |
+| 브라우저 h1~h6 렌더링 | **OK** (light/dark) |
+
+**다음 단계**: Phase 2 (standalone 엔진 파일 5종 삭제 + `docx2html.spec` pathex/datas 조정) 착수 가능.
+
+---
+
+## 11. 참고 자료
 
 - `tools/docx2html-standalone/plan.md` — standalone 초기 설계
 - `tools/docx2html-standalone/email-draft.md` — 외부 업체 전달 문서
