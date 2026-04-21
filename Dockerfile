@@ -10,7 +10,7 @@ FROM python:3.11-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends \
         fonts-liberation \
         fonts-dejavu-core \
-        fonts-nanum fonts-nanum-coding \
+        fonts-nanum \
         fonts-noto-cjk \
         libgl1 \
         libglib2.0-0 \
