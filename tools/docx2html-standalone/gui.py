@@ -354,6 +354,7 @@ class DocxConverterGUI:
         def worker():
             try:
                 actual_input = input_path
+                adapter_used = "skip"
 
                 # 전처리
                 if do_preprocess:
@@ -364,13 +365,16 @@ class DocxConverterGUI:
                         preprocessed = preprocess_docx(str(input_path))
                         if preprocessed != str(input_path):
                             actual_input = Path(preprocessed)
+                            adapter_used = "word_com"
                             self.root.after(0, lambda: self._set_status(
                                 "전처리 완료. HTML 변환 중...", self.FG_SUB))
                         else:
+                            adapter_used = "word_com_failed"
                             self.root.after(0, lambda: self._set_status(
                                 "전처리 건너뜀 (원본 사용). HTML 변환 중...", self.FG_SUB))
                     except Exception as e:
                         err_msg = str(e)
+                        adapter_used = "word_com_error"
                         self.root.after(0, lambda m=err_msg: self._set_status(
                             f"전처리 실패: {m} — 원본으로 변환 계속", self.ERROR))
 
@@ -383,7 +387,8 @@ class DocxConverterGUI:
                 result = converter.convert(
                     str(actual_input), str(output_path),
                     image_dir_name=image_dir_name,
-                    image_prefix=image_prefix
+                    image_prefix=image_prefix,
+                    provenance_adapter=adapter_used,
                 )
 
                 # 임시 파일 정리

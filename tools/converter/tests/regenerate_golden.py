@@ -63,8 +63,11 @@ def regenerate(use_word_com: bool = False) -> int:
                     print(f"    [WARN] Word COM 실패, 원본 사용: {e}")
 
             convert_input = preprocessed or str(docx_path)
+            # provenance — 실제 사용된 전처리 경로 반영
+            provenance = 'word_com' if (use_word_com and preprocessed) else 'skip'
             conv = DocxConverter(config_path=str(CONVERTER_DIR / "config.json"))
-            result = conv.convert(convert_input, str(output_html))
+            result = conv.convert(convert_input, str(output_html),
+                                  provenance_adapter=provenance)
 
             if result.success:
                 stats = result.stats or {}

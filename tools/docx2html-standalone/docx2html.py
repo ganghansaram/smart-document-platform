@@ -128,16 +128,21 @@ def run_cli(args=None):
 
     # 전처리 (장절번호 평문화)
     actual_input = input_path
+    adapter_used = "skip"
     if not parsed.no_preprocess:
         try:
             from word_preprocessor import preprocess_docx
             preprocessed = preprocess_docx(str(input_path))
             if preprocessed != str(input_path):
                 actual_input = Path(preprocessed)
+                adapter_used = "word_com"
                 logger.info("전처리 완료: %s", actual_input)
+            else:
+                adapter_used = "word_com_failed"
         except Exception as e:
             logger.warning("전처리 실패 (원본 사용): %s", e)
             print(f"[경고] 전처리 실패: {e} — 원본 파일로 변환합니다.", file=sys.stderr)
+            adapter_used = "word_com_error"
 
     # 변환 실행
     try:
@@ -147,7 +152,8 @@ def run_cli(args=None):
             str(actual_input),
             str(output_path),
             image_dir_name=parsed.image_dir,
-            image_prefix=parsed.image_prefix
+            image_prefix=parsed.image_prefix,
+            provenance_adapter=adapter_used,
         )
 
         if result.success:
