@@ -19,6 +19,9 @@ import time
 import logging
 import tempfile
 from pathlib import Path
+from typing import Optional
+
+from .base import PreprocessAdapter, PreprocessResult
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +181,40 @@ def preprocess_only(input_path: str, output_path: str) -> str:
             pythoncom.CoUninitialize()
         except Exception:
             pass
+
+
+class WordComAdapter(PreprocessAdapter):
+    """디스패처용 어댑터 — 함수형 preprocess_docx 를 PreprocessAdapter 인터페이스로 래핑."""
+
+    name = "word_com"
+
+    def is_available(self) -> bool:
+        """pywin32 설치 + Word COM dispatch 가능 여부."""
+        try:
+            import win32com.client  # noqa: F401
+            import pythoncom  # noqa: F401
+        except ImportError:
+            return False
+        # 실제 Word 설치까지 확인하면 Word 기동 비용이 들므로, pywin32 만 확인.
+        # 실행 시점에 Dispatch 실패하면 preprocess() 가 fallback 처리.
+        return os.name == 'nt'
+
+    def preprocess(self, input_path: str,
+                   output_path: Optional[str] = None) -> PreprocessResult:
+        result_path = preprocess_docx(input_path, output_path)
+        # 성공 판정: 결과가 원본과 같은 절대경로인지 비교
+        # (preprocess_docx 는 실패 시 input 을 resolve 한 절대경로 반환)
+        try:
+            same_file = Path(result_path).resolve() == Path(input_path).resolve()
+        except OSError:
+            same_file = result_path == input_path
+        ok = not same_file
+        return PreprocessResult(
+            path=result_path,
+            adapter=self.name,
+            ok=ok,
+            error=None if ok else "preprocess_docx returned original (COM 실패 또는 스킵)",
+        )
 
 
 def cleanup_stale_temp_files(max_age_seconds: int = 86400) -> int:

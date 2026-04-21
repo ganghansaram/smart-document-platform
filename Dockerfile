@@ -2,13 +2,20 @@
 # Python 3.11 + FastAPI + tools/ + pdf2zh + babeldoc ONNX
 FROM python:3.11-slim AS base
 
-# 시스템 의존성: 폰트(pdf2zh 렌더링), libgl(OpenCV/OCR)
+# 시스템 의존성:
+#  - 폰트(pdf2zh 렌더링 + 한글 LibreOffice 변환)
+#  - libgl(OpenCV/OCR)
+#  - libreoffice-writer(Plan-37 Phase 3 DOCX 전처리)
+#  - libreoffice-script-provider-python(python3-uno bridge — UNO 매크로용)
 RUN apt-get update && apt-get install -y --no-install-recommends \
         fonts-liberation \
         fonts-dejavu-core \
+        fonts-nanum fonts-nanum-coding \
+        fonts-noto-cjk \
         libgl1 \
         libglib2.0-0 \
         libreoffice-writer \
+        libreoffice-script-provider-python \
     && rm -rf /var/lib/apt/lists/*
 
 # ── 비특권 사용자 생성 (CIS Docker Benchmark, 보안 모범 관행) ──

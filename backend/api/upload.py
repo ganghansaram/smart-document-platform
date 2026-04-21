@@ -91,6 +91,7 @@ def run_converter(input_path: Path, output_path: Path, file_ext: str) -> dict:
 
     preprocessed_path = None
     converted_doc_path = None
+    preprocess_adapter = "skip"
     try:
         # .doc → .docx 사전 변환
         if file_ext == '.doc':
@@ -103,11 +104,16 @@ def run_converter(input_path: Path, output_path: Path, file_ext: str) -> dict:
             file_ext = '.docx'
 
         if file_ext == '.docx':
-            # 전처리: COM으로 장절번호 평문화 + 필드 갱신
+            # 전처리: Plan-37 Phase 3 — 디스패처 체인 (word_com → libreoffice → native → skip)
             from config import WORD_COM_PREPROCESS
+            from preprocess import preprocess as _dispatch_preprocess
+
+            # WORD_COM_PREPROCESS=False 이면 전처리 스킵 (레거시 플래그 존중)
             if WORD_COM_PREPROCESS:
-                from word_preprocessor import preprocess_docx
-                preprocessed_path = preprocess_docx(str(input_path))
+                result = _dispatch_preprocess(str(input_path), policy='auto')
+                if result.ok and result.path != str(input_path):
+                    preprocessed_path = result.path
+                preprocess_adapter = result.adapter
 
             from converter import DocxConverter
             conv = DocxConverter(config_path=str(CONVERTER_DIR / "config.json"))
@@ -119,7 +125,12 @@ def run_converter(input_path: Path, output_path: Path, file_ext: str) -> dict:
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
-        result = conv.convert(convert_input, str(output_path))
+        # provenance_adapter 는 DocxConverter.convert 만 받음 (PdfConverter 는 **kwargs 없음)
+        if file_ext == '.docx':
+            result = conv.convert(convert_input, str(output_path),
+                                  provenance_adapter=preprocess_adapter)
+        else:
+            result = conv.convert(convert_input, str(output_path))
 
         if result.success:
             resp = {

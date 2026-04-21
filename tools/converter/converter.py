@@ -94,7 +94,8 @@ class DocxConverter:
         }
 
     def convert(self, input_path, output_path=None, options=None,
-                image_dir_name=None, image_prefix=None):
+                image_dir_name=None, image_prefix=None,
+                provenance_adapter=None):
         """
         Word 문서를 HTML로 변환
 
@@ -104,11 +105,15 @@ class DocxConverter:
             options: 변환 옵션 오버라이드 (선택)
             image_dir_name: 이미지 폴더명 오버라이드 (기본: {파일명}_images)
             image_prefix: HTML 내 이미지 경로 접두사 (기본: 상대경로 자동)
+            provenance_adapter: HTML provenance meta 에 기록할 전처리 어댑터 이름
+                (예: 'word_com', 'libreoffice', 'skip'). 호출자가 디스패처 결과에서
+                가져와 전달. None 이면 'unknown'.
 
         Returns:
             ConversionResult: 변환 결과 정보
         """
         self._image_prefix = image_prefix
+        self._provenance_adapter = provenance_adapter
         result = ConversionResult(input_path)
         input_path = Path(input_path)
 
@@ -277,6 +282,9 @@ class DocxConverter:
 
             # 캡션 참조 하이퍼링크 생성
             html_content = self._linkify_references(html_content)
+
+            # Provenance meta 삽입 (fragment 모드는 주석, 전체 HTML 모드는 <meta>)
+            html_content = self._embed_provenance(html_content, merged_options)
 
             # h1으로 시작하지 않는 경우 경고
             if not first_heading_found:
@@ -1427,6 +1435,46 @@ class DocxConverter:
         }
         prefix = prefix_map.get(keyword, 'fig')
         return f'{prefix}-{number}'
+
+    def _embed_provenance(self, html_content, options):
+        """출력 HTML 에 변환기 버전·어댑터·일시를 embed (Plan-37 Phase 3f).
+
+        fragment 모드 (output.fragment_only=True): HTML 주석으로 삽입
+        전체 HTML 모드: <meta name="..."> 태그 삽입
+
+        adapter 이름은 호출 컨텍스트에 없으므로 선택적으로 self._provenance_adapter
+        속성을 사용. 없으면 'unknown' 으로 기록.
+        """
+        try:
+            from __version__ import __version__ as _ver
+        except ImportError:
+            _ver = "unknown"
+
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        adapter = getattr(self, '_provenance_adapter', None) or 'unknown'
+
+        fragment_only = options.get('fragment_only',
+                                    self.config.get('output', {}).get('fragment_only', True))
+
+        if fragment_only:
+            # HTML 주석 — Explorer 가 fragment 로 주입하므로 주석 형식
+            banner = (
+                f'<!-- converter: smart-doc-platform/docx-converter {_ver} '
+                f'| adapter: {adapter} | date: {now} -->'
+            )
+            return banner + '\n' + html_content
+        else:
+            # 전체 HTML 모드 — <head> 에 meta 삽입
+            meta = (
+                f'<meta name="converter" content="smart-doc-platform/docx-converter">\n'
+                f'<meta name="converter-version" content="{_ver}">\n'
+                f'<meta name="converter-adapter" content="{adapter}">\n'
+                f'<meta name="conversion-date" content="{now}">'
+            )
+            if '</head>' in html_content:
+                return html_content.replace('</head>', meta + '\n</head>', 1)
+            return meta + '\n' + html_content
 
     def _linkify_references(self, html_content):
         """최종 HTML에서 캡션 참조 텍스트를 <a data-fig-ref> 링크로 변환.

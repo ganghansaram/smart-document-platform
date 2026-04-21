@@ -623,6 +623,8 @@ def html_to_searchable_text(html_content):
     """
     HTML → 검색용 텍스트 변환 (구조 보존).
 
+    0. HTML 주석 제거 (Plan-37 Phase 3f: provenance 주석이 검색 인덱스에
+       섞이지 않도록 — `<!-- converter: ... -->` 방지)
     1. <table> → 마크다운 테이블
     2. MathML → LaTeX
     3. 나머지 HTML 태그 제거 + 엔티티 디코딩 + 공백 정리
@@ -631,6 +633,9 @@ def html_to_searchable_text(html_content):
         return ''
 
     text = html_content
+
+    # 0. HTML 주석 제거 (provenance 메타 등 색인 오염 방지)
+    text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
 
     # 1. 테이블 변환
     table_conv = TableConverter()
