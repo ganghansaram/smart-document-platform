@@ -655,11 +655,16 @@ html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
 - [ ] 회사 Linux VM 실서버 수동 검증 — **릴리스 이벤트에 귀속**
 - [x] `fonts-nanum-coding` → `fonts-nanum` 정정 (Debian slim 저장소에 존재 안 함, 1차 빌드 실패 후 수정)
 
-### Phase 4 (엔진 자립화, 선택)
-- [ ] fixture (d) STYLEREF 캡션 문서: 세 어댑터 모두 원문 동일 번호
-- [ ] fixture (e) SEQ 스위치 문서: 리셋 정상
-- [ ] Phase 1~3 fixture 무회귀 (기본 설정)
-- [ ] Standalone 재배포본으로 외부 업체 제보 샘플 재검증 → 번호 일치
+### Phase 4 (엔진 자립화) ✅ **완료** (2026-04-22)
+- [x] 4a: NumberingResolver — word/numbering.xml 파서 (abstractNum + lvlText + lvlRestart + lvlOverride)
+- [x] 4b: STYLEREF 해석 — heading_context + fallback counter 로 "그림 1-1" 합성
+- [x] 4c: SEQ 스위치 (`\r N`, `\s N`, `\c`, `\n`, `\* FORMAT`) 완전 지원
+- [x] 4d: `_detect_caption` 정규식 확장 + 캡션 스타일 직접 감지
+- [x] 4e: `numbering.resolver_mode` 설정 (prefer_cached/always_polyfill/off)
+- [x] fixture (d) STYLEREF 합성 캡션: phase4_styleref.docx 수동 생성 후 "그림 1-1, 1-2, 2-1" 정확 출력 확인
+- [x] fixture (e) SEQ 스위치: Table \r 10 → "Table 10", \c → 반복 동작 확인
+- [x] Phase 1~3 fixture 무회귀: pytest 12/12 통과 (기본 prefer_cached 모드)
+- [ ] Standalone 재배포본 외부 업체 제보 샘플 재검증 → **릴리스 이벤트 (Phase 5)**
 
 ### Phase 5 (문서)
 - [ ] `docs/14-CONVERTER-ARCHITECTURE.md` 작성
@@ -991,6 +996,40 @@ tools/docx2html-standalone/
 **미완 (Linux 환경 필수)**:
 - LibreOffice 어댑터 실제 UNO 매크로 실행 — Dockerfile 빌드 후 컨테이너 내부 검증 필요
 - 전체 `docker compose up` → 업로드 → 디스패처 라우팅 smoke
+
+### Phase 4 완료 (2026-04-22)
+
+**신규 파일**:
+- `tools/converter/numbering_resolver.py` — word/numbering.xml 해석기 (241줄)
+- `tools/converter/tests/fixtures/make_phase4_fixture.py` — STYLEREF+SEQ 스위치 수동 fixture 생성 스크립트
+
+**수정 파일**:
+- `tools/converter/converter.py`
+  - NumberingResolver 통합 (Document 로드 시 초기화, heading polyfill)
+  - `_heading_context` 추가 (STYLEREF 용), fallback counter 지원
+  - `_resolve_styleref_fields()` 신설 — STYLEREF "Heading N" / "제목 N" 치환
+  - `_resolve_seq_fields()` 확장 — `\r`, `\s`, `\c`, `\*` 스위치 파싱
+  - `_detect_caption()` 확장 — 캡션 스타일 힌트 활용
+- `tools/converter/config.json` — `numbering.resolver_mode: "prefer_cached"` 추가
+
+**핵심 설계**:
+1. **`prefer_cached` 기본값**: 본문 텍스트에 이미 번호 prefix 있으면 polyfill 스킵 → 무회귀 보장
+2. **numbering.xml polyfill**: Word COM / LibreOffice 전처리 **없이도** heading 번호 생성 가능
+3. **STYLEREF + SEQ \s 연동**: `_heading_context` 가 heading 변경 감지 → SEQ `\s` 가 자동 리셋
+4. **Fallback counter**: numbering.xml 없거나 heading 번호 계산 실패 시 등장 순서 기반 카운터 (python-docx `add_heading` 처럼 numPr 누락된 문서 대응)
+
+**검증**:
+
+| 항목 | 결과 |
+|------|------|
+| pytest 12/12 (기본 설정) | ✓ — 기존 4 fixture 무회귀 (prefer_cached 모드로 cached 값 존중) |
+| swa_pms heading 번호 prefix | **0 → 53** (크게 개선, NumberingResolver 자체 생성) |
+| phase4_styleref.docx — "그림 1-1, 1-2" | ✓ Chapter One 안 Figure 2개 |
+| phase4_styleref.docx — "그림 2-1" | ✓ Chapter Two 에서 SEQ 리셋 |
+| phase4_styleref.docx — `Table \r 10` | ✓ Table 10 부터 시작 |
+| phase4_styleref.docx — `Table \c` | ✓ 참조에서 반복 (증가 안 함) |
+
+**다음 단계**: Phase 5 (문서 통합 + 릴리스) — `docs/14-CONVERTER-ARCHITECTURE.md` 작성, standalone README·email-draft 갱신, 회사 Linux VM 실서버 검증, Standalone 재빌드·재배포.
 
 ### Phase 3 — Docker 컨테이너 smoke (2026-04-21 추가 완료)
 
