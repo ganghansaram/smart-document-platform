@@ -2,7 +2,37 @@
 
 > 각 계획서에서 이관된 잔여 항목을 모아둔 파일.
 > 필요 시 우선순위를 매겨 별도 계획서로 승격하여 진행.
-> 최종 수정: 2026-04-05
+> 최종 수정: 2026-04-21
+
+---
+
+## DOCX 변환기 — 북마크 localStorage 마이그레이션 도구
+
+> 출처: Plan-37 §6 범위 외
+
+- 운영 개시 후 heading ID 체계가 바뀌면 기존 북마크가 끊어질 수 있음
+- heading text 기반 유사도 매칭 등으로 자동 재연결 도구 필요
+- 현 시점 플랫폼이 pre-launch 라 불필요, 운영 개시 후 재검토
+
+## DOCX 변환기 — 섹션 래핑 정책 확장
+
+> 출처: Plan-37 §6 범위 외
+
+- `js/app.js:630` 섹션 래핑이 h1/h2 기준 → cascade 로 deeper heading 많아질 시 content-visibility 효과 저하 가능
+- h1~h3 확장 vs 현행 유지 판단 — Compare 의존 조사 및 실데이터 기반 판단 후 결정
+
+## DOCX 변환기 — `v:shape` 이미지 추출 실패 (KI-002)
+
+> 출처: Plan-37 Phase 0 시맨틱 게이트 발견 (2026-04-21)
+> 상세: `tools/converter/tests/known_issues.md` KI-002
+
+- `SWA_Sample_KOR.docx` 류: 이미지가 `pic:pic` 대신 `v:shape` (도형 객체) 로 감싸진 문서
+- converter 가 raw 이미지 파일 추출은 성공 (`_images/` 에 10개 저장), HTML 삽입 실패
+- 결과: HTML 에 `<img>` 0건, `<div class="shape-placeholder">` 9건 → 사용자 경험 크게 저하
+- 대응:
+  - `_has_unextractable_shapes()` 에서 도형 감지 후에도 해당 문단에 `pic:pic`/`inline drawing` 존재 시 정상 추출 경로 폴백
+  - 추출된 raw 이미지가 HTML 에서 참조되지 않으면 경고 로그
+- Plan-37 범위 외, 별도 플랜 승격 가능
 
 ---
 
