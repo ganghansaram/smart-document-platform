@@ -997,7 +997,115 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
     font-size: var(--font-title);
     font-weight: var(--font-weight-bold);
     color: var(--active-color);
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
 }
+
+/* Plan-38 §5.4 모달 B — 점수 ⓘ 도움말 버튼 */
+.sim-score-info {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: var(--font-body);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+    line-height: 1;
+    vertical-align: super;
+}
+.sim-score-info:hover {
+    color: var(--active-color);
+    background: var(--bg-hover);
+}
+
+/* 모달 B 콘텐츠 */
+.sim-help-modal .modal-box { max-width: 580px; }
+.sim-help-modal .modal-body {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+    padding-right: var(--space-md);
+}
+.sim-help-section { margin-bottom: var(--space-lg); }
+.sim-help-section:last-child { margin-bottom: 0; }
+.sim-help-section h4 {
+    font-size: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    color: var(--active-color);
+    margin: 0 0 var(--space-xs);
+}
+.sim-help-formula {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: var(--font-caption);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    line-height: 1.6;
+}
+.sim-help-bands {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-small);
+    border: 1px solid var(--border-color);
+}
+.sim-help-bands th, .sim-help-bands td {
+    border: 1px solid var(--border-color);
+    padding: 6px 10px;
+    text-align: left;
+    vertical-align: middle;
+}
+.sim-help-bands th {
+    background: var(--bg-card);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-caption);
+    color: var(--text-light);
+}
+body[data-theme="dark"] .sim-help-bands,
+body[data-theme="dark"] .sim-help-bands th,
+body[data-theme="dark"] .sim-help-bands td {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+.sim-help-band-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
+    color: white;
+}
+.sim-help-band-blue   { background: #3b82f6; }
+.sim-help-band-green  { background: #22c55e; }
+.sim-help-band-yellow { background: #eab308; }
+.sim-help-band-orange { background: #f97316; }
+.sim-help-band-red    { background: #ef4444; }
+.sim-help-vars {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+    font-size: var(--font-small);
+}
+.sim-help-vars li {
+    padding: 4px 0;
+    border-bottom: 1px dashed var(--border-color);
+}
+.sim-help-vars strong { color: var(--text-default); margin-right: 6px; }
+.sim-help-disclaimer {
+    font-size: var(--font-caption);
+    color: var(--text-muted);
+    padding: var(--space-sm) var(--space-md);
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+    border-radius: var(--radius-sm);
+    line-height: 1.55;
+}
+.sim-help-disclaimer strong { color: #92400e; }
+body[data-theme="dark"] .sim-help-disclaimer {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--text-default);
+}
+body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 
 .sim-verdict {
     font-size: var(--font-small);

@@ -1210,6 +1210,102 @@
             }
 
             // ── 확인 모달 ──
+            // ── 모달 B: 점수·등급 기준 (Plan-38 §5.4) ──
+            // 산식 + 5단계 신호등 + 변수 의미 + 면책. 콘텐츠는 simHelp(SSOT JSON)에서 파생.
+            function showSimScoreHelpModal() {
+                var help = simHelp || {};
+                var bands = help.verdict_bands || [
+                    { color: 'blue',   range_min: 0,  range_max: 0,   label: '매칭 없음',     meaning: '완전 독창' },
+                    { color: 'green',  range_min: 1,  range_max: 24,  label: '양호',          meaning: '정상 인용·정형구문 수준' },
+                    { color: 'yellow', range_min: 25, range_max: 49,  label: '검토 필요',     meaning: '출처 표기·재서술 점검' },
+                    { color: 'orange', range_min: 50, range_max: 74,  label: '상당량 매칭',   meaning: '광범위한 재작성 권고' },
+                    { color: 'red',    range_min: 75, range_max: 100, label: '위험',          meaning: '대부분 타 출처와 동일' }
+                ];
+                var formula = (help.score_formula && help.score_formula.equation) ||
+                    '유사율 = (실질 매칭 + 의역·번역 × 0.5) / (전체 문장 - 정형구문) × 100';
+                var vars = (help.score_formula && help.score_formula.variables) || {
+                    '실질 매칭': 'identical + near_copy 문장 수',
+                    '의역·번역': 'paraphrase + translation 문장 수 (가중치 ×0.5)',
+                    '정형구문': '업계 표준 문구 (점수 제외)'
+                };
+                var disclaimer = help.disclaimer || {
+                    main: '유사도 ≠ 표절 — 검토자의 판단이 최종',
+                    long: '본 점수는 텍스트 유사도를 측정한 것일 뿐, 표절 여부를 자동 판정하지 않습니다.'
+                };
+
+                var bandsHtml = '<table class="sim-help-bands"><thead><tr>'
+                    + '<th>색상</th><th>구간</th><th>판정</th><th>의미</th></tr></thead><tbody>';
+                for (var i = 0; i < bands.length; i++) {
+                    var b = bands[i];
+                    var range = b.range_min === b.range_max ? (b.range_min + '%') : (b.range_min + '~' + b.range_max + '%');
+                    bandsHtml += '<tr>'
+                        + '<td><span class="sim-help-band-badge sim-help-band-' + b.color + '">' + b.color.toUpperCase() + '</span></td>'
+                        + '<td>' + range + '</td>'
+                        + '<td>' + escapeHTML(b.label) + '</td>'
+                        + '<td>' + escapeHTML(b.meaning) + '</td>'
+                        + '</tr>';
+                }
+                bandsHtml += '</tbody></table>';
+
+                var varsHtml = '<ul class="sim-help-vars">';
+                for (var key in vars) {
+                    if (Object.prototype.hasOwnProperty.call(vars, key)) {
+                        varsHtml += '<li><strong>' + escapeHTML(key) + '</strong> ' + escapeHTML(vars[key]) + '</li>';
+                    }
+                }
+                varsHtml += '</ul>';
+
+                var overlay = document.createElement('div');
+                overlay.className = 'modal-overlay sim-help-modal';
+                overlay.innerHTML =
+                    '<div class="modal-box">'
+                    + '<div class="modal-header"><h3>점수·등급 기준</h3>'
+                    +   '<button class="modal-close" data-action="close" aria-label="닫기">&times;</button>'
+                    + '</div>'
+                    + '<div class="modal-body">'
+                    +   '<div class="sim-help-section">'
+                    +     '<h4>산식</h4>'
+                    +     '<div class="sim-help-formula">' + escapeHTML(formula) + '</div>'
+                    +   '</div>'
+                    +   '<div class="sim-help-section">'
+                    +     '<h4>변수 의미</h4>'
+                    +     varsHtml
+                    +   '</div>'
+                    +   '<div class="sim-help-section">'
+                    +     '<h4>5단계 신호등</h4>'
+                    +     bandsHtml
+                    +   '</div>'
+                    +   '<div class="sim-help-section">'
+                    +     '<div class="sim-help-disclaimer">'
+                    +       '<strong>' + escapeHTML(disclaimer.main) + '</strong><br>'
+                    +       escapeHTML(disclaimer.long)
+                    +     '</div>'
+                    +   '</div>'
+                    + '</div>'
+                    + '<div class="modal-footer">'
+                    +   '<button class="btn btn-primary" data-action="close">닫기</button>'
+                    + '</div>'
+                    + '</div>';
+                document.body.appendChild(overlay);
+                requestAnimationFrame(function() { overlay.classList.add('open'); });
+
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay || e.target.getAttribute('data-action') === 'close') {
+                        overlay.classList.remove('open');
+                        setTimeout(function() { overlay.remove(); }, 200);
+                    }
+                });
+                // ESC 닫기
+                var escHandler = function(e) {
+                    if (e.key === 'Escape') {
+                        overlay.classList.remove('open');
+                        setTimeout(function() { overlay.remove(); }, 200);
+                        document.removeEventListener('keydown', escHandler);
+                    }
+                };
+                document.addEventListener('keydown', escHandler);
+            }
+
             function showConfirmModal(message, onConfirm) {
                 var overlay = document.createElement('div');
                 overlay.className = 'modal-overlay';
@@ -1805,7 +1901,11 @@
                 // 요약 통계
                 html += '<div class="sim-summary">';
                 var scoreVal = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
-                html += '<div class="sim-score">' + scoreVal + '%</div>';
+                // 점수 + ⓘ 도움말 버튼 (Plan-38 §5.4 모달 B)
+                html += '<div class="sim-score">' + scoreVal + '%'
+                    + ' <button type="button" class="sim-score-info" data-action="show-score-help"'
+                    + ' title="점수 산출 기준 보기" aria-label="점수 산출 기준">ⓘ</button>'
+                    + '</div>';
                 // 판정 라벨
                 var verdictLabel, verdictClass;
                 var verdictTip;
@@ -1962,10 +2062,18 @@
                 }
             }
 
-            // ── 유사도 클릭 네비게이션 ──
+            // ── 유사도 클릭 네비게이션 + ⓘ 도움말 (Plan-38 §5.4) ──
             (function() {
                 var sidebarBody = document.getElementById('cp-sidebar-body');
                 sidebarBody.addEventListener('click', function(e) {
+                    // ⓘ 점수 도움말 (모달 B)
+                    var infoBtn = e.target.closest('[data-action="show-score-help"]');
+                    if (infoBtn) {
+                        e.stopPropagation();
+                        showSimScoreHelpModal();
+                        return;
+                    }
+                    // 매칭 카드 → 본문 점프
                     var item = e.target.closest('.sim-match-item');
                     if (!item || !simLastResult) return;
                     var idx = parseInt(item.getAttribute('data-idx'));

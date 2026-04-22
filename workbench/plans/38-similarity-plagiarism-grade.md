@@ -24,7 +24,7 @@
 | 1 | 3 | 캘리브레이션 1차 | ⏸️ | — | 잔여 항목 §17.6 (goldset 보정, boilerplate 우선순위, sem 분포) |
 | 1 | 4 | Phase 2 — 5단계 신호등 + sources | ✅ | 2026-04-23 | verdict/verdict_label/sources 신규 필드 (적중률 9/14) |
 | 1 | 5 | Phase 4 — HTML A4 인쇄 보고서 + L4 부록 | ✅ | 2026-04-23 | 6요소 보고서 + SSOT JSON + Help API + Excel 산식 시트 |
-| 1 | 6 | Phase 5 일부 — 모달 B (점수 ⓘ) | ⏳ | — | **다음** — 산식·신호등·면책 모달 |
+| 1 | 6 | Phase 5 일부 — 모달 B (점수 ⓘ) | ✅ | 2026-04-23 | sim-score-info ⓘ + 산식·5단계·변수의미·면책 모달 (SSOT 파생) |
 | 2 | 1 | Phase 3 — UI 재설계 | ⏸️ | — | 사이드바 3단, 출처 번호 마커, 4그룹 라벨 |
 | 2 | 2 | Phase 5 — 도움말 L1/L3 + 모달 A/C | ⏸️ | — | 툴팁, 가이드 페이지, 온보딩 |
 | 2 | 3 | 검사 설정 UI 토글 | ⏸️ | — | 5옵션 즉시 재계산 |
@@ -32,7 +32,7 @@
 
 **범례**: ✅ 완료 / ⏳ 진행중 또는 다음 / ⏸️ 대기
 
-**현 위치**: 묶음 1 5/7 단계 완료 (71%) — 다음 단계는 **Phase 5 모달 B**.
+**현 위치**: 묶음 1 **6/7 단계 완료 (86%)** — 잔여는 **단계 3 캘리브레이션 1차** 1건. 묶음 1 핵심 기능 모두 구현 완료.
 
 ---
 
@@ -1171,7 +1171,15 @@ def evaluate_all() -> dict:
   - `buildExportPayload`: verdict/verdict_label/sources/exclusion_breakdown/source_num/exclusion_reason/type_key 추가
   - `export_service.py`: 산식 시트 신규(`_write_similarity_criteria_sheet`), summary 시트에 verdict_label·sources 노출
   - 검증: 백엔드 schema(/api/help, /api/compare/similarity), Node 보고서 평가, Playwright 시각 미리보기, 골드셋 회귀(4/14 유지) 모두 정상
-- ⏳ 묶음 1 6단계 — Phase 5 모달 B 대기
+- ✅ **묶음 1 6단계 — Phase 5 일부 (모달 B) 완료** (2026-04-23)
+  - 점수 카드 옆 ⓘ 도움말 버튼 (`.sim-score-info`)
+  - 클릭 시 `showSimScoreHelpModal()` — 4개 섹션 (산식·변수의미·5단계 신호등·면책)
+  - SSOT JSON(`/api/help/similarity`)에서 콘텐츠 자동 파생 — 폴백 인라인 데이터 보유
+  - 5단계 색상 배지 (`sim-help-band-{color}`) + 다크모드 보더 보강
+  - 모달 body `max-height` + 스크롤 (긴 콘텐츠 안전)
+  - 닫기 버튼 + ESC 키 + 배경 클릭 — 3가지 닫기 경로
+  - 검증: ⓘ 클릭 → 모달 표시 / ESC → 닫힘 / 닫기 버튼 → 닫힘 / 콘솔 에러 0건 / 골드셋 회귀 4/14 유지
+- ⏸️ 묶음 1 잔여 단계 3 — 캘리브레이션 1차 (선택, §17.6 항목)
 - ⏸️ 묶음 2 대기
 
 ### 17.4 Phase 0 베이스라인 상세 (Phase 1 비교 기준점)
