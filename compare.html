@@ -456,8 +456,17 @@
                     }
                     if (pub.verify_verdict_low != null) verdictBoundLow = pub.verify_verdict_low;
                     if (pub.verify_verdict_high != null) verdictBoundHigh = pub.verify_verdict_high;
+                    if (Array.isArray(pub.verify_verdict_bands)) verdictBands5 = pub.verify_verdict_bands;
                 })
                 .catch(function() { /* 무시 — AI 버튼 숨김 유지 */ });
+
+            // ── 유사도 도움말 SSOT 로드 (Plan-38 §5.5) ──
+            // 보고서 부록·모달·툴팁에서 활용. 실패 시 인라인 폴백 사용.
+            var simHelp = null;
+            fetch(API_BASE + '/help/similarity', { credentials: 'include' })
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(data) { if (data) simHelp = data; })
+                .catch(function() { /* 무시 — 보고서는 인라인 fallback 사용 */ });
 
             function getPanel(side) { return side === 'a' ? panelBodyA : panelBodyB; }
             function getPanelRoot(side) { return side === 'a' ? panelA : panelB; }
@@ -595,8 +604,9 @@
             var aiFilterSection = document.getElementById('cp-ai-filter-section');
             var showParagraphNumbers = false;
             var compareAiEnabled = false; // /api/settings/public에서 로드
-            var verdictBoundLow = 30;    // 양호/보통 경계 (관리자 설정에서 오버라이드)
-            var verdictBoundHigh = 60;   // 보통/주의 경계
+            var verdictBoundLow = 30;    // [호환] 3단계 양호/보통 경계 (관리자 설정에서 오버라이드)
+            var verdictBoundHigh = 60;   // [호환] 3단계 보통/주의 경계
+            var verdictBands5 = [0, 25, 50, 75];  // Phase 2 — 5단계 신호등 [green/yellow/orange/red 시작]
 
             // ── 문서 로드 완료 처리 ──
             function onDocumentLoaded(side, filename, paragraphs, pageMap) {
@@ -3751,11 +3761,19 @@
                     var tiers = summary.tiers || {};
                     payload.files = { a: simState.a.filename || '', b: simState.b.filename || '' };
                     payload.score = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
-                    var verdictLabel = payload.score >= verdictBoundHigh ? '주의' : (payload.score >= verdictBoundLow ? '보통' : '양호');
-                    payload.verdict = verdictLabel;
+                    // 5단계 신호등 (백엔드 Phase 2) — 백엔드 verdict 우선, fallback으로 3단계
+                    payload.verdict = summary.verdict || '';            // "blue"|"green"|... (Phase 2)
+                    payload.verdict_label = summary.verdict_label || ''; // 한국어 라벨 (Phase 2)
+                    // 호환: 기존 3단계 verdict (보고서 외 코드용)
+                    payload.verdict_legacy = payload.score >= verdictBoundHigh ? '주의' : (payload.score >= verdictBoundLow ? '보통' : '양호');
                     payload.tiers = tiers;
                     payload.breakdown = summary.breakdown || {};
+                    payload.exclusion_breakdown = summary.exclusion_breakdown || {};
                     payload.total_sentences = summary.total_sentences;
+                    // sources (Phase 2): 1:1이므로 단일, name은 frontend가 채움
+                    payload.sources = (summary.sources || []).map(function(s) {
+                        return Object.assign({}, s, { name: s.name || (simState.b.filename || '참조 문서') });
+                    });
                     payload.matches = [];
                     var matches = simLastResult.matches;
                     for (var i = 0; i < matches.length; i++) {
@@ -3764,11 +3782,14 @@
                         var typeInfo = SIM_TYPE_MAP[typeKey] || {};
                         payload.matches.push({
                             index: i + 1,
+                            type_key: typeKey,
                             type: typeInfo.label || typeKey,
                             similarity: m.similarity ? (m.similarity * 100).toFixed(1) + '%' : '—',
                             method: DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer || '',
                             target_text: m.target_text,
-                            ref_text: m.ref_text
+                            ref_text: m.ref_text,
+                            exclusion_reason: m.exclusion_reason || null,
+                            source_num: 1  // 1:1 비교 — 모두 출처 [1]
                         });
                     }
                 } else if (currentMode === 'verify') {
@@ -3798,8 +3819,234 @@
                 return payload;
             }
 
+            // ── 유사도 보고서 빌드 (Plan-38 §9 — 6요소 + A4 인쇄) ──
+            function buildSimilarityReportHtml(p) {
+                var docId = (p.timestamp || '').replace(/[-:T]/g, '').slice(0, 14) || 'unknown';
+                var verdict = p.verdict || 'green';
+                var help = simHelp || {};
+                var bands = help.verdict_bands || [
+                    { color: 'blue',   range_min: 0,  range_max: 0,   label: '매칭 없음',   meaning: '완전 독창' },
+                    { color: 'green',  range_min: 1,  range_max: 24,  label: '양호',        meaning: '정상 인용·정형구문 수준' },
+                    { color: 'yellow', range_min: 25, range_max: 49,  label: '검토 필요',   meaning: '출처 표기·재서술 점검' },
+                    { color: 'orange', range_min: 50, range_max: 74,  label: '상당량 매칭', meaning: '광범위한 재작성 권고' },
+                    { color: 'red',    range_min: 75, range_max: 100, label: '위험',        meaning: '대부분 타 출처와 동일' }
+                ];
+                var labels = help.labels || {};
+                var formula = (help.score_formula && help.score_formula.equation) || '유사율 = (실질 매칭 + 의역·번역 × 0.5) / (전체 문장 - 정형구문) × 100';
+                var disclaimer = help.disclaimer || { main: '유사도 ≠ 표절 — 검토자의 판단이 최종', long: '본 점수는 텍스트 유사도를 측정한 것일 뿐, 표절 여부를 자동 판정하지 않습니다.' };
+                var algoRefs = (help.algorithm && help.algorithm.references) || [];
+
+                var css = ''
+                    + '@page { size: A4; margin: 20mm 15mm; }'
+                    + '@page :first { margin-top: 25mm; }'
+                    + 'body { font-family: "Malgun Gothic", "Segoe UI", sans-serif; max-width: 900px; margin: 0 auto; padding: 24px; color: #1a1a1a; font-size: 13px; line-height: 1.55; }'
+                    + 'h1 { font-size: 22px; margin: 0 0 4px; color: #2c5282; }'
+                    + '.subtitle { color: #666; font-size: 12px; margin-bottom: 20px; }'
+                    + 'h2 { font-size: 14px; margin: 20px 0 8px; padding: 5px 10px; background: #f0f4f8; border-left: 3px solid #2c5282; color: #1f2937; }'
+                    + 'h3 { font-size: 13px; margin: 14px 0 6px; color: #2c5282; }'
+                    + '.meta-grid { display: table; width: 100%; margin: 8px 0 16px; border-collapse: collapse; }'
+                    + '.meta-row { display: table-row; }'
+                    + '.meta-label { display: table-cell; width: 110px; padding: 6px 10px; background: #fafafa; font-weight: 600; border: 1px solid #e0e0e0; font-size: 12px; }'
+                    + '.meta-value { display: table-cell; padding: 6px 10px; border: 1px solid #e0e0e0; font-size: 12px; word-break: break-all; }'
+                    + '.score-card { display: flex; align-items: center; gap: 24px; padding: 18px 24px; border-radius: 8px; border: 2px solid #e0e0e0; margin: 12px 0 20px; }'
+                    + '.score-num { font-size: 56px; font-weight: 700; line-height: 1; }'
+                    + '.score-band-blue   { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }'
+                    + '.score-band-green  { background: #f0fdf4; border-color: #22c55e; color: #166534; }'
+                    + '.score-band-yellow { background: #fefce8; border-color: #eab308; color: #854d0e; }'
+                    + '.score-band-orange { background: #fff7ed; border-color: #f97316; color: #9a3412; }'
+                    + '.score-band-red    { background: #fef2f2; border-color: #ef4444; color: #991b1b; }'
+                    + '.score-meta-label { font-size: 18px; font-weight: 600; margin-bottom: 4px; }'
+                    + '.score-meta-line  { font-size: 12px; color: #555; }'
+                    + 'table.data { width: 100%; border-collapse: collapse; margin: 6px 0 16px; }'
+                    + 'table.data th, table.data td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; text-align: left; vertical-align: top; }'
+                    + 'table.data th { background: #f0f0f0; font-weight: 600; font-size: 11px; }'
+                    + 'table.data tr:nth-child(even) { background: #fafafa; }'
+                    + '.bd-bar { display: inline-block; height: 8px; background: #999; vertical-align: middle; margin-left: 6px; }'
+                    + '.src-num { display: inline-block; min-width: 22px; padding: 1px 6px; background: #2c5282; color: white; border-radius: 3px; font-size: 10px; text-align: center; margin-right: 4px; font-weight: 600; }'
+                    + '.match-detail { padding: 10px 12px; border: 1px solid #e0e0e0; margin: 6px 0; border-radius: 4px; break-inside: avoid; }'
+                    + '.match-header { display: flex; gap: 8px; align-items: center; font-size: 11px; margin-bottom: 6px; color: #555; flex-wrap: wrap; }'
+                    + '.match-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; color: white; }'
+                    + '.mb-identical   { background: #dc2626; }'
+                    + '.mb-near_copy   { background: #ea580c; }'
+                    + '.mb-paraphrase  { background: #2563eb; }'
+                    + '.mb-translation { background: #7c3aed; }'
+                    + '.mb-low_sim     { background: #6b7280; }'
+                    + '.mb-boilerplate { background: #9ca3af; }'
+                    + '.match-text { font-size: 12px; line-height: 1.5; margin: 4px 0; }'
+                    + '.match-text-label { display: inline-block; min-width: 50px; font-weight: 600; color: #555; }'
+                    + '.match-text-content { color: #1a1a1a; }'
+                    + '.match-excluded { opacity: 0.6; }'
+                    + '.match-excluded::after { content: " (제외 영역)"; font-size: 10px; color: #888; }'
+                    + '.appendix-page { page-break-before: always; break-before: page; padding-top: 12px; }'
+                    + '.appendix h2:first-child { margin-top: 0; }'
+                    + '.formula { font-family: "Consolas", "Courier New", monospace; padding: 8px 12px; background: #f8fafc; border: 1px solid #e0e0e0; border-radius: 4px; margin: 6px 0; font-size: 11px; line-height: 1.5; }'
+                    + '.disclaimer { font-size: 11px; color: #555; padding: 10px 12px; background: #fffbeb; border-left: 3px solid #f59e0b; margin: 12px 0; line-height: 1.55; }'
+                    + '.disclaimer strong { color: #92400e; }'
+                    + '.algo-list { font-size: 11px; color: #555; padding-left: 20px; line-height: 1.6; }'
+                    + '@media print {'
+                    + '  body { padding: 0; font-size: 10.5pt; line-height: 1.45; max-width: none; }'
+                    + '  h1 { font-size: 18pt; }'
+                    + '  h2 { font-size: 12pt; }'
+                    + '  .score-card, .meta-grid, table.data, .match-detail, .appendix { break-inside: avoid-page; }'
+                    + '  .appendix-page { page-break-before: always; }'
+                    + '  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }'
+                    + '}';
+
+                var html = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">'
+                    + '<title>유사도 검토 결과 보고서</title>'
+                    + '<style>' + css + '</style></head>'
+                    + '<body data-doc-id="SIM-' + escapeHTML(docId) + '">';
+
+                // 표제
+                html += '<h1>유사도 검토 결과 보고서</h1>'
+                    + '<div class="subtitle">Document Similarity Report</div>';
+
+                // ① 메타데이터
+                html += '<h2>① 메타데이터</h2><div class="meta-grid">'
+                    + '<div class="meta-row"><div class="meta-label">대상 문서</div><div class="meta-value">' + escapeHTML(p.files.a || '—') + '</div></div>'
+                    + '<div class="meta-row"><div class="meta-label">참조 문서</div><div class="meta-value">' + escapeHTML(p.files.b || '—') + '</div></div>'
+                    + '<div class="meta-row"><div class="meta-label">검사일시</div><div class="meta-value">' + escapeHTML((p.timestamp || '').replace('T', ' ').slice(0, 19)) + '</div></div>'
+                    + '<div class="meta-row"><div class="meta-label">검사 도구</div><div class="meta-value">Smart Document Platform — 유사도 검사 모듈</div></div>'
+                    + '<div class="meta-row"><div class="meta-label">검사자</div><div class="meta-value">' + escapeHTML(p.reviewer || '(미상)') + '</div></div>'
+                    + '<div class="meta-row"><div class="meta-label">문서 ID</div><div class="meta-value">SIM-' + escapeHTML(docId) + '</div></div>'
+                    + '</div>';
+
+                // ② 점수 카드
+                html += '<h2>② 점수 및 판정</h2>';
+                html += '<div class="score-card score-band-' + verdict + '">'
+                    + '<div class="score-num">' + p.score + '%</div>'
+                    + '<div>'
+                    + '<div class="score-meta-label">' + escapeHTML(p.verdict_label || p.verdict_legacy || '—') + '</div>'
+                    + '<div class="score-meta-line">전체 ' + p.total_sentences + '문장</div>';
+                if (p.tiers && p.tiers.substantive !== undefined) {
+                    html += '<div class="score-meta-line">실질 ' + p.tiers.substantive + '% · 의역·번역 ' + p.tiers.derived + '% · 정형구문 ' + (p.tiers.boilerplate || 0) + '%';
+                    if (p.tiers.excluded !== undefined) html += ' · 제외 ' + p.tiers.excluded + '%';
+                    html += '</div>';
+                }
+                html += '</div></div>';
+
+                // ③ 카테고리 breakdown
+                var bd = p.breakdown || {};
+                var typeMeta = [
+                    { key: 'identical',   group: '표절 의심',  label: '일치' },
+                    { key: 'near_copy',   group: '표절 의심',  label: '거의 동일' },
+                    { key: 'paraphrase',  group: '표절 의심',  label: '의역' },
+                    { key: 'translation', group: '표절 의심',  label: '번역' },
+                    { key: 'low_sim',     group: '참고 가능',  label: '약한 유사' },
+                    { key: 'boilerplate', group: '제외 영역',  label: '정형구문' }
+                ];
+                html += '<h2>③ 매칭 분류 분포</h2>'
+                    + '<table class="data"><thead><tr><th>그룹</th><th>유형</th><th>건수</th><th>비율</th></tr></thead><tbody>';
+                var maxPct = 0;
+                for (var i = 0; i < typeMeta.length; i++) {
+                    var info = bd[typeMeta[i].key] || { count: 0, percentage: 0 };
+                    if (info.percentage > maxPct) maxPct = info.percentage;
+                }
+                for (var i = 0; i < typeMeta.length; i++) {
+                    var tm = typeMeta[i];
+                    var info = bd[tm.key] || { count: 0, percentage: 0 };
+                    var barW = maxPct > 0 ? Math.round(info.percentage / maxPct * 200) : 0;
+                    var barColor = tm.group === '표절 의심' ? '#dc2626' : (tm.group === '참고 가능' ? '#eab308' : '#9ca3af');
+                    html += '<tr><td>' + tm.group + '</td><td>' + tm.label + '</td><td>' + info.count + '</td>'
+                        + '<td>' + info.percentage + '%'
+                        + ' <span class="bd-bar" style="width:' + barW + 'px;background:' + barColor + '"></span></td></tr>';
+                }
+                html += '</tbody></table>';
+
+                // ④ 출처
+                html += '<h2>④ 출처</h2>';
+                if (p.sources && p.sources.length > 0) {
+                    html += '<table class="data"><thead><tr><th>#</th><th>출처</th><th>매칭 문장</th><th>매칭 단어</th><th>매칭률</th></tr></thead><tbody>';
+                    for (var i = 0; i < p.sources.length; i++) {
+                        var s = p.sources[i];
+                        html += '<tr><td><span class="src-num">' + s.id + '</span></td>'
+                            + '<td>' + escapeHTML(s.name || '—') + '</td>'
+                            + '<td>' + (s.matched_sents || 0) + '</td>'
+                            + '<td>' + (s.matched_words || 0) + '</td>'
+                            + '<td>' + (s.match_pct || 0) + '%</td></tr>';
+                    }
+                    html += '</tbody></table>';
+                } else {
+                    html += '<p style="color:#888;font-size:12px">매칭 출처 없음</p>';
+                }
+
+                // ⑤ 매칭 상세
+                html += '<h2>⑤ 매칭 상세 (' + p.matches.length + '건)</h2>';
+                if (p.matches.length === 0) {
+                    html += '<p style="color:#888;font-size:12px">매칭된 구간이 없습니다.</p>';
+                } else {
+                    for (var i = 0; i < p.matches.length; i++) {
+                        var m = p.matches[i];
+                        var excl = m.exclusion_reason ? ' match-excluded' : '';
+                        html += '<div class="match-detail' + excl + '">'
+                            + '<div class="match-header">'
+                            + '<span class="src-num">[' + m.source_num + ']</span>'
+                            + '<span>#' + m.index + '</span>'
+                            + '<span class="match-badge mb-' + m.type_key + '">' + escapeHTML(m.type) + '</span>'
+                            + '<span>유사도 ' + escapeHTML(m.similarity) + '</span>'
+                            + (m.method ? '<span>· ' + escapeHTML(m.method) + '</span>' : '')
+                            + '</div>'
+                            + '<div class="match-text"><span class="match-text-label">대상:</span> <span class="match-text-content">' + escapeHTML(m.target_text.substring(0, 280)) + (m.target_text.length > 280 ? '…' : '') + '</span></div>';
+                        if (m.ref_text) {
+                            html += '<div class="match-text"><span class="match-text-label">참조:</span> <span class="match-text-content">' + escapeHTML(m.ref_text.substring(0, 280)) + (m.ref_text.length > 280 ? '…' : '') + '</span></div>';
+                        }
+                        html += '</div>';
+                    }
+                }
+
+                // ⑥ 부록 (별도 페이지)
+                html += '<div class="appendix-page appendix">';
+                html += '<h2>⑥ 부록: 검사 기준</h2>';
+
+                html += '<h3>산식</h3><div class="formula">' + escapeHTML(formula) + '</div>';
+
+                html += '<h3>5단계 신호등</h3>'
+                    + '<table class="data"><thead><tr><th>색상</th><th>구간</th><th>판정</th><th>의미</th></tr></thead><tbody>';
+                for (var i = 0; i < bands.length; i++) {
+                    var b = bands[i];
+                    var range = b.range_min === b.range_max ? (b.range_min + '%') : (b.range_min + '~' + b.range_max + '%');
+                    html += '<tr><td><span class="match-badge" style="background:' + ({blue:'#3b82f6',green:'#22c55e',yellow:'#eab308',orange:'#f97316',red:'#ef4444'})[b.color] + '">' + b.color.toUpperCase() + '</span></td>'
+                        + '<td>' + range + '</td><td>' + escapeHTML(b.label) + '</td><td>' + escapeHTML(b.meaning) + '</td></tr>';
+                }
+                html += '</tbody></table>';
+
+                html += '<h3>매칭 유형 (6종)</h3>'
+                    + '<table class="data"><thead><tr><th>유형</th><th>어휘</th><th>의미</th><th>설명</th><th>임계값</th></tr></thead><tbody>';
+                var typeOrder = ['identical', 'near_copy', 'paraphrase', 'translation', 'low_sim', 'boilerplate'];
+                for (var i = 0; i < typeOrder.length; i++) {
+                    var lk = typeOrder[i];
+                    var lbl = labels[lk];
+                    if (!lbl) continue;
+                    html += '<tr><td><strong>' + escapeHTML(lbl.ko_long || lbl.ko) + '</strong></td>'
+                        + '<td>' + escapeHTML(lbl.lex || '—') + '</td>'
+                        + '<td>' + escapeHTML(lbl.sem || '—') + '</td>'
+                        + '<td>' + escapeHTML(lbl.short || '') + '</td>'
+                        + '<td style="font-family:Consolas,monospace;font-size:10px">' + escapeHTML(lbl.threshold || '') + '</td></tr>';
+                }
+                html += '</tbody></table>';
+
+                if (algoRefs.length > 0) {
+                    html += '<h3>알고리즘 · 참고 자료</h3><ul class="algo-list">';
+                    for (var i = 0; i < algoRefs.length; i++) {
+                        html += '<li>' + escapeHTML(algoRefs[i]) + '</li>';
+                    }
+                    html += '</ul>';
+                }
+
+                html += '<div class="disclaimer"><strong>' + escapeHTML(disclaimer.main) + '</strong><br>'
+                    + escapeHTML(disclaimer.long) + '</div>';
+
+                html += '</div>'; // appendix
+                html += '</body></html>';
+                return html;
+            }
+
             // ── HTML 리포트 빌드 ──
             function buildHtmlReport() {
+                // 유사도 모드는 별도 6요소 보고서 (Plan-38 §9)
+                if (currentMode === 'similarity') {
+                    return buildSimilarityReportHtml(buildExportPayload());
+                }
                 var p = buildExportPayload();
                 var modeLabel = currentMode === 'compare' ? '문서 비교' : currentMode === 'similarity' ? '유사도 검사' : '규칙 검증';
                 var h = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">'
@@ -3843,24 +4090,6 @@
                             + '<td>' + escapeHTML(c.ai_tag) + '</td>'
                             + '<td class="text-cell">' + escapeHTML(c.old_text.substring(0, 200)) + '</td>'
                             + '<td class="text-cell">' + escapeHTML(c.new_text.substring(0, 200)) + '</td></tr>';
-                    }
-                    h += '</tbody></table>';
-                } else if (currentMode === 'similarity') {
-                    var vCls = p.verdict === '양호' ? 'badge-good' : p.verdict === '보통' ? 'badge-moderate' : 'badge-warning';
-                    h += '<div class="summary-box"><span class="score">' + p.score + '%</span>'
-                        + '<span class="badge ' + vCls + '">' + escapeHTML(p.verdict) + '</span><br>'
-                        + '전체 ' + p.total_sentences + '문장';
-                    if (p.tiers && p.tiers.substantive !== undefined) {
-                        h += ' &nbsp;|&nbsp; 실질 ' + p.tiers.substantive + '% · 의역 ' + p.tiers.derived + '% · 공통 ' + p.tiers.boilerplate + '%';
-                    }
-                    h += '</div>';
-                    h += '<h2>매칭 목록 (' + p.matches.length + '건)</h2><table><thead><tr><th>#</th><th>유형</th><th>유사율</th><th>분석</th><th>대상문장</th><th>참조문장</th></tr></thead><tbody>';
-                    for (var i = 0; i < p.matches.length; i++) {
-                        var m = p.matches[i];
-                        h += '<tr><td>' + m.index + '</td><td>' + escapeHTML(m.type) + '</td>'
-                            + '<td>' + escapeHTML(m.similarity) + '</td><td>' + escapeHTML(m.method) + '</td>'
-                            + '<td class="text-cell">' + escapeHTML(m.target_text.substring(0, 200)) + '</td>'
-                            + '<td class="text-cell">' + escapeHTML(m.ref_text.substring(0, 200)) + '</td></tr>';
                     }
                     h += '</tbody></table>';
                 } else if (currentMode === 'verify') {

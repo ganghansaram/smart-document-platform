@@ -6,6 +6,7 @@ openpyxl로 Excel 파일을 생성하여 BytesIO 스트림으로 반환한다.
 """
 import io
 from datetime import datetime
+from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
@@ -99,13 +100,22 @@ def _write_summary_sheet(ws, data):
         rows.append(("미처리", f"{s.get('undecided', 0)}건"))
     elif mode == "similarity":
         rows.append(("유사율", f"{data.get('score', 0)}%"))
-        rows.append(("판정", data.get("verdict", "")))
+        # Phase 2: verdict_label (5단계 한국어) 우선, fallback verdict_legacy (3단계)
+        verdict_display = data.get("verdict_label") or data.get("verdict_legacy") or data.get("verdict", "")
+        rows.append(("판정", verdict_display))
         rows.append(("전체 문장", f"{data.get('total_sentences', 0)}문장"))
         tiers = data.get("tiers", {})
         if tiers.get("substantive") is not None:
             rows.append(("실질 유사", f"{tiers['substantive']}%"))
-            rows.append(("의역", f"{tiers.get('derived', 0)}%"))
-            rows.append(("공통", f"{tiers.get('boilerplate', 0)}%"))
+            rows.append(("의역·번역", f"{tiers.get('derived', 0)}%"))
+            rows.append(("정형구문", f"{tiers.get('boilerplate', 0)}%"))
+            if tiers.get("excluded") is not None:
+                rows.append(("제외 영역", f"{tiers['excluded']}%"))
+        # Phase 2: sources
+        sources = data.get("sources") or []
+        if sources:
+            for i, src in enumerate(sources, 1):
+                rows.append((f"출처 [{src.get('id', i)}]", f"{src.get('name', '')} — {src.get('match_pct', 0)}% ({src.get('matched_sents', 0)}문장 / {src.get('matched_words', 0)}단어)"))
     elif mode == "verify":
         rows.append(("점수", f"{data.get('score', 0)}점"))
         rows.append(("등급", data.get("grade", "")))
@@ -339,6 +349,152 @@ def _write_intelligence_sheet(ws, data):
     ws.column_dimensions["B"].width = 40
 
 
+def _write_similarity_criteria_sheet(ws, help_data: dict | None = None):
+    """유사도 검사 기준 시트 (Plan-38 §5.6 — L4 부록 자동 첨부).
+
+    SSOT JSON에서 산식·신호등·라벨 정의·면책을 로드. 없으면 인라인 폴백.
+    """
+    ws.title = "검사 기준"
+
+    # 폴백 데이터 (help_data 미제공 시)
+    fallback_bands = [
+        {"color": "Blue",   "range_min": 0,  "range_max": 0,   "label": "매칭 없음",   "meaning": "완전 독창"},
+        {"color": "Green",  "range_min": 1,  "range_max": 24,  "label": "양호",        "meaning": "정상 인용·정형구문 수준"},
+        {"color": "Yellow", "range_min": 25, "range_max": 49,  "label": "검토 필요",   "meaning": "출처 표기·재서술 점검"},
+        {"color": "Orange", "range_min": 50, "range_max": 74,  "label": "상당량 매칭", "meaning": "광범위한 재작성 권고"},
+        {"color": "Red",    "range_min": 75, "range_max": 100, "label": "위험",        "meaning": "대부분 타 출처와 동일"},
+    ]
+    fallback_labels = {
+        "identical":   {"ko_long": "일치 (직접 차용)",   "lex": "매우 높음", "sem": "—",   "short": "단어까지 거의 그대로",         "threshold": "fp ≥ 85%"},
+        "near_copy":   {"ko_long": "거의 동일 (단어 변형)", "lex": "높음", "sem": "높음", "short": "단어 일부만 바꿈",            "threshold": "fp 40~85% + sem ≥ 0.85"},
+        "paraphrase":  {"ko_long": "의역 (재서술)",       "lex": "낮음", "sem": "높음", "short": "단어 다른데 같은 말",           "threshold": "fp < 40% + sem ≥ 0.75"},
+        "translation": {"ko_long": "번역 (다른 언어)",     "lex": "거의 0", "sem": "높음", "short": "한↔영 등 언어 차이",            "threshold": "fp < 10% + sem ≥ 0.75 + 다른 스크립트"},
+        "low_sim":     {"ko_long": "약한 유사 (참고 가능)", "lex": "낮음", "sem": "중간", "short": "단정 어려운 약한 관련성",        "threshold": "sem 0.65~0.75"},
+        "boilerplate": {"ko_long": "공통 정형구문 (제외)", "lex": "—",   "sem": "—",   "short": "업계 표준 문구",               "threshold": "phrase coverage ≥ 50%"},
+    }
+    fallback_formula = "유사율 = (실질 매칭 + 의역·번역 × 0.5) / (전체 문장 - 정형구문) × 100"
+    fallback_disclaimer = "유사도 ≠ 표절 — 검토자의 판단이 최종 (Crossref Similarity Check 가이드)"
+
+    bands = (help_data or {}).get("verdict_bands") or fallback_bands
+    labels = (help_data or {}).get("labels") or fallback_labels
+    formula = ((help_data or {}).get("score_formula") or {}).get("equation") or fallback_formula
+    disclaimer = ((help_data or {}).get("disclaimer") or {}).get("main") or fallback_disclaimer
+
+    row = 1
+    # 타이틀
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+    title = ws.cell(row=row, column=1, value="유사도 검사 기준 (Reference)")
+    title.font = Font(name="맑은 고딕", bold=True, size=14, color="2C5282")
+    title.alignment = Alignment(horizontal="left", vertical="center")
+    ws.row_dimensions[row].height = 28
+    row += 2
+
+    # 산식
+    sec_h = ws.cell(row=row, column=1, value="산식")
+    sec_h.font = Font(name="맑은 고딕", bold=True, size=11, color="FFFFFF")
+    sec_h.fill = _HEADER_FILL
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+    row += 1
+    eq_cell = ws.cell(row=row, column=1, value=formula)
+    eq_cell.font = Font(name="Consolas", size=10)
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+    row += 2
+
+    # 5단계 신호등
+    sec_h = ws.cell(row=row, column=1, value="5단계 신호등")
+    sec_h.font = Font(name="맑은 고딕", bold=True, size=11, color="FFFFFF")
+    sec_h.fill = _HEADER_FILL
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+    row += 1
+    headers = ["색상", "구간(%)", "판정", "의미"]
+    for col, h in enumerate(headers, 1):
+        c = ws.cell(row=row, column=col, value=h)
+        c.font = _HEADER_FONT
+        c.fill = PatternFill(start_color="6B7280", end_color="6B7280", fill_type="solid")
+        c.alignment = _HEADER_ALIGN
+        c.border = _THIN_BORDER
+    row += 1
+    band_colors = {"blue": "EFF6FF", "green": "F0FDF4", "yellow": "FEFCE8", "orange": "FFF7ED", "red": "FEF2F2"}
+    for b in bands:
+        color_key = (b.get("color") or "").lower()
+        bg = band_colors.get(color_key, "FFFFFF")
+        rng_str = f"{b.get('range_min', 0)}" if b.get("range_min") == b.get("range_max") else f"{b.get('range_min', 0)}~{b.get('range_max', 0)}"
+        cells = [
+            (b.get("color") or "").upper(),
+            rng_str,
+            b.get("label", ""),
+            b.get("meaning", ""),
+        ]
+        for col, val in enumerate(cells, 1):
+            c = ws.cell(row=row, column=col, value=val)
+            c.font = _BODY_FONT
+            c.alignment = _BODY_ALIGN
+            c.border = _THIN_BORDER
+            c.fill = PatternFill(start_color=bg, end_color=bg, fill_type="solid")
+        row += 1
+    row += 1
+
+    # 매칭 유형 (6종)
+    sec_h = ws.cell(row=row, column=1, value="매칭 유형 (6종)")
+    sec_h.font = Font(name="맑은 고딕", bold=True, size=11, color="FFFFFF")
+    sec_h.fill = _HEADER_FILL
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+    row += 1
+    headers2 = ["유형", "어휘", "의미", "설명 / 임계값"]
+    for col, h in enumerate(headers2, 1):
+        c = ws.cell(row=row, column=col, value=h)
+        c.font = _HEADER_FONT
+        c.fill = PatternFill(start_color="6B7280", end_color="6B7280", fill_type="solid")
+        c.alignment = _HEADER_ALIGN
+        c.border = _THIN_BORDER
+    row += 1
+    for key in ("identical", "near_copy", "paraphrase", "translation", "low_sim", "boilerplate"):
+        lbl = labels.get(key, {})
+        if not lbl:
+            continue
+        desc = f"{lbl.get('short', '')} · {lbl.get('threshold', '')}"
+        cells = [lbl.get("ko_long") or lbl.get("ko") or key, lbl.get("lex", "—"), lbl.get("sem", "—"), desc]
+        for col, val in enumerate(cells, 1):
+            c = ws.cell(row=row, column=col, value=val)
+            c.font = _BODY_FONT
+            c.alignment = _BODY_ALIGN
+            c.border = _THIN_BORDER
+        row += 1
+    row += 1
+
+    # 면책
+    sec_h = ws.cell(row=row, column=1, value="면책 사항")
+    sec_h.font = Font(name="맑은 고딕", bold=True, size=11, color="FFFFFF")
+    sec_h.fill = _HEADER_FILL
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+    row += 1
+    dc_cell = ws.cell(row=row, column=1, value=disclaimer)
+    dc_cell.font = Font(name="맑은 고딕", italic=True, size=10, color="92400E")
+    dc_cell.fill = PatternFill(start_color="FFFBEB", end_color="FFFBEB", fill_type="solid")
+    dc_cell.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+    ws.row_dimensions[row].height = 36
+
+    # 컬럼 너비
+    ws.column_dimensions["A"].width = 18
+    ws.column_dimensions["B"].width = 12
+    ws.column_dimensions["C"].width = 12
+    ws.column_dimensions["D"].width = 50
+
+
+def _load_similarity_help() -> dict | None:
+    """SSOT JSON 로드 (없으면 None — 폴백 사용)."""
+    fp = Path(__file__).parent.parent.parent / "data" / "help" / "similarity-help.json"
+    if not fp.exists():
+        return None
+    try:
+        import json
+        with open(fp, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
 def build_excel_report(data: dict) -> io.BytesIO:
     """프론트엔드 페이로드로 Excel 리포트를 생성하여 BytesIO 스트림을 반환한다."""
     wb = Workbook()
@@ -355,6 +511,9 @@ def build_excel_report(data: dict) -> io.BytesIO:
     elif mode == "similarity":
         ws_detail = wb.create_sheet()
         _write_similarity_sheet(ws_detail, data)
+        # Phase 4: 시트 3 — 검사 기준 (L4 도움말 자동 첨부)
+        ws_criteria = wb.create_sheet()
+        _write_similarity_criteria_sheet(ws_criteria, _load_similarity_help())
     elif mode == "verify":
         ws_detail = wb.create_sheet()
         _write_verify_sheet(ws_detail, data)

@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "_comment": "유사도 검사 도움말 단일 소스 (SSOT) — Plan-38 §5.2. 모달·툴팁·가이드 페이지·보고서 부록 4채널이 이 파일에서 파생.",
+  "labels": {
+    "identical": {
+      "ko": "일치",
+      "ko_long": "일치 (직접 차용)",
+      "short": "단어까지 거의 그대로 일치한 구간",
+      "long": "두 문장의 단어 구성이 거의 동일한 경우. Winnowing 지문(fingerprint) 일치도 85% 이상.",
+      "lex": "매우 높음",
+      "sem": "—",
+      "threshold": "fp ≥ 85%",
+      "color_var": "--color-error",
+      "group": "suspect"
+    },
+    "near_copy": {
+      "ko": "거의 동일",
+      "ko_long": "거의 동일 (단어 변형)",
+      "short": "단어 일부만 바꾼 구간",
+      "long": "동일 의미를 유지하되 단어 일부를 동의어 등으로 치환한 경우. 어휘 일치도 40~85% + 의미 유사도 높음.",
+      "lex": "높음",
+      "sem": "높음",
+      "threshold": "fp 40~85% + sem ≥ 0.85",
+      "color_var": "--color-warning",
+      "group": "suspect"
+    },
+    "paraphrase": {
+      "ko": "의역",
+      "ko_long": "의역 (재서술)",
+      "short": "단어는 다르지만 같은 말을 다시 쓴 구간",
+      "long": "문장을 재구성하여 표현은 다르지만 의미가 같은 경우. 어휘 일치도 낮음 + 의미 유사도 높음.",
+      "lex": "낮음",
+      "sem": "높음",
+      "threshold": "fp < 40% + sem ≥ 0.75",
+      "color_var": "--color-info",
+      "group": "suspect"
+    },
+    "translation": {
+      "ko": "번역",
+      "ko_long": "번역 (다른 언어)",
+      "short": "다른 언어로 번역된 구간 (예: 한↔영)",
+      "long": "두 문장이 서로 다른 언어로 작성되었으나 같은 의미인 경우. 어휘 일치도 거의 0 + 의미 유사도 높음 (bge-m3 다국어 임베딩 활용).",
+      "lex": "거의 0",
+      "sem": "높음",
+      "threshold": "fp < 10% + sem ≥ 0.75 + 다른 스크립트",
+      "color_var": "--color-info",
+      "group": "suspect"
+    },
+    "low_sim": {
+      "ko": "약한 유사",
+      "ko_long": "약한 유사 (참고 가능)",
+      "short": "부분 의미가 겹치나 차용 단정이 어려운 구간",
+      "long": "두 문장의 일부 의미만 약하게 유사한 경우. 표절로 단정 어려움 — 검토자 판단 영역.",
+      "lex": "낮음",
+      "sem": "중간",
+      "threshold": "sem 0.65~0.75",
+      "color_var": "--text-muted",
+      "group": "review"
+    },
+    "boilerplate": {
+      "ko": "공통 정형구문",
+      "ko_long": "공통 정형구문 (제외)",
+      "short": "업계 표준 문구 (점수 제외)",
+      "long": "in accordance with, the contractor shall, ... 등 기술 표준서에 흔히 등장하는 정형 표현. 표절이 아닌 표준 어휘.",
+      "lex": "—",
+      "sem": "—",
+      "threshold": "phrase coverage ≥ 50%",
+      "color_var": "--text-muted",
+      "group": "excluded"
+    }
+  },
+  "groups": {
+    "suspect": {
+      "ko": "표절 의심",
+      "color_var": "--color-error",
+      "in_score": true,
+      "members": ["identical", "near_copy", "paraphrase", "translation"]
+    },
+    "review": {
+      "ko": "참고 가능",
+      "color_var": "--color-warning",
+      "in_score": "partial",
+      "members": ["low_sim"]
+    },
+    "excluded": {
+      "ko": "제외 영역",
+      "color_var": "--text-muted",
+      "in_score": false,
+      "members": ["boilerplate", "toc_heading", "caption", "references_section", "spec_number_only", "cited_quote"]
+    },
+    "clean": {
+      "ko": "일반 (매칭 없음)",
+      "color_var": "--text-default",
+      "in_score": false,
+      "members": []
+    }
+  },
+  "score_formula": {
+    "equation": "유사율 = (실질 매칭 + 의역·번역 × 0.5) / (전체 문장 - 제외 영역) × 100",
+    "variables": {
+      "실질 매칭": "identical + near_copy 문장 수",
+      "의역·번역": "paraphrase + translation 문장 수 (가중치 ×0.5 — 의미만 일치, 표현 다름 반영)",
+      "제외 영역": "정형구문 + 목차 + 표/그림 캡션 + 참고문헌 등 (사용자 설정 따라 가변)"
+    },
+    "rationale": "Acrolinx/Crossref 가이드라인을 따른 가중 비율. 단순 매칭 비율(raw) 대비 의역·번역의 불완전 표절을 0.5로 평가하여 거짓 양성 완화."
+  },
+  "verdict_bands": [
+    { "color": "blue",   "range_min": 0,  "range_max": 0,   "label": "매칭 없음",     "meaning": "타 문서와 일치하는 부분이 없음 — 완전 독창" },
+    { "color": "green",  "range_min": 1,  "range_max": 24,  "label": "양호",          "meaning": "정상적 인용·정형구문 수준의 매칭" },
+    { "color": "yellow", "range_min": 25, "range_max": 49,  "label": "검토 필요",     "meaning": "출처 표기·재서술 점검이 필요한 수준" },
+    { "color": "orange", "range_min": 50, "range_max": 74,  "label": "상당량 매칭",   "meaning": "광범위한 재작성 권고" },
+    { "color": "red",    "range_min": 75, "range_max": 100, "label": "위험",          "meaning": "대부분이 타 출처와 동일 — 본격 검토 필수" }
+  ],
+  "check_settings": {
+    "exclude_boilerplate": {
+      "label": "정형구문 제외",
+      "default": true,
+      "description": "in accordance with, the contractor shall 등 표준 문구를 점수에서 제외"
+    },
+    "exclude_short_match": {
+      "label": "짧은 매칭 제외 (8단어 미만)",
+      "default": true,
+      "description": "Turnitin 표준 — 단어 수가 적은 매칭은 의미 있는 표절로 간주하지 않음"
+    },
+    "exclude_toc": {
+      "label": "목차/장절 헤딩 제외",
+      "default": true,
+      "description": "\"1.1 SCOPE\" 같은 헤딩 라인은 점수에서 제외"
+    },
+    "exclude_caption": {
+      "label": "표/그림 캡션 제외",
+      "default": true,
+      "description": "\"Figure 5-1\", \"Table 3-2\", \"그림 1\" 등 캡션은 점수에서 제외"
+    },
+    "exclude_cited_quote": {
+      "label": "인용·출처 표시 제외",
+      "default": false,
+      "description": "큰따옴표 인용·각주·내주가 포함된 문장 제외 (필요 시 사용자가 켬)"
+    }
+  },
+  "auto_exclusions": {
+    "_comment": "사용자 토글 없이 백엔드가 항상 제외 처리",
+    "references_section": {
+      "label": "참고문헌 섹션",
+      "description": "References / 참고문헌 / Bibliography 헤더 이후 섹션은 항상 제외"
+    },
+    "spec_number_only": {
+      "label": "규격 번호 단독 매칭",
+      "description": "MIL-STD-XXX 같은 규격 번호만 일치하는 짧은 매칭은 항상 제외"
+    },
+    "boilerplate_pattern": {
+      "label": "정형 패턴 (Figure/Table/MIL-STD/제 N 장 등)",
+      "description": "정규식 패턴으로 검출되는 헤더·캡션·규격 번호는 매칭 단계에서 자동 제외"
+    }
+  },
+  "algorithm": {
+    "layers": [
+      "L1: Winnowing fingerprint — character k-gram (k=25) + sliding window (w=4) Rabin-Karp 해시",
+      "L3: bge-m3 multilingual semantic embedding (1024-dim cosine similarity)"
+    ],
+    "references": [
+      "Schleimer, Wilkerson, Aiken — Winnowing: Local Algorithms for Document Fingerprinting (SIGMOD 2003)",
+      "BAAI — bge-m3 Multilingual Embedding (2024)",
+      "Turnitin Guides — Understanding the similarity score (2026)",
+      "Crossref Similarity Check — iThenticate v2 가이드"
+    ]
+  },
+  "disclaimer": {
+    "main": "유사도 ≠ 표절 — 검토자의 판단이 최종",
+    "long": "본 점수는 텍스트 유사도를 측정한 것일 뿐, 표절 여부를 자동 판정하지 않습니다. 합법적 인용·정형구문·약어·규격 번호 등도 매칭될 수 있으므로 반드시 검토자가 매칭 항목을 직접 검토해야 합니다. (Crossref Similarity Check 공식 가이드라인)"
+  }
+}

@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api import search, chat, document, upload, auth, analytics, settings, menu, translator, compare
+from api import search, chat, document, upload, auth, analytics, settings, menu, translator, compare, help as help_api
 from services.auth import init_db
 from services.analytics import init_db as init_analytics_db
 from services.settings_service import apply_settings_on_startup
@@ -175,6 +175,7 @@ app.include_router(settings.router, prefix="/api")     # 관리자 설정 API
 app.include_router(menu.router, prefix="/api")         # 메뉴 관리 API
 app.include_router(translator.router, prefix="/api")    # Translator API
 app.include_router(compare.router, prefix="/api")       # Compare API
+app.include_router(help_api.router, prefix="/api")      # Help SSOT API (Plan-38)
 
 
 # ── 헬스체크 ──
