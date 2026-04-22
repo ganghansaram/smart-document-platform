@@ -1,0 +1,37 @@
+{
+  "id": "pair_06_direct_trans_a",
+  "name": "Direct Korean translation of seed A vs English original",
+  "target_file": "seeds/seed_a_emc_ko.md",
+  "ref_file": "seeds/seed_a_emc.md",
+  "obfuscation": "direct_trans",
+  "seed": "a",
+  "expected_band": "yellow",
+  "expected_score_range": [
+    20,
+    60
+  ],
+  "expected_label_distribution": {
+    "identical": [
+      0.0,
+      0.05
+    ],
+    "near_copy": [
+      0.0,
+      0.1
+    ],
+    "paraphrase": [
+      0.0,
+      0.2
+    ],
+    "translation": [
+      0.4,
+      1.0
+    ],
+    "low_sim": [
+      0.0,
+      0.3
+    ]
+  },
+  "min_match_count": 20,
+  "notes": "Translation label should dominate — fp ≈ 0, sem high. Critical test for TYPE_TRANSLATION branch."
+}

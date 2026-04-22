@@ -1,0 +1,38 @@
+{
+  "id": "pair_13_boilerplate_b",
+  "name": "Boilerplate-heavy variant of seed B",
+  "target_file": "variants/var_b_boilerplate.md",
+  "ref_file": "seeds/seed_b_env.md",
+  "obfuscation": "boilerplate",
+  "seed": "b",
+  "expected_band": "green_blue",
+  "expected_score_range": [
+    0,
+    30
+  ],
+  "expected_label_distribution": {
+    "identical": [
+      0.0,
+      0.3
+    ],
+    "near_copy": [
+      0.0,
+      0.3
+    ],
+    "paraphrase": [
+      0.0,
+      0.2
+    ],
+    "translation": [
+      0.0,
+      0.0
+    ],
+    "low_sim": [
+      0.1,
+      0.5
+    ]
+  },
+  "min_match_count": 10,
+  "expected_boilerplate_ratio_min": 0.3,
+  "notes": "Cross-validation pair."
+}

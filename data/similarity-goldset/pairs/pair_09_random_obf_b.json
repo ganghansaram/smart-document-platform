@@ -1,0 +1,37 @@
+{
+  "id": "pair_09_random_obf_b",
+  "name": "Random word substitution of seed B",
+  "target_file": "variants/var_b_random_obf.md",
+  "ref_file": "seeds/seed_b_env.md",
+  "obfuscation": "random_obf",
+  "seed": "b",
+  "expected_band": "orange",
+  "expected_score_range": [
+    50,
+    90
+  ],
+  "expected_label_distribution": {
+    "identical": [
+      0.2,
+      0.6
+    ],
+    "near_copy": [
+      0.3,
+      0.7
+    ],
+    "paraphrase": [
+      0.0,
+      0.2
+    ],
+    "translation": [
+      0.0,
+      0.0
+    ],
+    "low_sim": [
+      0.0,
+      0.1
+    ]
+  },
+  "min_match_count": 30,
+  "notes": "Cross-validation pair."
+}

@@ -1,0 +1,37 @@
+{
+  "id": "pair_05_cyclic_trans_a",
+  "name": "Cyclic translation obfuscation (translate-back style) of seed A",
+  "target_file": "variants/var_a_cyclic_trans.md",
+  "ref_file": "seeds/seed_a_emc.md",
+  "obfuscation": "cyclic_trans",
+  "seed": "a",
+  "expected_band": "yellow",
+  "expected_score_range": [
+    25,
+    70
+  ],
+  "expected_label_distribution": {
+    "identical": [
+      0.0,
+      0.2
+    ],
+    "near_copy": [
+      0.1,
+      0.5
+    ],
+    "paraphrase": [
+      0.2,
+      0.7
+    ],
+    "translation": [
+      0.0,
+      0.1
+    ],
+    "low_sim": [
+      0.0,
+      0.3
+    ]
+  },
+  "min_match_count": 25,
+  "notes": "Translation-back creates awkward phrasing — mix of near_copy and paraphrase."
+}

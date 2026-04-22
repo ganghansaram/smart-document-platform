@@ -1,0 +1,37 @@
+{
+  "id": "pair_08_verbatim_b",
+  "name": "Verbatim copy of seed B",
+  "target_file": "variants/var_b_verbatim.md",
+  "ref_file": "seeds/seed_b_env.md",
+  "obfuscation": "verbatim",
+  "seed": "b",
+  "expected_band": "red",
+  "expected_score_range": [
+    85,
+    100
+  ],
+  "expected_label_distribution": {
+    "identical": [
+      0.85,
+      1.0
+    ],
+    "near_copy": [
+      0.0,
+      0.15
+    ],
+    "paraphrase": [
+      0.0,
+      0.05
+    ],
+    "translation": [
+      0.0,
+      0.0
+    ],
+    "low_sim": [
+      0.0,
+      0.05
+    ]
+  },
+  "min_match_count": 33,
+  "notes": "Cross-validate verbatim detection on different seed."
+}

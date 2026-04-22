@@ -1105,8 +1105,38 @@ def evaluate_all() -> dict:
 ### 17.3 진행 상태
 
 - ✅ 계획서 확정 (개정 2)
-- ✅ **묶음 1 1단계 — 시드 A 영문 작성 완료** (`data/similarity-goldset/seeds/seed_a_emc.md`, 652단어/36문장, MIL-STD-461 EMC 풍)
-- ⏳ 묶음 1 1단계 잔여 — 시드 A 한국어 번역본 작성 대기
-- ⏸️ 묶음 1 2단계 — 시드 B 영문 (MIL-STD-810 환경시험 풍) 대기
-- ⏸️ 묶음 1 3~6단계 대기 (변형 7종, 골드 라벨, 평가 도구, 백엔드, 신호등, 보고서)
-- ⏸️ 묶음 2 대기 (묶음 1 사용 1~2주 후)
+- ✅ **묶음 1 1단계 (Phase 0 골드셋) 완료** (2026-04-23)
+  - 시드 3종 (A 영문 652단어, A 한국어, B 영문 671단어)
+  - 변형 12종 (verbatim/random_obf/para_light/para_heavy/cyclic_trans/boilerplate × 시드 2종)
+  - 골드 라벨 14페어 JSON
+  - 평가 도구 `tools/eval/similarity_eval.py`
+  - README + `generate_pairs.py`
+- ✅ **베이스라인 측정 완료** (Phase 1 수정 전 현재 코드)
+  - 14페어 중 **2 PASS / 12 FAIL** — 라벨 분포 정확도 14%
+  - 점수 대역 적중률 78.6% (점수는 비교적 정확)
+  - 계획서 진단 실측 검증 — TYPE_TRANSLATION 데드(pair_06: 0%), Paraphrase dead zone(pair_04: 0%, pair_11: 10%) 모두 확인
+- ⏳ **묶음 1 2단계 — Phase 1 백엔드 분류 정상화** 대기
+- ⏸️ 묶음 1 3~6단계 대기
+- ⏸️ 묶음 2 대기
+
+### 17.4 Phase 0 베이스라인 상세 (Phase 1 비교 기준점)
+
+| 페어 | 변형 | 점수 | 점수 대역 | 라벨 분포 | 핵심 실패 사유 |
+|---|---|---|---|---|---|
+| pair_01 | verbatim_a | 98.5% | ✓ | ✓ | PASS |
+| pair_08 | verbatim_b | 99.0% | ✓ | ✓ | PASS |
+| pair_02 | random_obf_a | 86.0% | ✓ | ✗ | near_copy 0.17 (기대 0.30~0.70) |
+| pair_09 | random_obf_b | 85.2% | ✓ | ✗ | near_copy 0.26 (기대 0.30~0.70) |
+| pair_03 | para_light_a | 37.6% | ✓ | ✗ | low_sim 0.46 (기대 0.0~0.30) |
+| pair_10 | para_light_b | 35.2% | ✓ | ✗ | low_sim 0.50 (기대 0.0~0.30) |
+| pair_04 | para_heavy_a | 11.1% | ✗ | ✗ | **paraphrase 0.0** (기대 0.30~0.80), low_sim 0.87 |
+| pair_11 | para_heavy_b | 21.8% | ✓ | ✗ | **paraphrase 0.10** (기대 0.30~0.80) |
+| pair_05 | cyclic_trans_a | 46.3% | ✓ | ✗ | low_sim 0.37 (기대 0.0~0.30) |
+| pair_12 | cyclic_trans_b | 45.4% | ✓ | ✗ | low_sim 0.32 (기대 0.0~0.30) |
+| pair_06 | direct_trans_a | 14.5% | ✗ | ✗ | **translation 0.0** (기대 0.40~1.0), low_sim 0.80 |
+| pair_07 | boilerplate_a | 25.3% | ✓ | ✗ | low_sim 0.60 (기대 0.10~0.50) |
+| pair_13 | boilerplate_b | 22.9% | ✓ | ✗ | identical 0.33 (기대 0.0~0.30), bp_ratio 부족 |
+| pair_14 | no_plagiarism | 8.8% | ✓ | ✗ | identical 0.17 (기대 0.0~0.10) — 정형 헤더 매칭 |
+
+**Phase 1 수정 후 기대**: 12 FAIL → 12 PASS (라벨 분포 정상화).
+재실행 명령: `PYTHONPATH=backend python tools/eval/similarity_eval.py --json /tmp/post-phase1-eval.json`

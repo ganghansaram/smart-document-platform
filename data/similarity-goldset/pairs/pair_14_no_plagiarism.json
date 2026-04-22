@@ -1,0 +1,38 @@
+{
+  "id": "pair_14_no_plagiarism",
+  "name": "No plagiarism — different seeds A vs B",
+  "target_file": "seeds/seed_a_emc.md",
+  "ref_file": "seeds/seed_b_env.md",
+  "obfuscation": "no_plagiarism",
+  "seed": "ab",
+  "expected_band": "blue_green",
+  "expected_score_range": [
+    0,
+    25
+  ],
+  "expected_label_distribution": {
+    "identical": [
+      0.0,
+      0.1
+    ],
+    "near_copy": [
+      0.0,
+      0.15
+    ],
+    "paraphrase": [
+      0.0,
+      0.2
+    ],
+    "translation": [
+      0.0,
+      0.0
+    ],
+    "low_sim": [
+      0.3,
+      1.0
+    ]
+  },
+  "min_match_count": 0,
+  "max_substantive_matches": 5,
+  "notes": "Critical baseline — false positive test. Both are MIL-STD style so some technical phrase overlap is expected, but adjusted_pct should be < 25%."
+}

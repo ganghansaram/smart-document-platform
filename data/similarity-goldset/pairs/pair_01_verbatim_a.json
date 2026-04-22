@@ -1,0 +1,37 @@
+{
+  "id": "pair_01_verbatim_a",
+  "name": "Verbatim copy of seed A",
+  "target_file": "variants/var_a_verbatim.md",
+  "ref_file": "seeds/seed_a_emc.md",
+  "obfuscation": "verbatim",
+  "seed": "a",
+  "expected_band": "red",
+  "expected_score_range": [
+    85,
+    100
+  ],
+  "expected_label_distribution": {
+    "identical": [
+      0.85,
+      1.0
+    ],
+    "near_copy": [
+      0.0,
+      0.15
+    ],
+    "paraphrase": [
+      0.0,
+      0.05
+    ],
+    "translation": [
+      0.0,
+      0.0
+    ],
+    "low_sim": [
+      0.0,
+      0.05
+    ]
+  },
+  "min_match_count": 30,
+  "notes": "Identical detection should be near-perfect (Winnowing fast-accept)."
+}

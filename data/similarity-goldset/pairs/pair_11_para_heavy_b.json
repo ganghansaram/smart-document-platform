@@ -1,0 +1,37 @@
+{
+  "id": "pair_11_para_heavy_b",
+  "name": "Heavy paraphrase of seed B",
+  "target_file": "variants/var_b_para_heavy.md",
+  "ref_file": "seeds/seed_b_env.md",
+  "obfuscation": "para_heavy",
+  "seed": "b",
+  "expected_band": "yellow",
+  "expected_score_range": [
+    15,
+    60
+  ],
+  "expected_label_distribution": {
+    "identical": [
+      0.0,
+      0.05
+    ],
+    "near_copy": [
+      0.0,
+      0.3
+    ],
+    "paraphrase": [
+      0.3,
+      0.8
+    ],
+    "translation": [
+      0.0,
+      0.0
+    ],
+    "low_sim": [
+      0.1,
+      0.5
+    ]
+  },
+  "min_match_count": 20,
+  "notes": "Cross-validation pair."
+}

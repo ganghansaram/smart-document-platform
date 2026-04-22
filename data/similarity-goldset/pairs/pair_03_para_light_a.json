@@ -1,0 +1,37 @@
+{
+  "id": "pair_03_para_light_a",
+  "name": "Light paraphrase (sentence structure preserved) of seed A",
+  "target_file": "variants/var_a_para_light.md",
+  "ref_file": "seeds/seed_a_emc.md",
+  "obfuscation": "para_light",
+  "seed": "a",
+  "expected_band": "yellow_orange",
+  "expected_score_range": [
+    25,
+    75
+  ],
+  "expected_label_distribution": {
+    "identical": [
+      0.0,
+      0.2
+    ],
+    "near_copy": [
+      0.2,
+      0.6
+    ],
+    "paraphrase": [
+      0.2,
+      0.6
+    ],
+    "translation": [
+      0.0,
+      0.0
+    ],
+    "low_sim": [
+      0.0,
+      0.3
+    ]
+  },
+  "min_match_count": 25,
+  "notes": "Should detect both near_copy and paraphrase. This is the bread-and-butter case."
+}

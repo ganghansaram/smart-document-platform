@@ -1,0 +1,37 @@
+{
+  "id": "pair_10_para_light_b",
+  "name": "Light paraphrase of seed B",
+  "target_file": "variants/var_b_para_light.md",
+  "ref_file": "seeds/seed_b_env.md",
+  "obfuscation": "para_light",
+  "seed": "b",
+  "expected_band": "yellow_orange",
+  "expected_score_range": [
+    25,
+    75
+  ],
+  "expected_label_distribution": {
+    "identical": [
+      0.0,
+      0.2
+    ],
+    "near_copy": [
+      0.2,
+      0.6
+    ],
+    "paraphrase": [
+      0.2,
+      0.6
+    ],
+    "translation": [
+      0.0,
+      0.0
+    ],
+    "low_sim": [
+      0.0,
+      0.3
+    ]
+  },
+  "min_match_count": 27,
+  "notes": "Cross-validation pair."
+}

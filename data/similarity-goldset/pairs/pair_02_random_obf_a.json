@@ -1,0 +1,37 @@
+{
+  "id": "pair_02_random_obf_a",
+  "name": "Random word substitution (~30%) of seed A",
+  "target_file": "variants/var_a_random_obf.md",
+  "ref_file": "seeds/seed_a_emc.md",
+  "obfuscation": "random_obf",
+  "seed": "a",
+  "expected_band": "orange",
+  "expected_score_range": [
+    50,
+    90
+  ],
+  "expected_label_distribution": {
+    "identical": [
+      0.2,
+      0.6
+    ],
+    "near_copy": [
+      0.3,
+      0.7
+    ],
+    "paraphrase": [
+      0.0,
+      0.2
+    ],
+    "translation": [
+      0.0,
+      0.0
+    ],
+    "low_sim": [
+      0.0,
+      0.1
+    ]
+  },
+  "min_match_count": 28,
+  "notes": "Mix of identical (unchanged sentences) and near_copy (substituted)."
+}
