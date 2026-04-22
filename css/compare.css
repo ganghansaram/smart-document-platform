@@ -1107,6 +1107,59 @@ body[data-theme="dark"] .sim-help-disclaimer {
 }
 body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 
+/* 모달 A — 매칭 유형 가이드 (2축 다이어그램 + 6라벨 표) */
+.sim-label-help-modal .modal-box { max-width: 720px; }
+.sim-axis-svg {
+    display: block;
+    margin: 8px auto 0;
+    max-width: 100%;
+    height: auto;
+    color: var(--text-default);
+}
+.sim-help-label-cell {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+    color: white;
+}
+.sim-help-label-identical   { background: #dc2626; }
+.sim-help-label-near_copy   { background: #ea580c; }
+.sim-help-label-paraphrase  { background: #2563eb; }
+.sim-help-label-translation { background: #7c3aed; }
+.sim-help-label-low_sim     { background: #6b7280; }
+.sim-help-label-boilerplate { background: #9ca3af; }
+.sim-help-bands code {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 0.85em;
+    color: var(--text-light);
+    background: var(--bg-card);
+    padding: 1px 4px;
+    border-radius: var(--radius-sm);
+}
+
+/* 그룹 영역 ⓘ — 4그룹 라벨 줄 끝에 작게 */
+.sim-group-info {
+    margin-left: auto;
+    font-size: var(--font-small);
+    padding: 1px 5px;
+}
+
+/* 온보딩 도트 */
+.sim-onboard-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-color);
+    transition: var(--transition-fast);
+}
+.sim-onboard-dot.active {
+    background: var(--active-color);
+    width: 24px;
+    border-radius: 4px;
+}
+
 .sim-verdict {
     font-size: var(--font-small);
     font-weight: var(--font-weight-semibold);

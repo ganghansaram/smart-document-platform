@@ -317,6 +317,10 @@
                     <button class="cp-sidebar-action" id="sidebar-export-btn" style="display:none" title="리포트 내보내기">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </button>
+                    <!-- Plan-38 §5.7 — 유사도 모드 도움말 (온보딩 재실행) -->
+                    <button class="cp-sidebar-action" id="sim-onboard-btn" style="display:none" title="유사도 검사 도움말 다시 보기" aria-label="유사도 도움말">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </button>
                     <button class="cp-sidebar-collapse" id="cp-sidebar-collapse" title="접기">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"/>
@@ -995,6 +999,11 @@
                 var body = document.getElementById('compare-body');
                 body.className = 'compare-body mode-' + mode;
 
+                // Plan-38 §5.7 — 유사도 모드 첫 진입 시 온보딩 1회
+                if (mode === 'similarity' && typeof showSimOnboarding === 'function') {
+                    setTimeout(showSimOnboarding, 400);
+                }
+
                 btnSimilarity.classList.toggle('active', mode === 'similarity');
                 btnCompare.classList.toggle('active', mode === 'compare');
                 btnVerify.classList.toggle('active', mode === 'verify');
@@ -1091,6 +1100,8 @@
                     vdSettingsBtn.style.display = '';
                     vdRevalidateBtn.style.display = '';
                     document.getElementById('sim-nav-group').style.display = 'none';
+                    var simOnboardBtn = document.getElementById('sim-onboard-btn');
+                    if (simOnboardBtn) simOnboardBtn.style.display = 'none';
                     restoreDocPanels();
                 } else if (mode === 'similarity') {
                     clearDiff();
@@ -1101,6 +1112,8 @@
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     document.getElementById('sim-nav-group').style.display = simLastResult ? '' : 'none';
+                    var simOnboardBtn1 = document.getElementById('sim-onboard-btn');
+                    if (simOnboardBtn1) simOnboardBtn1.style.display = '';
                     simRestorePanels();
                 } else {
                     clearValidation();
@@ -1109,6 +1122,8 @@
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     document.getElementById('sim-nav-group').style.display = 'none';
+                    var simOnboardBtn2 = document.getElementById('sim-onboard-btn');
+                    if (simOnboardBtn2) simOnboardBtn2.style.display = 'none';
                     // sim-filter는 사이드바 innerHTML 내부에 렌더링됨 (별도 제어 불필요)
                     if (editMode) toggleEditMode();
                     restoreDocPanels();
@@ -1123,6 +1138,14 @@
             }
 
             btnSimilarity.addEventListener('click', function() { setMode('similarity'); });
+
+            // Plan-38 §5.7 — 사이드바 ❓ 버튼 → 온보딩 강제 재실행
+            (function() {
+                var btn = document.getElementById('sim-onboard-btn');
+                if (btn) {
+                    btn.addEventListener('click', function() { showSimOnboarding(true); });
+                }
+            })();
             btnCompare.addEventListener('click', function() { setMode('compare'); });
             btnVerify.addEventListener('click', function() { setMode('verify'); });
 
@@ -1310,6 +1333,207 @@
                     }
                 };
                 document.addEventListener('keydown', escHandler);
+            }
+
+            // ── 모달 A: 매칭 유형 가이드 (Plan-38 §5.4) ──
+            // 2축 다이어그램(어휘 × 의미) + 6라벨 정의표. SSOT(simHelp.labels)에서 파생.
+            function showSimLabelHelpModal() {
+                var help = simHelp || {};
+                var labels = help.labels || {};
+                // 폴백 라벨 (simHelp 미로드 시)
+                var fallback = {
+                    identical:   { ko_long: '일치 (직접 차용)',     lex: '매우 높음', sem: '—',   short: '단어까지 거의 그대로',         threshold: 'fp ≥ 85%' },
+                    near_copy:   { ko_long: '거의 동일 (단어 변형)', lex: '높음',     sem: '높음', short: '단어 일부만 바꿈',           threshold: 'fp 40~85% + sem ≥ 0.85' },
+                    paraphrase:  { ko_long: '의역 (재서술)',        lex: '낮음',     sem: '높음', short: '단어 다른데 같은 말',         threshold: 'fp < 40% + sem ≥ 0.75' },
+                    translation: { ko_long: '번역 (다른 언어)',     lex: '거의 0',   sem: '높음', short: '한↔영 등 언어 차이',          threshold: 'fp < 10% + sem ≥ 0.75 + 다른 스크립트' },
+                    low_sim:     { ko_long: '약한 유사 (참고 가능)', lex: '낮음',     sem: '중간', short: '단정 어려운 약한 관련성',     threshold: 'sem 0.65~0.75' },
+                    boilerplate: { ko_long: '공통 정형구문 (제외)',  lex: '—',       sem: '—',   short: '업계 표준 문구',             threshold: 'phrase coverage ≥ 50%' }
+                };
+                var typeOrder = ['identical', 'near_copy', 'paraphrase', 'translation', 'low_sim', 'boilerplate'];
+
+                // 2축 다이어그램 inline SVG (어휘 fp × 의미 sem 4사분면)
+                // X축: 어휘 일치도 (0 → 1.0), Y축: 의미 유사도 (0 → 1.0)
+                // 라벨 위치: 5개 점 + 정형구문은 별도
+                var svg = '<svg viewBox="0 0 400 320" class="sim-axis-svg" role="img" aria-label="어휘 × 의미 2축 다이어그램">'
+                    // 배경 + 축
+                    + '<defs>'
+                    +   '<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">'
+                    +     '<path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>'
+                    +   '</marker>'
+                    + '</defs>'
+                    // 4사분면 영역 (옅은 색 배경)
+                    + '<rect x="60"  y="40"  width="150" height="120" fill="#fef3c7" opacity="0.35"/>' // 좌상: 의미 높음 + 어휘 낮음 (paraphrase/translation)
+                    + '<rect x="210" y="40"  width="150" height="120" fill="#fee2e2" opacity="0.35"/>' // 우상: 의미 높음 + 어휘 높음 (near_copy/identical)
+                    + '<rect x="60"  y="160" width="150" height="120" fill="#f3f4f6" opacity="0.5"/>'  // 좌하: 의미 낮음 + 어휘 낮음 (관련 없음)
+                    + '<rect x="210" y="160" width="150" height="120" fill="#f3f4f6" opacity="0.5"/>'  // 우하: 의미 낮음 + 어휘 높음 (드물)
+                    // 축 선
+                    + '<line x1="60" y1="280" x2="380" y2="280" stroke="currentColor" stroke-width="1.5" marker-end="url(#arr)"/>'
+                    + '<line x1="60" y1="280" x2="60"  y2="20"  stroke="currentColor" stroke-width="1.5" marker-end="url(#arr)"/>'
+                    // 축 레이블
+                    + '<text x="220" y="305" text-anchor="middle" font-size="12" fill="currentColor">어휘 일치도 (Fingerprint)</text>'
+                    + '<text x="20"  y="160" text-anchor="middle" font-size="12" fill="currentColor" transform="rotate(-90 20 160)">의미 유사도 (Embedding)</text>'
+                    // 격자 눈금 (0 / 0.5 / 1.0)
+                    + '<text x="60"  y="295" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.6">0</text>'
+                    + '<text x="220" y="295" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.6">0.5</text>'
+                    + '<text x="380" y="295" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.6">1.0</text>'
+                    + '<text x="50"  y="284" text-anchor="end" font-size="10" fill="currentColor" opacity="0.6">0</text>'
+                    + '<text x="50"  y="164" text-anchor="end" font-size="10" fill="currentColor" opacity="0.6">0.5</text>'
+                    + '<text x="50"  y="44"  text-anchor="end" font-size="10" fill="currentColor" opacity="0.6">1.0</text>'
+                    // 5라벨 위치 (좌표는 fp/sem 기준; 60+fp*320, 280-sem*240)
+                    // identical: fp=0.95, sem=0.95 → x=60+304=364, y=280-228=52
+                    + '<circle cx="338" cy="60"  r="8" fill="#dc2626"/>'
+                    + '<text   x="338" y="35" text-anchor="middle" font-size="11" font-weight="600" fill="#dc2626">일치</text>'
+                    // near_copy: fp=0.6, sem=0.9 → x=60+192=252, y=280-216=64
+                    + '<circle cx="278" cy="76"  r="8" fill="#ea580c"/>'
+                    + '<text   x="278" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#ea580c">거의 동일</text>'
+                    // paraphrase: fp=0.2, sem=0.85 → x=60+64=124, y=280-204=76
+                    + '<circle cx="124" cy="88"  r="8" fill="#2563eb"/>'
+                    + '<text   x="124" y="65" text-anchor="middle" font-size="11" font-weight="600" fill="#2563eb">의역</text>'
+                    // translation: fp=0.05, sem=0.85 → x=60+16=76, y=280-204=76
+                    + '<circle cx="80"  cy="120" r="8" fill="#7c3aed"/>'
+                    + '<text   x="80"  y="143" text-anchor="middle" font-size="11" font-weight="600" fill="#7c3aed">번역</text>'
+                    // low_sim: fp=0.15, sem=0.7 → x=60+48=108, y=280-168=112
+                    + '<circle cx="160" cy="180" r="8" fill="#6b7280"/>'
+                    + '<text   x="160" y="203" text-anchor="middle" font-size="11" font-weight="600" fill="#6b7280">약한 유사</text>'
+                    + '</svg>';
+
+                // 6라벨 정의표
+                var rowsHtml = '';
+                for (var i = 0; i < typeOrder.length; i++) {
+                    var k = typeOrder[i];
+                    var src = labels[k] || {};
+                    var lbl = src.ko_long || src.ko || fallback[k].ko_long;
+                    var lex = src.lex || fallback[k].lex;
+                    var sem = src.sem || fallback[k].sem;
+                    var sht = src.short || fallback[k].short;
+                    var thr = src.threshold || fallback[k].threshold;
+                    rowsHtml += '<tr>'
+                        + '<td><strong class="sim-help-label-cell sim-help-label-' + k + '">' + escapeHTML(lbl) + '</strong></td>'
+                        + '<td>' + escapeHTML(lex) + '</td>'
+                        + '<td>' + escapeHTML(sem) + '</td>'
+                        + '<td>' + escapeHTML(sht) + '</td>'
+                        + '<td><code>' + escapeHTML(thr) + '</code></td>'
+                        + '</tr>';
+                }
+
+                var overlay = document.createElement('div');
+                overlay.className = 'modal-overlay sim-help-modal sim-label-help-modal';
+                overlay.innerHTML =
+                    '<div class="modal-box">'
+                    + '<div class="modal-header"><h3>매칭 유형 가이드</h3>'
+                    +   '<button class="modal-close" data-action="close" aria-label="닫기">&times;</button>'
+                    + '</div>'
+                    + '<div class="modal-body">'
+                    +   '<div class="sim-help-section">'
+                    +     '<h4>분류 원리 — 2축 조합</h4>'
+                    +     '<p style="font-size:var(--font-small);color:var(--text-light);margin:0 0 8px">'
+                    +       '단순 % 임계값이 아닌 <strong>어휘 일치도(Winnowing fingerprint)</strong>와 '
+                    +       '<strong>의미 유사도(bge-m3 embedding)</strong> 두 축의 조합으로 분류합니다.'
+                    +     '</p>'
+                    +     svg
+                    +   '</div>'
+                    +   '<div class="sim-help-section">'
+                    +     '<h4>매칭 유형 6종</h4>'
+                    +     '<table class="sim-help-bands">'
+                    +       '<thead><tr><th>유형</th><th>어휘</th><th>의미</th><th>설명</th><th>임계값</th></tr></thead>'
+                    +       '<tbody>' + rowsHtml + '</tbody>'
+                    +     '</table>'
+                    +   '</div>'
+                    + '</div>'
+                    + '<div class="modal-footer">'
+                    +   '<button class="btn btn-primary" data-action="close">닫기</button>'
+                    + '</div>'
+                    + '</div>';
+                document.body.appendChild(overlay);
+                requestAnimationFrame(function() { overlay.classList.add('open'); });
+
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay || e.target.getAttribute('data-action') === 'close') {
+                        overlay.classList.remove('open');
+                        setTimeout(function() { overlay.remove(); }, 200);
+                    }
+                });
+                var escHandler = function(e) {
+                    if (e.key === 'Escape') {
+                        overlay.classList.remove('open');
+                        setTimeout(function() { overlay.remove(); }, 200);
+                        document.removeEventListener('keydown', escHandler);
+                    }
+                };
+                document.addEventListener('keydown', escHandler);
+            }
+
+            // ── 온보딩 워크스루 (Plan-38 §5.7 — 첫 유사도 모드 진입 시 1회) ──
+            function showSimOnboarding(force) {
+                var KEY = 'sim-onboard-v1-shown';
+                if (!force && localStorage.getItem(KEY)) return;
+
+                var steps = [
+                    {
+                        title: '결과는 4그룹으로 분류됩니다',
+                        body: '<p style="margin:0 0 8px"><strong>표절 의심</strong> · <strong>참고 가능</strong> · <strong>제외 영역</strong> · <strong>일반</strong> 네 그룹으로 한눈에 파악할 수 있습니다.</p>'
+                            + '<p style="margin:0;color:var(--text-light);font-size:var(--font-small)">필요시 6개 세부 라벨(일치/거의 동일/의역/번역/약한 유사/공통 정형구문)로도 확인 가능합니다.</p>'
+                    },
+                    {
+                        title: 'ⓘ를 누르면 기준을 볼 수 있습니다',
+                        body: '<p style="margin:0 0 8px">점수 옆 <strong>ⓘ</strong>는 산식·5단계 신호등·면책을, 4그룹 옆 <strong>ⓘ</strong>는 매칭 유형 가이드(2축 다이어그램)를 보여줍니다.</p>'
+                            + '<p style="margin:0;color:var(--text-light);font-size:var(--font-small)">"왜 이 라벨인지" 즉시 학습할 수 있습니다.</p>'
+                    },
+                    {
+                        title: '결과는 인쇄용 보고서로 출력됩니다',
+                        body: '<p style="margin:0 0 8px">상단 <strong>내보내기</strong> 버튼으로 HTML(A4 인쇄용)·Excel·TXT 보고서를 생성할 수 있습니다.</p>'
+                            + '<p style="margin:0;color:var(--text-light);font-size:var(--font-small)">보고서에는 검사 기준 부록이 자동 첨부되어 회람 시 받는 사람도 즉시 이해할 수 있습니다.</p>'
+                    }
+                ];
+
+                var idx = 0;
+                var overlay = document.createElement('div');
+                overlay.className = 'modal-overlay sim-onboard-modal';
+                document.body.appendChild(overlay);
+
+                function render() {
+                    var s = steps[idx];
+                    overlay.innerHTML =
+                        '<div class="modal-box" style="max-width:480px">'
+                        + '<div class="modal-header"><h3>' + s.title + '</h3>'
+                        +   '<button class="modal-close" data-action="skip" aria-label="건너뛰기">&times;</button>'
+                        + '</div>'
+                        + '<div class="modal-body">'
+                        +   s.body
+                        +   '<div class="sim-onboard-dots" style="display:flex;justify-content:center;gap:6px;margin-top:16px">'
+                        +     steps.map(function(_, i) {
+                                return '<span class="sim-onboard-dot' + (i === idx ? ' active' : '') + '"></span>';
+                              }).join('')
+                        +   '</div>'
+                        + '</div>'
+                        + '<div class="modal-footer" style="justify-content:space-between">'
+                        +   '<button class="btn btn-ghost btn-sm" data-action="skip">건너뛰기</button>'
+                        +   '<div>'
+                        +     (idx > 0 ? '<button class="btn btn-secondary btn-sm" data-action="prev" style="margin-right:6px">이전</button>' : '')
+                        +     (idx < steps.length - 1
+                                ? '<button class="btn btn-primary btn-sm" data-action="next">다음</button>'
+                                : '<button class="btn btn-primary btn-sm" data-action="finish">시작하기</button>')
+                        +   '</div>'
+                        + '</div>'
+                        + '</div>';
+                }
+                render();
+                requestAnimationFrame(function() { overlay.classList.add('open'); });
+
+                overlay.addEventListener('click', function(e) {
+                    var act = e.target.getAttribute('data-action');
+                    if (e.target === overlay || act === 'skip' || act === 'finish') {
+                        localStorage.setItem(KEY, '1');
+                        overlay.classList.remove('open');
+                        setTimeout(function() { overlay.remove(); }, 200);
+                    } else if (act === 'next' && idx < steps.length - 1) {
+                        idx++;
+                        render();
+                    } else if (act === 'prev' && idx > 0) {
+                        idx--;
+                        render();
+                    }
+                });
             }
 
             function showConfirmModal(message, onConfirm) {
@@ -1979,6 +2203,9 @@
                     html += '<span class="sim-group-label"><span class="sim-group-dot sg-review"></span>참고 가능 ' + review + '</span>';
                     html += '<span class="sim-group-label"><span class="sim-group-dot sg-excluded"></span>제외 영역 ' + excluded + '</span>';
                     html += '<span class="sim-group-label"><span class="sim-group-dot sg-clean"></span>일반 ' + clean + '</span>';
+                    // Plan-38 §5.4 모달 A — 매칭 유형 가이드 ⓘ
+                    html += '<button type="button" class="sim-score-info sim-group-info" data-action="show-label-help" '
+                        + 'title="매칭 유형 가이드 보기" aria-label="매칭 유형 가이드">ⓘ</button>';
                     html += '</div>';
                 }
                 html += '</div>';
@@ -2123,10 +2350,17 @@
                 var sidebarBody = document.getElementById('cp-sidebar-body');
                 sidebarBody.addEventListener('click', function(e) {
                     // ⓘ 점수 도움말 (모달 B)
-                    var infoBtn = e.target.closest('[data-action="show-score-help"]');
-                    if (infoBtn) {
+                    var scoreBtn = e.target.closest('[data-action="show-score-help"]');
+                    if (scoreBtn) {
                         e.stopPropagation();
                         showSimScoreHelpModal();
+                        return;
+                    }
+                    // ⓘ 매칭 유형 가이드 (모달 A)
+                    var labelBtn = e.target.closest('[data-action="show-label-help"]');
+                    if (labelBtn) {
+                        e.stopPropagation();
+                        showSimLabelHelpModal();
                         return;
                     }
                     // 매칭 카드 → 본문 점프
