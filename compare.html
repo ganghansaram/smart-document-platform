@@ -465,7 +465,13 @@
             var simHelp = null;
             fetch(API_BASE + '/help/similarity', { credentials: 'include' })
                 .then(function(r) { return r.ok ? r.json() : null; })
-                .then(function(data) { if (data) simHelp = data; })
+                .then(function(data) {
+                    if (data) {
+                        simHelp = data;
+                        // SIM_TYPE_MAP 라벨/툴팁을 SSOT 값으로 동기화 (Plan-38 §8.1)
+                        if (typeof _syncSimTypeMapFromHelp === 'function') _syncSimTypeMapFromHelp();
+                    }
+                })
                 .catch(function() { /* 무시 — 보고서는 인라인 fallback 사용 */ });
 
             function getPanel(side) { return side === 'a' ? panelBodyA : panelBodyB; }
@@ -1872,14 +1878,29 @@
                 'L1+L3': '복합 분석'
             };
 
+            // Plan-38 §8.1 Layer 2 — 6세부 라벨 (SSOT similarity-help.json과 일관)
+            // simHelp 로드 후 _syncSimTypeMapFromHelp()로 SSOT 값 덮어쓰기
             var SIM_TYPE_MAP = {
-                identical:  { label: '일치',   tooltip: '단어가 동일한 구간',           badge: 'badge-error',   color: 'var(--color-error)' },
-                near_copy:  { label: '유사',   tooltip: '일부 단어가 변경된 구간',       badge: 'badge-warning', color: 'var(--color-warning)' },
-                paraphrase: { label: '의역',   tooltip: '같은 의미를 다시 쓴 구간',      badge: 'badge-info',    color: 'var(--color-info)' },
-                translation:{ label: '번역',   tooltip: '다른 언어로 번역된 구간',       badge: 'badge-info',    color: 'var(--color-info)' },
-                low_sim:    { label: '참고',   tooltip: '관련 가능성이 있는 구간',       badge: 'badge-info',    color: 'var(--text-muted)' },
-                boilerplate:{ label: '공통',   tooltip: '업계 표준 문구 (점수 제외)',    badge: '',              color: 'var(--text-muted)' }
+                identical:  { label: '일치',        tooltip: '단어까지 거의 그대로 일치한 구간',      badge: 'badge-error',   color: 'var(--color-error)',   group: 'suspect' },
+                near_copy:  { label: '거의 동일',   tooltip: '단어 일부만 바꾼 구간',                badge: 'badge-warning', color: 'var(--color-warning)', group: 'suspect' },
+                paraphrase: { label: '의역',        tooltip: '단어는 다르지만 같은 말을 다시 쓴 구간', badge: 'badge-info',    color: 'var(--color-info)',    group: 'suspect' },
+                translation:{ label: '번역',        tooltip: '다른 언어로 번역된 구간 (예: 한↔영)',   badge: 'badge-info',    color: 'var(--color-info)',    group: 'suspect' },
+                low_sim:    { label: '약한 유사',   tooltip: '부분 의미가 겹치나 차용 단정이 어려운 구간', badge: 'badge-info', color: 'var(--text-muted)',   group: 'review' },
+                boilerplate:{ label: '공통 정형구문', tooltip: '업계 표준 문구 (점수 제외)',           badge: '',              color: 'var(--text-muted)',    group: 'excluded' }
             };
+
+            // simHelp 도착 후 라벨·툴팁 SSOT 값으로 갱신 (중복 제거)
+            function _syncSimTypeMapFromHelp() {
+                if (!simHelp || !simHelp.labels) return;
+                for (var k in SIM_TYPE_MAP) {
+                    var src = simHelp.labels[k];
+                    if (src) {
+                        if (src.ko) SIM_TYPE_MAP[k].label = src.ko;
+                        if (src.short) SIM_TYPE_MAP[k].tooltip = src.short;
+                        if (src.group) SIM_TYPE_MAP[k].group = src.group;
+                    }
+                }
+            }
 
             function simShowResults(data) {
                 var summary = data.summary;
@@ -1931,17 +1952,33 @@
                 }
                 html += '</div>';
 
-                // 3-tier 누적 바
-                if (tiers.raw > 0) {
-                    html += '<div class="sim-tier-bar">';
-                    if (tiers.substantive > 0) html += '<div class="sim-tier-seg sim-tier-seg-substantive" style="width:' + (tiers.substantive / tiers.raw * 100) + '%"></div>';
-                    if (tiers.derived > 0) html += '<div class="sim-tier-seg sim-tier-seg-derived" style="width:' + (tiers.derived / tiers.raw * 100) + '%"></div>';
-                    if (tiers.boilerplate > 0) html += '<div class="sim-tier-seg sim-tier-seg-boilerplate" style="width:' + (tiers.boilerplate / tiers.raw * 100) + '%"></div>';
+                // 카피킬러식 4그룹 누적 바 (Plan-38 §8.1 Layer 1)
+                // 표절 의심 / 참고 가능 / 제외 영역 / 일반 (매칭 없음)
+                var totalSents = summary.total_sentences || 0;
+                if (totalSents > 0 && bd.identical) {
+                    var suspect = (bd.identical?.count || 0) + (bd.near_copy?.count || 0)
+                                + (bd.paraphrase?.count || 0) + (bd.translation?.count || 0);
+                    var review  = bd.low_sim?.count || 0;
+                    var excluded = (bd.boilerplate?.count || 0)
+                                 + ((summary.exclusion_breakdown?.toc_heading) || 0)
+                                 + ((summary.exclusion_breakdown?.caption) || 0)
+                                 + ((summary.exclusion_breakdown?.references_section) || 0)
+                                 + ((summary.exclusion_breakdown?.spec_number_only) || 0)
+                                 + ((summary.exclusion_breakdown?.boilerplate_pattern) || 0);
+                    var clean = Math.max(0, totalSents - suspect - review - excluded);
+                    var pct = function(n) { return totalSents > 0 ? (n / totalSents * 100) : 0; };
+
+                    html += '<div class="sim-group-bar" title="카피킬러식 4그룹 분류">';
+                    if (suspect > 0)  html += '<div class="sim-group-seg sg-suspect"  style="width:' + pct(suspect)  + '%" title="표절 의심 ' + suspect + '문장"></div>';
+                    if (review > 0)   html += '<div class="sim-group-seg sg-review"   style="width:' + pct(review)   + '%" title="참고 가능 ' + review + '문장"></div>';
+                    if (excluded > 0) html += '<div class="sim-group-seg sg-excluded" style="width:' + pct(excluded) + '%" title="제외 영역 ' + excluded + '문장"></div>';
+                    if (clean > 0)    html += '<div class="sim-group-seg sg-clean"    style="width:' + pct(clean)    + '%" title="일반 ' + clean + '문장"></div>';
                     html += '</div>';
-                    html += '<div class="sim-tier-labels">';
-                    html += '<span class="sim-tier-label"><span class="sim-tier-dot" style="background:var(--color-error)"></span>실질 ' + tiers.substantive + '%</span>';
-                    html += '<span class="sim-tier-label"><span class="sim-tier-dot" style="background:var(--sim-paraphrase-border)"></span>의역 ' + tiers.derived + '%</span>';
-                    html += '<span class="sim-tier-label"><span class="sim-tier-dot" style="background:var(--sim-boilerplate-border)"></span>공통 ' + tiers.boilerplate + '%</span>';
+                    html += '<div class="sim-group-labels">';
+                    html += '<span class="sim-group-label"><span class="sim-group-dot sg-suspect"></span>표절 의심 ' + suspect + '</span>';
+                    html += '<span class="sim-group-label"><span class="sim-group-dot sg-review"></span>참고 가능 ' + review + '</span>';
+                    html += '<span class="sim-group-label"><span class="sim-group-dot sg-excluded"></span>제외 영역 ' + excluded + '</span>';
+                    html += '<span class="sim-group-label"><span class="sim-group-dot sg-clean"></span>일반 ' + clean + '</span>';
                     html += '</div>';
                 }
                 html += '</div>';
@@ -1968,16 +2005,26 @@
                 html += '</div>';
 
                 if (matches.length === 0) {
-                    html += '<div class="cp-sidebar-empty">유사 구간이 발견되지 않았습니다</div>';
+                    // Plan-38 §8.7 — 빈 상태 디자인 (아이콘 + 가이드)
+                    html += '<div class="cp-sidebar-empty sim-empty-state">'
+                        + '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4;margin-bottom:8px">'
+                        +   '<circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/><path d="M11 8v3M11 14h.01"/>'
+                        + '</svg>'
+                        + '<div style="font-weight:var(--font-weight-semibold);margin-bottom:4px">유사 구간이 발견되지 않았습니다</div>'
+                        + '<div style="font-size:var(--font-caption);color:var(--text-muted);line-height:1.5">대상 문서가 참조와 충분히 독창적입니다.<br>다른 참조 문서와도 비교해보거나, 검사 임계값을 낮춰볼 수 있습니다.</div>'
+                        + '</div>';
                 } else {
                     for (var i = 0; i < matches.length; i++) {
                         var m = matches[i];
                         var typeKey = m.type || (m.level === 'high' ? 'identical' : 'paraphrase');
                         var typeInfo = SIM_TYPE_MAP[typeKey] || SIM_TYPE_MAP.low_sim;
                         var simPct = m.similarity ? (m.similarity * 100).toFixed(1) : '—';
+                        // Plan-38 §8.2 — 출처 번호 마커 (1:1이라 모두 [1])
+                        var sourceNum = (m.source_num !== undefined) ? m.source_num : 1;
 
                         html += '<div class="sim-match-item" data-idx="' + i + '">';
                         html += '<div class="sim-match-header">';
+                        html += '<span class="sim-source-marker" title="출처 ' + sourceNum + '">[' + sourceNum + ']</span>';
                         html += '<span class="badge ' + typeInfo.badge + ' sim-match-badge">' + simPct + '%</span>';
                         html += '<span class="sim-match-level" title="' + escapeHTML(typeInfo.tooltip || '') + '">' + typeInfo.label + '</span>';
                         if (m.detection_layer) html += '<span class="sim-match-method">' + (DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer) + '</span>';
@@ -2030,7 +2077,7 @@
                     divB.innerHTML = data.display_html_b;
                 }
 
-                // 매칭 결과 → data-sent-idx로 직접 조회 → 하이라이트
+                // 매칭 결과 → data-sent-idx로 직접 조회 → 하이라이트 + 출처 마커 (Plan-38 §8.2)
                 var matches = data.matches || [];
                 for (var i = 0; i < matches.length; i++) {
                     var m = matches[i];
@@ -2039,6 +2086,8 @@
                     var endT = m.target_idx_end !== undefined ? m.target_idx_end : startT;
                     var startR = m.ref_idx;
                     var endR = m.ref_idx_end !== undefined ? m.ref_idx_end : startR;
+                    var sourceNum = (m.source_num !== undefined) ? m.source_num : 1;
+                    var markerHtml = '<sup class="sim-hl-marker" title="출처 ' + sourceNum + ' · ' + (SIM_TYPE_MAP[type]?.label || type) + '">[' + sourceNum + ']</sup>';
 
                     // 대상 패널 (A)
                     for (var si = startT; si <= endT; si++) {
@@ -2046,6 +2095,10 @@
                         for (var ei = 0; ei < els.length; ei++) {
                             els[ei].classList.add('sim-hl', 'sim-hl-' + type);
                             els[ei].setAttribute('data-sim-idx', String(i));
+                            // 첫 매칭 문장에만 출처 마커 (병합된 매칭의 시작 위치)
+                            if (si === startT && ei === 0 && !els[ei].querySelector('.sim-hl-marker')) {
+                                els[ei].insertAdjacentHTML('afterbegin', markerHtml);
+                            }
                         }
                     }
 
@@ -2056,6 +2109,9 @@
                             for (var ei = 0; ei < els.length; ei++) {
                                 els[ei].classList.add('sim-hl', 'sim-hl-' + type);
                                 els[ei].setAttribute('data-sim-idx', String(i));
+                                if (si === startR && ei === 0 && !els[ei].querySelector('.sim-hl-marker')) {
+                                    els[ei].insertAdjacentHTML('afterbegin', markerHtml);
+                                }
                             }
                         }
                     }

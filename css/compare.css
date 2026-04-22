@@ -919,11 +919,11 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 
 /* coming-soon 블록 제거됨 (유사도 검사 완성) */
 
-/* 유사도 모드: MD 웹뷰 렌더링 (토큰 기반) */
+/* 유사도 모드: MD 웹뷰 렌더링 (Plan-38 §8.6 — 장문 검토 가독성 강화) */
 .sim-md-view {
     padding: var(--space-md) var(--space-lg);
-    font-size: var(--font-body);
-    line-height: var(--line-height-relaxed);
+    font-size: 14.5px;            /* 본문 가독성 (전역 13px 대비 ~12% ↑) */
+    line-height: 1.75;            /* 장문 스캔 가독성 */
     color: var(--text-dark);
     overflow-y: auto;
     height: 100%;
@@ -942,7 +942,7 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 .sim-md-view h2:first-child, .sim-md-view h3:first-child { margin-top: 0; }
 
 .sim-md-view p {
-    margin: 0.25em 0;
+    margin: 0.5em 0;             /* Plan-38 §8.6 — 단락 간격 증가 */
 }
 
 .sim-md-view table {
@@ -1185,6 +1185,47 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     margin-bottom: 6px;
 }
 
+/* Plan-38 §8.2 — 출처 번호 마커 */
+.sim-source-marker {
+    display: inline-block;
+    min-width: 22px;
+    padding: 1px 6px;
+    background: var(--active-color);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
+    text-align: center;
+    line-height: 1.4;
+    flex-shrink: 0;
+}
+
+/* 본문 하이라이트 출처 마커 (sup) */
+.sim-hl-marker {
+    display: inline-block;
+    padding: 0 4px;
+    margin-right: 4px;
+    background: var(--active-color);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: 0.7em;
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+    vertical-align: super;
+    line-height: 1;
+    cursor: help;
+}
+
+/* Plan-38 §8.7 — 빈 상태 디자인 보강 */
+.sim-empty-state {
+    text-align: center;
+    padding: var(--space-xl) var(--space-md);
+    color: var(--text-light);
+}
+.sim-empty-state svg {
+    color: var(--text-muted);
+}
+
 /* .sim-match-badge — .badge .badge-error/.badge-warning 기반 */
 
 .sim-match-level {
@@ -1273,6 +1314,47 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 }
 .sim-tier-label { display: flex; align-items: center; gap: 3px; }
 .sim-tier-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* Plan-38 §8.1 Layer 1 — 카피킬러식 4그룹 누적 바 */
+.sim-group-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 8px 0 6px;
+    background: var(--border-color);
+    border: 1px solid var(--border-color);
+}
+.sim-group-seg {
+    height: 100%;
+    min-width: 2px;
+    transition: width var(--transition-normal);
+}
+.sim-group-seg.sg-suspect  { background: var(--color-error); }
+.sim-group-seg.sg-review   { background: var(--color-warning); }
+.sim-group-seg.sg-excluded { background: var(--text-muted); }
+.sim-group-seg.sg-clean    { background: var(--bg-card); }
+
+.sim-group-labels {
+    display: flex;
+    gap: var(--space-sm);
+    font-size: var(--font-caption);
+    color: var(--text-light);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-xs);
+}
+.sim-group-label { display: flex; align-items: center; gap: 4px; }
+.sim-group-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.sim-group-dot.sg-suspect  { background: var(--color-error); }
+.sim-group-dot.sg-review   { background: var(--color-warning); }
+.sim-group-dot.sg-excluded { background: var(--text-muted); }
+.sim-group-dot.sg-clean    { background: var(--bg-card); border: 1px solid var(--border-color); }
 
 /* (유사도 모드 버튼 숨김 — #cp-toolbar-slot 자체를 숨겨서 처리) */
 
