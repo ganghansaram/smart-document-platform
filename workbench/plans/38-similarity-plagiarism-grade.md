@@ -777,7 +777,7 @@ PAN-PC 표준 카테고리:
 5. manual paraphrase (사람 재서술)
 6. direct translation (다른 언어 직접 비교 — K-SPEC 시나리오 핵심)
 7. boilerplate-heavy (기술문서 도메인 특화)
-
+진행
 ### 11.2 시드 — MIL-STD 풍 자체 합성
 
 | 시드 | 도메인 | 분량 |
@@ -1129,6 +1129,28 @@ def evaluate_all() -> dict:
 - ⏸️ 묶음 1 4~6단계 대기
 - ⏸️ 묶음 2 대기
 
+### 17.4 Phase 0 베이스라인 상세 (Phase 1 비교 기준점)
+
+| 페어 | 변형 | 점수 | 점수 대역 | 라벨 분포 | 핵심 실패 사유 |
+|---|---|---|---|---|---|
+| pair_01 | verbatim_a | 98.5% | ✓ | ✓ | PASS |
+| pair_08 | verbatim_b | 99.0% | ✓ | ✓ | PASS |
+| pair_02 | random_obf_a | 86.0% | ✓ | ✗ | near_copy 0.17 (기대 0.30~0.70) |
+| pair_09 | random_obf_b | 85.2% | ✓ | ✗ | near_copy 0.26 (기대 0.30~0.70) |
+| pair_03 | para_light_a | 37.6% | ✓ | ✗ | low_sim 0.46 (기대 0.0~0.30) |
+| pair_10 | para_light_b | 35.2% | ✓ | ✗ | low_sim 0.50 (기대 0.0~0.30) |
+| pair_04 | para_heavy_a | 11.1% | ✗ | ✗ | **paraphrase 0.0** (기대 0.30~0.80), low_sim 0.87 |
+| pair_11 | para_heavy_b | 21.8% | ✓ | ✗ | **paraphrase 0.10** (기대 0.30~0.80) |
+| pair_05 | cyclic_trans_a | 46.3% | ✓ | ✗ | low_sim 0.37 (기대 0.0~0.30) |
+| pair_12 | cyclic_trans_b | 45.4% | ✓ | ✗ | low_sim 0.32 (기대 0.0~0.30) |
+| pair_06 | direct_trans_a | 14.5% | ✗ | ✗ | **translation 0.0** (기대 0.40~1.0), low_sim 0.80 |
+| pair_07 | boilerplate_a | 25.3% | ✓ | ✗ | low_sim 0.60 (기대 0.10~0.50) |
+| pair_13 | boilerplate_b | 22.9% | ✓ | ✗ | identical 0.33 (기대 0.0~0.30), bp_ratio 부족 |
+| pair_14 | no_plagiarism | 8.8% | ✓ | ✗ | identical 0.17 (기대 0.0~0.10) — 정형 헤더 매칭 |
+
+**Phase 1 수정 후 기대**: 12 FAIL → 12 PASS (라벨 분포 정상화).
+재실행 명령: `PYTHONPATH=backend python tools/eval/similarity_eval.py --json /tmp/post-phase1-eval.json`
+
 ### 17.5 Phase 1 적용 후 측정 결과
 
 ```
@@ -1161,25 +1183,3 @@ PASS:        2/14 → 4/14 (+2)
 2. **boilerplate 우선순위** — 의미 매칭에서 boilerplate 텍스트가 paraphrase로 잡히는 현상. `_detect_boilerplate`보다 sem-match가 먼저 적용되는 경우 검토
 3. **bge-m3 cross-lingual sem 분포** — Korean-English 0.65~0.75 구간 처리 (translation 컷오프 추가 검토)
 4. **goldset 변형 강도 재작성 (선택)** — random_obf 30% 단어 치환을 더 적극적으로
-
-### 17.4 Phase 0 베이스라인 상세 (Phase 1 비교 기준점)
-
-| 페어 | 변형 | 점수 | 점수 대역 | 라벨 분포 | 핵심 실패 사유 |
-|---|---|---|---|---|---|
-| pair_01 | verbatim_a | 98.5% | ✓ | ✓ | PASS |
-| pair_08 | verbatim_b | 99.0% | ✓ | ✓ | PASS |
-| pair_02 | random_obf_a | 86.0% | ✓ | ✗ | near_copy 0.17 (기대 0.30~0.70) |
-| pair_09 | random_obf_b | 85.2% | ✓ | ✗ | near_copy 0.26 (기대 0.30~0.70) |
-| pair_03 | para_light_a | 37.6% | ✓ | ✗ | low_sim 0.46 (기대 0.0~0.30) |
-| pair_10 | para_light_b | 35.2% | ✓ | ✗ | low_sim 0.50 (기대 0.0~0.30) |
-| pair_04 | para_heavy_a | 11.1% | ✗ | ✗ | **paraphrase 0.0** (기대 0.30~0.80), low_sim 0.87 |
-| pair_11 | para_heavy_b | 21.8% | ✓ | ✗ | **paraphrase 0.10** (기대 0.30~0.80) |
-| pair_05 | cyclic_trans_a | 46.3% | ✓ | ✗ | low_sim 0.37 (기대 0.0~0.30) |
-| pair_12 | cyclic_trans_b | 45.4% | ✓ | ✗ | low_sim 0.32 (기대 0.0~0.30) |
-| pair_06 | direct_trans_a | 14.5% | ✗ | ✗ | **translation 0.0** (기대 0.40~1.0), low_sim 0.80 |
-| pair_07 | boilerplate_a | 25.3% | ✓ | ✗ | low_sim 0.60 (기대 0.10~0.50) |
-| pair_13 | boilerplate_b | 22.9% | ✓ | ✗ | identical 0.33 (기대 0.0~0.30), bp_ratio 부족 |
-| pair_14 | no_plagiarism | 8.8% | ✓ | ✗ | identical 0.17 (기대 0.0~0.10) — 정형 헤더 매칭 |
-
-**Phase 1 수정 후 기대**: 12 FAIL → 12 PASS (라벨 분포 정상화).
-재실행 명령: `PYTHONPATH=backend python tools/eval/similarity_eval.py --json /tmp/post-phase1-eval.json`
