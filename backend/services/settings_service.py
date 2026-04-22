@@ -217,8 +217,10 @@ def get_public_settings() -> dict:
     result["compare_ai_enabled"] = s.get("compare", {}).get("ai_enabled", True)
     # Verify 유사도 판정 경계 (프론트엔드 판정 라벨에 사용)
     vfy = s.get("verify", DEFAULT_SETTINGS.get("verify", {}))
-    result["verify_verdict_low"] = vfy.get("sim_verdict_low", 30)
-    result["verify_verdict_high"] = vfy.get("sim_verdict_high", 60)
+    result["verify_verdict_low"] = vfy.get("sim_verdict_low", 30)        # [호환] 3단계
+    result["verify_verdict_high"] = vfy.get("sim_verdict_high", 60)      # [호환] 3단계
+    # Phase 2: 5단계 신호등 경계 (Blue/Green/Yellow/Orange/Red)
+    result["verify_verdict_bands"] = getattr(_config, "VERIFY_SIMILARITY_VERDICT_BANDS", [0, 25, 50, 75])
     # 현재 활성 LLM 모델명 (프론트엔드 표시용)
     result["ai_model_name"] = _config.LLM_MODEL_ID or _config.OLLAMA_MODEL
     # Notebook 전용 모델 (번역 드롭다운 기본 선택용)

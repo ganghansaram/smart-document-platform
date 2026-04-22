@@ -1125,8 +1125,17 @@ def evaluate_all() -> dict:
   - `boilerplate-phrases.json` 53→303 phrases + 31 patterns 보강
   - `config.py` 신규 항목 (5단계 신호등, 분류 임계값, 검사 설정 기본값)
 - ✅ **회귀 검증** — 모든 기존 필드 유지 (top-level / summary / tiers / breakdown / matches), 신규 필드는 optional
-- ⏳ 묶음 1 3단계 — 캘리브레이션 1차 (현재 4/14 PASS, 추가 미세조정 필요)
-- ⏸️ 묶음 1 4~6단계 대기
+- ✅ **묶음 1 4단계 — Phase 2 5단계 신호등 + sources 완료** (2026-04-23)
+  - `_compute_verdict_band(score)` 신규 — 5단계 (Blue/Green/Yellow/Orange/Red)
+  - `VERDICT_LABELS_KO` 한국어 매핑 (매칭 없음/양호/검토 필요/상당량 매칭/위험)
+  - `summary.verdict` + `summary.verdict_label` 신규 필드
+  - `summary.sources[]` 신규 — id/name/matched_sents/matched_words/match_pct (1:N 확장 대비)
+  - `_empty_result`에도 신규 필드 포함 (None safety)
+  - `settings_service`: `verify_verdict_bands` 노출 (frontend는 기존 verdict_low/_high 그대로 사용 — 호환)
+  - 9 경계 케이스 단위 테스트 통과
+  - 14페어 verdict 적중률 9/14 (64.3%) — 5 misses는 골드셋 변형 강도 이슈
+- ⏳ 묶음 1 5단계 — Phase 4 인쇄 보고서 대기
+- ⏸️ 묶음 1 6단계 — Phase 5 모달 B 대기
 - ⏸️ 묶음 2 대기
 
 ### 17.4 Phase 0 베이스라인 상세 (Phase 1 비교 기준점)

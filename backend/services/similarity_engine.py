@@ -561,6 +561,43 @@ TOGGLEABLE_EXCLUSIONS = {"toc_heading", "caption", "cited_quote"}
 
 
 # ══════════════════════════════════════════
+# Phase 2: 5단계 신호등 (Plan §7.1)
+# ══════════════════════════════════════════
+
+# Turnitin 산업 표준 5단계 — Blue / Green / Yellow / Orange / Red
+VERDICT_BAND_NAMES = ["blue", "green", "yellow", "orange", "red"]
+VERDICT_LABELS_KO = {
+    "blue":   "매칭 없음",
+    "green":  "양호",
+    "yellow": "검토 필요",
+    "orange": "상당량 매칭",
+    "red":    "위험",
+}
+
+
+def _compute_verdict_band(score: float) -> str:
+    """유사율(%)을 5단계 신호등 색상으로 매핑.
+
+    bands = [green_min, yellow_min, orange_min, red_min] (기본 [0, 25, 50, 75])
+      - blue:   score == 0 (또는 < bands[0])
+      - green:  bands[0] < score < bands[1]
+      - yellow: bands[1] ≤ score < bands[2]
+      - orange: bands[2] ≤ score < bands[3]
+      - red:    bands[3] ≤ score
+    """
+    bands = getattr(config, "VERIFY_SIMILARITY_VERDICT_BANDS", [0, 25, 50, 75])
+    if score <= bands[0]:
+        return "blue"
+    if score < bands[1]:
+        return "green"
+    if score < bands[2]:
+        return "yellow"
+    if score < bands[3]:
+        return "orange"
+    return "red"
+
+
+# ══════════════════════════════════════════
 # Layer 1: Winnowing Fingerprint
 # ══════════════════════════════════════════
 
@@ -876,6 +913,26 @@ def _compute_summary(matches: list, bp_matches: list, target_sents: list,
         "short_match": short_match_count,
     }
 
+    # ── Phase 2: 5단계 신호등 verdict (Plan §7.1) ──
+    verdict_band = _compute_verdict_band(adjusted_pct)
+    verdict_label = VERDICT_LABELS_KO[verdict_band]
+
+    # ── Phase 2: sources 구조 (1:1 단일 출처, 1:N 확장 대비 Plan §7.3) ──
+    # 활성 제외가 아닌 매칭만 출처 기여로 카운트
+    matched_sents = sum(_match_sentence_count(m) for m in matches
+                        if not _is_active_exclusion(m.get("exclusion_reason")))
+    matched_words = sum(len(m.get("target_text", "").split()) for m in matches
+                        if not _is_active_exclusion(m.get("exclusion_reason")))
+    sources = []
+    if matched_sents > 0:
+        sources.append({
+            "id": 1,
+            "name": "",  # 프론트가 파일명 채움 (백엔드는 파일명 모름)
+            "matched_sents": matched_sents,
+            "matched_words": matched_words,
+            "match_pct": adjusted_pct,
+        })
+
     return {
         # 기존 호환
         "total_sentences": total,
@@ -903,6 +960,10 @@ def _compute_summary(matches: list, bp_matches: list, target_sents: list,
         },
         # 신규: exclusion_reason별 카운트 (Phase 1.4)
         "exclusion_breakdown": exclusion_breakdown,
+        # Phase 2: 5단계 신호등 + sources
+        "verdict": verdict_band,           # "blue"/"green"/"yellow"/"orange"/"red"
+        "verdict_label": verdict_label,    # 한국어 라벨 (예: "양호")
+        "sources": sources,
     }
 
 
@@ -923,7 +984,7 @@ def _build_tagged_html(sentences: list, page_breaks: dict = None) -> str:
 
 
 def _empty_result(target_sents, ref_sents, target_page_breaks=None, ref_page_breaks=None):
-    """빈 결과"""
+    """빈 결과 (Phase 2: verdict/sources/exclusion_breakdown 신규 필드 포함)"""
     total = len(target_sents) if target_sents else 0
     return {
         "summary": {
@@ -934,7 +995,13 @@ def _empty_result(target_sents, ref_sents, target_page_breaks=None, ref_page_bre
             "similarity_score": 0.0,
             "breakdown": {t: {"count": 0, "percentage": 0.0} for t in
                           (TYPE_IDENTICAL, TYPE_NEAR_COPY, TYPE_PARAPHRASE, TYPE_TRANSLATION, TYPE_LOW_SIM, TYPE_BOILERPLATE)},
-            "tiers": {"raw": 0.0, "adjusted": 0.0, "substantive": 0.0, "derived": 0.0, "boilerplate": 0.0},
+            "tiers": {"raw": 0.0, "adjusted": 0.0, "substantive": 0.0, "derived": 0.0, "boilerplate": 0.0, "excluded": 0.0},
+            "exclusion_breakdown": {k: 0 for k in ("boilerplate", "toc_heading", "caption",
+                                                    "references_section", "cited_quote",
+                                                    "spec_number_only", "boilerplate_pattern", "short_match")},
+            "verdict": "blue",
+            "verdict_label": VERDICT_LABELS_KO["blue"],
+            "sources": [],
         },
         "matches": [],
         "target_sentences": target_sents or [],
