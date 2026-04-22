@@ -7,13 +7,16 @@
     "label": "설계 기준",
     "children": [
       {
-        "label": "구조 설계"
+        "label": "구조 설계",
+        "url": "contents/설계-기준/구조-설계/구조-설계.html"
       },
       {
-        "label": "시스템 설계"
+        "label": "시스템 설계",
+        "url": "contents/설계-기준/시스템-설계/시스템-설계.html"
       },
       {
-        "label": "전장/전기"
+        "label": "전장/전기",
+        "url": "contents/설계-기준/전장전기/전장전기.html"
       }
     ]
   },
