@@ -75,13 +75,35 @@ def _winnow_k():
 def _winnow_window():
     return getattr(config, "VERIFY_SIMILARITY_WINNOW_WINDOW", 4)
 
-# ── 정형 구문 허용 목록 (lazy load) ──
+# ── 분류 임계값 (Phase 1.1 — 하드코딩 제거) ──
+def _para_fp_max():
+    return getattr(config, "VERIFY_SIMILARITY_PARA_FP_MAX", 0.40)
+
+def _trans_fp_max():
+    return getattr(config, "VERIFY_SIMILARITY_TRANS_FP_MAX", 0.10)
+
+# ── 짧은 매칭 필터 (Phase 1.3) ──
+def _min_match_words():
+    return getattr(config, "VERIFY_SIMILARITY_MIN_MATCH_WORDS", 8)
+
+# ── 검사 설정 기본값 (Phase 1.4) ──
+def _exclusion_defaults():
+    return getattr(config, "VERIFY_SIMILARITY_DEFAULTS", {
+        "exclude_boilerplate": True,
+        "exclude_short_match": True,
+        "exclude_toc": True,
+        "exclude_caption": True,
+        "exclude_cited_quote": False,
+    })
+
+# ── 정형 구문 허용 목록 + 패턴 (lazy load) ──
 _boilerplate_phrases = None
+_boilerplate_patterns = None
 
 
 def _load_boilerplate():
-    """정형 구문 허용 목록을 로드한다."""
-    global _boilerplate_phrases
+    """정형 구문 허용 목록을 로드한다 (phrases + patterns)."""
+    global _boilerplate_phrases, _boilerplate_patterns
     if _boilerplate_phrases is not None:
         return _boilerplate_phrases
 
@@ -90,11 +112,21 @@ def _load_boilerplate():
         with open(bp_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         _boilerplate_phrases = [p.lower() for p in data.get("phrases", [])]
-        logger.info("정형 구문 허용 목록 로드: %d개", len(_boilerplate_phrases))
+        _boilerplate_patterns = [re.compile(p, re.IGNORECASE) for p in data.get("patterns", [])]
+        logger.info("정형 구문 로드: phrases=%d, patterns=%d",
+                    len(_boilerplate_phrases), len(_boilerplate_patterns))
     except Exception as e:
-        logger.warning("정형 구문 허용 목록 로드 실패: %s", e)
+        logger.warning("정형 구문 로드 실패: %s", e)
         _boilerplate_phrases = []
+        _boilerplate_patterns = []
     return _boilerplate_phrases
+
+
+def _load_boilerplate_patterns():
+    """정형 구문 정규식 패턴 (header/caption 제외용)."""
+    if _boilerplate_patterns is None:
+        _load_boilerplate()
+    return _boilerplate_patterns or []
 
 
 # ══════════════════════════════════════════
@@ -139,8 +171,13 @@ def run_similarity(
     M, N = len(target_sents), len(ref_sents)
     logger.info("유사도 검사 시작: 대상 %d문장, 참조 %d문장", M, N)
 
-    # 1. 정형 구문 필터
+    # 1. 정형 구문 + exclusion 검출 (Phase 1.4)
     boilerplate_indices = _detect_boilerplate(target_sents)
+    exclusion_map = _detect_exclusions(target_sents)
+    # 백엔드 자동 제외 인덱스: BP + ALWAYS_SKIP
+    auto_skip_indices = set(boilerplate_indices) | {
+        idx for idx, reason in exclusion_map.items() if reason in ALWAYS_SKIP_REASONS
+    }
 
     # 2. Layer 1: Winnowing fingerprint
     fp_matrix = _compute_fingerprint_matrix(target_sents, ref_sents)
@@ -155,7 +192,7 @@ def run_similarity(
     # L1 점수 높은 순으로 greedy 매칭
     l1_pairs = []
     for ti in range(M):
-        if ti in boilerplate_indices:
+        if ti in auto_skip_indices:
             continue
         for ri in range(N):
             score = fp_matrix[ti, ri]
@@ -184,7 +221,7 @@ def run_similarity(
 
     # 3. Layer 3: Semantic embedding
     # L1에서 확정되지 않은 문장들만 임베딩 대상
-    need_embedding_t = set(range(M)) - used_targets_l1 - boilerplate_indices
+    need_embedding_t = set(range(M)) - used_targets_l1 - auto_skip_indices
     need_embedding_r = set(range(N)) - used_refs_l1
 
     l3_matches = []
@@ -202,7 +239,8 @@ def run_similarity(
                 continue
             sem_score = float(sim_matrix[ti, ri])
             if sem_score >= th_medium:
-                match_type = _classify_match(fp_score, sem_score, th_high)
+                cross_lang = _is_cross_language(target_sents[ti], ref_sents[ri])
+                match_type = _classify_match(fp_score, sem_score, th_high, th_medium, cross_lang)
                 l3_matches.append({
                     "target_idx": ti,
                     "ref_idx": ri,
@@ -216,7 +254,7 @@ def run_similarity(
         # 나머지: L1 미매칭 문장에서 greedy semantic 매칭
         sem_pairs = []
         for ti in need_embedding_t - used_targets_l3:
-            if ti in boilerplate_indices:
+            if ti in auto_skip_indices:
                 continue
             for ri in need_embedding_r - used_refs_l3:
                 if ri in used_refs_l1:
@@ -231,7 +269,8 @@ def run_similarity(
         for sem_score, fp_score, ti, ri in sem_pairs:
             if ti in used_targets_l3 or ri in used_refs_l3:
                 continue
-            match_type = _classify_match(fp_score, sem_score, th_high)
+            cross_lang = _is_cross_language(target_sents[ti], ref_sents[ri])
+            match_type = _classify_match(fp_score, sem_score, th_high, th_medium, cross_lang)
             l3_matches.append({
                 "target_idx": ti,
                 "ref_idx": ri,
@@ -257,7 +296,7 @@ def run_similarity(
     all_matches = l1_matches + l3_matches
     all_matches.sort(key=lambda x: x["target_idx"])
 
-    # 텍스트 채우기 + 하위 호환 필드
+    # 텍스트 채우기 + 하위 호환 필드 + 카테고리 exclusion_reason (Phase 1.4)
     for m in all_matches:
         ti, ri = m["target_idx"], m["ref_idx"]
         m["target_text"] = target_sents[ti]
@@ -267,12 +306,23 @@ def run_similarity(
         m["level"] = LEVEL_COMPAT[m["type"]]
         m["similarity"] = m["scores"].get("semantic") or m["scores"].get("fingerprint") or 0
         m["method"] = m["detection_layer"]
+        # exclusion_reason: 카테고리 기반만 우선 부여 (short_match는 병합 후 적용)
+        m["exclusion_reason"] = exclusion_map.get(ti)
 
     # 구간 병합
     merged = _merge_adjacent(all_matches)
 
-    # 6. 통계 산출
-    summary = _compute_summary(merged, bp_matches, target_sents)
+    # Phase 1.3: 짧은 매칭 필터 — 병합 후 매칭 영역의 전체 단어 수 기준
+    # 마크다운 줄바꿈으로 분할된 짧은 조각도 병합되면 의미 있는 매칭일 수 있음
+    min_words = _min_match_words()
+    for m in merged:
+        if m.get("exclusion_reason"):
+            continue  # 카테고리 제외 우선
+        if len(m["target_text"].split()) < min_words:
+            m["exclusion_reason"] = "short_match"
+
+    # 6. 통계 산출 (exclusion_map 전달 — 분모 보정 + breakdown)
+    summary = _compute_summary(merged, bp_matches, target_sents, exclusion_map)
 
     return {
         "summary": summary,
@@ -288,23 +338,71 @@ def run_similarity(
 # 분류 로직
 # ══════════════════════════════════════════
 
-def _classify_match(fp_score: float, sem_score: float, th_high: float) -> str:
-    """L1(fingerprint) + L3(semantic) 점수를 조합하여 매칭 유형을 결정한다."""
+_KOREAN_RE = re.compile(r'[\uac00-\ud7a3]')
+
+
+def _is_cross_language(target_text: str, ref_text: str) -> bool:
+    """대상 vs 참조 문장이 다른 언어(스크립트)인지 감지.
+
+    Translation 분류는 실제 언어 차이가 있을 때만 적용되어야 한다.
+    Paraphrase의 fp < 0.10은 흔하므로 (영어→영어 중량 의역도 가능),
+    스크립트 차이로 cross-language 여부를 명확히 판정한다.
+    """
+    t_kor = bool(_KOREAN_RE.search(target_text))
+    r_kor = bool(_KOREAN_RE.search(ref_text))
+    return t_kor != r_kor
+
+
+def _classify_match(fp_score: float, sem_score: float, th_high: float,
+                    th_medium: float = None,
+                    cross_language: bool = False) -> str:
+    """L1(fingerprint) + L3(semantic) 점수를 조합하여 매칭 유형을 결정한다.
+
+    Plan-38 Phase 1.1 — 4분기 명시화 + cross-language 감지:
+      - identical:    fp ≥ 0.85
+      - near_copy:    fp 0.40~0.85 + sem ≥ th_high
+      - translation:  fp < 0.10 + sem ≥ th_high + **cross_language=True** (다른 언어)
+      - paraphrase:   fp < para_max + sem ≥ th_high (의역, 동일 언어)
+      - near_copy(약):fp ≥ 0.40 + sem ≥ th_medium
+      - low_sim:      sem ≥ 0.65
+
+    cross_language=False면 fp가 낮아도 paraphrase로 분류 — translation 오분류 방지.
+    """
+    if th_medium is None:
+        th_medium = getattr(config, "VERIFY_SIMILARITY_THRESHOLD_MEDIUM",
+                            DEFAULT_THRESHOLD_MEDIUM)
+    para_max = _para_fp_max()
+    trans_max = _trans_fp_max()
+
     if fp_score >= 0.85:
         return TYPE_IDENTICAL
+    # near_copy 우선 (어휘 일치도 높을 때, high threshold)
     if fp_score >= 0.40 and sem_score >= th_high:
         return TYPE_NEAR_COPY
-    if fp_score < 0.15 and sem_score >= 0.88:
+    # translation: 다른 언어 + 어휘 거의 0 + 의미 medium 이상
+    # bge-m3 cross-lingual 점수는 monolingual 대비 낮으므로 th_medium 사용
+    if cross_language and fp_score < trans_max and sem_score >= th_medium:
+        return TYPE_TRANSLATION
+    # paraphrase: 어휘 낮음 + 의미 medium 이상 (동일 언어 의역)
+    # heavily paraphrased 영문도 bge-m3 sem_score가 0.75~0.85 구간에 분포
+    if fp_score < para_max and sem_score >= th_medium:
         return TYPE_PARAPHRASE
-    if sem_score >= th_high:
+    # near_copy 약화 (의미 medium이지만 어휘 일치도 ≥ 0.40)
+    if fp_score >= 0.40 and sem_score >= th_medium:
         return TYPE_NEAR_COPY
+    # 약한 유사
     if sem_score >= 0.65:
         return TYPE_LOW_SIM
     return TYPE_LOW_SIM
 
 
 def _detect_boilerplate(sentences: list) -> set:
-    """정형 구문이 포함된 문장 인덱스를 반환한다."""
+    """정형 구문이 포함된 문장 인덱스를 반환한다.
+
+    Plan-38 Phase 1.2 — 문자 인덱스 커버리지 기반 (중복 누적 방지).
+    이전 버전: `match_len += len(phrase)` → 겹치는 구문이 누적되어 비율 >1.0 가능
+    개선: 문자 인덱스 set으로 정확한 커버리지 계산.
+    """
     phrases = _load_boilerplate()
     if not phrases:
         return set()
@@ -312,17 +410,154 @@ def _detect_boilerplate(sentences: list) -> set:
     indices = set()
     for i, sent in enumerate(sentences):
         sent_lower = sent.lower()
-        # 문장의 50% 이상이 정형 구문으로 구성되면 boilerplate 판정
-        match_len = 0
+        if len(sent_lower) == 0:
+            continue
+        # 문자 인덱스 커버리지 (중복 제거)
+        covered = set()
         for phrase in phrases:
-            if phrase in sent_lower:
-                match_len += len(phrase)
-        if len(sent_lower) > 0 and match_len / len(sent_lower) >= 0.5:
+            start = 0
+            while True:
+                pos = sent_lower.find(phrase, start)
+                if pos == -1:
+                    break
+                for j in range(pos, pos + len(phrase)):
+                    covered.add(j)
+                start = pos + 1
+        # 50% 이상이 정형 구문으로 구성되면 boilerplate 판정
+        if len(covered) / len(sent_lower) >= 0.5:
             indices.add(i)
 
     if indices:
         logger.info("정형 구문 감지: %d개 문장", len(indices))
     return indices
+
+
+# ══════════════════════════════════════════
+# Phase 1.4: exclusion_reason 검출 (검사 설정 5+2 옵션)
+# ══════════════════════════════════════════
+
+# 정규식: 한 번 컴파일
+_TOC_HEADING_RE = re.compile(r'^\s*\d+(\.\d+)*\s+[A-Z가-힣]')
+_REFERENCES_HEADER_RE = re.compile(
+    r'^\s*(References|Bibliography|참고\s*문헌|인용\s*문헌)\b',
+    re.IGNORECASE
+)
+_CAPTION_RE = re.compile(
+    r'^\s*(Figure|Fig\.?|Table|Tbl\.?|그림|표)\s+\d+',
+    re.IGNORECASE
+)
+_CITED_QUOTE_PATTERNS = [
+    re.compile(r'"[^"]{15,}"'),         # ASCII 인용 (15자+)
+    re.compile(r'\u201c[^\u201d]{15,}\u201d'),  # 유니코드 따옴표
+    re.compile(r'\u300e[^\u300f]+\u300f'),       # 한국어 책 인용 『...』
+    re.compile(r'\[\d+(?:[,\s\d]+)?\]'),         # [1] [1,2] 인용 마커
+    re.compile(r'\([A-Z][a-z]+(?:\s+(?:and|&|et\s+al\.?)\s+[A-Z][a-z]+)?,?\s*\d{4}\)'),  # (Author, 2020)
+]
+
+
+def _is_new_section_header(sent: str) -> bool:
+    """새 섹션 헤더 패턴 (참고문헌 종료 감지용)."""
+    s = sent.strip()
+    return bool(re.match(r'^\d+\.?\s+[A-Z가-힣]{2,}', s)) or \
+           bool(re.match(r'^[A-Z]{3,}(\s+[A-Z]+){0,3}$', s))
+
+
+def _detect_cited_quote(sent: str) -> bool:
+    for pat in _CITED_QUOTE_PATTERNS:
+        if pat.search(sent):
+            return True
+    return False
+
+
+def _detect_spec_only(sent: str) -> bool:
+    """규격 번호만으로 구성된 짧은 문장."""
+    sent_strip = sent.strip()
+    words = sent_strip.split()
+    if len(words) > 5:
+        return False
+    spec_matches = list(_spec_regex.finditer(sent_strip))
+    if not spec_matches:
+        return False
+    spec_chars = sum(m.end() - m.start() for m in spec_matches)
+    return spec_chars / max(len(sent_strip), 1) >= 0.40
+
+
+def _detect_exclusions(sentences: list) -> dict:
+    """
+    문장별 exclusion_reason 검출 (Plan §6.4).
+
+    반환: {sent_idx: reason_str}
+    Reasons:
+      - "toc_heading"        목차/장절 헤딩
+      - "references_section" 참고문헌 섹션 이후 (백엔드 자동)
+      - "caption"            표/그림 캡션
+      - "cited_quote"        인용·출처 표시
+      - "spec_number_only"   규격 번호 단독 매칭 (백엔드 자동)
+      - "boilerplate_pattern" boilerplate-phrases.json patterns 매칭
+    """
+    exclusions = {}
+    bp_patterns = _load_boilerplate_patterns()
+    in_references = False
+    ref_started_at = -1
+
+    for i, sent in enumerate(sentences):
+        sent_strip = sent.strip()
+
+        # references_section 진입/종료 추적
+        if in_references:
+            if (i - ref_started_at) >= 1 and _is_new_section_header(sent_strip):
+                in_references = False
+            else:
+                exclusions[i] = "references_section"
+                continue
+
+        if _REFERENCES_HEADER_RE.match(sent_strip):
+            in_references = True
+            ref_started_at = i
+            exclusions[i] = "references_section"
+            continue
+
+        # 우선순위 (먼저 매칭되는 것 적용):
+        # 1. boilerplate patterns (Figure/Table 헤더 등)
+        for pat in bp_patterns:
+            if pat.match(sent_strip):
+                exclusions[i] = "boilerplate_pattern"
+                break
+        if i in exclusions:
+            continue
+
+        # 2. caption (정규식 패턴 미스 시 보강)
+        if _CAPTION_RE.match(sent_strip):
+            exclusions[i] = "caption"
+            continue
+
+        # 3. toc_heading (1.1 SCOPE 형태)
+        if _TOC_HEADING_RE.match(sent_strip):
+            exclusions[i] = "toc_heading"
+            continue
+
+        # 4. spec_number_only
+        if _detect_spec_only(sent_strip):
+            exclusions[i] = "spec_number_only"
+            continue
+
+        # 5. cited_quote (마지막 — 다른 패턴이 없을 때)
+        if _detect_cited_quote(sent_strip):
+            exclusions[i] = "cited_quote"
+            continue
+
+    if exclusions:
+        from collections import Counter
+        cnt = Counter(exclusions.values())
+        logger.info("exclusion 검출: %s", dict(cnt))
+    return exclusions
+
+
+# 백엔드 자동 처리 (사용자 토글 X) — 항상 매칭에서 제외
+ALWAYS_SKIP_REASONS = {"references_section", "spec_number_only", "boilerplate_pattern"}
+
+# 사용자 토글 가능 (기본 ON) — 매칭은 수행, exclusion_reason 부여
+TOGGLEABLE_EXCLUSIONS = {"toc_heading", "caption", "cited_quote"}
 
 
 # ══════════════════════════════════════════
@@ -545,30 +780,101 @@ def _match_sentence_count(m: dict) -> int:
     return end - start + 1
 
 
-def _compute_summary(matches: list, bp_matches: list, target_sents: list) -> dict:
-    """통계를 산출한다. 기존 필드 + 신규 breakdown/tiers 필드."""
-    total = len(target_sents)
-    type_counts = {}
-    for t in (TYPE_IDENTICAL, TYPE_NEAR_COPY, TYPE_PARAPHRASE, TYPE_TRANSLATION, TYPE_LOW_SIM):
-        type_counts[t] = sum(_match_sentence_count(m) for m in matches if m["type"] == t)
-    bp_count = len(bp_matches)
+def _compute_summary(matches: list, bp_matches: list, target_sents: list,
+                     exclusion_map: dict = None) -> dict:
+    """통계를 산출한다.
 
+    Plan-38 Phase 1.2 + 1.4:
+      - adjusted_pct 분모: total - 활성 제외 sentence index 집합 (중복 제거)
+      - 분자: 활성 제외 카테고리 매칭은 카운트에서 빠짐
+      - exclusion_breakdown 신규 필드
+    """
+    if exclusion_map is None:
+        exclusion_map = {}
+    defaults = _exclusion_defaults()
+    total = len(target_sents)
+
+    # exclusion_reason → default key 매핑
+    excl_to_key = {
+        "boilerplate": "exclude_boilerplate",
+        "boilerplate_pattern": "exclude_boilerplate",
+        "short_match": "exclude_short_match",
+        "toc_heading": "exclude_toc",
+        "caption": "exclude_caption",
+        "cited_quote": "exclude_cited_quote",
+    }
+
+    def _is_active_exclusion(reason: str) -> bool:
+        """주어진 exclusion_reason이 현재 설정에서 활성(점수 제외)인가."""
+        if not reason:
+            return False
+        if reason in ALWAYS_SKIP_REASONS:
+            return True  # 백엔드 자동 제외
+        return defaults.get(excl_to_key.get(reason, ""), False)
+
+    # ── 활성 제외 sentence index 집합 (중복 제거) ──
+    bp_indices = {bp["target_idx"] for bp in bp_matches}
+    active_excluded_idx = set()
+    if defaults.get("exclude_boilerplate", True):
+        active_excluded_idx |= bp_indices
+    for idx, reason in exclusion_map.items():
+        if _is_active_exclusion(reason):
+            active_excluded_idx.add(idx)
+
+    # 매칭 sentence 카운트 (병합된 sentence count 합산, 활성 제외는 빠짐)
+    type_counts = {t: 0 for t in (TYPE_IDENTICAL, TYPE_NEAR_COPY, TYPE_PARAPHRASE,
+                                    TYPE_TRANSLATION, TYPE_LOW_SIM)}
+    excluded_match_sents = 0
+    for m in matches:
+        sc = _match_sentence_count(m)
+        reason = m.get("exclusion_reason")
+        # 활성 제외 카테고리이거나 short_match이면 분자에서 제외
+        if _is_active_exclusion(reason):
+            excluded_match_sents += sc
+            continue
+        if m["type"] in type_counts:
+            type_counts[m["type"]] += sc
+
+    bp_count = len(bp_matches)
     matched_count = sum(type_counts.values())
-    clean_count = total - matched_count - bp_count
+    excluded_total = len(active_excluded_idx)
+    clean_count = max(0, total - matched_count - excluded_total)
 
     # 3-tier 점수 산출
     substantive = type_counts[TYPE_IDENTICAL] + type_counts[TYPE_NEAR_COPY]
     derived = type_counts[TYPE_PARAPHRASE] + type_counts[TYPE_TRANSLATION]
 
-    raw_pct = round((matched_count + bp_count) / max(total, 1) * 100, 1)
-    substantive_pct = round(substantive / max(total, 1) * 100, 1)
-    derived_pct = round(derived / max(total, 1) * 100, 1)
+    # 분모: 전체 - 활성 제외 인덱스 (중복 제거)
+    effective_total = max(total - excluded_total, 1)
+
+    raw_pct = round((matched_count + excluded_match_sents) / max(total, 1) * 100, 1)
+    substantive_pct = round(substantive / effective_total * 100, 1)
+    derived_pct = round(derived / effective_total * 100, 1)
     bp_pct = round(bp_count / max(total, 1) * 100, 1)
-    adjusted_pct = round((substantive + derived * 0.5) / max(total, 1) * 100, 1)
+    adjusted_pct = round((substantive + derived * 0.5) / effective_total * 100, 1)
+    # 안전장치: 100% 초과 방지 (가능성 낮지만 _match_sentence_count 오버랩 시)
+    adjusted_pct = min(adjusted_pct, 100.0)
+    excluded_pct = round(excluded_total / max(total, 1) * 100, 1)
 
     # 기존 호환 필드
     high_count = type_counts[TYPE_IDENTICAL] + type_counts[TYPE_NEAR_COPY]
     medium_count = type_counts[TYPE_PARAPHRASE] + type_counts[TYPE_TRANSLATION] + type_counts[TYPE_LOW_SIM]
+
+    # exclusion_breakdown (Phase 1.4 신규)
+    from collections import Counter
+    excl_counter = Counter(exclusion_map.values())
+    short_match_count = sum(1 for m in matches
+                            if m.get("exclusion_reason") == "short_match")
+    exclusion_breakdown = {
+        "boilerplate": bp_count,
+        "toc_heading": excl_counter.get("toc_heading", 0),
+        "caption": excl_counter.get("caption", 0),
+        "references_section": excl_counter.get("references_section", 0),
+        "cited_quote": excl_counter.get("cited_quote", 0),
+        "spec_number_only": excl_counter.get("spec_number_only", 0),
+        "boilerplate_pattern": excl_counter.get("boilerplate_pattern", 0),
+        "short_match": short_match_count,
+    }
 
     return {
         # 기존 호환
@@ -577,7 +883,7 @@ def _compute_summary(matches: list, bp_matches: list, target_sents: list) -> dic
         "medium_count": medium_count,
         "clean_count": clean_count,
         "similarity_score": adjusted_pct,
-        # 신규: 유형별 breakdown
+        # 유형별 breakdown (호환 유지)
         "breakdown": {
             TYPE_IDENTICAL: {"count": type_counts[TYPE_IDENTICAL], "percentage": round(type_counts[TYPE_IDENTICAL] / max(total, 1) * 100, 1)},
             TYPE_NEAR_COPY: {"count": type_counts[TYPE_NEAR_COPY], "percentage": round(type_counts[TYPE_NEAR_COPY] / max(total, 1) * 100, 1)},
@@ -586,14 +892,17 @@ def _compute_summary(matches: list, bp_matches: list, target_sents: list) -> dic
             TYPE_LOW_SIM: {"count": type_counts[TYPE_LOW_SIM], "percentage": round(type_counts[TYPE_LOW_SIM] / max(total, 1) * 100, 1)},
             TYPE_BOILERPLATE: {"count": bp_count, "percentage": bp_pct},
         },
-        # 신규: 3-tier 점수
+        # 3-tier 점수 (호환 유지 + excluded 신규)
         "tiers": {
             "raw": raw_pct,
             "adjusted": adjusted_pct,
             "substantive": substantive_pct,
             "derived": derived_pct,
             "boilerplate": bp_pct,
+            "excluded": excluded_pct,
         },
+        # 신규: exclusion_reason별 카운트 (Phase 1.4)
+        "exclusion_breakdown": exclusion_breakdown,
     }
 
 

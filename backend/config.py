@@ -123,14 +123,38 @@ COMPARE_AI_BATCH_SIZE = 20      # 1회 LLM 호출당 최대 변경 구간 수
 COMPARE_AI_TIMEOUT = 60         # LLM 호출 타임아웃(초)
 COMPARE_AI_SYSTEM_PROMPT = ""   # 빈값이면 기본 내장 프롬프트 사용
 
-# ── Verify: 유사도 검사 ──
-VERIFY_SIMILARITY_THRESHOLD_HIGH = 0.85    # L1 동일 판정 기준
-VERIFY_SIMILARITY_THRESHOLD_MEDIUM = 0.75  # L3 의미 유사 하한
+# ── Verify: 유사도 검사 (Plan-38 Phase 1 외부화) ──
+VERIFY_SIMILARITY_THRESHOLD_HIGH = 0.85    # 의미 유사 high (paraphrase·translation·near_copy 판정 기준)
+VERIFY_SIMILARITY_THRESHOLD_MEDIUM = 0.75  # 의미 유사 medium (near_copy 약화 판정)
 VERIFY_SIMILARITY_WINNOW_K = 25            # Winnowing k-gram 크기
 VERIFY_SIMILARITY_WINNOW_WINDOW = 4        # Winnowing sliding window
-VERIFY_SIMILARITY_VERDICT_LOW = 30         # 양호/보통 경계 (%)
-VERIFY_SIMILARITY_VERDICT_HIGH = 60        # 보통/주의 경계 (%)
 VERIFY_SIMILARITY_EMBEDDING_BATCH = 64     # 임베딩 배치 크기
+
+# 분류 임계값 (Phase 1.1 신규 — 하드코딩 제거)
+VERIFY_SIMILARITY_PARA_FP_MAX = 0.40       # paraphrase 어휘 fingerprint 상한
+VERIFY_SIMILARITY_TRANS_FP_MAX = 0.10      # translation 어휘 fingerprint 상한 (다른 언어)
+
+# 짧은 매칭 필터 (Phase 1.3 신규)
+VERIFY_SIMILARITY_MIN_MATCH_WORDS = 8      # 매칭 대상 문장 최소 단어 수
+
+# 5단계 신호등 경계 (Phase 2 — Plan §7.1)
+# 기존 LOW/HIGH 2단계는 호환 유지, 신규 5단계 추가
+VERIFY_SIMILARITY_VERDICT_LOW = 30         # [호환] 양호/보통 경계 (%)
+VERIFY_SIMILARITY_VERDICT_HIGH = 60        # [호환] 보통/주의 경계 (%)
+VERIFY_SIMILARITY_VERDICT_BANDS = [0, 25, 50, 75]  # Blue/Green/Yellow/Orange/Red 경계 (%)
+
+# 검사 설정 기본값 — 사용자 토글 5옵션 (Phase 1.4)
+# True면 점수 계산에서 제외, False면 포함. 프론트가 옵션으로 오버라이드 가능.
+VERIFY_SIMILARITY_DEFAULTS = {
+    "exclude_boilerplate": True,    # 정형구문
+    "exclude_short_match": True,    # 짧은 매칭 (8단어 미만)
+    "exclude_toc": True,            # 목차/장절 헤딩
+    "exclude_caption": True,        # 표/그림 캡션
+    "exclude_cited_quote": False,   # 인용·출처 표시 (사용자 선택)
+}
+# 백엔드 자동 처리 (사용자 토글 없음, 항상 ON):
+#   - references_section: 참고문헌 섹션 이후
+#   - spec_number_only: 규격 번호만 매칭 + 매우 짧음
 
 # 서버 설정
 HOST = "0.0.0.0"

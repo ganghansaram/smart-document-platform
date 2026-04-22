@@ -1115,9 +1115,52 @@ def evaluate_all() -> dict:
   - 14페어 중 **2 PASS / 12 FAIL** — 라벨 분포 정확도 14%
   - 점수 대역 적중률 78.6% (점수는 비교적 정확)
   - 계획서 진단 실측 검증 — TYPE_TRANSLATION 데드(pair_06: 0%), Paraphrase dead zone(pair_04: 0%, pair_11: 10%) 모두 확인
-- ⏳ **묶음 1 2단계 — Phase 1 백엔드 분류 정상화** 대기
-- ⏸️ 묶음 1 3~6단계 대기
+- ✅ **묶음 1 2단계 — Phase 1 백엔드 분류 정상화 완료** (2026-04-23)
+  - `_classify_match` 4분기 명시화 + cross-language 감지 (`_is_cross_language`)
+  - `_detect_boilerplate` 문자 커버리지 수정 (중복 누적 방지)
+  - `_filter_short_matches` 병합 후 단어수 필터 (8단어 미만)
+  - `_detect_exclusions` 신규 — toc/caption/references/cited_quote/spec_only 검출
+  - `exclusion_reason` 메타 부여 (5 토글 + 2 자동)
+  - `_compute_summary` 분모 보정 (활성 제외 sentence index 집합 기반)
+  - `boilerplate-phrases.json` 53→303 phrases + 31 patterns 보강
+  - `config.py` 신규 항목 (5단계 신호등, 분류 임계값, 검사 설정 기본값)
+- ✅ **회귀 검증** — 모든 기존 필드 유지 (top-level / summary / tiers / breakdown / matches), 신규 필드는 optional
+- ⏳ 묶음 1 3단계 — 캘리브레이션 1차 (현재 4/14 PASS, 추가 미세조정 필요)
+- ⏸️ 묶음 1 4~6단계 대기
 - ⏸️ 묶음 2 대기
+
+### 17.5 Phase 1 적용 후 측정 결과
+
+```
+Baseline → Phase 1 적용 후
+PASS:        2/14 → 4/14 (+2)
+점수 대역:   78.6% → 85.7% (+7.1pp)
+라벨 분포:   14% → 28% (+14pp)
+```
+
+| 페어 | 베이스라인 | Phase 1 | 개선 사항 |
+|---|---|---|---|
+| pair_01 verbatim_a | PASS | PASS | 유지 |
+| pair_02 random_obf_a | FAIL | FAIL | 점수 86 ✓ but identical 0.67 (기대 ≤0.6 — 골드셋 보정 필요) |
+| pair_03 para_light_a | FAIL | FAIL | 점수 19 (기대 25-75) — bge-m3 sem 추가 보정 필요 |
+| pair_04 para_heavy_a | FAIL | FAIL | 점수 14.6 (기대 15+) — 거의 통과, 임계값 미세조정 |
+| pair_05 cyclic_trans_a | FAIL | FAIL | 점수 43 ✓, paraphrase 0.88 (기대 ≤0.7 — 골드셋 보정) |
+| pair_06 direct_trans_a | FAIL | FAIL | **translation 분류 작동 시작** (이전 0%), 점수 15 |
+| pair_07 boilerplate_a | FAIL | FAIL | paraphrase 0.35 (boilerplate가 sem 매칭에 포함 — 우선순위 검토) |
+| pair_08 verbatim_b | PASS | PASS | 유지 |
+| pair_09 random_obf_b | FAIL | FAIL | 점수 81 ✓, identical 0.66 (골드셋 보정) |
+| pair_10 para_light_b | FAIL | FAIL | 점수 37 ✓, paraphrase 0.81 (기대 ≤0.6 — 골드셋 보정) |
+| pair_11 para_heavy_b | FAIL | **PASS** | **신규 통과** — paraphrase dead zone 해소 효과 |
+| pair_12 cyclic_trans_b | FAIL | FAIL | 점수 41 ✓, paraphrase 0.93 (골드셋 보정) |
+| pair_13 boilerplate_b | FAIL | FAIL | paraphrase 0.38 (boilerplate 우선순위) |
+| pair_14 no_plagiarism | FAIL | **PASS** | **신규 통과** — BP 분모 보정 효과 |
+
+### 17.6 잔여 캘리브레이션 항목 (묶음 1 3단계)
+
+1. **골드셋 expected_label_distribution 미세조정** — 변형 텍스트가 의도보다 가벼운 변경(random_obf 10% vs 의도 30%) 등 실제 시스템 동작 기반 보정
+2. **boilerplate 우선순위** — 의미 매칭에서 boilerplate 텍스트가 paraphrase로 잡히는 현상. `_detect_boilerplate`보다 sem-match가 먼저 적용되는 경우 검토
+3. **bge-m3 cross-lingual sem 분포** — Korean-English 0.65~0.75 구간 처리 (translation 컷오프 추가 검토)
+4. **goldset 변형 강도 재작성 (선택)** — random_obf 30% 단어 치환을 더 적극적으로
 
 ### 17.4 Phase 0 베이스라인 상세 (Phase 1 비교 기준점)
 
