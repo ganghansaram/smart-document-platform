@@ -2,7 +2,27 @@
 
 > 각 계획서에서 이관된 잔여 항목을 모아둔 파일.
 > 필요 시 우선순위를 매겨 별도 계획서로 승격하여 진행.
-> 최종 수정: 2026-04-21
+> 최종 수정: 2026-04-24
+
+---
+
+## 대시보드 플랫폼 전체 관점 재설계 (Plan-41)
+
+> 출처: `workbench/plans/41-dashboard-platform-wide.md` (2026-04-24 초안)
+
+- 현재 대시보드는 Explorer 전용 이벤트만 수집 → Translator/Verify/Notebook/Launcher 활동 비가시
+- `events` 테이블에 `subsystem`/`status` 컬럼 추가, 서브시스템 타일 4개 + 활발한 사용자 + 실패 이벤트 피드 + 건강 뱃지 도입
+- 계측 토대 + UI 재구성을 단일 릴리즈로 묶어 진행 (유지보수 이관 안전성 우선)
+- Phase 3(드릴다운)·Phase 4(APM)는 명시적으로 범위 밖
+
+## 사용자 프로필 확장 — Name · Description · Last Login (Plan-42)
+
+> 출처: `workbench/plans/42-user-profile-extension.md` (2026-04-24 초안)
+
+- users 테이블에 `name` / `description` / `last_login_at` 3개 선택 컬럼 추가 (ALTER TABLE try/except 패턴)
+- 계정 관리 테이블·Add 폼·Edit 모달에 필드 추가, Plan-41 대시보드의 "활발한 사용자"에서 name 폴백 표시
+- 로그인·RBAC·헤더 표시 등 기존 흐름 불변 — 비파괴적 확장
+- Plan-41 과 독립 머지 가능. 권장 순서: Plan-42 → Plan-41
 
 ---
 
