@@ -7,6 +7,7 @@ FROM python:3.11-slim AS base
 #  - libgl(OpenCV/OCR)
 #  - libreoffice-writer(Plan-37 Phase 3 DOCX 전처리)
 #  - libreoffice-script-provider-python(python3-uno bridge — UNO 매크로용)
+#  - libpango/libharfbuzz(WeasyPrint — Compare 유사도 리포트 PDF 생성)
 RUN apt-get update && apt-get install -y --no-install-recommends \
         fonts-liberation \
         fonts-dejavu-core \
@@ -16,6 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libglib2.0-0 \
         libreoffice-writer \
         libreoffice-script-provider-python \
+        libpango-1.0-0 \
+        libharfbuzz0b \
+        libpangoft2-1.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # ── 비특권 사용자 생성 (CIS Docker Benchmark, 보안 모범 관행) ──

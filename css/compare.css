@@ -1304,6 +1304,70 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 .export-fmt-btn svg {
     flex-shrink: 0;
 }
+.export-fmt-tag {
+    margin-left: auto;
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.22);
+    color: white;
+    border-radius: 10px;
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.02em;
+}
+
+/* ── HTML 별첨 옵션 모달 ── */
+.html-opts-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+.html-opts-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.html-opts-item:hover {
+    background: var(--hover-bg);
+    border-color: var(--active-color);
+}
+.html-opts-item input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-top: 2px;
+    accent-color: var(--active-color);
+}
+.html-opts-item.html-opts-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.html-opts-item.html-opts-disabled:hover {
+    background: transparent;
+    border-color: var(--border-color);
+}
+.html-opts-body {
+    flex: 1;
+    min-width: 0;
+}
+.html-opts-title {
+    font-size: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-dark);
+    margin-bottom: 2px;
+}
+.html-opts-count {
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-normal);
+    color: var(--text-muted);
+}
+.html-opts-desc {
+    font-size: var(--font-caption);
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
 
 .sim-stats {
     font-size: var(--font-small);

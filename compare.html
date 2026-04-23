@@ -4021,6 +4021,13 @@
 
                 var overlay = document.createElement('div');
                 overlay.className = 'modal-overlay blur';
+                // 유사도 모드: PDF 버튼 최상단 + 강조 (출력 우선)
+                var isSimilarity = currentMode === 'similarity';
+                var pdfBtnHtml = isSimilarity
+                    ? '<button class="btn btn-primary export-fmt-btn" data-fmt="pdf">'
+                        + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="10" y1="13" x2="10" y2="18"/><line x1="14" y1="13" x2="14" y2="18"/><line x1="8" y1="13" x2="16" y2="13"/></svg>'
+                        + ' PDF (인쇄·배포용) <span class="export-fmt-tag">권장</span></button>'
+                    : '';
                 overlay.innerHTML = '<div class="modal-box" style="max-width:380px">'
                     + '<div class="modal-header"><h3>리포트 내보내기</h3>'
                     + '<button class="modal-close" id="export-fmt-close">&times;</button></div>'
@@ -4028,12 +4035,13 @@
                     + warnHtml
                     + '<p style="font-size:var(--font-body);color:var(--text-secondary);margin:0 0 var(--space-md)">내보내기 형식을 선택하세요.</p>'
                     + '<div class="export-format-list">'
+                    + pdfBtnHtml
                     + '<button class="btn btn-secondary export-fmt-btn" data-fmt="xlsx">'
                     + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18M3 15h18"/></svg>'
                     + ' Excel (.xlsx)</button>'
                     + '<button class="btn btn-secondary export-fmt-btn" data-fmt="html">'
                     + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'
-                    + ' HTML (인쇄용)</button>'
+                    + ' HTML (웹뷰)</button>'
                     + '<button class="btn btn-secondary export-fmt-btn" data-fmt="txt">'
                     + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
                     + ' 텍스트 (.txt)</button>'
@@ -4052,9 +4060,71 @@
                     btns[i].addEventListener('click', function() {
                         var fmt = this.getAttribute('data-fmt');
                         close();
-                        runExport(fmt);
+                        // 유사도 PDF/HTML → 2단계: 별첨 옵션 선택 후 생성
+                        if ((fmt === 'pdf' || fmt === 'html') && currentMode === 'similarity') {
+                            showSimilarityReportOptionsModal(fmt);
+                        } else {
+                            runExport(fmt);
+                        }
                     });
                 }
+            }
+
+            // ── 유사도 리포트 별첨 옵션 모달 (PDF/HTML 공용) ──
+            function showSimilarityReportOptionsModal(format) {
+                var matchCount = (simLastResult && simLastResult.matches) ? simLastResult.matches.length : 0;
+                var matchesDisabled = matchCount === 0;
+                var formatLabel = format === 'pdf' ? 'PDF' : 'HTML';
+
+                var overlay = document.createElement('div');
+                overlay.className = 'modal-overlay blur';
+                overlay.innerHTML = '<div class="modal-box" style="max-width:460px">'
+                    + '<div class="modal-header"><h3>' + formatLabel + ' 리포트 옵션</h3>'
+                    + '<button class="modal-close" id="opts-close">&times;</button></div>'
+                    + '<div class="modal-body">'
+                    + '<p style="font-size:var(--font-body);color:var(--text-secondary);margin:0 0 var(--space-md)">'
+                    +   '기본 리포트는 <strong>A4 1장 결과지</strong>(채점표 양식)입니다. 필요 시 아래 별첨을 포함하세요.'
+                    + '</p>'
+                    + '<div class="html-opts-list">'
+                    +   '<label class="html-opts-item' + (matchesDisabled ? ' html-opts-disabled' : '') + '">'
+                    +     '<input type="checkbox" id="opt-include-matches"' + (matchesDisabled ? ' disabled' : '') + '>'
+                    +     '<div class="html-opts-body">'
+                    +       '<div class="html-opts-title">별첨 A · 매칭 상세 목록'
+                    +         (matchCount > 0 ? ' <span class="html-opts-count">(' + matchCount + '건)</span>' : ' <span class="html-opts-count">(매칭 없음)</span>')
+                    +       '</div>'
+                    +       '<div class="html-opts-desc">대상/참조 문장 쌍, 유형 배지, 유사도, 탐지 방법</div>'
+                    +     '</div>'
+                    +   '</label>'
+                    +   '<label class="html-opts-item">'
+                    +     '<input type="checkbox" id="opt-include-criteria">'
+                    +     '<div class="html-opts-body">'
+                    +       '<div class="html-opts-title">별첨 B · 검사 기준 상세</div>'
+                    +       '<div class="html-opts-desc">산식·5단계 신호등·6종 유형 정의·알고리즘 참고자료</div>'
+                    +     '</div>'
+                    +   '</label>'
+                    + '</div>'
+                    + '<div style="display:flex;justify-content:flex-end;gap:var(--space-sm);margin-top:var(--space-lg)">'
+                    +   '<button class="btn btn-secondary" id="opts-cancel">취소</button>'
+                    +   '<button class="btn btn-primary" id="opts-ok">리포트 생성</button>'
+                    + '</div>'
+                    + '</div></div>';
+                document.body.appendChild(overlay);
+
+                function close() { overlay.remove(); }
+                overlay.querySelector('#opts-close').addEventListener('click', close);
+                overlay.querySelector('#opts-cancel').addEventListener('click', close);
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay) close();
+                });
+                overlay.querySelector('#opts-ok').addEventListener('click', function() {
+                    var opts = {
+                        includeMatches: overlay.querySelector('#opt-include-matches').checked,
+                        includeCriteria: overlay.querySelector('#opt-include-criteria').checked
+                    };
+                    close();
+                    if (format === 'pdf') doExportPdf(opts);
+                    else doExportHtml(opts);
+                });
             }
 
             // ── 내보내기 분기 ──
@@ -4067,6 +4137,8 @@
                     doExportExcel();
                 } else if (fmt === 'html') {
                     doExportHtml();
+                } else if (fmt === 'pdf') {
+                    doExportPdf();
                 }
             }
 
@@ -4361,9 +4433,40 @@
             }
 
             // ── HTML 리포트 내보내기 (프론트엔드 생성) ──
-            function doExportHtml() {
-                var html = buildHtmlReport();
+            function doExportHtml(opts) {
+                var html = buildHtmlReport(opts);
                 downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), getExportFilename('html'));
+            }
+
+            // ── PDF 리포트 내보내기 (백엔드 WeasyPrint 변환) ──
+            async function doExportPdf(opts) {
+                var html = buildHtmlReport(opts);
+                var filename = getExportFilename('pdf');
+                try {
+                    showToast('PDF 생성 중…', 'info');
+                    var res = await fetch('/api/compare/html-to-pdf', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ html: html, filename: filename })
+                    });
+                    if (!res.ok) {
+                        var errText = '';
+                        try { var j = await res.json(); errText = j.detail || ''; } catch (_) {}
+                        if (res.status === 503) {
+                            showToast('PDF 엔진 사용 불가 — HTML로 대신 내려받습니다', 'warning');
+                            doExportHtml(opts);
+                            return;
+                        }
+                        throw new Error(errText || ('HTTP ' + res.status));
+                    }
+                    var blob = await res.blob();
+                    downloadBlob(blob, filename);
+                    showToast('PDF 다운로드 완료', 'success');
+                } catch (e) {
+                    console.error('PDF 내보내기 실패', e);
+                    showToast('PDF 생성 실패: ' + (e.message || '알 수 없는 오류'), 'error');
+                }
             }
 
             // ── 내보내기 페이로드 빌드 (Excel/HTML 공통 데이터) ──
@@ -4466,8 +4569,12 @@
                 return payload;
             }
 
-            // ── 유사도 보고서 빌드 (Plan-38 §9 — 6요소 + A4 인쇄) ──
-            function buildSimilarityReportHtml(p) {
+            // ── 유사도 보고서 빌드 (Plan-38 §9 — 결과지 + 조건부 별첨) ──
+            function buildSimilarityReportHtml(p, opts) {
+                opts = opts || {};
+                var includeMatches = !!opts.includeMatches;
+                var includeCriteria = !!opts.includeCriteria;
+
                 var docId = (p.timestamp || '').replace(/[-:T]/g, '').slice(0, 14) || 'unknown';
                 var verdict = p.verdict || 'green';
                 var help = simHelp || {};
@@ -4482,21 +4589,21 @@
                 var formula = (help.score_formula && help.score_formula.equation) || '유사율 = (실질 매칭 + 의역·번역 × 0.5) / (전체 문장 - 정형구문) × 100';
                 var disclaimer = help.disclaimer || { main: '유사도 ≠ 표절 — 검토자의 판단이 최종', long: '본 점수는 텍스트 유사도를 측정한 것일 뿐, 표절 여부를 자동 판정하지 않습니다.' };
                 var algoRefs = (help.algorithm && help.algorithm.references) || [];
+                var bandColorMap = { blue:'#3b82f6', green:'#22c55e', yellow:'#eab308', orange:'#f97316', red:'#ef4444' };
 
                 var css = ''
-                    + '@page { size: A4; margin: 20mm 15mm; }'
-                    + '@page :first { margin-top: 25mm; }'
-                    + 'body { font-family: "Malgun Gothic", "Segoe UI", sans-serif; max-width: 900px; margin: 0 auto; padding: 24px; color: #1a1a1a; font-size: 13px; line-height: 1.55; }'
-                    + 'h1 { font-size: 22px; margin: 0 0 4px; color: #2c5282; }'
-                    + '.subtitle { color: #666; font-size: 12px; margin-bottom: 20px; }'
-                    + 'h2 { font-size: 14px; margin: 20px 0 8px; padding: 5px 10px; background: #f0f4f8; border-left: 3px solid #2c5282; color: #1f2937; }'
+                    + '@page { size: A4; margin: 14mm 15mm; }'
+                    + 'body { font-family: "Malgun Gothic", "Noto Sans CJK KR", "Noto Sans KR", "Nanum Gothic", "Segoe UI", sans-serif; max-width: 900px; margin: 0 auto; padding: 24px; color: #1a1a1a; font-size: 13px; line-height: 1.55; }'
+                    + 'h1 { font-size: 22px; margin: 0 0 2px; color: #2c5282; }'
+                    + '.subtitle { color: #666; font-size: 12px; margin-bottom: 14px; }'
+                    + 'h2 { font-size: 14px; margin: 14px 0 6px; padding: 4px 10px; background: #f0f4f8; border-left: 3px solid #2c5282; color: #1f2937; }'
                     + 'h3 { font-size: 13px; margin: 14px 0 6px; color: #2c5282; }'
-                    + '.meta-grid { display: table; width: 100%; margin: 8px 0 16px; border-collapse: collapse; }'
+                    + '.meta-grid { display: table; width: 100%; margin: 4px 0 10px; border-collapse: collapse; }'
                     + '.meta-row { display: table-row; }'
-                    + '.meta-label { display: table-cell; width: 110px; padding: 6px 10px; background: #fafafa; font-weight: 600; border: 1px solid #e0e0e0; font-size: 12px; }'
-                    + '.meta-value { display: table-cell; padding: 6px 10px; border: 1px solid #e0e0e0; font-size: 12px; word-break: break-all; }'
-                    + '.score-card { display: flex; align-items: center; gap: 24px; padding: 18px 24px; border-radius: 8px; border: 2px solid #e0e0e0; margin: 12px 0 20px; }'
-                    + '.score-num { font-size: 56px; font-weight: 700; line-height: 1; }'
+                    + '.meta-label { display: table-cell; width: 110px; padding: 4px 10px; background: #fafafa; font-weight: 600; border: 1px solid #e0e0e0; font-size: 12px; }'
+                    + '.meta-value { display: table-cell; padding: 4px 10px; border: 1px solid #e0e0e0; font-size: 12px; word-break: break-all; }'
+                    + '.score-card { display: flex; align-items: center; gap: 24px; padding: 12px 22px; border-radius: 8px; border: 2px solid #e0e0e0; margin: 6px 0 12px; }'
+                    + '.score-num { font-size: 48px; font-weight: 700; line-height: 1; }'
                     + '.score-band-blue   { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }'
                     + '.score-band-green  { background: #f0fdf4; border-color: #22c55e; color: #166534; }'
                     + '.score-band-yellow { background: #fefce8; border-color: #eab308; color: #854d0e; }'
@@ -4504,8 +4611,8 @@
                     + '.score-band-red    { background: #fef2f2; border-color: #ef4444; color: #991b1b; }'
                     + '.score-meta-label { font-size: 18px; font-weight: 600; margin-bottom: 4px; }'
                     + '.score-meta-line  { font-size: 12px; color: #555; }'
-                    + 'table.data { width: 100%; border-collapse: collapse; margin: 6px 0 16px; }'
-                    + 'table.data th, table.data td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; text-align: left; vertical-align: top; }'
+                    + 'table.data { width: 100%; border-collapse: collapse; margin: 4px 0 10px; }'
+                    + 'table.data th, table.data td { border: 1px solid #ddd; padding: 4px 8px; font-size: 12px; text-align: left; vertical-align: top; }'
                     + 'table.data th { background: #f0f0f0; font-weight: 600; font-size: 11px; }'
                     + 'table.data tr:nth-child(even) { background: #fafafa; }'
                     + '.bd-bar { display: inline-block; height: 8px; background: #999; vertical-align: middle; margin-left: 6px; }'
@@ -4524,18 +4631,25 @@
                     + '.match-text-content { color: #1a1a1a; }'
                     + '.match-excluded { opacity: 0.6; }'
                     + '.match-excluded::after { content: " (제외 영역)"; font-size: 10px; color: #888; }'
-                    + '.appendix-page { page-break-before: always; break-before: page; padding-top: 12px; }'
-                    + '.appendix h2:first-child { margin-top: 0; }'
+                    + '.sheet { break-after: page; page-break-after: always; }'
+                    + '.sheet:last-of-type { break-after: auto; page-break-after: auto; }'
+                    + '.sheet-label { display: inline-block; font-size: 10px; font-weight: 600; color: #666; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; padding: 2px 8px; background: #eef2f6; border-radius: 3px; }'
+                    + '.sheet-label.appendix { background: #fef3c7; color: #92400e; }'
+                    + '.criteria-summary { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 7px 12px; background: #fafbfc; border: 1px solid #e5e7eb; border-radius: 4px; margin: 4px 0 8px; font-size: 11px; }'
+                    + '.criteria-summary-formula { font-family: "Consolas", "Courier New", monospace; color: #374151; }'
+                    + '.criteria-summary-bands { display: flex; gap: 4px; flex-wrap: wrap; }'
+                    + '.criteria-summary-bands .mini-band { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; color: white; }'
                     + '.formula { font-family: "Consolas", "Courier New", monospace; padding: 8px 12px; background: #f8fafc; border: 1px solid #e0e0e0; border-radius: 4px; margin: 6px 0; font-size: 11px; line-height: 1.5; }'
-                    + '.disclaimer { font-size: 11px; color: #555; padding: 10px 12px; background: #fffbeb; border-left: 3px solid #f59e0b; margin: 12px 0; line-height: 1.55; }'
+                    + '.disclaimer { font-size: 11px; color: #555; padding: 8px 12px; background: #fffbeb; border-left: 3px solid #f59e0b; margin: 8px 0 0; line-height: 1.5; }'
                     + '.disclaimer strong { color: #92400e; }'
                     + '.algo-list { font-size: 11px; color: #555; padding-left: 20px; line-height: 1.6; }'
                     + '@media print {'
                     + '  body { padding: 0; font-size: 10.5pt; line-height: 1.45; max-width: none; }'
                     + '  h1 { font-size: 18pt; }'
                     + '  h2 { font-size: 12pt; }'
-                    + '  .score-card, .meta-grid, table.data, .match-detail, .appendix { break-inside: avoid-page; }'
-                    + '  .appendix-page { page-break-before: always; }'
+                    + '  .score-card, .meta-grid, table.data, .match-detail, .criteria-summary { break-inside: avoid-page; }'
+                    + '  .sheet { break-after: page; page-break-after: always; }'
+                    + '  .sheet:last-of-type { break-after: auto; page-break-after: auto; }'
                     + '  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }'
                     + '}';
 
@@ -4544,7 +4658,9 @@
                     + '<style>' + css + '</style></head>'
                     + '<body data-doc-id="SIM-' + escapeHTML(docId) + '">';
 
-                // 표제
+                // ══════════════════ 결과지 (A4 1장 목표) ══════════════════
+                html += '<section class="sheet sheet-result">';
+                html += '<div class="sheet-label">결과지 · RESULT</div>';
                 html += '<h1>유사도 검토 결과 보고서</h1>'
                     + '<div class="subtitle">Document Similarity Report</div>';
 
@@ -4617,81 +4733,109 @@
                     html += '<p style="color:#888;font-size:12px">매칭 출처 없음</p>';
                 }
 
-                // ⑤ 매칭 상세
-                html += '<h2>⑤ 매칭 상세 (' + p.matches.length + '건)</h2>';
-                if (p.matches.length === 0) {
-                    html += '<p style="color:#888;font-size:12px">매칭된 구간이 없습니다.</p>';
-                } else {
-                    for (var i = 0; i < p.matches.length; i++) {
-                        var m = p.matches[i];
-                        var excl = m.exclusion_reason ? ' match-excluded' : '';
-                        html += '<div class="match-detail' + excl + '">'
-                            + '<div class="match-header">'
-                            + '<span>#' + m.index + '</span>'
-                            + '<span class="match-badge mb-' + m.type_key + '">' + escapeHTML(m.type) + '</span>'
-                            + '<span>유사도 ' + escapeHTML(m.similarity) + '</span>'
-                            + (m.method ? '<span>· ' + escapeHTML(m.method) + '</span>' : '')
-                            + '</div>'
-                            + '<div class="match-text"><span class="match-text-label">대상:</span> <span class="match-text-content">' + escapeHTML(m.target_text.substring(0, 280)) + (m.target_text.length > 280 ? '…' : '') + '</span></div>';
-                        if (m.ref_text) {
-                            html += '<div class="match-text"><span class="match-text-label">참조:</span> <span class="match-text-content">' + escapeHTML(m.ref_text.substring(0, 280)) + (m.ref_text.length > 280 ? '…' : '') + '</span></div>';
-                        }
-                        html += '</div>';
-                    }
-                }
-
-                // ⑥ 부록 (별도 페이지)
-                html += '<div class="appendix-page appendix">';
-                html += '<h2>⑥ 부록: 검사 기준</h2>';
-
-                html += '<h3>산식</h3><div class="formula">' + escapeHTML(formula) + '</div>';
-
-                html += '<h3>5단계 신호등</h3>'
-                    + '<table class="data"><thead><tr><th>색상</th><th>구간</th><th>판정</th><th>의미</th></tr></thead><tbody>';
+                // ⑤ 검사 기준 요약 (산식 + 5단계 미니 배지)
+                html += '<h2>⑤ 검사 기준 요약</h2>';
+                html += '<div class="criteria-summary">'
+                    + '<div><strong>산식</strong> · <span class="criteria-summary-formula">' + escapeHTML(formula) + '</span></div>';
+                html += '<div class="criteria-summary-bands">';
                 for (var i = 0; i < bands.length; i++) {
                     var b = bands[i];
                     var range = b.range_min === b.range_max ? (b.range_min + '%') : (b.range_min + '~' + b.range_max + '%');
-                    html += '<tr><td><span class="match-badge" style="background:' + ({blue:'#3b82f6',green:'#22c55e',yellow:'#eab308',orange:'#f97316',red:'#ef4444'})[b.color] + '">' + b.color.toUpperCase() + '</span></td>'
-                        + '<td>' + range + '</td><td>' + escapeHTML(b.label) + '</td><td>' + escapeHTML(b.meaning) + '</td></tr>';
+                    html += '<span class="mini-band" style="background:' + (bandColorMap[b.color] || '#888') + '" title="' + escapeHTML(b.meaning) + '">' + range + ' ' + escapeHTML(b.label) + '</span>';
                 }
-                html += '</tbody></table>';
-
-                html += '<h3>매칭 유형 (6종)</h3>'
-                    + '<table class="data"><thead><tr><th>유형</th><th>어휘</th><th>의미</th><th>설명</th><th>임계값</th></tr></thead><tbody>';
-                var typeOrder = ['identical', 'near_copy', 'paraphrase', 'translation', 'low_sim', 'boilerplate'];
-                for (var i = 0; i < typeOrder.length; i++) {
-                    var lk = typeOrder[i];
-                    var lbl = labels[lk];
-                    if (!lbl) continue;
-                    html += '<tr><td><strong>' + escapeHTML(lbl.ko_long || lbl.ko) + '</strong></td>'
-                        + '<td>' + escapeHTML(lbl.lex || '—') + '</td>'
-                        + '<td>' + escapeHTML(lbl.sem || '—') + '</td>'
-                        + '<td>' + escapeHTML(lbl.short || '') + '</td>'
-                        + '<td style="font-family:Consolas,monospace;font-size:10px">' + escapeHTML(lbl.threshold || '') + '</td></tr>';
+                html += '</div>';
+                if (!includeCriteria) {
+                    html += '<div style="font-size:10px;color:#888;width:100%">* 매칭 유형 6종과 알고리즘 상세는 별첨 B(옵션)에서 확인 가능합니다.</div>';
                 }
-                html += '</tbody></table>';
+                html += '</div>';
 
-                if (algoRefs.length > 0) {
-                    html += '<h3>알고리즘 · 참고 자료</h3><ul class="algo-list">';
-                    for (var i = 0; i < algoRefs.length; i++) {
-                        html += '<li>' + escapeHTML(algoRefs[i]) + '</li>';
-                    }
-                    html += '</ul>';
-                }
-
+                // Disclaimer (항상 결과지에 포함)
                 html += '<div class="disclaimer"><strong>' + escapeHTML(disclaimer.main) + '</strong><br>'
                     + escapeHTML(disclaimer.long) + '</div>';
 
-                html += '</div>'; // appendix
+                html += '</section>'; // sheet-result
+
+                // ══════════════════ 별첨 A · 매칭 상세 목록 ══════════════════
+                if (includeMatches) {
+                    html += '<section class="sheet sheet-appendix-a">';
+                    html += '<div class="sheet-label appendix">별첨 A · APPENDIX A</div>';
+                    html += '<h2>매칭 상세 목록 (' + p.matches.length + '건)</h2>';
+                    if (p.matches.length === 0) {
+                        html += '<p style="color:#888;font-size:12px">매칭된 구간이 없습니다.</p>';
+                    } else {
+                        for (var i = 0; i < p.matches.length; i++) {
+                            var m = p.matches[i];
+                            var excl = m.exclusion_reason ? ' match-excluded' : '';
+                            html += '<div class="match-detail' + excl + '">'
+                                + '<div class="match-header">'
+                                + '<span>#' + m.index + '</span>'
+                                + '<span class="match-badge mb-' + m.type_key + '">' + escapeHTML(m.type) + '</span>'
+                                + '<span>유사도 ' + escapeHTML(m.similarity) + '</span>'
+                                + (m.method ? '<span>· ' + escapeHTML(m.method) + '</span>' : '')
+                                + '</div>'
+                                + '<div class="match-text"><span class="match-text-label">대상:</span> <span class="match-text-content">' + escapeHTML(m.target_text.substring(0, 280)) + (m.target_text.length > 280 ? '…' : '') + '</span></div>';
+                            if (m.ref_text) {
+                                html += '<div class="match-text"><span class="match-text-label">참조:</span> <span class="match-text-content">' + escapeHTML(m.ref_text.substring(0, 280)) + (m.ref_text.length > 280 ? '…' : '') + '</span></div>';
+                            }
+                            html += '</div>';
+                        }
+                    }
+                    html += '</section>';
+                }
+
+                // ══════════════════ 별첨 B · 검사 기준 상세 ══════════════════
+                if (includeCriteria) {
+                    html += '<section class="sheet sheet-appendix-b">';
+                    html += '<div class="sheet-label appendix">별첨 B · APPENDIX B</div>';
+                    html += '<h2>검사 기준 상세</h2>';
+
+                    html += '<h3>산식</h3><div class="formula">' + escapeHTML(formula) + '</div>';
+
+                    html += '<h3>5단계 신호등</h3>'
+                        + '<table class="data"><thead><tr><th>색상</th><th>구간</th><th>판정</th><th>의미</th></tr></thead><tbody>';
+                    for (var i = 0; i < bands.length; i++) {
+                        var b = bands[i];
+                        var range = b.range_min === b.range_max ? (b.range_min + '%') : (b.range_min + '~' + b.range_max + '%');
+                        html += '<tr><td><span class="match-badge" style="background:' + (bandColorMap[b.color] || '#888') + '">' + b.color.toUpperCase() + '</span></td>'
+                            + '<td>' + range + '</td><td>' + escapeHTML(b.label) + '</td><td>' + escapeHTML(b.meaning) + '</td></tr>';
+                    }
+                    html += '</tbody></table>';
+
+                    html += '<h3>매칭 유형 (6종)</h3>'
+                        + '<table class="data"><thead><tr><th>유형</th><th>어휘</th><th>의미</th><th>설명</th><th>임계값</th></tr></thead><tbody>';
+                    var typeOrder = ['identical', 'near_copy', 'paraphrase', 'translation', 'low_sim', 'boilerplate'];
+                    for (var i = 0; i < typeOrder.length; i++) {
+                        var lk = typeOrder[i];
+                        var lbl = labels[lk];
+                        if (!lbl) continue;
+                        html += '<tr><td><strong>' + escapeHTML(lbl.ko_long || lbl.ko) + '</strong></td>'
+                            + '<td>' + escapeHTML(lbl.lex || '—') + '</td>'
+                            + '<td>' + escapeHTML(lbl.sem || '—') + '</td>'
+                            + '<td>' + escapeHTML(lbl.short || '') + '</td>'
+                            + '<td style="font-family:Consolas,monospace;font-size:10px">' + escapeHTML(lbl.threshold || '') + '</td></tr>';
+                    }
+                    html += '</tbody></table>';
+
+                    if (algoRefs.length > 0) {
+                        html += '<h3>알고리즘 · 참고 자료</h3><ul class="algo-list">';
+                        for (var i = 0; i < algoRefs.length; i++) {
+                            html += '<li>' + escapeHTML(algoRefs[i]) + '</li>';
+                        }
+                        html += '</ul>';
+                    }
+
+                    html += '</section>';
+                }
+
                 html += '</body></html>';
                 return html;
             }
 
             // ── HTML 리포트 빌드 ──
-            function buildHtmlReport() {
+            function buildHtmlReport(opts) {
                 // 유사도 모드는 별도 6요소 보고서 (Plan-38 §9)
                 if (currentMode === 'similarity') {
-                    return buildSimilarityReportHtml(buildExportPayload());
+                    return buildSimilarityReportHtml(buildExportPayload(), opts || {});
                 }
                 var p = buildExportPayload();
                 var modeLabel = currentMode === 'compare' ? '문서 비교' : currentMode === 'similarity' ? '유사도 검사' : '규칙 검증';

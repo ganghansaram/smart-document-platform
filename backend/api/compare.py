@@ -301,6 +301,55 @@ async def api_export_excel(
     )
 
 
+@router.post("/html-to-pdf")
+async def api_html_to_pdf(
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """리포트 HTML을 받아 WeasyPrint로 PDF 변환해 반환.
+
+    입력 (JSON):
+        html: str — 완성된 리포트 HTML 문자열
+        filename: str — 다운로드 파일명 (기본 "report.pdf")
+
+    보안: 로그인 사용자만. WeasyPrint에 base_url 미지정 → 외부 리소스 로딩 차단.
+    """
+    body = await request.json()
+    html = body.get("html", "")
+    filename = body.get("filename", "report.pdf")
+    if not html or len(html) > 5_000_000:  # 5MB 상한
+        raise HTTPException(status_code=400, detail="html 본문이 비었거나 너무 큽니다")
+
+    try:
+        import asyncio
+        import io
+        from weasyprint import HTML as WeasyHTML
+
+        def _render() -> bytes:
+            return WeasyHTML(string=html).write_pdf()
+
+        pdf_bytes = await asyncio.to_thread(_render)
+    except ImportError:
+        logger.error("WeasyPrint 미설치 — PDF 생성 불가")
+        raise HTTPException(
+            status_code=503,
+            detail="PDF 엔진을 사용할 수 없습니다. HTML 포맷으로 내려받아 주세요.",
+        )
+    except Exception as e:
+        logger.exception("PDF 생성 실패")
+        raise HTTPException(status_code=500, detail=f"PDF 생성 실패: {e}")
+
+    # RFC 5987 — 한글 파일명 UTF-8 인코딩
+    from urllib.parse import quote
+    encoded = quote(filename, safe="")
+    cd = f"attachment; filename=\"report.pdf\"; filename*=UTF-8''{encoded}"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": cd},
+    )
+
+
 # ── 이력 API ──────────────────────────────────────
 
 def _history_path(username: str) -> Path:
