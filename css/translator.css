@@ -2565,10 +2565,75 @@ body[data-theme="dark"] #mm-svg path {
 .ai-section-list {
     padding: 0 var(--space-sm);
 }
+/* 섹션 툴바 (섹션 2개 이상일 때 노출) */
+.ai-section-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    padding: var(--space-xs) 2px;
+    margin-top: 2px;
+    border-bottom: 1px solid var(--border-color);
+}
+.ai-section-toolbar-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.ai-section-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 16px;
+    padding: 0 6px;
+    background: var(--hover-bg);
+    color: var(--text-light);
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: var(--radius-xl);
+    letter-spacing: 0;
+    text-transform: none;
+}
+.ai-section-toggle-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-light);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+.ai-section-toggle-all:hover {
+    color: var(--active-color);
+    border-color: var(--active-color);
+    background: var(--hover-bg);
+}
+.ai-section-toggle-all:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--active-color);
+}
+.ai-section-toggle-all .ai-toggle-all-icon {
+    transition: transform var(--transition-fast);
+}
+.ai-section-toggle-all.is-all-open .ai-toggle-all-icon {
+    transform: rotate(180deg);
+}
 .ai-section-item {
     border-bottom: 1px solid var(--border-color);
 }
-.ai-section-item:last-child {
+.ai-section-items > .ai-section-item:last-child,
+.ai-section-list > .ai-section-item:last-child {
     border-bottom: none;
 }
 .ai-section-heading {
@@ -2580,15 +2645,26 @@ body[data-theme="dark"] #mm-svg path {
     display: flex;
     align-items: center;
     gap: 4px;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
 }
 .ai-section-heading:hover {
     background: var(--hover-bg);
-    border-radius: var(--radius-sm);
+}
+.ai-section-heading:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--active-color);
+}
+.ai-section-title {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 .ai-section-arrow {
     display: inline-block;
     transition: transform 0.15s;
     font-size: 10px;
+    flex-shrink: 0;
 }
 .ai-section-item.open .ai-section-arrow {
     transform: rotate(90deg);

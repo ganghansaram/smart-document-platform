@@ -3624,6 +3624,14 @@
 
         var _aiSummaryCache = null; // 현재 문서 요약 캐시
         var _aiSummaryPolling = null;
+        // 섹션 펼침 상태 — 탭 세션 동안 docId별로 유지 (문서 복귀 시 복원)
+        var _aiSummaryOpenSections = Object.create(null);
+
+        function _getSectionOpenMap(docId) {
+            if (!docId) return Object.create(null);
+            if (!_aiSummaryOpenSections[docId]) _aiSummaryOpenSections[docId] = Object.create(null);
+            return _aiSummaryOpenSections[docId];
+        }
 
         // 탭 전환
         (function _initAiTabs() {
@@ -3852,26 +3860,113 @@
                 }).join('');
             }
 
-            // 섹션별 요약 (계층적 전략일 때만)
+            // 섹션별 요약 (계층적 전략일 때만) — 세션 동안 펼침 상태 유지
             var secEl = document.getElementById('ai-section-list');
             if (secEl) {
                 var sections = summary.sections || [];
                 if (sections.length === 0) {
                     secEl.style.display = 'none';
+                    secEl.innerHTML = '';
                 } else {
                     secEl.style.display = '';
-                    secEl.innerHTML = sections.map(function(sec) {
-                        return '<div class="ai-section-item">' +
-                            '<div class="ai-section-heading" onclick="this.parentElement.classList.toggle(\'open\')">' +
-                            '<span class="ai-section-arrow">&#9656;</span> ' +
-                            _escHtml(sec.heading) +
+                    var openMap = _getSectionOpenMap(currentDocId);
+                    var itemsHtml = sections.map(function(sec) {
+                        var heading = sec.heading || '';
+                        var isOpen = !!openMap[heading];
+                        return '<div class="ai-section-item' + (isOpen ? ' open' : '') + '" data-heading="' + _escAttr(heading) + '">' +
+                            '<div class="ai-section-heading" role="button" tabindex="0" aria-expanded="' + (isOpen ? 'true' : 'false') + '">' +
+                            '<span class="ai-section-arrow" aria-hidden="true">&#9656;</span> ' +
+                            '<span class="ai-section-title">' + _escHtml(heading) + '</span>' +
                             '</div>' +
                             '<div class="ai-section-body">' + _escHtml(sec.summary) + '</div>' +
                             '</div>';
                     }).join('');
+                    // 2개 이상일 때만 전체 토글 툴바 노출 (1개는 불필요)
+                    var toolbarHtml = (sections.length >= 2)
+                        ? '<div class="ai-section-toolbar">' +
+                          '<span class="ai-section-toolbar-label">섹션별 요약<span class="ai-section-count">' + sections.length + '</span></span>' +
+                          '<button type="button" class="ai-section-toggle-all" id="ai-section-toggle-all" aria-pressed="false" title="전체 펼치기/접기">' +
+                          '<svg class="ai-toggle-all-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>' +
+                          '<span class="ai-toggle-all-label">모두 펼치기</span>' +
+                          '</button>' +
+                          '</div>'
+                        : '';
+                    secEl.innerHTML = toolbarHtml + '<div class="ai-section-items">' + itemsHtml + '</div>';
+                    _updateToggleAllButton();
                 }
             }
         }
+
+        function _escAttr(str) {
+            return String(str == null ? '' : str)
+                .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function _updateToggleAllButton() {
+            var btn = document.getElementById('ai-section-toggle-all');
+            if (!btn) return;
+            var items = document.querySelectorAll('#ai-section-list .ai-section-item');
+            if (items.length === 0) return;
+            var openCount = 0;
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].classList.contains('open')) openCount++;
+            }
+            var allOpen = openCount === items.length;
+            var label = btn.querySelector('.ai-toggle-all-label');
+            if (label) label.textContent = allOpen ? '모두 접기' : '모두 펼치기';
+            btn.setAttribute('aria-pressed', allOpen ? 'true' : 'false');
+            btn.classList.toggle('is-all-open', allOpen);
+        }
+
+        // 섹션 토글 — 이벤트 위임 (헤딩 클릭 · 키보드 · 전체 토글)
+        (function _initAiSectionToggleDelegation() {
+            var secEl = document.getElementById('ai-section-list');
+            if (!secEl) return;
+
+            function _commitSectionState(item, isOpen) {
+                var headingKey = item.getAttribute('data-heading') || '';
+                var openMap = _getSectionOpenMap(currentDocId);
+                if (isOpen) openMap[headingKey] = true;
+                else delete openMap[headingKey];
+                var hdr = item.querySelector('.ai-section-heading');
+                if (hdr) hdr.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            }
+
+            secEl.addEventListener('click', function(e) {
+                var toggleAll = e.target.closest('#ai-section-toggle-all');
+                if (toggleAll) {
+                    var items = secEl.querySelectorAll('.ai-section-item');
+                    var allOpen = items.length > 0 && Array.prototype.every.call(items, function(it) {
+                        return it.classList.contains('open');
+                    });
+                    for (var i = 0; i < items.length; i++) {
+                        var it = items[i];
+                        if (allOpen) it.classList.remove('open');
+                        else it.classList.add('open');
+                        _commitSectionState(it, !allOpen);
+                    }
+                    _updateToggleAllButton();
+                    return;
+                }
+                var heading = e.target.closest('.ai-section-heading');
+                if (heading) {
+                    var item = heading.parentElement;
+                    if (!item || !item.classList.contains('ai-section-item')) return;
+                    item.classList.toggle('open');
+                    _commitSectionState(item, item.classList.contains('open'));
+                    _updateToggleAllButton();
+                }
+            });
+
+            secEl.addEventListener('keydown', function(e) {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                var heading = e.target.closest('.ai-section-heading');
+                if (!heading) return;
+                e.preventDefault();
+                heading.click();
+            });
+        })();
 
         function _escHtml(str) {
             var d = document.createElement('div');
