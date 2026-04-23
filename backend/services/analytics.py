@@ -37,10 +37,13 @@ def init_db():
             event_type TEXT NOT NULL,
             ip TEXT,
             metadata TEXT,
-            username TEXT
+            username TEXT,
+            subsystem TEXT,
+            status TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
         CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_events_subsystem ON events(subsystem);
 
         CREATE TABLE IF NOT EXISTS chat_feedback (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,12 +60,18 @@ def init_db():
         );
         CREATE INDEX IF NOT EXISTS idx_feedback_timestamp ON chat_feedback(timestamp);
     """)
-    # Migration: add username column to existing DB if not present
-    try:
-        conn.execute("ALTER TABLE events ADD COLUMN username TEXT")
-        conn.commit()
-    except Exception:
-        pass  # Column already exists
+    # 기존 DB 마이그레이션: 신규 컬럼 추가 (이미 존재하면 무시)
+    for ddl in (
+        "ALTER TABLE events ADD COLUMN username TEXT",
+        "ALTER TABLE events ADD COLUMN subsystem TEXT",
+        "ALTER TABLE events ADD COLUMN status TEXT",
+        "CREATE INDEX IF NOT EXISTS idx_events_subsystem ON events(subsystem)",
+    ):
+        try:
+            conn.execute(ddl)
+            conn.commit()
+        except Exception:
+            pass
     conn.close()
 
 
@@ -79,22 +88,28 @@ def get_client_ip(request: Request) -> str:
 
 # -- Record -------------------------------------------------------------------
 
-def record_heartbeat(ip: str, username: Optional[str] = None):
+def record_heartbeat(ip: str, username: Optional[str] = None, subsystem: Optional[str] = None):
     now = time.time()
-    prev = _active_users.get(ip)
+    key = (ip, subsystem or "")
+    prev = _active_users.get(key)
     is_new_visit = prev is None or (now - prev["ts"]) > _ACTIVE_TIMEOUT
-    _active_users[ip] = {"ts": now, "username": username}
-    # Record a page_visit event only on new sessions (first heartbeat or after timeout)
+    _active_users[key] = {"ts": now, "username": username, "subsystem": subsystem, "ip": ip}
+    # Record a visit event only on new sessions (first heartbeat or after timeout)
     if is_new_visit:
-        record_event("visit", ip, None, username=username)
+        record_event("visit", ip, None, username=username, subsystem=subsystem)
 
 
-def record_event(event_type: str, ip: str, metadata: Optional[dict], username: Optional[str] = None):
+def record_event(event_type: str, ip: str, metadata: Optional[dict],
+                 username: Optional[str] = None, *,
+                 subsystem: Optional[str] = None, status: Optional[str] = None):
     conn = _get_conn()
     try:
         conn.execute(
-            "INSERT INTO events (event_type, ip, metadata, username) VALUES (?, ?, ?, ?)",
-            (event_type, ip, json.dumps(metadata, ensure_ascii=False) if metadata else None, username),
+            "INSERT INTO events (event_type, ip, metadata, username, subsystem, status) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (event_type, ip,
+             json.dumps(metadata, ensure_ascii=False) if metadata else None,
+             username, subsystem, status),
         )
         conn.commit()
     finally:
@@ -104,26 +119,46 @@ def record_event(event_type: str, ip: str, metadata: Optional[dict], username: O
 # -- Query: Active users ------------------------------------------------------
 
 def get_active_user_count() -> int:
+    """IP 유니크 카운트 (서브시스템 무관). 상단 요약 카드용."""
     now = time.time()
     _cleanup_expired(now)
-    return len(_active_users)
+    return len({ip for (ip, _sub) in _active_users.keys()})
+
+
+def get_active_session_count(subsystem: Optional[str] = None) -> int:
+    """(IP, subsystem) 유니크. 서브시스템 타일용."""
+    now = time.time()
+    _cleanup_expired(now)
+    if subsystem is None:
+        return len(_active_users)
+    return sum(1 for (_ip, sub) in _active_users.keys() if sub == subsystem)
 
 
 def get_active_user_list() -> List[dict]:
-    """Return list of active users with IP, username, and last seen timestamp."""
+    """IP별 최신 활동 1건. 중복 서브시스템은 최근 타임스탬프 기준."""
     now = time.time()
     _cleanup_expired(now)
+    by_ip: Dict[str, dict] = {}
+    for (ip, sub), data in _active_users.items():
+        cur = by_ip.get(ip)
+        if cur is None or data["ts"] > cur["ts"]:
+            by_ip[ip] = {**data, "subsystem": sub}
     result = []
-    for ip, data in sorted(_active_users.items(), key=lambda x: x[1]["ts"], reverse=True):
+    for ip, data in sorted(by_ip.items(), key=lambda x: x[1]["ts"], reverse=True):
         elapsed = int(now - data["ts"])
-        result.append({"ip": ip, "elapsed_sec": elapsed, "username": data.get("username")})
+        result.append({
+            "ip": ip,
+            "elapsed_sec": elapsed,
+            "username": data.get("username"),
+            "subsystem": data.get("subsystem") or None,
+        })
     return result
 
 
 def _cleanup_expired(now: float):
-    expired = [ip for ip, data in _active_users.items() if now - data["ts"] > _ACTIVE_TIMEOUT]
-    for ip in expired:
-        del _active_users[ip]
+    expired = [k for k, data in _active_users.items() if now - data["ts"] > _ACTIVE_TIMEOUT]
+    for k in expired:
+        del _active_users[k]
 
 
 # -- Query: Visitors -----------------------------------------------------------
