@@ -281,7 +281,11 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 동일 Windows PC 또는 회사 GPU 서버에 Ollama 설치. `backend/config.py` 또는 `data/settings.json` 의 `OLLAMA_URL` 을 실제 주소로 변경.
 
-### 5-5. 방화벽·다른 PC 접속
+### 5-5. PDF 내보내기 엔진 (선택)
+
+Compare 유사도 리포트의 **PDF 내보내기**는 WeasyPrint 기반이며 Windows 에서는 GTK+ Runtime 이 추가로 필요합니다. 설치하지 않아도 PDF 요청 시 자동으로 HTML 포맷으로 폴백되므로 서비스 기능은 유지됩니다. PDF 다운로드를 사용하려면 [02-BACKEND-SETUP.md §WeasyPrint — Windows 네이티브 환경 설정](02-BACKEND-SETUP.md#weasyprint--windows-네이티브-환경-설정) 의 절차를 따릅니다.
+
+### 5-6. 방화벽·다른 PC 접속
 
 ```cmd
 netsh advfirewall firewall add rule name="Tomcat 8080" dir=in action=allow protocol=TCP localport=8080
@@ -290,11 +294,11 @@ netsh advfirewall firewall add rule name="FastAPI 8000" dir=in action=allow prot
 
 같은 네트워크의 다른 PC 에서 `http://<서버IP>:8080` 접속.
 
-### 5-6. 변환기 DRM 전처리
+### 5-7. 변환기 DRM 전처리
 
 회사 Windows 환경에서는 Word COM 이 전처리 어댑터로 자동 선택되며, DRM 재잠금을 피하기 위해 `.docx_1` 확장자를 사용합니다. 자세한 메커니즘은 [13-CONVERTER-ARCHITECTURE §7](13-CONVERTER-ARCHITECTURE.md#7-drm-우회-규약-docx_1) 참조.
 
-### 5-7. 다음 단계
+### 5-8. 다음 단계
 
 - 백엔드 가상환경·의존성·오프라인 패키지 → [02-BACKEND-SETUP](02-BACKEND-SETUP.md)
 - 운영자 기능(관리자 설정, 업로드, 인덱싱) → [04-USER-GUIDE](04-USER-GUIDE.md)

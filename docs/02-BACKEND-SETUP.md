@@ -198,6 +198,9 @@ pdf2zh-next==2.8.2
 python-docx==1.2.0
 openpyxl>=3.1.0
 
+# Compare 리포트 PDF 생성
+weasyprint==68.1
+
 # Verify (유사도 검사 — 스캔 PDF OCR)
 rapidocr-onnxruntime==1.4.4
 
@@ -223,6 +226,21 @@ ollama==0.6.1
 > **pywin32**: Word 장절번호 자동 평문화용. Word 설치 환경에서만 동작.
 
 > **rapidocr-onnxruntime**: Verify 유사도 검사에서 스캔 PDF의 텍스트를 OCR로 추출하는 데 사용.
+
+> **weasyprint**: Compare 유사도 리포트의 HTML → PDF 변환에 사용. Windows 환경에서는 별도로 **GTK+ for Windows Runtime**이 필요합니다(아래 참조). 미설치 시 PDF 내보내기 요청은 503으로 폴백되고, 프론트엔드는 자동으로 HTML 다운로드로 전환합니다.
+
+### WeasyPrint — Windows 네이티브 환경 설정
+
+Linux/Docker 에는 `libpango-1.0-0`, `libharfbuzz0b`, `libpangoft2-1.0-0` 시스템 패키지가 이미 포함되어 있으므로 `pip install weasyprint` 만으로 동작합니다. Windows 네이티브(환경 C)에서만 아래 런타임 설치가 추가로 필요합니다.
+
+1. **GTK+ for Windows Runtime Environment** 설치 (인터넷 PC에서 다운로드, 폐쇄망 반입):
+   - 공식 릴리스: <https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases>
+   - `gtk3-runtime-3.24.x-x-x-xx-ts-win64.exe` 다운로드 → 운영 PC에서 실행 (기본 옵션으로 설치)
+   - 설치 후 PATH 에 자동 등록. 필요 시 `C:\Program Files\GTK3-Runtime Win64\bin` 을 수동 추가
+2. `pip install weasyprint==68.1` (requirements.txt 에 이미 포함)
+3. 재시작 후 `python -c "from weasyprint import HTML; HTML(string='<p>test</p>').write_pdf()"` 로 동작 확인
+
+> **검증 없이 서비스 배포 금지**: GTK Runtime 이 없으면 `weasyprint` import 자체가 실패하거나, import 는 되지만 PDF 생성 시 Cairo/Pango 오류가 납니다. 배포 전 위 스모크 테스트로 확인하세요. 런타임 없이도 HTML 포맷 내보내기는 정상 동작합니다(자동 폴백).
 
 > **PyMuPDF**: pdf2zh-next 설치 시 의존성으로 자동 설치됨. Docker 환경에서는 웹뷰 이미지 추출을 위해 Dockerfile에서 별도 업그레이드.
 
