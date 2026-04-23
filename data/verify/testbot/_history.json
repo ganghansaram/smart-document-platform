@@ -1,99 +1,102 @@
 [
   {
-    "timestamp": "2026-04-14T23:16:41.521Z",
-    "mode": "compare",
-    "files": {
-      "a": "붙여넣기 텍스트",
-      "b": "붙여넣기 텍스트"
-    },
-    "score": "+0 −5 ~4",
-    "scoreColor": "var(--active-color)"
-  },
-  {
-    "timestamp": "2026-04-14T23:15:17.450Z",
-    "mode": "verify",
-    "files": {
-      "a": "붙여넣기 텍스트"
-    },
-    "score": "0점",
-    "scoreColor": "var(--color-error)"
-  },
-  {
-    "timestamp": "2026-04-14T23:13:41.038Z",
+    "timestamp": "2026-04-23T07:18:13.816Z",
     "mode": "similarity",
     "files": {
       "a": "(텍스트 붙여넣기)",
       "b": "(텍스트 붙여넣기)"
     },
-    "score": "19%",
-    "scoreColor": "var(--color-success-btn)"
+    "score": "66.7%",
+    "scoreColor": "var(--color-warning)"
   },
   {
-    "timestamp": "2026-04-14T14:51:43.555Z",
-    "mode": "similarity",
-    "files": {
-      "a": "MyPaper_20251109_V2.8_Claude.docx",
-      "b": "MyPaper_20251109_V2.8_Claude.docx"
-    },
-    "score": "98.2%",
-    "scoreColor": "var(--color-error)"
-  },
-  {
-    "timestamp": "2026-04-14T14:38:07.225Z",
-    "mode": "similarity",
-    "files": {
-      "a": "MyPaper_20251109_V2.8_Claude.docx",
-      "b": "MyPaper_20251109_V2.8_Claude.docx"
-    },
-    "score": "98.2%",
-    "scoreColor": "var(--color-error)"
-  },
-  {
-    "timestamp": "2026-04-14T14:35:27.175Z",
-    "mode": "verify",
-    "files": {
-      "a": "MyPaper_20251109_V2.8_Claude.docx"
-    },
-    "score": "47점",
-    "scoreColor": "var(--color-error)"
-  },
-  {
-    "timestamp": "2026-04-14T14:34:43.436Z",
-    "mode": "compare",
-    "files": {
-      "a": "MyPaper_20251109_V2.8_Claude.docx",
-      "b": "MyPaper_20251109_V2.8_Claude.docx"
-    },
-    "score": "+0 −0 ~0",
-    "scoreColor": "var(--active-color)"
-  },
-  {
-    "timestamp": "2026-04-05T15:26:33.911Z",
-    "mode": "compare",
-    "files": {
-      "a": "(텍스트 붙여넣기)",
-      "b": "붙여넣기 텍스트"
-    },
-    "score": "+1 −9 ~5",
-    "scoreColor": "var(--active-color)"
-  },
-  {
-    "timestamp": "2026-04-05T15:24:53.957Z",
+    "timestamp": "2026-04-23T06:59:30.693Z",
     "mode": "similarity",
     "files": {
       "a": "(텍스트 붙여넣기)",
       "b": "(텍스트 붙여넣기)"
     },
-    "score": "86.4%",
-    "scoreColor": "var(--color-error)"
+    "score": "57.1%",
+    "scoreColor": "var(--color-warning)"
   },
   {
-    "timestamp": "2026-04-05T15:22:45.320Z",
-    "mode": "verify",
+    "timestamp": "2026-04-23T06:36:19.606Z",
+    "mode": "similarity",
     "files": {
-      "a": "붙여넣기 텍스트"
+      "a": "(텍스트 붙여넣기)",
+      "b": "(텍스트 붙여넣기)"
     },
-    "score": "35점",
-    "scoreColor": "var(--color-error)"
+    "score": "57.1%",
+    "scoreColor": "var(--color-warning)"
+  },
+  {
+    "timestamp": "2026-04-23T06:32:28.735Z",
+    "mode": "similarity",
+    "files": {
+      "a": "(텍스트 붙여넣기)",
+      "b": "(텍스트 붙여넣기)"
+    },
+    "score": "57.1%",
+    "scoreColor": "var(--color-warning)"
+  },
+  {
+    "timestamp": "2026-04-23T06:11:52.954Z",
+    "mode": "similarity",
+    "files": {
+      "a": "(텍스트 붙여넣기)",
+      "b": "(텍스트 붙여넣기)"
+    },
+    "score": "57.1%",
+    "scoreColor": "var(--color-warning)"
+  },
+  {
+    "timestamp": "2026-04-23T06:09:04.738Z",
+    "mode": "similarity",
+    "files": {
+      "a": "(텍스트 붙여넣기)",
+      "b": "(텍스트 붙여넣기)"
+    },
+    "score": "57.1%",
+    "scoreColor": "var(--color-warning)"
+  },
+  {
+    "timestamp": "2026-04-23T06:03:40.495Z",
+    "mode": "similarity",
+    "files": {
+      "a": "(텍스트 붙여넣기)",
+      "b": "(텍스트 붙여넣기)"
+    },
+    "score": "57.1%",
+    "scoreColor": "var(--color-warning)"
+  },
+  {
+    "timestamp": "2026-04-23T06:00:46.825Z",
+    "mode": "similarity",
+    "files": {
+      "a": "(텍스트 붙여넣기)",
+      "b": "(텍스트 붙여넣기)"
+    },
+    "score": "50%",
+    "scoreColor": "var(--color-warning)"
+  },
+  {
+    "timestamp": "2026-04-23T05:40:48.083Z",
+    "mode": "similarity",
+    "files": {
+      "a": "(텍스트 붙여넣기)",
+      "b": "(텍스트 붙여넣기)"
+    },
+    "score": "50%",
+    "scoreColor": "var(--color-warning)"
+  },
+  {
+    "timestamp": "2026-04-23T05:38:42.173Z",
+    "mode": "similarity",
+    "files": {
+      "a": "(텍스트 붙여넣기)",
+      "b": "(텍스트 붙여넣기)"
+    },
+    "score": "50%",
+    "scoreColor": "var(--color-warning)"
   }
 ]

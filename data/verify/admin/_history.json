@@ -1,5 +1,55 @@
 [
   {
+    "timestamp": "2026-04-23T06:43:49.881Z",
+    "mode": "similarity",
+    "files": {
+      "a": "SWA_Sample_KOR.docx",
+      "b": "SWA_PMS.docx"
+    },
+    "score": "26.2%",
+    "scoreColor": "var(--color-success-btn)"
+  },
+  {
+    "timestamp": "2026-04-23T06:15:52.235Z",
+    "mode": "similarity",
+    "files": {
+      "a": "SWA_PMS.docx",
+      "b": "SWA_Sample_KOR.docx"
+    },
+    "score": "25.7%",
+    "scoreColor": "var(--color-success-btn)"
+  },
+  {
+    "timestamp": "2026-04-23T05:47:19.332Z",
+    "mode": "similarity",
+    "files": {
+      "a": "SWA_Sample_KOR.docx",
+      "b": "SWA_PMS.docx"
+    },
+    "score": "28.8%",
+    "scoreColor": "var(--color-success-btn)"
+  },
+  {
+    "timestamp": "2026-04-23T05:20:55.839Z",
+    "mode": "similarity",
+    "files": {
+      "a": "SWA_PMS.docx",
+      "b": "SWA_Sample_KOR.docx"
+    },
+    "score": "28.3%",
+    "scoreColor": "var(--color-success-btn)"
+  },
+  {
+    "timestamp": "2026-04-23T05:13:16.219Z",
+    "mode": "similarity",
+    "files": {
+      "a": "SWA_Sample_ENG.docx",
+      "b": "SWA_PMS.docx"
+    },
+    "score": "15.3%",
+    "scoreColor": "var(--color-success-btn)"
+  },
+  {
     "timestamp": "2026-04-14T14:52:59.601Z",
     "mode": "similarity",
     "files": {
@@ -46,55 +96,6 @@
       "b": "SWA_PMS.docx"
     },
     "score": "97.1%",
-    "scoreColor": "var(--color-error)"
-  },
-  {
-    "timestamp": "2026-04-14T03:49:46.638Z",
-    "mode": "similarity",
-    "files": {
-      "a": "SWA_PMS.docx",
-      "b": "SWA_PMS_r1.docx"
-    },
-    "score": "95%",
-    "scoreColor": "var(--color-error)"
-  },
-  {
-    "timestamp": "2026-04-13T04:17:59.160Z",
-    "mode": "similarity",
-    "files": {
-      "a": "SWA_Sample_KOR.docx",
-      "b": "SWA_Sample_KOR.docx"
-    },
-    "score": "97.4%",
-    "scoreColor": "var(--color-error)"
-  },
-  {
-    "timestamp": "2026-04-13T04:09:12.018Z",
-    "mode": "similarity",
-    "files": {
-      "a": "SWA_Sample_KOR.docx",
-      "b": "SWA_Sample_KOR.docx"
-    },
-    "score": "97.4%",
-    "scoreColor": "var(--color-error)"
-  },
-  {
-    "timestamp": "2026-04-09T13:16:10.301Z",
-    "mode": "compare",
-    "files": {
-      "a": "(안희석) 정보기술학회 논문_피드백 반영안_저자 및 정보 추가.docx",
-      "b": "ClosedNetwork_RAG_Hybrid_V1.0.docx"
-    },
-    "score": "+6 −6 ~37",
-    "scoreColor": "var(--active-color)"
-  },
-  {
-    "timestamp": "2026-04-07T15:03:02.757Z",
-    "mode": "verify",
-    "files": {
-      "a": "붙여넣기 텍스트"
-    },
-    "score": "52점",
     "scoreColor": "var(--color-error)"
   }
 ]
