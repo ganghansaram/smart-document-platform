@@ -999,10 +999,8 @@
                 var body = document.getElementById('compare-body');
                 body.className = 'compare-body mode-' + mode;
 
-                // Plan-38 §5.7 — 유사도 모드 첫 진입 시 온보딩 1회
-                if (mode === 'similarity' && typeof showSimOnboarding === 'function') {
-                    setTimeout(showSimOnboarding, 400);
-                }
+                // Plan-38 R-feedback Issue#3 — 온보딩은 setMode가 아닌 첫 simShowResults 후 노출
+                // (사용자가 결과를 본 후 "이게 뭔지 알려드릴게요" 가 더 자연스러움)
 
                 btnSimilarity.classList.toggle('active', mode === 'similarity');
                 btnCompare.classList.toggle('active', mode === 'compare');
@@ -2512,6 +2510,12 @@
                     if (userSettings[k] !== SIM_CHECK_DEFAULTS[k]) { hasOverride = true; break; }
                 }
                 if (hasOverride) simRecomputeFromSettings();
+
+                // Plan-38 R-feedback Issue#3 — 첫 검사 결과 표시 직후 온보딩 1회
+                // (사용자가 결과 화면을 본 다음 "이게 뭔지 알려드릴게요" 의 자연스러운 흐름)
+                if (typeof showSimOnboarding === 'function') {
+                    setTimeout(showSimOnboarding, 800);
+                }
 
                 // 이력 저장
                 var simScoreColor = summary.similarity_score >= 70 ? 'var(--color-error)' :
