@@ -63,6 +63,151 @@
     <p class="po-screenshot-caption">유사도 검사 결과 — 유사 구간 하이라이트 및 수치 표시</p>
 </div>
 
+<h3 id="유사도-면책">유사도 ≠ 표절</h3>
+<div class="po-callout">
+    <p>본 시스템이 산출한 유사도 점수는 <strong>텍스트 유사도</strong>를 측정한 것일 뿐,
+       표절 여부를 자동 판정하지 않습니다.</p>
+    <p>합법적 인용, 정형구문, 약어, 규격 번호 등도 매칭될 수 있으므로
+       반드시 검토자가 매칭 항목을 직접 검토해야 합니다.
+       (Crossref Similarity Check 공식 가이드라인)</p>
+</div>
+
+<h3 id="분류-체계">분류 체계 — 4그룹 + 6세부 라벨</h3>
+<p>결과는 카피킬러식 <strong>4그룹</strong>으로 한눈에 표시되며, 각 매칭 카드를 통해
+   <strong>6세부 라벨</strong>로 정밀 확인할 수 있습니다.</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr><th style="width:25%">그룹</th><th style="width:30%">색상</th><th style="width:45%">포함 라벨</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>표절 의심</td><td>빨강</td><td>일치, 거의 동일, 의역, 번역</td></tr>
+        <tr><td>참고 가능</td><td>노랑</td><td>약한 유사</td></tr>
+        <tr><td>제외 영역</td><td>회색</td><td>공통 정형구문, 목차, 캡션, 참고문헌, 인용 등</td></tr>
+        <tr><td>일반</td><td>검정</td><td>매칭이 없는 일반 본문</td></tr>
+    </tbody>
+</table>
+
+<p>6세부 라벨은 <strong>어휘 일치도</strong>(Winnowing fingerprint)와 <strong>의미 유사도</strong>
+   (bge-m3 embedding) 두 축의 조합으로 결정됩니다. 단순 % 임계값 한 가지로 분류되지 않습니다.</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr><th style="width:22%">라벨</th><th style="width:18%">어휘</th><th style="width:18%">의미</th><th style="width:42%">설명</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>일치</td><td>매우 높음</td><td>—</td><td>단어까지 거의 그대로</td></tr>
+        <tr><td>거의 동일</td><td>높음</td><td>높음</td><td>단어 일부만 바꿈</td></tr>
+        <tr><td>의역</td><td>낮음</td><td>높음</td><td>단어는 다른데 같은 말</td></tr>
+        <tr><td>번역</td><td>거의 0</td><td>높음</td><td>한↔영 등 언어 차이</td></tr>
+        <tr><td>약한 유사</td><td>낮음</td><td>중간</td><td>단정 어려운 약한 관련성</td></tr>
+        <tr><td>공통 정형구문</td><td>—</td><td>—</td><td>업계 표준 문구 (점수 제외)</td></tr>
+    </tbody>
+</table>
+
+<p>화면에서 4그룹 라벨 옆 <code>ⓘ</code> 클릭 시 2축 다이어그램과 함께 6라벨 정의표를 볼 수 있습니다.</p>
+
+<h3 id="점수-산출법">점수 산출법</h3>
+<p>유사율은 다음 산식으로 계산됩니다.</p>
+<pre style="background:var(--bg-card);padding:12px;border-radius:6px;font-family:Consolas,monospace;font-size:12px;overflow-x:auto">
+유사율 = (실질 매칭 + 의역·번역 × 0.5) / (전체 문장 - 제외 영역) × 100
+</pre>
+<ul class="po-feat-list" style="grid-template-columns: 1fr;">
+    <li><strong>실질 매칭</strong> — identical + near_copy 문장 수</li>
+    <li><strong>의역·번역</strong> — paraphrase + translation 문장 수 (가중치 ×0.5, 의미만 일치 반영)</li>
+    <li><strong>제외 영역</strong> — 정형구문 + 목차 + 캡션 + 참고문헌 등 (사용자 설정 따라 가변)</li>
+</ul>
+
+<p>결과 점수는 Turnitin 산업 표준 <strong>5단계 신호등</strong>으로 표시됩니다.</p>
+<table class="po-spec-table">
+    <thead>
+        <tr><th style="width:18%">색상</th><th style="width:22%">구간</th><th style="width:60%">의미</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Blue</td><td>0%</td><td>매칭 없음 — 완전 독창</td></tr>
+        <tr><td>Green</td><td>1~24%</td><td>양호 — 정상 인용·정형구문 수준</td></tr>
+        <tr><td>Yellow</td><td>25~49%</td><td>검토 필요 — 출처 표기·재서술 점검</td></tr>
+        <tr><td>Orange</td><td>50~74%</td><td>상당량 매칭 — 광범위한 재작성 권고</td></tr>
+        <tr><td>Red</td><td>75~100%</td><td>위험 — 대부분이 타 출처와 동일</td></tr>
+    </tbody>
+</table>
+
+<h3 id="검사-설정">검사 설정 옵션</h3>
+<p>사이드바 <strong>검사 설정</strong> 패널에서 5가지 옵션을 토글할 수 있습니다.
+   변경 시 점수가 즉시 재계산됩니다 (재검사 불필요).</p>
+
+<table class="po-spec-table">
+    <thead>
+        <tr><th style="width:32%">옵션</th><th style="width:18%">기본값</th><th style="width:50%">설명</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>정형구문 제외</td><td>ON</td><td>"the contractor shall" 등 표준 문구</td></tr>
+        <tr><td>짧은 매칭 제외 (8단어 미만)</td><td>ON</td><td>Turnitin 표준 — 의미 있는 매칭으로 간주 X</td></tr>
+        <tr><td>목차/장절 헤딩 제외</td><td>ON</td><td>"1.1 SCOPE" 같은 헤딩 라인</td></tr>
+        <tr><td>표/그림 캡션 제외</td><td>ON</td><td>"Figure 5-1", "표 1" 등</td></tr>
+        <tr><td>인용·출처 표시 제외</td><td>OFF</td><td>큰따옴표 인용·각주·내주 — 필요 시 사용자가 켬</td></tr>
+    </tbody>
+</table>
+
+<p>다음 2건은 <strong>항상 자동 제외</strong>됩니다 (사용자 토글 없음):</p>
+<ul class="po-feat-list" style="grid-template-columns: 1fr;">
+    <li><strong>참고문헌 섹션</strong> — References / 참고문헌 / Bibliography 헤더 이후 영역</li>
+    <li><strong>규격 번호 단독 매칭</strong> — MIL-STD-XXX 등 규격 번호만 일치하는 짧은 매칭</li>
+</ul>
+
+<h3 id="알고리즘-근거">도구·알고리즘 근거</h3>
+<p>본 시스템의 분류 로직은 두 계층으로 구성됩니다.</p>
+<ul class="po-feat-list" style="grid-template-columns: 1fr;">
+    <li><strong>L1: Winnowing fingerprint</strong> — character k-gram (k=25) + sliding window (w=4) Rabin-Karp 해시.
+        Schleimer, Wilkerson, Aiken (SIGMOD 2003)</li>
+    <li><strong>L3: bge-m3 multilingual embedding</strong> — 1024차원 cosine similarity.
+        BAAI (2024) — 다국어 의미 유사도</li>
+</ul>
+<p>분류 임계값과 보고서 양식은 <strong>Turnitin Similarity</strong>, <strong>iThenticate v2</strong>,
+   <strong>Crossref Similarity Check</strong>의 공식 가이드라인을 참고하여 설정되었습니다.
+   한국어 환경에서는 <strong>카피킬러</strong>의 4그룹 분류 체계를 채택했습니다.</p>
+
+<h3 id="보고서-출력">보고서 출력 활용법</h3>
+<p>사이드바 상단 <strong>내보내기</strong> 버튼으로 3가지 형식의 보고서를 생성할 수 있습니다.</p>
+<table class="po-spec-table">
+    <thead>
+        <tr><th style="width:20%">형식</th><th style="width:25%">용도</th><th style="width:55%">특징</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>HTML 보고서</td><td>인쇄·회람용</td><td>A4 자동 분할, 6요소 + 검사 기준 부록(별도 페이지)</td></tr>
+        <tr><td>Excel</td><td>검토 작업용</td><td>요약 / 매칭 목록 / 검사 기준 3시트</td></tr>
+        <tr><td>TXT</td><td>요약 메일용</td><td>plain text 한 줄 요약</td></tr>
+    </tbody>
+</table>
+
+<p>HTML 보고서의 본문 하이라이트에는 <strong>출처 번호 마커</strong>(<code>[1]</code>)가 표시되어
+   흑백 인쇄 시에도 본문↔출처 매핑을 추적할 수 있습니다.
+   부록(검사 기준)은 마지막 페이지에 자동 분리되어 회람받는 사람도 산식·신호등·라벨 정의를
+   즉시 이해할 수 있습니다.</p>
+
+<h3 id="유사도-faq">자주 묻는 질문</h3>
+
+<p><strong>Q. 점수가 의외로 낮게 나왔습니다. 시스템이 잘못된 것 아닌가요?</strong></p>
+<p>A. 정형구문·목차·캡션 등이 자동 제외된 결과일 수 있습니다. 검사 설정 패널에서
+       옵션을 끄거나, 하이라이트된 매칭 카드를 직접 확인해 주세요.</p>
+
+<p><strong>Q. 한국어 문서와 영문 표준서를 비교했는데 "번역" 라벨이 잘 안 나옵니다.</strong></p>
+<p>A. bge-m3 cross-lingual 점수 분포가 monolingual 대비 낮으므로, 일부 매칭은 "약한 유사"로 분류될 수 있습니다.
+   매칭 카드를 직접 확인하여 의역·번역 가능성을 검토해 주세요.</p>
+
+<p><strong>Q. 같은 문서를 다시 검사했는데 점수가 약간 다릅니다.</strong></p>
+<p>A. 검사 설정의 사용자 토글이 변경되었거나 임계값이 조정된 경우 점수가 재계산됩니다.
+   동일 조건이라면 동일 결과가 나옵니다.</p>
+
+<p><strong>Q. "거의 동일"과 "의역"의 차이가 모호합니다.</strong></p>
+<p>A. 어휘 일치도 차이입니다. 단어 일부만 바꾼 경우는 "거의 동일",
+   문장을 재구성하여 표현이 달라진 경우는 "의역"입니다. 4그룹 라벨 옆 <code>ⓘ</code>의
+   2축 다이어그램에서 시각적으로 확인할 수 있습니다.</p>
+
+<p><strong>Q. 보고서를 인쇄했는데 색상이 없어요.</strong></p>
+<p>A. 브라우저 인쇄 대화상자에서 "배경 그래픽" 옵션을 켜주세요.
+   흑백 인쇄 시에도 출처 번호 <code>[1]</code> 마커로 매핑은 유지됩니다.</p>
+
 
 <!-- ========================================
      2. 문서 비교
