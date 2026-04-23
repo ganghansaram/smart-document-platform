@@ -81,7 +81,8 @@ Plan-27 이후 Nginx + Backend 두 컨테이너로 단일 포트(80)로 운영�
 │  GPU 서버 (회사 Linux · Ollama 별도 호스팅)                          │
 │  - LLM 모델: gemma3:27b · 임베딩: bge-m3 (1024차원)                 │
 │  - API: http://<gpu-server>:11434                                    │
-│  - EMBEDDING_BACKEND=ollama 설정 시 임베딩도 여기에 위임             │
+│  - Plan-40: EMBEDDING_BACKEND_INDEX=ollama 로 인덱싱 GPU 위임        │
+│    (RUNTIME은 기본 local — 검색·유사도 저지연 유지)                   │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 

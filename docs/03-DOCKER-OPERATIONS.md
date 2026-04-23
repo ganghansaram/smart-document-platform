@@ -109,7 +109,10 @@ Ollama(AI 모델 서버)는 별도 GPU 서버에서 운영하며 Docker에 포�
 |------|--------|------|
 | `PORT` | `80` | 외부 접속 포트 |
 | `OLLAMA_URL` | `http://gpu-server:11434` | Ollama GPU 서버 주소 |
-| `EMBEDDING_BACKEND` | `local` | 임베딩 실행 위치: `local`(백엔드 내부) / `ollama`(Ollama 서버 위임) |
+| `EMBEDDING_BACKEND_INDEX` | `ollama` | **인덱싱** 경로(대량 배치): `local` / `ollama` |
+| `EMBEDDING_BACKEND_RUNTIME` | `local` | **런타임** 경로(검색 쿼리·유사도): `local` / `ollama` |
+| `EMBEDDING_OLLAMA_BATCH` | `256` | Ollama HTTP 청크 분할 크기 (0=분할 비활성) |
+| `EMBEDDING_BACKEND` | *(미설정)* | **레거시** 전역 토글 — 위 2개 미설정 시 폴백으로 사용. 신규 배포는 권장하지 않음 |
 | `DATA_DIR` | `./data` | 사용자 데이터 경로 |
 | `CONTENTS_DIR` | `./contents` | 웹북 콘텐츠 경로 |
 | `MODELS_DIR` | `./models` | AI 모델 경로 |
@@ -117,14 +120,38 @@ Ollama(AI 모델 서버)는 별도 GPU 서버에서 운영하며 Docker에 포�
 
 **AI 모델(`OLLAMA_MODEL`)과 검색 옵션 등 운영 설정은 브라우저 관리자 화면에서 변경합니다.** `.env`에는 포함하지 않습니다.
 
-**`EMBEDDING_BACKEND` 선택 기준**
+**임베딩 백엔드 선택 기준 (Plan-40: 용도별 분리)**
 
-| 값 | 권장 상황 | 비고 |
-|----|----------|------|
-| `local` | 백엔드 컨테이너가 GPU에 접근 가능한 경우 | sentence-transformers가 백엔드 내부에서 직접 추론. 가장 빠름 |
-| `ollama` | 백엔드 컨테이너에 GPU 패스스루가 없는 경우 | Ollama GPU 서버로 HTTP 위임. CPU 폴백 대비 훨씬 빠름 |
+`bge-m3` 추론 경로를 **인덱싱(INDEX)**과 **런타임(RUNTIME)**으로 독립 구성합니다.
 
-GPU 없는 서버에서 `local`로 운영하면 CPU 폴백되어 임베딩이 **10분 이상** 걸릴 수 있습니다. 이 경우 `.env`에 `EMBEDDING_BACKEND=ollama`를 추가하고 Ollama 서버에 `bge-m3` 모델이 설치되어 있는지 확인합니다.
+| 용도 | 특성 | 권장 백엔드 | 이유 |
+|------|------|------------|------|
+| **INDEX** (Explorer 인덱싱, 업로드 증분) | 대량 배치, 관리자 수동 | `ollama` | Ollama GPU 서버로 처리량 최대화 |
+| **RUNTIME** (검색 쿼리, Compare 유사도) | 소량·실시간, 사용자 대기 | `local` | in-process 추론으로 HTTP 왕복 제거 |
+
+**환경별 권장 매트릭스**
+
+| 환경 | `_INDEX` | `_RUNTIME` | 비고 |
+|------|---------|-----------|------|
+| 회사 리눅스 VM (GPU Ollama 있음) | `ollama` | `local` | **기본 권장** — 인덱싱 GPU 가속 + 런타임 저지연 |
+| 개발 PC (Ollama 네이티브 구동) | `ollama` | `local` | 동일 |
+| 회사 Windows PC (Ollama 없음) | `local` | `local` | Ollama 미구동 시 양쪽 로컬 |
+| 폐쇄망·Ollama 점검 중 | `local` | `local` | 일시적 롤백 구성 |
+
+**해석 순서**: `EMBEDDING_BACKEND_INDEX`/`_RUNTIME` > `EMBEDDING_BACKEND`(레거시 전역) > 코드 기본값(`index=ollama`, `runtime=local`).
+
+GPU 없는 백엔드 컨테이너에서 `_INDEX=local`로 운영하면 CPU 폴백되어 대량 인덱싱이 **10분 이상** 걸릴 수 있습니다. 이 경우 `.env`에 `EMBEDDING_BACKEND_INDEX=ollama`를 추가하고 Ollama 서버에 `bge-m3` 모델이 설치되어 있는지 확인합니다.
+
+**Ollama 배치 한도 (Phase 0 실측, dev PC bge-m3:latest 기준)**
+
+| batch | 응답시간 | throughput |
+|-------|---------|-----------|
+| 50 | 3.17s | 15.8/s |
+| 100 | 3.82s | 26.2/s |
+| 200 | 5.38s | 37.2/s |
+| 500 | 10.19s | 49.1/s |
+
+500건 단일 호출까지 안정. 기본 청크 `256`은 서버 메모리 보호용 안전 마진. L40(24GB) 환경에서는 `512`~`1024`까지 상향 가능.
 
 `.env` 변경 후에는 반드시 `docker compose down && docker compose up -d`로 재시작해야 적용됩니다.
 
@@ -668,17 +695,22 @@ du -sh logs/                # 로그 크기 확인
 
 | 확인 항목 | 조치 |
 |-----------|------|
-| GPU가 컨테이너에서 보이는지 | `docker compose exec backend python -c "import torch; print(torch.cuda.is_available())"` → `False`면 GPU 없음 |
-| `EMBEDDING_BACKEND` 설정 확인 | `grep EMBEDDING_BACKEND .env` |
+| GPU가 컨테이너에서 보이는지 | `docker compose exec backend python -c "import torch; print(torch.cuda.is_available())"` → `False`면 컨테이너에 GPU 없음 |
+| 백엔드 설정 확인 | `grep -E "EMBEDDING_BACKEND" .env` |
 
-**해결 방안**: `.env`에 아래 한 줄 추가 후 재시작합니다. Ollama GPU 서버가 임베딩을 처리하게 됩니다.
+**해결 방안 (Plan-40: 용도별 분리)**: 인덱싱만 Ollama GPU로 위임하고 런타임은 로컬 저지연을 유지합니다.
 
 ```bash
-echo 'EMBEDDING_BACKEND=ollama' >> .env
+cat >> .env <<'EOF'
+EMBEDDING_BACKEND_INDEX=ollama
+EMBEDDING_BACKEND_RUNTIME=local
+EOF
 docker compose down && docker compose up -d
 ```
 
 Ollama 서버에 `bge-m3` 모델이 설치되어 있어야 합니다(`ollama list`로 확인).
+
+> **참고**: 이전에 사용하던 `EMBEDDING_BACKEND=ollama` 단일 토글도 여전히 동작하지만, 런타임 경로(검색 쿼리·Compare)에서 HTTP 왕복 오버헤드가 생기므로 위 2개 변수 방식을 권장합니다.
 
 ### 12-6. 관리자 설정에서 "재시작 필요" 라벨이 계속 표시될 때
 

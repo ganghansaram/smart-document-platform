@@ -82,13 +82,33 @@
 - 분석 진행 중 취소 시 "현재 페이지 완료 후 중단" → 더 즉각적인 중단 방식 검토
 - 취소 후 이미 추출 완료된 페이지 결과물 활용 전략
 
-## 플랫폼 — 관리자 설정: 임베딩 모델 필드 개선
+## 플랫폼 — 관리자 설정: 임베딩 백엔드/모델 필드 개선
 
-> 출처: Plan-27 Phase 3 검증 시 발견
+> 출처: Plan-27 Phase 3, Plan-40 Phase 4 이관
 
-- 로컬 모드(`EMBEDDING_BACKEND=local`)일 때 관리자 UI의 임베딩 모델 필드가 무효 (실제로는 `EMBEDDING_LOCAL_MODEL` 경로를 사용)
-- 개선: 로컬 모드 시 필드에 `bge-m3 (로컬)` 표시 + 편집 비활성화, Ollama 모드 시에만 편집 가능
+- **Plan-40으로 백엔드는 용도별 분리됨** (`EMBEDDING_BACKEND_INDEX` / `_RUNTIME`) — 환경변수 수준에서만 조작 가능
+- 개선 (미착수):
+  1. 관리자 UI에 두 백엔드 선택 드롭다운 추가 (index/runtime 각각, 툴팁 포함)
+  2. 로컬 모드일 때 `embedding_model` 필드: `bge-m3 (로컬 고정)` 표시 + 편집 비활성
+  3. Ollama 모드일 때만 모델명 편집 가능
+  4. 변경 시 "재시작 필요" 라벨 (용도별 변수는 재시작 필요)
 - 관련 파일: `js/admin-settings.js`, `backend/services/settings_service.py`, `backend/services/embedding_client.py`
+
+## 플랫폼 — Ollama 임베딩 장애 로깅 보강
+
+> 출처: Plan-40 피드백 §10-2
+
+- `_encode_ollama` 실패 시 `requests.RequestException`이 상위로 그대로 전파 — 관리자가 원인(URL·네트워크·모델 미설치) 식별 어려움
+- 개선: WARN 레벨 로그 1줄 추가 `"Ollama 임베딩 실패: {url} model={model} {error}"`
+- 관련 파일: `backend/services/embedding_client.py`
+
+## 플랫폼 — 인덱싱 진행률 스트리밍
+
+> 출처: Plan-40 피드백 §9.2
+
+- 현재: "벡터 인덱스 재생성 중..." 정적 메시지
+- 개선: 배치 `N/총 M` 형태 진행률 스트리밍 (SSE 또는 polling), 장문 문서(수천)에서도 사용자 대기 체감 완화
+- 관련 파일: `backend/api/upload.py` (_run_vector_reindex), `tools/build-vector-index.py`, `js/admin-settings.js` (인덱스 재생성 모달)
 
 ## 플랫폼 — 관리자 설정 메뉴
 

@@ -43,18 +43,12 @@ def build_texts(docs: list) -> list[str]:
     return texts
 
 
-def batch_embed(texts: list[str], batch_size: int = 32) -> np.ndarray:
-    """배치 단위로 임베딩 생성"""
-    all_embeddings = []
+def batch_embed(texts: list[str]) -> np.ndarray:
+    """임베딩 생성 — Plan-40: 인덱싱 경로 일괄 위임 (내부 배치는 embedding_client가 관리)"""
     total = len(texts)
-
-    for i in range(0, total, batch_size):
-        batch = texts[i:i + batch_size]
-        print(f"  임베딩 중... [{i + 1}-{min(i + batch_size, total)}/{total}]")
-        embeddings = get_embeddings(batch)
-        all_embeddings.extend(embeddings)
-
-    return np.array(all_embeddings, dtype=np.float32)
+    print(f"  임베딩 중... ({total}개, 경로=index)")
+    embeddings = get_embeddings(texts, purpose="index")
+    return np.array(embeddings, dtype=np.float32)
 
 
 def build_and_save_index(docs: list, embeddings: np.ndarray):
@@ -96,10 +90,18 @@ def build_and_save_index(docs: list, embeddings: np.ndarray):
 
 
 def main():
+    from services.embedding_client import _resolve_backend
+    backend = _resolve_backend("index")
     print("=" * 50)
     print("벡터 인덱스 생성")
-    print(f"임베딩 모델: {config.EMBEDDING_MODEL}")
-    print(f"Ollama URL: {config.OLLAMA_URL}")
+    print(f"경로: index / 백엔드: {backend}")
+    if backend == "ollama":
+        print(f"Ollama URL: {config.OLLAMA_URL}")
+        print(f"Ollama 모델: {config.EMBEDDING_MODEL}")
+        print(f"배치 크기(청크): {config.EMBEDDING_OLLAMA_BATCH}")
+    else:
+        print(f"로컬 모델: {config.EMBEDDING_LOCAL_MODEL}")
+        print(f"배치 크기: {config.EMBEDDING_BATCH_SIZE}")
     print("=" * 50)
 
     start = time.time()

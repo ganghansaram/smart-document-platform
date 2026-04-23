@@ -115,9 +115,9 @@ def append_documents(docs: list) -> dict:
         index = faiss.IndexFlatL2(config.EMBEDDING_DIMENSION)
         metadata = []
 
-    # 임베딩 생성 (title 가중 반복)
+    # 임베딩 생성 (title 가중 반복) — Plan-40: 인덱싱 경로 (GPU 가속 위임 가능)
     texts = [f"{d.get('title','')}\n{d.get('title','')}\n{d.get('content','')}" for d in docs]
-    embeddings = np.array(get_embeddings(texts), dtype=np.float32)
+    embeddings = np.array(get_embeddings(texts, purpose="index"), dtype=np.float32)
 
     # FAISS에 추가
     index.add(embeddings)

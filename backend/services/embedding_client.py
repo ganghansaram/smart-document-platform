@@ -1,13 +1,22 @@
 """
-임베딩 클라이언트 — 로컬 SentenceTransformer 우선, Ollama 폴백
+임베딩 클라이언트 — 용도별 백엔드 분리 (Plan-40)
 
-EMBEDDING_BACKEND 설정에 따라 추론 경로 선택:
-  - "local": sentence-transformers로 인프로세스 추론 (기본, 권장)
-  - "ollama": Ollama HTTP API 호출 (레거시 호환)
+설계:
+  - purpose="runtime" (기본): 실시간 경로 — 검색 쿼리·Compare 유사도
+  - purpose="index": 인덱싱 경로 — Explorer 벡터 인덱스 재생성·업로드 증분
+
+백엔드 선택 해석 순서:
+  1. 용도별 환경변수: EMBEDDING_BACKEND_INDEX / EMBEDDING_BACKEND_RUNTIME
+  2. 레거시 전역: EMBEDDING_BACKEND (deprecated)
+  3. 코드 기본값: index=ollama, runtime=local
+
+백엔드:
+  - "local": sentence-transformers 인프로세스 추론 (컨테이너 내부, CPU 폴백 가능)
+  - "ollama": Ollama HTTP API (GPU 서버 위임, 청크 분할 지원)
 """
 import logging
 import os
-from typing import List
+from typing import List, Literal
 
 import requests
 
@@ -17,12 +26,17 @@ logger = logging.getLogger(__name__)
 
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
+_DEFAULT_BACKEND_BY_PURPOSE = {
+    "index": "ollama",
+    "runtime": "local",
+}
+
 # ── 싱글턴 모델 캐시 ──
 _model = None
 
 
 def _load_model():
-    """SentenceTransformer 모델 lazy-load (reranker.py 패턴 동일)"""
+    """SentenceTransformer 모델 lazy-load"""
     global _model
     if _model is not None:
         return _model
@@ -45,25 +59,46 @@ def _cuda_available():
         return False
 
 
-# ── 공개 API (시그니처 불변) ──
+def _resolve_backend(purpose: str) -> str:
+    """용도별 백엔드 선택 — 해석 순서는 모듈 docstring 참조"""
+    per_purpose_attr = f"EMBEDDING_BACKEND_{purpose.upper()}"
+    per_purpose = getattr(config, per_purpose_attr, "") or ""
+    if per_purpose:
+        return per_purpose
 
-def get_embeddings(texts: List[str]) -> List[List[float]]:
+    legacy = getattr(config, "EMBEDDING_BACKEND", "") or ""
+    if legacy:
+        return legacy
+
+    return _DEFAULT_BACKEND_BY_PURPOSE.get(purpose, "local")
+
+
+# ── 공개 API ──
+
+def get_embeddings(
+    texts: List[str],
+    *,
+    purpose: Literal["index", "runtime"] = "runtime",
+) -> List[List[float]]:
     """
     텍스트 리스트를 임베딩 벡터 리스트로 변환.
-    EMBEDDING_BACKEND 설정에 따라 로컬 또는 Ollama 경로 선택.
+
+    Args:
+        texts: 임베딩 대상 문자열 목록
+        purpose: "runtime"(실시간, 기본) / "index"(인덱싱 배치)
     """
     if not texts:
         return []
 
-    backend = getattr(config, "EMBEDDING_BACKEND", "local")
+    backend = _resolve_backend(purpose)
     if backend == "local":
         return _encode_local(texts)
     return _encode_ollama(texts)
 
 
-def get_embedding(text: str) -> List[float]:
+def get_embedding(text: str, *, purpose: Literal["index", "runtime"] = "runtime") -> List[float]:
     """단일 텍스트 임베딩"""
-    return get_embeddings([text])[0]
+    return get_embeddings([text], purpose=purpose)[0]
 
 
 # ── 로컬 추론 (sentence-transformers) ──
@@ -80,9 +115,25 @@ def _encode_local(texts: List[str]) -> List[List[float]]:
     return embeddings.tolist()
 
 
-# ── Ollama HTTP 추론 (레거시) ──
+# ── Ollama HTTP 추론 ──
 
 def _encode_ollama(texts: List[str]) -> List[List[float]]:
+    """
+    Ollama `/api/embed` 호출. 서버 메모리·배치 한도를 고려해 청크 분할 지원.
+    EMBEDDING_OLLAMA_BATCH=0 이면 단일 호출, 그 외 값으로 분할.
+    """
+    chunk = int(getattr(config, "EMBEDDING_OLLAMA_BATCH", 64) or 0)
+    if chunk <= 0 or len(texts) <= chunk:
+        return _ollama_embed_call(texts)
+
+    all_embeddings: List[List[float]] = []
+    for i in range(0, len(texts), chunk):
+        part = texts[i:i + chunk]
+        all_embeddings.extend(_ollama_embed_call(part))
+    return all_embeddings
+
+
+def _ollama_embed_call(texts: List[str]) -> List[List[float]]:
     response = requests.post(
         f"{config.OLLAMA_URL}/api/embed",
         json={

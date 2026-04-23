@@ -11,7 +11,11 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
-      - EMBEDDING_BACKEND=${EMBEDDING_BACKEND:-local}
+      # Plan-40: 용도별 백엔드 분리. 미설정 시 EMBEDDING_BACKEND(레거시) → 코드 기본값(index=ollama, runtime=local).
+      - EMBEDDING_BACKEND=${EMBEDDING_BACKEND:-}
+      - EMBEDDING_BACKEND_INDEX=${EMBEDDING_BACKEND_INDEX:-}
+      - EMBEDDING_BACKEND_RUNTIME=${EMBEDDING_BACKEND_RUNTIME:-}
+      - EMBEDDING_OLLAMA_BATCH=${EMBEDDING_OLLAMA_BATCH:-256}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
       - KMP_DUPLICATE_LIB_OK=TRUE
       - DOCKER_ENV=true

@@ -19,11 +19,16 @@ LLM_API_KEY = ""                  # API 키 (필요 시)
 LLM_MODEL_ID = ""                 # 엔드포인트의 모델 ID
 
 # 임베딩 설정
-EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "local")  # "local" (sentence-transformers) | "ollama" (HTTP API)
+# Plan-40: 용도별 백엔드 분리 — INDEX(대량 인덱싱)와 RUNTIME(실시간 검색·유사도)을 독립 선택 가능.
+# 미설정 시 EMBEDDING_BACKEND(레거시 전역)로 폴백 → 코드 기본값 순서로 해석.
+EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "")  # 레거시 전역 토글 (deprecated, 하위호환용)
+EMBEDDING_BACKEND_INDEX = os.getenv("EMBEDDING_BACKEND_INDEX", "")    # 인덱싱 경로 (기본: ollama — GPU 가속)
+EMBEDDING_BACKEND_RUNTIME = os.getenv("EMBEDDING_BACKEND_RUNTIME", "")  # 런타임 경로 (기본: local — 저지연)
 EMBEDDING_LOCAL_MODEL = str(Path(__file__).parent.parent / "models" / "bge-m3")
-EMBEDDING_MODEL = "bge-m3"  # Ollama 임베딩 모델 (EMBEDDING_BACKEND="ollama" 시 사용)
+EMBEDDING_MODEL = "bge-m3"  # Ollama 임베딩 모델 (ollama 백엔드 시 사용)
 EMBEDDING_DIMENSION = 1024  # bge-m3 출력 차원
 EMBEDDING_BATCH_SIZE = 64   # 로컬 추론 배치 크기
+EMBEDDING_OLLAMA_BATCH = int(os.getenv("EMBEDDING_OLLAMA_BATCH", "256"))  # Ollama HTTP 경로 청크 분할 크기 (0=분할 비활성). Phase 0 실측: 500까지 안정, 200~500 throughput 최대. 256은 안전 마진 포함 기본값.
 
 # 검색 설정
 SEARCH_INDEX_PATH = "../data/search-index.json"

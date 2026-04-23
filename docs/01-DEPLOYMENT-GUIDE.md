@@ -86,12 +86,15 @@ smart-document-platform/
 | `PORT` | `80` | 외부 접속 포트 (Nginx) |
 | `CORS_ORIGINS` | `http://localhost` | 허용 Origin (쉼표 구분) |
 | `OLLAMA_URL` | `http://gpu-server:11434` | Ollama 서버 주소 |
-| `EMBEDDING_BACKEND` | `local` | 임베딩 실행 위치 — `local`(백엔드 내부) / `ollama`(Ollama 위임) |
+| `EMBEDDING_BACKEND_INDEX` | `ollama` | 인덱싱 경로(대량 배치) — `local` / `ollama` |
+| `EMBEDDING_BACKEND_RUNTIME` | `local` | 런타임 경로(검색·유사도) — `local` / `ollama` |
+| `EMBEDDING_OLLAMA_BATCH` | `256` | Ollama 청크 분할 크기 |
+| `EMBEDDING_BACKEND` *(레거시)* | *(미설정)* | 두 경로를 동일하게 맞추는 단일 토글. 신규 배포는 위 2개 변수 권장 |
 | `DATA_DIR` / `CONTENTS_DIR` / `MODELS_DIR` / `BACKUPS_DIR` | `./data` 등 | 볼륨 마운트 경로 |
 
 AI 모델명(`OLLAMA_MODEL`) 등 운영 설정은 **브라우저 관리자 설정 화면**에서 변경합니다. `.env` 에 포함하지 않습니다.
 
-**GPU 없는 백엔드**의 경우 `EMBEDDING_BACKEND=ollama` 로 설정하여 Ollama 서버로 임베딩을 위임하세요. CPU 폴백은 10분 이상 소요됩니다.
+**GPU 없는 백엔드**의 경우 기본값(`_INDEX=ollama`, `_RUNTIME=local`) 그대로 사용하면 인덱싱은 Ollama GPU로 위임되고, 검색·유사도는 컨테이너 내부 로컬 추론으로 저지연을 유지합니다. Ollama 미구동 환경에서는 `_INDEX=local` 로 두 경로 모두 로컬로 전환하세요.
 
 ---
 
