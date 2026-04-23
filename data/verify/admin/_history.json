@@ -1,0 +1,100 @@
+[
+  {
+    "timestamp": "2026-04-14T14:52:59.601Z",
+    "mode": "similarity",
+    "files": {
+      "a": "SWA_PMS.docx",
+      "b": "SWA_PMS_r1.docx"
+    },
+    "score": "95%",
+    "scoreColor": "var(--color-error)"
+  },
+  {
+    "timestamp": "2026-04-14T14:41:58.021Z",
+    "mode": "verify",
+    "files": {
+      "a": "SWA_PMS.docx"
+    },
+    "score": "66점",
+    "scoreColor": "var(--color-warning)"
+  },
+  {
+    "timestamp": "2026-04-14T14:41:47.916Z",
+    "mode": "similarity",
+    "files": {
+      "a": "SWA_PMS.docx",
+      "b": "SWA_PMS.docx"
+    },
+    "score": "97.1%",
+    "scoreColor": "var(--color-error)"
+  },
+  {
+    "timestamp": "2026-04-14T14:40:52.712Z",
+    "mode": "compare",
+    "files": {
+      "a": "SWA_PMS.docx",
+      "b": "SWA_PMS_r1.docx"
+    },
+    "score": "+1 −1 ~3",
+    "scoreColor": "var(--active-color)"
+  },
+  {
+    "timestamp": "2026-04-14T14:40:25.029Z",
+    "mode": "similarity",
+    "files": {
+      "a": "SWA_PMS.docx",
+      "b": "SWA_PMS.docx"
+    },
+    "score": "97.1%",
+    "scoreColor": "var(--color-error)"
+  },
+  {
+    "timestamp": "2026-04-14T03:49:46.638Z",
+    "mode": "similarity",
+    "files": {
+      "a": "SWA_PMS.docx",
+      "b": "SWA_PMS_r1.docx"
+    },
+    "score": "95%",
+    "scoreColor": "var(--color-error)"
+  },
+  {
+    "timestamp": "2026-04-13T04:17:59.160Z",
+    "mode": "similarity",
+    "files": {
+      "a": "SWA_Sample_KOR.docx",
+      "b": "SWA_Sample_KOR.docx"
+    },
+    "score": "97.4%",
+    "scoreColor": "var(--color-error)"
+  },
+  {
+    "timestamp": "2026-04-13T04:09:12.018Z",
+    "mode": "similarity",
+    "files": {
+      "a": "SWA_Sample_KOR.docx",
+      "b": "SWA_Sample_KOR.docx"
+    },
+    "score": "97.4%",
+    "scoreColor": "var(--color-error)"
+  },
+  {
+    "timestamp": "2026-04-09T13:16:10.301Z",
+    "mode": "compare",
+    "files": {
+      "a": "(안희석) 정보기술학회 논문_피드백 반영안_저자 및 정보 추가.docx",
+      "b": "ClosedNetwork_RAG_Hybrid_V1.0.docx"
+    },
+    "score": "+6 −6 ~37",
+    "scoreColor": "var(--active-color)"
+  },
+  {
+    "timestamp": "2026-04-07T15:03:02.757Z",
+    "mode": "verify",
+    "files": {
+      "a": "붙여넣기 텍스트"
+    },
+    "score": "52점",
+    "scoreColor": "var(--color-error)"
+  }
+]

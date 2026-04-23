@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notebook Home — Mockup</title>
+<link rel="stylesheet" href="../../css/tokens.css">
+<link rel="stylesheet" href="../../css/components.css">
+<style>
+/* ── 리셋 ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    background: var(--bg-gray);
+    color: var(--text-dark);
+    min-height: 100vh;
+}
+
+/* ── 헤더 (플랫폼 공통) ── */
+.header {
+    height: 48px;
+    background: var(--header-bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    color: #fff;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.header-title {
+    font-size: 17px;
+    font-weight: 600;
+    font-style: italic;
+    letter-spacing: -0.3px;
+}
+
+/* ── 히어로 배너 (공통 톤) ── */
+.hero {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 45%;
+    display: block;
+}
+.hero-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0 48px 28px;
+    background: linear-gradient(to top, rgba(10, 22, 40, 0.7) 0%, transparent 100%);
+}
+.hero-title {
+    font-size: 30px;
+    font-weight: 300;
+    color: #fff;
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
+    letter-spacing: -0.5px;
+}
+.hero-sub {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.75);
+    margin-top: 4px;
+}
+.hero-star {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(200, 220, 255, 0.9);
+    z-index: 3;
+    animation: starBreathing 5s ease-in-out infinite;
+    top: 22%; left: 55%;
+}
+@keyframes starBreathing {
+    0%, 100% { opacity: 0.15; box-shadow: 0 0 4px 1px rgba(180, 210, 255, 0.2); }
+    50%      { opacity: 1;    box-shadow: 0 0 12px 4px rgba(180, 210, 255, 0.6); }
+}
+.hero-fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(to top, var(--bg-gray), transparent);
+    z-index: 2;
+}
+
+/* ── 콘텐츠 ── */
+.content {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 32px 48px;
+}
+
+/* ── 통계 바 ── */
+.stat-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: var(--text-light);
+}
+.stat-bar strong {
+    font-size: 15px;
+    color: var(--text-dark);
+}
+
+/* ── 업로드 존 (컴팩트) ── */
+.upload-compact {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 16px 24px;
+    text-align: center;
+    color: var(--text-light);
+    font-size: 13px;
+    margin-bottom: 24px;
+    cursor: pointer;
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.upload-compact:hover {
+    border-color: var(--active-color);
+    background: rgba(44, 82, 130, 0.04);
+}
+.upload-compact-icon {
+    font-size: 20px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+/* ── 뷰 전환 ── */
+.view-toggle {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+.view-toggle button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-light);
+}
+.view-toggle button.active {
+    background: var(--active-color);
+    color: #fff;
+    border-color: var(--active-color);
+}
+
+/* ── 카드 그리드 ── */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+.doc-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+.doc-card:hover {
+    border-color: var(--active-color);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.doc-card-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 6px;
+}
+.doc-card-meta {
+    font-size: 12px;
+    color: var(--active-color);
+    margin-bottom: 6px;
+}
+.doc-card-status {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 12px;
+}
+.doc-card-actions {
+    display: flex;
+    gap: 8px;
+}
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="header">
+    <span class="header-title">Research Notebook</span>
+    <span>testbot | Logout</span>
+</div>
+
+<!-- 히어로 배너 -->
+<div class="hero">
+    <img class="hero-img" src="../../css/images/night_sky.png" alt="" decoding="async">
+    <div class="hero-star"></div>
+    <div class="hero-overlay">
+        <div class="hero-title">Your Docs, Your Knowledge</div>
+        <div class="hero-sub">PDF 번역, AI 분석, 마인드맵 -- 개인 지식 저장소</div>
+    </div>
+    <div class="hero-fade"></div>
+</div>
+
+<!-- 콘텐츠 -->
+<div class="content">
+
+    <!-- 업로드 (컴팩트) -->
+    <div class="upload-compact">
+        <span class="upload-compact-icon">+</span>
+        PDF 파일을 드래그하거나 클릭하여 업로드 (최대 100MB)
+    </div>
+
+    <!-- 통계 바 + 뷰 전환 -->
+    <div class="stat-bar">
+        <strong>3개 문서</strong>
+        <span>PDF 2건 번역됨</span>
+        <span>메모 1건</span>
+        <div class="view-toggle">
+            <button>&#9776;</button>
+            <button class="active">&#9638;</button>
+        </div>
+    </div>
+
+    <!-- 카드 그리드 -->
+    <div class="card-grid">
+        <div class="doc-card">
+            <div class="doc-card-name">MIL-STD-38784B.pdf</div>
+            <div class="doc-card-meta">138페이지 &middot; 2026-04-05</div>
+            <div class="doc-card-status">준비됨</div>
+            <div class="doc-card-actions">
+                <button class="btn btn-primary btn-sm">열기</button>
+                <button class="btn btn-secondary btn-sm">삭제</button>
+            </div>
+        </div>
+        <div class="doc-card">
+            <div class="doc-card-name">6_TechDoc.pdf</div>
+            <div class="doc-card-meta">4페이지 &middot; 2026-03-30</div>
+            <div class="doc-card-status">PDF 1/4</div>
+            <div class="doc-card-actions">
+                <button class="btn btn-primary btn-sm">열기</button>
+                <button class="btn btn-secondary btn-sm">삭제</button>
+            </div>
+        </div>
+        <div class="doc-card">
+            <div class="doc-card-name">test.pdf</div>
+            <div class="doc-card-meta">4페이지 &middot; 2026-03-06</div>
+            <div class="doc-card-status">PDF 1/4 &middot; 웹뷰 1/4 &middot; 메모 1</div>
+            <div class="doc-card-actions">
+                <button class="btn btn-primary btn-sm">열기</button>
+                <button class="btn btn-secondary btn-sm">삭제</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

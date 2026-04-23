@@ -1,0 +1,99 @@
+[
+  {
+    "timestamp": "2026-04-14T23:16:41.521Z",
+    "mode": "compare",
+    "files": {
+      "a": "붙여넣기 텍스트",
+      "b": "붙여넣기 텍스트"
+    },
+    "score": "+0 −5 ~4",
+    "scoreColor": "var(--active-color)"
+  },
+  {
+    "timestamp": "2026-04-14T23:15:17.450Z",
+    "mode": "verify",
+    "files": {
+      "a": "붙여넣기 텍스트"
+    },
+    "score": "0점",
+    "scoreColor": "var(--color-error)"
+  },
+  {
+    "timestamp": "2026-04-14T23:13:41.038Z",
+    "mode": "similarity",
+    "files": {
+      "a": "(텍스트 붙여넣기)",
+      "b": "(텍스트 붙여넣기)"
+    },
+    "score": "19%",
+    "scoreColor": "var(--color-success-btn)"
+  },
+  {
+    "timestamp": "2026-04-14T14:51:43.555Z",
+    "mode": "similarity",
+    "files": {
+      "a": "MyPaper_20251109_V2.8_Claude.docx",
+      "b": "MyPaper_20251109_V2.8_Claude.docx"
+    },
+    "score": "98.2%",
+    "scoreColor": "var(--color-error)"
+  },
+  {
+    "timestamp": "2026-04-14T14:38:07.225Z",
+    "mode": "similarity",
+    "files": {
+      "a": "MyPaper_20251109_V2.8_Claude.docx",
+      "b": "MyPaper_20251109_V2.8_Claude.docx"
+    },
+    "score": "98.2%",
+    "scoreColor": "var(--color-error)"
+  },
+  {
+    "timestamp": "2026-04-14T14:35:27.175Z",
+    "mode": "verify",
+    "files": {
+      "a": "MyPaper_20251109_V2.8_Claude.docx"
+    },
+    "score": "47점",
+    "scoreColor": "var(--color-error)"
+  },
+  {
+    "timestamp": "2026-04-14T14:34:43.436Z",
+    "mode": "compare",
+    "files": {
+      "a": "MyPaper_20251109_V2.8_Claude.docx",
+      "b": "MyPaper_20251109_V2.8_Claude.docx"
+    },
+    "score": "+0 −0 ~0",
+    "scoreColor": "var(--active-color)"
+  },
+  {
+    "timestamp": "2026-04-05T15:26:33.911Z",
+    "mode": "compare",
+    "files": {
+      "a": "(텍스트 붙여넣기)",
+      "b": "붙여넣기 텍스트"
+    },
+    "score": "+1 −9 ~5",
+    "scoreColor": "var(--active-color)"
+  },
+  {
+    "timestamp": "2026-04-05T15:24:53.957Z",
+    "mode": "similarity",
+    "files": {
+      "a": "(텍스트 붙여넣기)",
+      "b": "(텍스트 붙여넣기)"
+    },
+    "score": "86.4%",
+    "scoreColor": "var(--color-error)"
+  },
+  {
+    "timestamp": "2026-04-05T15:22:45.320Z",
+    "mode": "verify",
+    "files": {
+      "a": "붙여넣기 텍스트"
+    },
+    "score": "35점",
+    "scoreColor": "var(--color-error)"
+  }
+]

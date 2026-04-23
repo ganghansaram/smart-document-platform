@@ -87,7 +87,7 @@ Tomcat은 정적 파일 서빙에 과한 측면이 있지만 (본래 Java 서블
 
 > **판정: Windows 네이티브 배포 시 Tomcat 유지가 현실적.**
 
-> **Docker 배포 대안 (Plan-27, 2026-04 완료)**: Docker + Nginx 리버스 프록시 구성으로 Tomcat/NSSM 없이 단일 포트(80) 운영 가능. 컨테이너 자동 재시작, gzip 압축, 정적 파일 서빙을 Nginx가 처리. 상세: [13-DOCKER-OPERATIONS.md](13-DOCKER-OPERATIONS.md)
+> **Docker 배포 대안 (Plan-27, 2026-04 완료)**: Docker + Nginx 리버스 프록시 구성으로 Tomcat/NSSM 없이 단일 포트(80) 운영 가능. 컨테이너 자동 재시작, gzip 압축, 정적 파일 서빙을 Nginx가 처리. 상세: [03-DOCKER-OPERATIONS.md](03-DOCKER-OPERATIONS.md)
 
 **Windows 네이티브 배포 시 — 백엔드(FastAPI) 프로세스 관리가 유일한 갭**:
 
@@ -435,7 +435,7 @@ KV 캐시 (8K 컨텍스트):       ~4GB
 
 ## 7. 운영 권장 아키텍처 (실제 환경 반영)
 
-> 아래는 Windows 네이티브 배포 기준. Docker 배포 아키텍처는 [13-DOCKER-OPERATIONS.md](13-DOCKER-OPERATIONS.md) 참조.
+> 아래는 Windows 네이티브 배포 기준. Docker 배포 아키텍처는 [03-DOCKER-OPERATIONS.md](03-DOCKER-OPERATIONS.md) 참조.
 
 ```
                           ┌───────────────────┐

@@ -2,6 +2,9 @@
 
 검색 증강 생성(Retrieval-Augmented Generation) 파이프라인 기술 문서
 
+> **이 문서의 역할**: RAG 파이프라인의 **구현 사양**(모듈·파라미터·프롬프트·엔드포인트)을 다룹니다.
+> 품질 개선의 **근거·실험 수치·튜닝 히스토리**는 [RAG-TECHNICAL-REPORT](RAG-TECHNICAL-REPORT.md) 를 참조하세요. 두 문서는 짝으로 설계되었으며, 중복 서술 대신 상호 참조로 연결됩니다.
+
 ---
 
 ## 목차
@@ -16,9 +19,8 @@
 8. [LLM 프로바이더 추상화](#8-llm-프로바이더-추상화)
 9. [채팅 UI](#9-채팅-ui)
 10. [평가 지표](#10-평가-지표)
-11. [구현 체크리스트](#11-구현-체크리스트)
-12. [관련 문서](#12-관련-문서)
-13. [참고 자료](#13-참고-자료)
+11. [관련 문서](#11-관련-문서)
+12. [참고 자료](#12-참고-자료)
 
 ---
 
@@ -34,56 +36,32 @@
 
 RAG는 LLM의 환각(hallucination)을 줄이고, 도메인 특화 질문에 정확한 답변을 제공하기 위한 구조입니다.
 
-### 이 프로젝트의 RAG 구성
+### 현재 RAG 구성 (요약)
 
-| 단계 | Phase 1 | Phase 2 | Phase 3 | Phase 4 (현재) |
-|------|---------|---------|---------|----------------|
-| 문서 처리 | 페이지 단위 | 섹션 단위 | 섹션 단위 + 구조 보존 | 동일 |
-| 검색 | 키워드 (BM25 유사) | 키워드 (섹션 레벨) | 하이브리드 (BM25 + FAISS) + 리랭킹 | 질문 라우팅 + 쿼리 분해 + Agentic RAG |
-| 생성 | Ollama (llama3.2) | Ollama (llama3.2) | Ollama (gemma3:4b), temperature=0 | 프로바이더 추상화 (Ollama + OpenAI 호환) |
-| 대화 | 싱글턴 | 싱글턴 | 멀티턴 (세션 기반, 쿼리 재작성) | 멀티턴 + 스트리밍 + 피드백 |
-| 참고 링크 | 페이지 단위 | 섹션 직접 이동 | 섹션 직접 이동 | 섹션 직접 이동 |
+| 영역 | 구성 |
+|------|------|
+| 문서 처리 | 섹션 단위(h1~h3) + 구조 보존(테이블→GFM MD, 수식→LaTeX) |
+| 검색 | 하이브리드(BM25 30% + FAISS 70%, RRF 병합) + Cross-encoder 리랭킹 |
+| 생성 | LLM 프로바이더 추상화 (Ollama + OpenAI 호환), `temperature=0` |
+| 대화 | 멀티턴 (인메모리 세션, 쿼리 재작성) + 스트리밍(NDJSON) + 피드백 |
+| 고급 RAG | 질문 라우팅 · 쿼리 분해 · Agentic RAG 반복 루프 |
+
+> **진화 과정**(Phase 1 키워드 검색 → Phase 2 섹션 청킹 → Phase 3 하이브리드·리랭킹 → Phase 4 고급 RAG)의 **의사결정 근거·실험 수치**는 [RAG-TECHNICAL-REPORT](RAG-TECHNICAL-REPORT.md) 참조.
 
 ---
 
 ## 2. 문서 처리 파이프라인
 
-### 2.1 현재 (페이지 단위)
+### 2.1 섹션 단위 인덱싱 (search-index.json)
 
 ```
-HTML 문서 → 텍스트 추출 → 페이지별 인덱스 항목 생성
-              ↓
-         search-index.json
-```
-
-**build-search-index.py 동작:**
-1. `contents/` 폴더의 모든 HTML 스캔
-2. 각 파일에서 `<h1>` 태그로 제목 추출
-3. HTML 태그 제거 후 본문 텍스트 추출 (최대 5000자)
-4. `menu.json`에서 경로 정보 매핑
-5. JSON 인덱스 생성
-
-**인덱스 구조:**
-```json
-{
-  "title": "KF-21 프로그램 소개",
-  "url": "contents/dev-overview/introduction.html",
-  "path": "개발 개요 > 프로그램 소개",
-  "content": "본문 텍스트..."
-}
-```
-
-### 2.2 Phase 2 (섹션 단위)
-
-```
-HTML 문서 → 헤딩 파싱 → 섹션별 분할 → 섹션별 인덱스 항목 생성
+HTML 문서 → 헤딩 파싱 → 섹션별 분할 → search-index.json
               ↓
          h1, h2, h3 기준 분할
-              ↓
-         search-index.json (섹션 단위)
 ```
 
-**개선된 인덱스 구조:**
+**인덱스 구조:**
+
 ```json
 {
   "title": "1.2 문제 제기",
@@ -95,11 +73,11 @@ HTML 문서 → 헤딩 파싱 → 섹션별 분할 → 섹션별 인덱스 항�
 }
 ```
 
-### 2.3 섹션 네비게이션 (Phase 2)
+### 2.2 섹션 네비게이션
 
 검색 결과 또는 AI 채팅의 참고 문서 링크 클릭 시 해당 섹션으로 정확히 이동합니다.
 
-**핵심 기술**: `content-visibility: auto`가 적용된 대용량 문서에서는 미렌더링 섹션의 높이가 추정값(500px)으로 대체되므로, 일반적인 `scrollIntoView`가 목표 위치를 놓칩니다. 이를 해결하기 위해 **반복 수렴 스크롤**(`scrollToElementReliably`)을 사용합니다:
+**핵심 기술**: `content-visibility: auto`가 적용된 대용량 문서에서는 미렌더링 섹션의 높이가 추정값(500px)으로 대체되므로, 일반적인 `scrollIntoView`가 목표 위치를 놓칩니다. **반복 수렴 스크롤**(`scrollToElementReliably`)로 해결:
 
 ```
 instant scrollIntoView → 주변 섹션 렌더링 → 위치 재확인 → 수렴 (2~3프레임)
@@ -107,7 +85,7 @@ instant scrollIntoView → 주변 섹션 렌더링 → 위치 재확인 → 수�
 
 **적용 위치**: TOC 클릭, 검색 결과 이동, AI 채팅 참조 링크, 페이지 간 섹션 이동
 
-### 2.4 Phase 3 (벡터 인덱싱 + 구조 보존) — 현재 구현
+### 2.3 벡터 인덱싱 (FAISS + bge-m3)
 
 ```
 search-index.json (섹션 텍스트)
@@ -211,31 +189,11 @@ def chunk_by_section(html_content):
 
 ## 5. 검색 전략
 
-### 5.1 Phase 1: 키워드 검색
+### 5.1 키워드 검색 (BM25)
 
-```python
-def keyword_search(query, index, top_k=5):
-    """
-    단어 기반 키워드 매칭
-    """
-    terms = query.lower().split()
-    results = []
+`backend/services/keyword_search.py` — kiwipiepy 형태소 분석 + rank-bm25. 제목 가중치는 `title` 필드를 본문 앞에 반복 삽입하여 반영.
 
-    for doc in index:
-        score = 0
-        for term in terms:
-            if term in doc['title'].lower():
-                score += 10  # 제목 매칭 가중치
-            if term in doc['content'].lower():
-                score += 1   # 본문 매칭
-
-        if score > 0:
-            results.append((doc, score))
-
-    return sorted(results, key=lambda x: -x[1])[:top_k]
-```
-
-### 5.2 Phase 3: 하이브리드 검색 (RRF 기반)
+### 5.2 하이브리드 검색 (RRF 기반)
 
 ```
 질문 → [키워드 검색] → 키워드 매칭 결과 (Sparse)
@@ -263,11 +221,7 @@ rrf_score(d) = Σ  weight_i × 1/(k + rank_i(d))
 | `HYBRID_RRF_K` | 60 | RRF 상수 (순위 차이 완화) |
 | `MIN_VECTOR_SCORE` | 0.48 | 벡터 유사도 임계값 (이하 제거) |
 
-**RRF를 선택한 이유:**
-- 초기 설계에서는 α 선형 결합(`α × sparse + (1-α) × dense`)을 검토했으나, 키워드 검색과 벡터 검색의 점수 스케일이 다르므로 정규화가 필요
-- RRF는 점수 대신 **순위(rank)**만 사용하므로 스케일 차이에 영향받지 않음
-- 구현이 간단하고 추가 하이퍼파라미터(정규화 방식) 튜닝이 불필요
-- 참고 논문: Cormack et al. (2009), "Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods"
+> **RRF 선택 근거·α 선형결합 대비 이점·Cormack (2009) 논문 참조**: [RAG-TECHNICAL-REPORT §6](RAG-TECHNICAL-REPORT.md) 참조.
 
 ### 5.3 Cross-encoder 리랭킹
 
@@ -613,62 +567,7 @@ ChatGPT/Claude 스타일로 어시스턴트 답변에는 버블(배경)이 없�
 
 ---
 
-## 11. 구현 체크리스트
-
-### Phase 1: 키워드 검색 ✅ 완료
-- [x] 페이지 단위 인덱싱
-- [x] 단어 분리 검색
-- [x] 제목/본문 가중치
-- [x] 백엔드 API 연동 (/api/search, /api/chat)
-- [x] 직접 호출/백엔드 모드 동일 품질 보장
-
-### Phase 2: 섹션 레벨 ✅ 완료
-- [x] HTML 헤딩 파서 구현 (h1~h3 기준 분할)
-- [x] 섹션 ID 생성 로직 (Python/JavaScript 동일)
-- [x] build-search-index.py 수정 (섹션 단위 인덱싱)
-- [x] 인덱스 구조 변경 (section_id, heading_level 추가)
-- [x] HTML ID 주입 옵션 (`--inject-ids`)
-- [x] 참고 문서 링크에서 섹션 직접 이동 기능
-- [x] 반복 수렴 스크롤 (`scrollToElementReliably`) - `content-visibility:auto` 호환
-- [x] 검색 인덱스 캐시 버스팅 (`?t=Date.now()`)
-- [x] 백엔드/직접호출 모드 동일 품질 보장
-
-### Phase 3: 하이브리드 검색 + 고급 RAG ✅ 완료
-- [x] Ollama bge-m3 임베딩 클라이언트 (`embedding_client.py`)
-- [x] FAISS 벡터 인덱스 빌드 (`build-vector-index.py`)
-- [x] 벡터 검색 서비스 (`vector_search.py`)
-- [x] 하이브리드 검색 RRF 병합 (keyword 30% + vector 70%)
-- [x] `MIN_VECTOR_SCORE=0.48` 필터링 (negative 쿼리 대응)
-- [x] Cross-encoder 리랭킹 (`reranker.py`, bge-reranker-v2-m3)
-- [x] 리랭커 로컬 모델 배포 (`models/` 폴더)
-- [x] 검색 결과 중복 제거 (content[:200] 기반)
-- [x] 인메모리 대화 세션 저장소 (`conversation.py`, LRU 퇴거)
-- [x] LLM 쿼리 재작성 (`query_rewriter.py`, 폴백 전략)
-- [x] conversation_id 기반 멀티턴 대화 API
-- [x] 토큰 예산 관리 (8000자: system 500 + docs 5000 + history 2000 + question 500)
-- [x] per-document 균등 할당 (컨텍스트 트리밍)
-- [x] temperature=0 (결정적 응답)
-- [x] 구조 보존 인덱싱 — 테이블→GFM 마크다운 (`html_to_text.py`)
-- [x] 구조 보존 인덱싱 — MathML→LaTeX (`html_to_text.py`)
-- [x] 업로드 시 search-index → vector-index 순차 자동 재생성
-- [x] 벡터 인덱스 증분 추가 (전체 재빌드 대신 새 문서만 추가)
-- [x] 예외 처리, 메모리 보호, 타임아웃 강화
-
-### Phase 4: 고급 RAG + 프로바이더 추상화 ✅ 완료
-- [x] 질문 라우팅 (`question_router.py`) — SIMPLE/COMPARE/REASON/CHAT 4유형 분류
-- [x] 쿼리 분해 (`query_decomposer.py`) — 복합 질문 1~3개 서브쿼리 분할
-- [x] Agentic RAG (`rag_agent.py`) — 반복 검색-판단-재검색 루프 (최대 3회)
-- [x] LLM 프로바이더 추상화 (`llm_provider.py`) — Ollama + OpenAI 호환 API
-- [x] LLM 클라이언트 리팩토링 (`llm_client.py`) — 프로바이더 래퍼, 동기/스트리밍
-- [x] 한국어 형태소 분석 (`korean_tokenizer.py`) — kiwipiepy, 폴백: 공백 분리
-- [x] 신뢰도 판단 개선 — 문서 수 기반 결정적 판단 (LLM 판정 제거)
-- [x] 스트리밍 채팅 엔드포인트 (`POST /api/chat/stream`) — NDJSON 토큰 스트리밍
-- [x] 채팅 UI 개선 — 어시스턴트 버블 제거, 복사 버튼, 스크롤-투-바텀, rAF 렌더링 최적화
-- [x] 피드백 엔드포인트 (`POST /api/chat/feedback`) — 사용자 피드백 기록
-
----
-
-## 12. 관련 문서
+## 11. 관련 문서
 
 - [05-ARCHITECTURE.md](05-ARCHITECTURE.md): 시스템 구조, 배포 절차
 - [RAG-TECHNICAL-REPORT.md](RAG-TECHNICAL-REPORT.md): RAG 답변 품질 개선 기술 보고서
@@ -676,7 +575,7 @@ ChatGPT/Claude 스타일로 어시스턴트 답변에는 버블(배경)이 없�
 
 ---
 
-## 13. 참고 자료
+## 12. 참고 자료
 
 - 프로젝트 내 연구 논문: `contents/dev-overview/MyPaper_20251109_V2.8_Claude.html`
   - BM25+FAISS 하이브리드 검색 실험 결과

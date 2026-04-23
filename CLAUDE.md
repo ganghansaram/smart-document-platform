@@ -30,7 +30,7 @@ python -m http.server 8080            # http://localhost:8080
 ```
 
 ## Docker 운영
-- 가이드: `docs/13-DOCKER-OPERATIONS.md`
+- 가이드: `docs/03-DOCKER-OPERATIONS.md`
 - 개발 (override 자동 적용, bind mount): `docker compose up -d`
 - 프로덕션 (override 배제): `docker compose -f docker-compose.yml up -d`
 - 환경 변수: `.env`에서 `CORS_ORIGINS`, `OLLAMA_URL`, `PORT` 등 관리

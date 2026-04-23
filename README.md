@@ -90,7 +90,8 @@ docker compose up -d
 # → http://localhost 으로 접속
 ```
 
-> 상세 설정 및 폐쇄망 배포는 [DOCKER-OPERATIONS](docs/13-DOCKER-OPERATIONS.md) 참조.
+> 상세 설정 및 폐쇄망 배포는 [DOCKER-OPERATIONS](docs/03-DOCKER-OPERATIONS.md) 참조.
+> 배포 환경 3종(개발 PC · 회사 Linux VM · 회사 Windows PC) 전체 흐름은 [DEPLOYMENT-GUIDE](docs/01-DEPLOYMENT-GUIDE.md) 참조.
 
 ### 방법 B: 로컬 Python
 
@@ -127,39 +128,35 @@ python tools/create-admin.py
 
 ### 5. 상세 가이드
 
-처음 사용하는 경우 아래 순서로 읽으세요.
+**설치·배포** (이 순서로 읽으세요)
 
 | 순서 | 문서 | 설명 |
 |------|------|------|
-| 1 | [QUICK-START](docs/01-QUICK-START.md) | 로컬 PC에서 바로 테스트 (Python) |
-| 2 | [INSTALLATION](docs/02-INSTALLATION.md) | Tomcat 서버 설치 (프론트엔드) |
-| 3 | [BACKEND-SETUP](docs/03-BACKEND-SETUP.md) | FastAPI 백엔드 설치 (AI 채팅) |
-| 4 | [USER-GUIDE](docs/04-USER-GUIDE.md) | 메뉴/콘텐츠 관리, 운영 방법 |
+| 1 | [DEPLOYMENT-GUIDE](docs/01-DEPLOYMENT-GUIDE.md) | 배포 환경 3종(개발 PC · 회사 Linux · 회사 Windows) 통합 가이드 — 신규 배포자의 필수 입구 |
+| 2 | [BACKEND-SETUP](docs/02-BACKEND-SETUP.md) | Python 백엔드 심화 — 가상환경, 오프라인 패키지, 변환기 의존성 |
+| 3 | [DOCKER-OPERATIONS](docs/03-DOCKER-OPERATIONS.md) | Docker 배포·패치·백업·롤백 심화 |
+| 4 | [USER-GUIDE](docs/04-USER-GUIDE.md) | 사용자·관리자 기능, 메뉴·콘텐츠 관리 |
 
 **기술 참조**
 
 | 문서 | 설명 |
 |------|------|
-| [ARCHITECTURE](docs/05-ARCHITECTURE.md) | 시스템 구성도, 서버별 설치 항목, API 전체 목록 |
-| [RAG-PIPELINE](docs/06-RAG-PIPELINE.md) | 검색/AI 파이프라인, 임베딩, 청킹 전략 |
-| [TRANSLATOR-SYSTEM](docs/07-TRANSLATOR-SYSTEM.md) | Notebook(Translator) 시스템 설계 — 번역·추출·요약·Q&A |
-| [COMPARE-SYSTEM](docs/11-COMPARE-SYSTEM.md) | Verify(Compare) 비교 모드 기술 문서 — diff·AI 분류·판정 |
-| [VERIFY-SYSTEM](docs/12-VERIFY-SYSTEM.md) | Verify 규칙 엔진 — 표준 분석·21종 규칙·스코어링 |
+| [ARCHITECTURE](docs/05-ARCHITECTURE.md) | 시스템 구성도 (Docker + Windows 네이티브), 폴더 구조, API 전체 목록 |
+| [RAG-PIPELINE](docs/06-RAG-PIPELINE.md) | RAG 파이프라인 구현 사양 — 모듈·파라미터·엔드포인트 |
+| [RAG-TECHNICAL-REPORT](docs/RAG-TECHNICAL-REPORT.md) | RAG 품질 개선 근거·실험 수치·의사결정 히스토리 |
+| [TRANSLATOR-SYSTEM](docs/07-TRANSLATOR-SYSTEM.md) | Notebook(Translator) 시스템 설계 — 번역·추출·요약·Q&A·마인드맵 |
+| [VERIFY-SYSTEM](docs/11-VERIFY-SYSTEM.md) | Verify 시스템 — 비교·유사도·규칙 엔진·스코어링·검토 리포트 통합 |
+| [CONVERTER-ARCHITECTURE](docs/13-CONVERTER-ARCHITECTURE.md) | DOCX→HTML 변환기 — 엔진 SSOT + 전처리 어댑터 체인 (Plan-37) |
 
-**운영/전략**
-
-| 문서 | 설명 |
-|------|------|
-| [PRODUCTION-READINESS](docs/10-PRODUCTION-READINESS.md) | 운영 준비도 평가, 장비 사양, 배포 아키텍처 |
-| [DOCKER-OPERATIONS](docs/13-DOCKER-OPERATIONS.md) | Docker 배포 자동화, 컨테이너 운영, 패치 적용 |
-| [GIT-GUIDE](docs/08-GIT-GUIDE.md) | Git 사용법, GitHub 연동, 브랜치 전략 |
-| [PLATFORM-VISION](docs/09-PLATFORM-VISION.md) | 플랫폼 발전 방향, 로드맵 |
-
-**부록**
+**운영·전략**
 
 | 문서 | 설명 |
 |------|------|
-| [RAG-TECHNICAL-REPORT](docs/RAG-TECHNICAL-REPORT.md) | RAG 답변 품질 개선 기술 보고서 |
+| [PLATFORM-VISION](docs/09-PLATFORM-VISION.md) | 플랫폼 발전 방향, 로드맵, 외부 연계(K-Spec) |
+
+**아카이브·참고** (`workbench/`)
+- `workbench/reports/plan-11-production-readiness.md` — 운영 준비도 평가 보고서 (Plan-11, Plan-22/27 완료 반영)
+- `workbench/reference/git-initial-setup.md` — 프로젝트 초기 Git 설정 가이드
 
 ## 프로젝트 구조
 
@@ -295,20 +292,17 @@ smart-document-platform/
 ├── deploy.sh               # 전체 이미지 배포 스크립트
 ├── patch-apply.sh          # 패치 적용 스크립트
 └── docs/                   # 문서
-    ├── 01-QUICK-START.md      # 빠른 시작
-    ├── 02-INSTALLATION.md     # Tomcat 설치
-    ├── 03-BACKEND-SETUP.md    # 백엔드 설치
-    ├── 04-USER-GUIDE.md       # 사용자/운영자 가이드
-    ├── 05-ARCHITECTURE.md     # 시스템 아키텍처, API 설계
-    ├── 06-RAG-PIPELINE.md     # RAG 파이프라인
-    ├── 07-TRANSLATOR-SYSTEM.md # Notebook(Translator) 설계
-    ├── 08-GIT-GUIDE.md        # Git 가이드
-    ├── 09-PLATFORM-VISION.md  # 플랫폼 비전, 로드맵
-    ├── 10-PRODUCTION-READINESS.md # 운영 준비도
-    ├── 11-COMPARE-SYSTEM.md   # Verify(Compare) 비교 모드
-    ├── 12-VERIFY-SYSTEM.md    # Verify 규칙 엔진
-    ├── 13-DOCKER-OPERATIONS.md # Docker 배포 및 운영
-    └── RAG-TECHNICAL-REPORT.md # RAG 기술 보고서
+    ├── 01-DEPLOYMENT-GUIDE.md     # 배포 환경 3종 통합 가이드 (입구)
+    ├── 02-BACKEND-SETUP.md        # Python 백엔드 심화 설정
+    ├── 03-DOCKER-OPERATIONS.md    # Docker 배포·운영 심화
+    ├── 04-USER-GUIDE.md           # 사용자/관리자 가이드
+    ├── 05-ARCHITECTURE.md         # 시스템 아키텍처, 폴더 구조, API
+    ├── 06-RAG-PIPELINE.md         # RAG 구현 사양
+    ├── 07-TRANSLATOR-SYSTEM.md    # Notebook(Translator) 설계
+    ├── 09-PLATFORM-VISION.md      # 플랫폼 비전, 로드맵
+    ├── 11-VERIFY-SYSTEM.md        # Verify 시스템 통합 (비교·유사도·규칙·리포트)
+    ├── 13-CONVERTER-ARCHITECTURE.md # DOCX→HTML 변환기 (엔진 SSOT)
+    └── RAG-TECHNICAL-REPORT.md    # RAG 품질 개선 기술 보고서
 ```
 
 ## 기술 스택

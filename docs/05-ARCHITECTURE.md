@@ -29,81 +29,80 @@ Smart Document Platform 백엔드 시스템 설계 및 배포 문서 — Explore
 
 ## 1. 시스템 구성도
 
+플랫폼은 **배포 환경 3종**을 공식 지원합니다 (상세: [01-DEPLOYMENT-GUIDE](01-DEPLOYMENT-GUIDE.md)).
+
+### 1.1 주 배포 — Docker 2-컨테이너 (회사 Linux VM, 개발 PC)
+
+Plan-27 이후 Nginx + Backend 두 컨테이너로 단일 포트(80)로 운영합니다. 외부에는 Nginx 만 노출되고, 백엔드는 내부 네트워크에만 존재합니다.
+
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  가상 Windows PC (웹북 서버)                                  │
-│                                                             │
-│  ┌─────────────────┐    ┌─────────────────────────────┐    │
-│  │  Tomcat:8080    │    │  FastAPI Backend:8000       │    │
-│  │  ---------------│    │  ---------------------------│    │
-│  │  - index.html   │───▶│  POST /api/search           │    │
-│  │  - js/*.js      │    │  POST /api/chat             │    │
-│  │  - css/*.css    │    │  POST /api/save-document 🔒 │    │
-│  │  - contents/*   │    │  POST /api/document-submit 🔒│    │
-│  └─────────────────┘    │  POST /api/reindex       🔒 │    │
-│                         │  /api/auth/* (login/users)   │    │
-│                         │  POST /api/analytics/*  통계 API              │    │
-│                         │  GET/POST /api/settings 설정 API (admin) 🔒   │    │
-│                         │  GET/POST /api/menu    메뉴 관리 (admin) 🔒   │    │
-│                         │  /api/translator/*     Notebook API (번역/추출/요약/Q&A/마킹) │    │
-│                         │  /api/compare/*        Verify API (diff/유사도/규칙/내보내기) │    │
-│                         │                              │    │
-│                         │  Services:                   │    │
-│                         │  - Auth (SQLite sessions)    │    │
-│                         │  - KeywordSearch (BM25)      │    │
-│                         │  - VectorSearch (FAISS+RRF)  │    │
-│                         │  - EmbeddingClient (bge-m3)  │    │
-│                         │  - Reranker (Cross-encoder)  │    │
-│                         │  - ConversationStore (LRU)   │    │
-│                         │  - QueryRewriter             │    │
-│                         │  - QuestionRouter (4유형 분류)│    │
-│                         │  - QueryDecomposer (쿼리 분해)│    │
-│                         │  - RAGAgent (반복 검색-판단)  │    │
-│                         │  - LLMProvider (Ollama/OpenAI)│    │
-│                         │  - LLMClient (응답 생성 래퍼) │    │
-│                         │  - KoreanTokenizer           │    │
-│                         │  - SettingsService           │    │
-│                         │  - Analytics (SQLite 대시보드)│    │
-│                         │  - TranslatorService (번역/추출/요약 오케스트레이션) │    │
-│                         │  - AISummary (크기 적응형 요약+마인드맵)         │    │
-│                         │  - NotebookChat (문서 Q&A 스트리밍)             │    │
-│                         │  - MdExtractor (PyMuPDF+YOLO) │    │
-│                         │  - MdTranslator (블록 번역)   │    │
-│                         │  - TextTranslator (단일/배치)  │    │
-│                         │  - CompareService (텍스트 추출/AI분류)          │    │
-│                         │  - SimilarityEngine (Winnowing+시맨틱 임베딩)   │    │
-│                         │  - RuleEngine (21종 규칙 검증) │    │
-│                         │  - ExportService (XLSX/HTML/TXT 내보내기)       │    │
-│                         │  - DocumentExtractor (HTML/PDF/DOCX 추출)       │    │
-│                         └──────────────┬──────────────┘    │
-│                                        │                    │
-│  설치 항목:                             │                    │
-│  - JDK 1.8                             │                    │
-│  - Apache Tomcat 7.0                   │                    │
-│  - Python 3.11.9                       │                    │
-│  - FastAPI + uvicorn                   │                    │
-│  - faiss-cpu, sentence-transformers    │                    │
-│                                        │                    │
-│  models/bge-reranker-v2-m3/            │                    │
-│  (로컬 Cross-encoder 리랭커 모델)      │                    │
-└────────────────────────────────────────┼────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  Docker Host (회사 Linux VM · 개발 PC WSL2)                          │
+│                                                                      │
+│  ┌────────────────────┐    ┌────────────────────────────────────┐   │
+│  │  Nginx Container   │    │  Backend Container (비특권 appuser) │   │
+│  │  (외부 :PORT→80)   │    │  (내부 :8000, 외부 비노출)          │   │
+│  │ ─────────────────  │    │ ──────────────────────────────────  │   │
+│  │  - 정적 서빙        │───▶│  FastAPI + uvicorn                  │   │
+│  │    index / css /   │    │  /api/search · /api/chat            │   │
+│  │    js / contents   │    │  /api/save-document     🔒 admin    │   │
+│  │  - /api → backend  │    │  /api/document-submit   🔒 admin    │   │
+│  │  - 보안 차단(403)  │    │  /api/reindex           🔒 admin    │   │
+│  │  - gzip            │    │  /api/auth/*  /api/settings 🔒      │   │
+│  └────────────────────┘    │  /api/menu    🔒 · /api/analytics   │   │
+│                            │  /api/translator/*   Notebook       │   │
+│  볼륨 마운트:              │  /api/compare/*      Verify          │   │
+│  - data/      (보존)       │                                      │   │
+│  - contents/  (보존)       │  Services (27종):                    │   │
+│  - models/    (읽기 전용)  │   · Auth (SQLite sessions)          │   │
+│  - backups/   (보존)       │   · KeywordSearch(BM25) / Vector    │   │
+│  - logs/      (로테이팅)   │     Search(FAISS+RRF) / Reranker    │   │
+│                            │   · QuestionRouter · QueryDecomposer│   │
+│  네트워크:                 │     · RAGAgent · QueryRewriter       │   │
+│  - 외부: :PORT (Nginx만)   │   · LLMProvider(Ollama/OpenAI호환)  │   │
+│  - 내부: backend:8000      │   · TranslatorService · AISummary    │   │
+│                            │   · NotebookChat · MdExtractor       │   │
+│                            │   · MdTranslator · TextTranslator    │   │
+│                            │   · CompareService · SimilarityEngine│   │
+│                            │   · RuleEngine · ExportService       │   │
+│                            │   · DocumentExtractor · doc_converter│   │
+│                            │   · KoreanTokenizer · Analytics      │   │
+│                            │   · SettingsService · Conversation   │   │
+│                            │                                      │   │
+│                            │  Converter (tools/converter/):       │   │
+│                            │   · NumberingResolver · omml2mathml  │   │
+│                            │   · preprocess/ 어댑터 체인           │   │
+│                            │     (word_com / libreoffice / native)│   │
+│                            └────────────┬─────────────────────────┘   │
+└────────────────────────────────────────│──────────────────────────────┘
                                          │ HTTP (Ollama API)
                                          ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  GPU 서버 (회사 Linux · Ollama 별도 호스팅)                          │
+│  - LLM 모델: gemma3:27b · 임베딩: bge-m3 (1024차원)                 │
+│  - API: http://<gpu-server>:11434                                    │
+│  - EMBEDDING_BACKEND=ollama 설정 시 임베딩도 여기에 위임             │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### 1.2 대안 배포 — Windows 네이티브 (회사 Windows PC)
+
+Docker 가 없는 환경용. 프론트엔드는 Tomcat, 백엔드는 Python 직접 실행입니다. 이 형태는 `03-DOCKER-OPERATIONS` 가 아닌 [01-DEPLOYMENT-GUIDE §5](01-DEPLOYMENT-GUIDE.md#5-환경-c--회사-windows-pc-톰캣--python-직접-실행) 를 참조하세요.
+
+```
 ┌─────────────────────────────────────────────────────────────┐
-│  가상 Linux (GPU 서버)                                       │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  Ollama                                             │    │
-│  │  - LLM 모델: gemma3:27b                             │    │
-│  │  - 임베딩 모델: bge-m3 (1024차원)                    │    │
-│  │  - API: http://<server-ip>:11434                    │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                             │
-│  설치 항목:                                                  │
-│  - Ollama                                                   │
-│  - LLM 모델 파일 (gemma3:27b)                               │
-│  - 임베딩 모델 파일 (bge-m3)                                 │
-└─────────────────────────────────────────────────────────────┘
+│  Windows PC (Docker 없음)                                    │
+│  ┌────────────────┐          ┌────────────────────────┐     │
+│  │  Tomcat :8080  │─CORS────▶│  FastAPI :8000          │     │
+│  │  - 정적 자원   │          │  (python main.py 직접)  │     │
+│  └────────────────┘          └──────────┬──────────────┘     │
+│                                          │                    │
+│  · JDK 1.8 + Tomcat 7.0                 │  Word COM 전처리   │
+│  · Python 3.11.9 + venv                 │  (.docx_1 DRM 우회)│
+└──────────────────────────────────────────┼────────────────────┘
+                                           │ HTTP (Ollama API)
+                                           ▼
+                                  (회사 GPU 서버의 Ollama)
 ```
 
 ---
@@ -308,16 +307,19 @@ smart-document-platform/
 │
 ├── contents/                      # Explorer HTML 콘텐츠
 │
-├── Dockerfile                     # FastAPI 백엔드 컨테이너
+├── Dockerfile                     # Backend 컨테이너 (FastAPI + uvicorn)
 ├── docker-compose.yml             # 프로덕션 오케스트레이션 (Nginx + Backend)
 ├── docker-compose.override.yml    # 개발 환경 오버라이드 (bind mount)
+├── .env.example                   # 환경 설정 템플릿 (PORT, OLLAMA_URL 등)
 ├── docker/                        # Docker 관련 설정
 │   ├── Dockerfile.nginx           # Nginx 리버스 프록시 컨테이너
 │   ├── nginx.conf                 # 프로덕션 Nginx 설정
 │   └── nginx.dev.conf             # 개발 Nginx 설정
-├── deploy.sh                      # 전체 이미지 배포 스크립트
-└── patch-apply.sh                 # 패치(프론트엔드만) 적용 스크립트
+├── deploy.sh                      # 전체 이미지 배포 스크립트 (COMPOSE_FILE 고정 — Plan-31 방어선)
+└── patch-apply.sh                 # 패치(소규모 코드) 적용 스크립트 (Plan-31 방어선 동일)
 ```
+
+> Plan-37 Converter 통합 이후 `tools/converter/` 는 `preprocess/` 패키지(word_com / libreoffice / native 어댑터) + `numbering_resolver.py` + `omml_to_mathml.py` 를 포함하는 엔진 SSOT 이며, `tools/docx2html-standalone/` 은 이 엔진을 얇게 래핑한 EXE 배포판입니다. 상세: [13-CONVERTER-ARCHITECTURE](13-CONVERTER-ARCHITECTURE.md).
 
 ---
 
@@ -554,7 +556,7 @@ GET  /api/compare/history           — 세션 이력 조회
 POST /api/compare/history           — 세션 이력 저장
 ```
 
-> **상세**: [11-COMPARE-SYSTEM.md](11-COMPARE-SYSTEM.md), [12-VERIFY-SYSTEM.md](12-VERIFY-SYSTEM.md) 참조
+> **상세**: [11-VERIFY-SYSTEM.md](11-VERIFY-SYSTEM.md) 참조 (비교·유사도·규칙 검증 통합 문서)
 
 ### 4.10 Notebook(Translator) API
 
@@ -748,122 +750,17 @@ requestViaOllama() → Ollama /api/generate 직접 호출
 
 ---
 
-## 7. 구현 현황
+## 7. 구현 현황 (요약)
 
-### AI 채팅 기능
+주요 기능은 모두 완료 상태. **세부 진화 과정·기술 근거**는 다음 문서를 참조:
 
-| Phase | 상태 | 주요 내용 |
-|-------|------|-----------|
-| Phase 1 | ✅ 완료 | 백엔드 구축, 키워드 검색 API |
-| Phase 2 | ✅ 완료 | 섹션 레벨 인덱싱, 참조 링크 이동 |
-| Phase 3 | ✅ 완료 | 하이브리드 검색, 리랭킹, 멀티턴 대화, 구조 보존 인덱싱 |
-| Phase 4 | ✅ 완료 | 질문 라우팅, 쿼리 분해, Agentic RAG, LLM 프로바이더 추상화 |
-| Phase 5-6 | ✅ 완료 | Compare 시스템 (듀얼 diff, AI 의미 분류, 규칙 검증, 검토 리포트, 미니맵) |
-| Phase 7 | ✅ 완료 | Translator 기반 구축 (PDF 뷰어, 페이지별 번역, 마킹, 폴더, 트리 패널) |
-| Phase 8 | ✅ 완료 | Notebook 플랫폼 (웹 뷰 번역, MD 추출, AI 요약, 마인드맵, Q&A, 편집기, 용어집) |
-
-**Phase 3 세부 항목:**
-- FAISS + bge-m3 하이브리드 검색 (RRF 병합, keyword 30% + vector 70%)
-- Cross-encoder 리랭킹 (bge-reranker-v2-m3, 로컬 배포)
-- 멀티턴 대화 (인메모리 세션, LLM 쿼리 재작성)
-- 구조 보존 인덱싱 (테이블→마크다운, 수식→LaTeX)
-- 토큰 예산 관리 (8000자), temperature=0
-- 예외 처리, 메모리 보호, 타임아웃 강화
-
-**Phase 4 세부 항목:**
-- 질문 라우팅 (SIMPLE/COMPARE/REASON/CHAT 4유형 자동 분류)
-- 쿼리 분해 (복합 질문 → 1~3개 서브쿼리 병렬 검색)
-- Agentic RAG (반복 검색-판단-재검색 루프, 최대 3회)
-- LLM 프로바이더 추상화 (Ollama + OpenAI 호환 API)
-- 스트리밍 채팅 (NDJSON 토큰 스트리밍, rAF 렌더링 최적화)
-- 채팅 UI 개선 (버블 제거, 복사 버튼, 스크롤-투-바텀)
-- 한국어 형태소 분석 (kiwipiepy), 피드백 기록
-
-> **기술 상세**: [06-RAG-PIPELINE.md](06-RAG-PIPELINE.md#8-구현-체크리스트) 참조
-> **기술 보고서**: [RAG-TECHNICAL-REPORT.md](RAG-TECHNICAL-REPORT.md) 참조
-
-### 문서 편집 기능
-
-| 기능 | 상태 | 설명 |
-|------|------|------|
-| Monaco 에디터 | ✅ 완료 | HTML 소스 편집 + 실시간 미리보기 |
-| 문서 저장 API | ✅ 완료 | HTML 포맷팅 후 저장 |
-| 자동 백업 | ✅ 완료 | 저장 전 .bak 파일 생성 |
-| 커서 하이라이트 | ✅ 완료 | 편집 위치 미리보기에서 강조 |
-| 미리보기 이미지 | ✅ 완료 | 상대 경로 이미지 미리보기 표시 |
-| 계정 연동 | 예정 | 권한 기반 편집 제어 |
-
-### 문서 업로드/변환 기능
-
-| 기능 | 상태 | 설명 |
-|------|------|------|
-| Word 변환 | ✅ 완료 | DOCX → HTML (python-docx) |
-| PDF 변환 | ✅ 완료 | PDF → HTML (PyMuPDF) |
-| 캡션 자동 ID | ✅ 완료 | Figure/Table/그림/표 캡션에 ID 부여 |
-| 참조 링크 생성 | ✅ 완료 | 본문 참조 → `<a data-fig-ref>` 자동 변환 |
-| SEQ 필드 처리 | ✅ 완료 | 빈 캐시 값 자동 채번 |
-| 수식 변환 | ✅ 완료 | OMML → MathML (18종 요소, 외부 JS 불필요) |
-| 하이퍼링크/북마크 | ✅ 완료 | Word 링크 → `<a href>`, 북마크 → `<a id>` |
-| 각주/미주 | ✅ 완료 | 본문 참조 + 문서 끝 `<section class="footnotes">` |
-| 표 셀 병합 | ✅ 완료 | gridSpan → colspan, vMerge → rowspan (raw XML 기반) |
-| 텍스트 색상/하이라이트 | ✅ 완료 | `<span style="color:">`, `<mark>` (검정 스킵) |
-| 줄바꿈/탭/페이지 나누기 | ✅ 완료 | `<br>`, `&emsp;`, `<hr class="page-break">` |
-| 리스트 변환 | ✅ 완료 | 순서/비순서, 중첩, numFmt 기반 ol/ul 자동 판별 |
-| 셀 정렬 보존 | ✅ 완료 | CENTER/RIGHT/JUSTIFY → `style="text-align"` |
-| 문단 정렬 | ✅ 완료 | CENTER, RIGHT, JUSTIFY 지원 |
-| TOC 자동 스킵 | ✅ 완료 | toc 스타일 문단 제외 (우측 패널이 대체) |
-| 테이블 스타일 프리셋 | ✅ 완료 | bordered/simple/minimal (DISPLAY_CONFIG) |
-| 이미지 비율 보존 | ✅ 완료 | Word 페이지 대비 % 폭으로 출력 (`style="width: N%"`) |
-| 도형/그리기 감지 | ✅ 완료 | 추출 불가 Word 도형 → 플레이스홀더 경고 삽입 |
-| menu.json 갱신 | ✅ 완료 | 업로드 시 메뉴 노드 URL 자동 설정 |
-| 장절번호 평문화 | ✅ 완료 | COM 전처리로 자동번호 → 텍스트 변환 (Word 필요) |
-| 자동 인덱싱 | ✅ 완료 | 업로드 후 검색 인덱스 재생성 |
-
-### 그림/표 참조 팝업
-
-| 기능 | 상태 | 설명 |
-|------|------|------|
-| 팝업 모달 | ✅ 완료 | 캡션 클릭 시 이미지/표 팝업 표시 |
-| 양방향 탐색 | ✅ 완료 | 캡션 위/아래 방향 모두 콘텐츠 탐색 |
-| 원본 위치 이동 | ✅ 완료 | 팝업에서 원본 위치로 스크롤 |
-
-### 북마크
-
-| 기능 | 상태 | 설명 |
-|------|------|------|
-| 헤딩 북마크 아이콘 | ✅ 완료 | h1~h4 호버 시 ☆ 표시, 클릭으로 토글 |
-| 북마크 오버레이 | ✅ 완료 | 문서별 그룹핑 목록, 클릭으로 이동 |
-| 문서 간 이동 | ✅ 완료 | 다른 문서 북마크 클릭 시 로드 → 스크롤 |
-| 전체 삭제 | ✅ 완료 | Clear All 버튼으로 일괄 초기화 |
-| localStorage 저장 | ✅ 완료 | 서버 없이 브라우저 로컬 저장 |
-
-### 키보드 단축키
-
-| 기능 | 상태 | 설명 |
-|------|------|------|
-| 단축키 처리 | ✅ 완료 | ?/←→/H/B, 입력 필드/오버레이 충돌 방지 |
-| 도움말 모달 | ✅ 완료 | ? 키로 토글, DOM 동적 생성 |
-| 문서 이동 | ✅ 완료 | ←→ 키로 이전/다음 문서 탐색, 끝 도달 토스트 |
-
-### 배너 슬라이드쇼
-
-| 기능 | 상태 | 설명 |
-|------|------|------|
-| 이미지 슬라이드 | ✅ 완료 | JPG/PNG, Ken Burns 효과 |
-| 영상 슬라이드 | ✅ 완료 | MP4, 자동 재생/음소거/루프 |
-| 혼합 구성 | ✅ 완료 | `bannerSlides` 배열로 이미지+영상 자유 조합 |
-| 통계 스트립 | ✅ 완료 | 문서 수, 이미지 수 등 핵심 통계 표시 |
-| 브레드크럼 | ✅ 완료 | 메뉴 경로 표시, 상위 메뉴 클릭 이동 |
-
-### 토스트 알림
-
-| 기능 | 상태 | 설명 |
-|------|------|------|
-| 공용 showToast() | ✅ 완료 | app.js에 싱글턴 함수, 4가지 타입 (info/success/error/warning) |
-| 연속 호출 대응 | ✅ 완료 | clearTimeout으로 타이머 리셋, 메시지만 교체 |
-| 다크 모드 | ✅ 완료 | body[data-theme="dark"] 대응 |
-
-> **상세 설정**: [04-USER-GUIDE.md](04-USER-GUIDE.md#문서-편집기-설정) 참조
+| 기능군 | 참조 문서 | 핵심 기술 |
+|--------|-----------|-----------|
+| AI 채팅 · 검색 | [06-RAG-PIPELINE](06-RAG-PIPELINE.md) · [RAG-TECHNICAL-REPORT](RAG-TECHNICAL-REPORT.md) | 하이브리드 검색(RRF) · Cross-encoder 리랭킹 · 질문 라우팅 · Agentic RAG · LLM 프로바이더 추상화 |
+| Notebook (Translator) | [07-TRANSLATOR-SYSTEM](07-TRANSLATOR-SYSTEM.md) | PDF 페이지 번역 · 웹뷰 MD · AI 요약·마인드맵·Q&A · Monaco 편집기 |
+| Verify (Compare) | [11-VERIFY-SYSTEM](11-VERIFY-SYSTEM.md) | 듀얼 diff · AI 의미 분류 · Winnowing+bge-m3 유사도 · 21종 규칙 · Acrolinx 스코어링 |
+| DOCX→HTML 변환기 | [13-CONVERTER-ARCHITECTURE](13-CONVERTER-ARCHITECTURE.md) | 엔진 SSOT + 전처리 어댑터 체인(Word COM/LibreOffice/Native) · NumberingResolver · STYLEREF+SEQ · OMML→MathML · .docx_1 DRM 우회 |
+| 문서 편집 · 참조 팝업 · 북마크 · 단축키 · 배너 · 토스트 | [04-USER-GUIDE](04-USER-GUIDE.md) (사용법) / 본 문서 §9~16 (구현) | 공통 컴포넌트 기반 |
 
 ---
 
@@ -1063,11 +960,11 @@ Excel/한셀 편집 → glossary.csv (UTF-8 BOM) → import-glossary.py → glos
 
 ---
 
-## 12. 문서 변환 파이프라인
+## 12. 문서 변환 파이프라인 (프론트엔드 연동 개요)
 
-DOCX/PDF 파일을 HTML로 변환하는 전체 파이프라인입니다. COM 전처리 → python-docx 변환 → 캡션/참조 후처리 순서로 동작하며, 그림/표 참조 팝업까지 포함합니다.
+DOCX/PDF → HTML 변환 엔진 전체 아키텍처(전처리 어댑터 체인, NumberingResolver, STYLEREF+SEQ, OMML→MathML, DRM 우회)는 [13-CONVERTER-ARCHITECTURE](13-CONVERTER-ARCHITECTURE.md) 참조. 여기서는 변환 결과가 **프론트엔드에서 어떻게 활용되는지** 만 다룹니다.
 
-### 12.1 그림/표 참조 팝업 — 관련 파일
+### 12.1 그림/표 참조 팝업
 
 | 파일 | 역할 |
 |------|------|
@@ -1075,37 +972,25 @@ DOCX/PDF 파일을 HTML로 변환하는 전체 파이프라인입니다. COM 전
 | `js/figure-popup.js` | 이벤트 위임 기반 팝업 로직 |
 | `index.html` | 모달 DOM 컨테이너 (`#figure-popup-overlay`) |
 
-### 12.2 그림/표 참조 팝업 — 마크업 규칙
+### 12.2 마크업 규칙
 
-팝업이 동작하려면 문서 HTML에 다음 마크업이 필요합니다:
-
-#### 1) 그림/표 캡션에 ID 부여
+변환기가 자동 생성하는 HTML 은 다음 두 가지 규칙을 따릅니다:
 
 ```html
-<!-- 그림 캡션 -->
+<!-- 캡션: id 접두어 "fig-" / "tbl-" -->
 <p id="fig-1"><strong>Figure 1 – 시스템 구성도</strong></p>
 <p><img src="images/system.png" alt=""></p>
 
-<!-- 표 캡션 -->
-<p id="tbl-1"><strong>Table 1 – 시험 결과</strong></p>
-<table>...</table>
-```
-
-#### 2) 본문 참조 텍스트에 링크 추가
-
-```html
+<!-- 본문 참조: data-fig-ref 속성 -->
 <p>시스템 구성은 <a data-fig-ref="fig-1">Figure 1</a>에 나타나 있다.</p>
-<p>시험 결과는 <a data-fig-ref="tbl-1">Table 1</a>을 참조한다.</p>
 ```
-
-### 12.3 ID 명명 규칙
 
 | 유형 | 접두어 | 예시 |
 |------|--------|------|
-| 그림 (Figure/그림) | `fig-` | `fig-1`, `fig-2`, `fig-10` |
-| 표 (Table/표) | `tbl-` | `tbl-1`, `tbl-2`, `tbl-10` |
+| 그림 (Figure/그림) | `fig-` | `fig-1`, `fig-2-1` |
+| 표 (Table/표) | `tbl-` | `tbl-1`, `tbl-2` |
 
-### 12.4 JS 동작 원리
+### 12.3 JS 동작 원리
 
 1. **이벤트 위임**: `#main-content`에 단일 클릭 리스너 등록 → 동적 로드된 콘텐츠에도 자동 적용
 2. **콘텐츠 탐색**: `data-fig-ref` 값으로 대상 요소(`id`)를 찾고, 해당 요소 내부 또는 인접(±3 형제)에서 `img`/`table` 추출
@@ -1113,190 +998,14 @@ DOCX/PDF 파일을 HTML로 변환하는 전체 파이프라인입니다. COM 전
 4. **모달 표시**: 추출된 이미지/표를 모달에 복제하여 표시
 5. **닫기**: ESC 키, 배경 클릭, X 버튼
 
-### 12.5 변환기 구현 (converter.py)
-
-내장 변환기(`tools/converter/converter.py`)에 캡션 자동 ID 및 참조 링크 기능이 구현되어 있습니다.
-
-#### 처리 흐름
-
-```
-Word OOXML 파싱
-    ↓
-1. _resolve_seq_fields()  ← 각 문단 처리 전 SEQ 필드 자동 채번
-    ↓
-2. _process_paragraph()   ← 텍스트 추출 + 캡션 감지
-    ↓
-3. _detect_caption()      ← 캡션이면 _caption_map에 등록, <p id="fig-1"> 추가
-    ↓
-4. _linkify_references()  ← 최종 HTML에서 참조 텍스트 → <a data-fig-ref> 변환
-```
-
-#### SEQ 필드 처리 (`_resolve_seq_fields`)
-
-Word 캡션은 SEQ 필드로 번호를 관리합니다. 필드 갱신(Ctrl+A → F9) 없이 저장하면 빈 캐시 값이 됩니다.
-
-- **복합 필드**: `fldChar begin → instrText → fldChar separate → 결과 run → fldChar end`
-- **단순 필드**: `fldSimple` 요소 (자식 run을 부모 `<w:p>`로 승격)
-- 빈 캐시 → 카테고리별 카운터 자동 증가, XML에 주입
-- 유효 캐시 → 카운터 동기화
-
-#### 캡션 감지 (`_detect_caption`)
-
-```
-패턴: ^(Figure|Fig.|Table|Tab.|그림|표)\s+(\d+(?:[-.]?\d+)*)\s*[:：–—-.]
-```
-
-- **구분자 필수**: 번호 뒤에 `: – — - .` 중 하나가 있어야 캡션으로 인식
-- 예: "Figure 1 – Title" → `id="fig-1"` (캡션)
-- 예: "Figure 1을 보면" → 캡션 아님 (본문 참조로 처리)
-- ID 생성: Figure/Fig/그림 → `fig-`, Table/Tab/표 → `tbl-`
-
-#### 참조 링크 생성 (`_linkify_references`)
-
-최종 HTML에서 본문 참조 텍스트를 `<a data-fig-ref>` 링크로 변환합니다.
-
-- `_caption_map`에 등록된 캡션만 링크 대상
-- 스킵 영역: 기존 `<a>` 태그 내부, 캡션 `id=` 요소 내부
-
-#### 이미지 비율 보존
-
-Word 문서의 이미지 배치 크기(EMU)를 페이지 콘텐츠 폭 대비 비율(%)로 변환합니다.
-
-- `_get_page_content_width()`: 문서의 `sectPr`에서 페이지 폭 − 좌우 여백 계산
-- `_make_img_tag()`: `cx / 페이지콘텐츠폭 × 100` → `style="width: N%"` 출력
-- 원문 작성자가 의도한 이미지-본문 간 비율이 웹에서도 유지됨
-- 사용자가 에디터에서 `width: N%` 값을 수정하여 개별 이미지 크기 조절 가능
-
-#### 도형/그리기 감지
-
-Word 도형(DrawingML, VML)은 이미지로 추출할 수 없어 변환 시 누락됩니다. 변환기는 이를 감지하여 경고합니다.
-
-- `_has_unextractable_shapes()`: `<w:drawing>`/`<w:pict>` 존재하나 `<a:blip>` 없는 경우 감지
-- 도형만 있는 문단 → `<div class="shape-placeholder">` 블록 경고
-- 텍스트와 혼합된 도형 → 문단 뒤에 블록 경고 추가
-- 변환 결과에 `unextractable_shapes` 통계 + 경고 메시지 포함
-- **해결 방법**: Word에서 도형 선택 → 복사 → 선택하여 붙여넣기 → "그림(PNG)" 변환 후 재변환
-
-### 12.6 장절번호 평문화 (COM 전처리)
-
-Word의 다단계 목록 자동번호(1.1, 3.2.4 등)는 python-docx로 텍스트를 읽을 수 없습니다. 업로드 시 `win32com`으로 Word를 COM 호출하여 자동번호를 텍스트로 변환하는 전처리 단계가 파이프라인에 포함되어 있습니다.
-
-#### 관련 파일
-
-| 파일 | 역할 |
-|------|------|
-| `tools/converter/word_preprocessor.py` | COM 기반 DOCX 전처리 (장절번호 평문화 + 필드 갱신) |
-| `backend/api/upload.py` | `run_converter()` 내 DOCX 변환 전 전처리 호출 |
-
-#### 처리 흐름
-
-```
-업로드된 DOCX
-    ↓
-1. preprocess_docx()          ← Word COM 인스턴스 생성 (백그라운드)
-    ↓
-2. _flatten_heading_numbers() ← 헤딩 단락의 ListString 수집 (Pass 1)
-                               ← 역순으로 RemoveNumbers + InsertBefore (Pass 2)
-    ↓
-3. _update_fields()           ← SEQ 필드, TOC 등 일괄 갱신
-    ↓
-4. SaveAs2 → 임시 파일        ← 원본 DOCX는 변경하지 않음
-    ↓
-5. DocxConverter.convert()    ← 기존 python-docx 기반 변환
-    ↓
-6. 임시 파일 정리
-```
-
-#### 2-pass 방식
-
-`RemoveNumbers()`는 리스트 체인을 끊어 후속 단락의 번호를 리셋합니다. 이를 방지하기 위해:
-- **Pass 1**: 모든 헤딩의 `ListString`을 먼저 수집
-- **Pass 2**: 역순(문서 끝→앞)으로 번호 제거 + 텍스트 삽입
-
-#### Graceful Fallback
-
-- `pywin32` 미설치 또는 Word 미설치 환경 → 경고 로그만 남기고 원본 DOCX 그대로 변환 (번호 없이)
-- COM 오류 발생 시에도 동일하게 fallback → 서비스 중단 없음
-- `finally` 블록에서 Word 프로세스 반드시 종료 (좀비 방지)
-
-### 12.7 수식 변환 (OMML → MathML)
-
-내장 변환기는 Word 수식(OMML)을 브라우저 네이티브 MathML로 변환합니다. 외부 JavaScript 라이브러리(MathJax, KaTeX 등) 없이 동작하므로 에어갭 환경에 적합합니다.
-
-#### 관련 파일
-
-| 파일 | 역할 |
-|------|------|
-| `tools/converter/omml_to_mathml.py` | OMML XML → MathML 변환 클래스 |
-| `tools/converter/converter.py` | 수식 감지 및 변환 통합 |
-| `css/content.css` | MathML 표시 스타일 (`.math-display`) |
-
-#### 처리 흐름
-
-```
-Word OOXML (paragraph._element)
-    ↓
-1. _has_math()               ← m:oMathPara 또는 m:oMath 존재 여부 확인
-    ↓
-2-A. 디스플레이 수식 (m:oMathPara)
-    → OmmlToMathml.convert_omath(display=True)
-    → <div class="math-display"><math display="block">...</math></div>
-    ↓
-2-B. 인라인 수식 (m:oMath + w:r 혼합)
-    → _process_paragraph_children()
-    → <w:r>은 기존 _process_runs()로, <m:oMath>은 convert_omath(display=False)로 처리
-    → <p>텍스트 <math>...</math> 텍스트</p>
-```
-
-#### 지원 OMML 요소 (18종)
-
-| OMML | MathML | 설명 |
-|------|--------|------|
-| `m:f` | `<mfrac>` | 분수 (선형, 무선 분수 포함) |
-| `m:sSub` / `m:sSup` / `m:sSubSup` | `<msub>` / `<msup>` / `<msubsup>` | 첨자 |
-| `m:d` | `<mrow><mo>(</mo>...<mo>)</mo></mrow>` | 괄호/구분자 |
-| `m:rad` | `<msqrt>` / `<mroot>` | 근호 |
-| `m:nary` | `<munderover>` / `<msubsup>` + `<mo>` | 합(∑), 적분(∫) 등 |
-| `m:func` | `<mrow>` | 함수 (sin, cos 등) |
-| `m:acc` | `<mover accent>` | 악센트 (벡터 화살표 등) |
-| `m:bar` | `<mover>` / `<munder>` | 윗줄/아랫줄 |
-| `m:m` | `<mtable>` | 행렬 |
-| `m:eqArr` | `<mtable>` | 수식 배열 |
-| `m:limLow` / `m:limUpp` | `<munder>` / `<mover>` | 극한 |
-| `m:groupChr` | `<munder>` / `<mover>` | 그룹 문자 (중괄호 등) |
-| `m:sPre` | `<mmultiscripts>` | 앞첨자 |
-| `m:box` | `<mrow>` | 박스 |
-| `m:borderBox` | `<menclose>` | 테두리 박스 |
-| `m:phant` | `<mphantom>` | 팬텀 |
-
-#### 텍스트 분류 (`_classify_math_text`)
-
-`m:r` / `m:t` 요소의 텍스트를 MathML 요소로 자동 분류:
-
-- 숫자 (소수점 포함) → `<mn>`
-- 연산자 (+, -, =, <, > 등) → `<mo>`
-- 알려진 함수명 (sin, cos, log 등) → `<mi>`
-- 변수/그리스 문자 → `<mi>`
-- 혼합 문자열 → 문자 단위로 분리하여 각각 분류
-
-#### 미지원 요소 폴백
-
-구현되지 않은 OMML 요소는 `_convert_children()`로 자식을 재귀 처리하여 **내용은 보존**됩니다. 구조만 평탄화될 뿐 텍스트가 누락되지는 않습니다.
-
-#### 주의사항
-
-- **수식 편집**: MathML은 기계 생성 포맷으로 사람이 직접 편집하기 어렵습니다. 수식 수정이 필요하면 Word 원본을 수정 후 재변환을 권장합니다.
-- **브라우저 호환**: Chrome 109+, Edge 109+, Firefox 전 버전, Safari 전 버전에서 MathML 네이티브 지원. IE는 미지원.
-- **인쇄**: `@media print`에서 `.math-display`에 `page-break-inside: avoid` 적용.
-
-### 12.8 팝업 콘텐츠 탐색 (`extractFigureContent`)
+### 12.4 팝업 콘텐츠 탐색 (`extractFigureContent`)
 
 캡션 요소(`id`)를 기준으로 이미지/표를 찾는 양방향 탐색 로직:
 
-1. 요소 자체가 `<img>` 또는 `<table>`인 경우 → 즉시 사용
+1. 요소 자체가 `<img>` 또는 `<table>` 인 경우 → 즉시 사용
 2. 요소 내부에서 `<img>` 또는 `<table>` 탐색
 3. **양방향 형제 탐색**: 이전/다음 각 3개 형제까지 탐색, 가장 가까운 후보 선택
-   - Word에서 캡션이 표 아래에 오는 경우와 이미지 위에 오는 경우 모두 대응
+   - Word 에서 캡션이 표 아래/이미지 위 어느 쪽에 오든 대응
 
 ---
 
@@ -1334,31 +1043,17 @@ Word OOXML (paragraph._element)
 
 ---
 
-## 14. 키보드 단축키
+## 14. 키보드 단축키 (구현)
 
-문서 탐색을 위한 키보드 단축키 시스템입니다.
+키 일람표 및 사용자 관점 설명은 [04-USER-GUIDE § 키보드 단축키](04-USER-GUIDE.md#키보드-단축키) 참조.
 
-### 14.1 관련 파일
+**구현 파일**: `js/keyboard.js` · `css/main.css`(`.shortcuts-overlay`)
 
-| 파일 | 역할 |
-|------|------|
-| `js/keyboard.js` | 키 이벤트 처리, 도움말 모달 생성 |
-| `css/main.css` | 도움말 모달 스타일 (`.shortcuts-overlay`, `.shortcuts-modal`) |
-
-### 14.2 구현 방식
-
-- **IIFE 패턴**: 전역 오염 방지, `DOMContentLoaded`에서 초기화
-- **입력 필드 무시**: `INPUT`, `TEXTAREA`, `contentEditable` 활성 시 단축키 비활성
-- **오버레이 충돌 방지**: 검색/북마크/팝업 오버레이가 열려있으면 단축키 무시
-- **도움말 모달**: DOM 동적 생성 (싱글턴), CSS 트랜지션으로 페이드인/아웃
-
-### 14.3 문서 이동 로직
-
-`navigateDocument(direction)`:
-1. `AppState.menuData`에서 `url`이 있는 항목만 평탄화(flatten)
-2. `AppState.currentPage`로 현재 위치 검색
-3. `direction` (+1/-1) 적용하여 이전/다음 문서 `loadContent()` 호출
-4. 첫 번째/마지막 문서 도달 시 토스트 알림
+**핵심 원칙**:
+- IIFE 패턴, `DOMContentLoaded` 초기화
+- 입력 필드(`INPUT`, `TEXTAREA`, `contentEditable`) 활성 시 단축키 비활성
+- 오버레이(검색·북마크·팝업) 열려 있으면 단축키 무시
+- 문서 이동: `navigateDocument(±1)` — `AppState.menuData` 평탄화 → 현재 위치 기준 이전/다음 문서 로드
 
 ---
 
@@ -1455,7 +1150,8 @@ app.add_middleware(
 
 - [06-RAG-PIPELINE.md](06-RAG-PIPELINE.md): 검색/AI 기술 상세 (청킹, 임베딩, 검색 전략)
 - [RAG-TECHNICAL-REPORT.md](RAG-TECHNICAL-REPORT.md): RAG 답변 품질 개선 기술 보고서
-- [02-INSTALLATION.md](02-INSTALLATION.md): Tomcat 기본 설치
+- [01-DEPLOYMENT-GUIDE.md](01-DEPLOYMENT-GUIDE.md): 환경 3종 통합 배포 가이드
+- [03-DOCKER-OPERATIONS.md](03-DOCKER-OPERATIONS.md): Docker 배포·운영 심화
 - [07-TRANSLATOR-SYSTEM.md](07-TRANSLATOR-SYSTEM.md): Translator 시스템 설계 (API, 데이터 구조, 번역 파이프라인)
-- [11-COMPARE-SYSTEM.md](11-COMPARE-SYSTEM.md): Compare 시스템 설계 (diff, AI 분류, 검증, 리포트)
+- [11-VERIFY-SYSTEM.md](11-VERIFY-SYSTEM.md): Verify 시스템 설계 (비교·유사도·규칙 검증·리포트)
 - [04-USER-GUIDE.md](04-USER-GUIDE.md): 콘텐츠 관리, 검색 인덱스 업데이트

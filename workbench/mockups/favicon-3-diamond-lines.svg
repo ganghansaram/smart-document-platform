@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- 시안 3: 문서 + 스파크 — Smart Document -->
+  <path d="M24,8 L80,8 L104,32 L104,120 L24,120 Z" fill="#222"/>
+  <path d="M80,8 L80,32 L104,32" fill="#fff"/>
+  <path d="M96,68 L104,56 L112,68 L120,60" fill="none" stroke="#222" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

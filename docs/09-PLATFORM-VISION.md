@@ -1,6 +1,6 @@
 # Smart Document Platform — 비전 및 로드맵
 
-> **최종 갱신**: 2026-04-13
+> **최종 갱신**: 2026-04-22
 > **대상**: 한국항공우주산업(KAI) 재료공정팀(주관), 공정개발팀(협업)
 > **환경**: 에어갭(Air-gapped) 사내 네트워크, 자체 호스팅 전제
 
@@ -37,7 +37,8 @@ Phase 4 (완료)  : 비교/번역/다중 시스템     → "기술 문서 활용
 Phase 5 (완료)  : 품질 향상 + 지식 저장소   → "지식 활용 플랫폼"
 Phase 6 (완료)  : 디자인 시스템 리파인먼트   → "세련된 플랫폼"
 Phase 7 (완료)  : Verify 고도화 + Docker + 운영 안정화 → "실무 검증 플랫폼"
-Phase 8 (진행중) : Author MVP + 시스템 연계  → "구조화 문서 합성 플랫폼"
+Phase 8 (완료)  : Converter 엔진 SSOT 통합(Plan-37) + 변환기 자립화 → "일관 품질의 변환 파이프라인"
+Phase 9 (진행중) : Author MVP + 시스템 연계  → "구조화 문서 합성 플랫폼"
 ```
 
 ### 1.2 핵심 제약
@@ -264,6 +265,8 @@ Verify:    텍스트 추출      — 비교/유사도 내부 처리 (사용자 �
 | **SQLite + JSON 유지** | 현재 규모(수십 명)에서 충분. 문서 1,000개+ 시 DB 전환 검토 |
 | **Markdown이 공용 포맷** | 시스템 간 데이터 교환 포맷. Notebook 편집, Author 초안, Verify 입력 모두 MD 기준 |
 | **Big Bang 재작성 금지** | 엔터프라이즈 마이그레이션의 75%가 실패. Strangler Fig 패턴(점진적 교체)이 업계 표준 |
+| **Converter 엔진 SSOT + 얇은 래퍼** (Plan-37) | 플랫폼 내장 변환기(`tools/converter/`)와 외부 배포 Standalone EXE 가 원래 두 벌로 분기되어 품질 차이·유지보수 부담 누적. 엔진은 한 곳에, Standalone 은 단순 배포 포장지로 재편. 전처리는 환경별 어댑터(word_com / libreoffice / native) 로 peer 화 |
+| **배포 환경 3종 공식화** (Plan-27, 31) | 집 개발 PC(WSL2 + Docker Desktop) · 회사 Linux VM(Docker, 주 서비스) · 회사 Windows(톰캣 + Python 직접 실행) 세 환경을 모두 지원. 백엔드는 Docker 전용 기능에 의존하지 않아야 하며, 프론트엔드는 Nginx/Tomcat/http.server 어디서든 서빙 가능. 상세: [01-DEPLOYMENT-GUIDE](01-DEPLOYMENT-GUIDE.md) |
 
 ### 5.2 기술 스택 로드맵
 
@@ -499,7 +502,7 @@ K-Spec(표준 규격 관리 시스템)은 **플랫폼 외부의 별도 시스템
 | 구조화 추출 (Author) | 기존 스펙에서 요구사항 자동 추출 |
 | 비교 매트릭스 (Author) | 기존 유사 스펙 통합 분석 |
 
-상세 설계: `docs/architecture-context.md`, `docs/K-Spec_Proposal_v0.3.docx` 참조.
+상세 설계: `workbench/reference/architecture-context.md`, `docs/K-Spec_Proposal_v0.3.docx` 참조.
 
 ---
 
@@ -929,13 +932,16 @@ Plan-23 Phase 0~5 핵심 완료.
 | Plan 27: Docker 컨테이너화 | `workbench/plans/done-27-docker-migration.md` | Nginx 리버스 프록시, 폐쇄망 단일 포트 |
 | Plan 30: 관리자 설정 정비 | `workbench/plans/done-30-docker-settings-cleanup.md` | 업계 표준 콘솔, AI 모델 전역화 |
 | Plan 31: Docker Parity | `workbench/plans/done-31-docker-parity.md` | bind mount, parity 체크, config 동기화 |
-| Compare 시스템 상세 | `docs/11-COMPARE-SYSTEM.md` | 비교 서브시스템 기술 문서 |
-| 의미비교 연구 | `docs/research-semantic-comparison.md` | 한국어 기술문서 의미분류 연구 주제 |
-| K-Spec 아키텍처 컨텍스트 | `docs/architecture-context.md` | K-Spec + 문서 분석 서비스 + NLP 벤치마크 |
+| Plan 37: Converter 통합 | `workbench/plans/done-37-converter-unification.md` | 엔진 SSOT + 전처리 어댑터 체인, NumberingResolver, STYLEREF+SEQ |
+| Verify 시스템 상세 | `docs/11-VERIFY-SYSTEM.md` | 비교·유사도·규칙 검증 통합 기술 문서 |
+| Converter 아키텍처 | `docs/13-CONVERTER-ARCHITECTURE.md` | DOCX→HTML 변환 엔진·전처리·Provenance |
+| 배포 가이드 | `docs/01-DEPLOYMENT-GUIDE.md` | 환경 3종(개발 PC · 회사 Linux · 회사 Windows) 통합 가이드 |
+| 의미비교 연구 | `workbench/reference/research-semantic-comparison.md` | 한국어 기술문서 의미분류 연구 주제 |
+| K-Spec 아키텍처 컨텍스트 | `workbench/reference/architecture-context.md` | K-Spec + 문서 분석 서비스 + NLP 벤치마크 |
 | K-Spec 제안서 | `docs/K-Spec_Proposal_v0.3.docx` | 초기 아키텍처 설계 (UI 와이어프레임 포함) |
 | 테마 가이드 | `memory/theme-guide.md` | 디자인 시스템 기준서 |
 | 백로그 | `workbench/plans/backlog.md` | 미착수/보류 항목 모음 |
 
 ---
 
-*최종 갱신: 2026-04-13*
+*최종 갱신: 2026-04-22 (Plan-37 Converter 통합 + 배포 환경 3종 공식화 반영)*

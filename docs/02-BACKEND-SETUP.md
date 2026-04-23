@@ -1,6 +1,9 @@
 # Backend Setup Guide
 
-백엔드 환경 구성 단계별 가이드
+백엔드 환경 구성 단계별 가이드.
+
+> **사용 시점**: 이 문서는 **Python 직접 실행 환경**(회사 Windows PC — 환경 C, 또는 개발 PC 에서 AI 기능 직접 시험) 기준입니다.
+> Docker 로 배포하는 경우(환경 A/B)에는 [03-DOCKER-OPERATIONS](03-DOCKER-OPERATIONS.md) 를 먼저 따라가고, 본 문서는 `requirements.txt`·오프라인 패키지·변환기 의존성 등의 **심화 참조**로 활용하세요. 환경 선택은 [01-DEPLOYMENT-GUIDE](01-DEPLOYMENT-GUIDE.md) 참조.
 
 ---
 
@@ -225,7 +228,7 @@ ollama==0.6.1
 
 > **참고**: `backend/packages/` 폴더에는 위 패키지 외에 pdf2zh-next의 의존성(babeldoc, DocLayout-YOLO 등)과 Notebook 기능에 필요한 패키지(pymupdf4llm 등)가 함께 포함되어 있습니다. `pip download`로 자동 수집됩니다.
 
-> **Docker 배포**: Docker 기반 배포를 원하는 경우 [13-DOCKER-OPERATIONS.md](13-DOCKER-OPERATIONS.md)를 참조하세요. 이 문서의 Step 2~6은 로컬 Python 환경 기준입니다.
+> **Docker 배포**: Docker 기반 배포를 원하는 경우 [03-DOCKER-OPERATIONS.md](03-DOCKER-OPERATIONS.md)를 참조하세요. 이 문서의 Step 2~6은 로컬 Python 환경 기준입니다.
 
 ---
 
@@ -326,6 +329,7 @@ AUTH_DB_PATH = str(Path(__file__).parent.parent / "data" / "auth.db")
 SESSION_EXPIRY_HOURS = 24
 CORS_ORIGINS = ["http://localhost:8080", "http://127.0.0.1:8080"]
 # 폐쇄망: CORS_ORIGINS = ["http://서버IP:8080"]
+# 환경변수 CORS_ORIGINS 로 오버라이드 가능 (Docker 배포 시 우선) — 설명: 01-DEPLOYMENT-GUIDE §2-3
 
 # 업로드 임시 디렉토리 (DRM 등으로 로컬 저장이 문제될 경우 네트워크 경로로 변경)
 # 예: UPLOAD_TEMP_DIR = "\\\\server\\share\\webbook_temp"

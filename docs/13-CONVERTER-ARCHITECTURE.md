@@ -378,3 +378,7 @@ find /tmp -name 'preprocessed_*.docx_1' -mtime +1 -delete
 - `tools/docx2html-standalone/README.md` — 외부 업체용 EXE 사용법
 - `tools/docx2html-standalone/email-draft.md` — 배포 공지 템플릿
 - `memory/MEMORY.md` — 운영 중 축적된 교훈
+
+---
+
+*최종 갱신: 2026-04-22 (Plan-37 통합 + 전처리 어댑터 체인 · NumberingResolver · STYLEREF+SEQ 반영)*

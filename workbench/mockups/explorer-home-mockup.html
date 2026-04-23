@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorer Home — Mockup</title>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; color: #2c3e50; }
+
+        /* ── Header ── */
+        .header {
+            background: linear-gradient(135deg, #001f3f 0%, #003d7a 100%);
+            height: 60px;
+            padding: 0 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+        }
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .header-logo h1 {
+            font-size: 25px;
+            font-weight: 600;
+            font-style: italic;
+            letter-spacing: 0.5px;
+            color: #fff;
+        }
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+        .header-nav a {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        .header-nav a:hover { background: rgba(255,255,255,0.15); }
+
+        /* ── Team Logo (SVG) ── */
+        .team-logo { height: 42px; width: auto; }
+
+        /* ── Layout ── */
+        .layout { display: flex; height: calc(100vh - 60px); }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: #fff;
+            border-right: 1px solid #dde4e8;
+            padding: 16px 0;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .sidebar h2 {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 0 20px;
+            margin-bottom: 12px;
+            color: #2c3e50;
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            font-size: 13px;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .sidebar-item:hover { background: #e8f4f8; }
+        .sidebar-item.active { background: #2c5282; color: #fff; border-radius: 4px; margin: 0 8px; padding: 8px 12px; }
+        .sidebar-icon { font-size: 14px; opacity: 0.6; }
+
+        /* Main content */
+        .main { flex: 1; overflow-y: auto; }
+
+        /* Banner */
+        .banner {
+            height: 340px;
+            background: linear-gradient(135deg, #1a365d 0%, #2c5282 40%, #4a90b8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 70% 40%, rgba(255,255,255,0.08) 0%, transparent 60%);
+        }
+        .banner-content {
+            text-align: center;
+            color: #fff;
+            position: relative;
+            z-index: 1;
+        }
+        .banner-content h2 {
+            font-size: 42px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+        .banner-content p {
+            font-size: 16px;
+            opacity: 0.85;
+            font-weight: 300;
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            padding: 16px 0;
+            border-bottom: 1px solid #dde4e8;
+            background: #fff;
+        }
+        .stat { text-align: center; font-size: 13px; color: #7f8c8d; }
+        .stat strong { color: #2c3e50; font-size: 15px; }
+
+        /* Category grid */
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            padding: 32px 40px;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        .category {
+            background: #fff;
+            border: 1px solid #dde4e8;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .category:hover { border-color: #2c5282; box-shadow: 0 2px 8px rgba(44,82,130,0.1); }
+        .category h3 { font-size: 15px; font-weight: 600; color: #2c5282; margin-bottom: 6px; }
+        .category p { font-size: 12px; color: #7f8c8d; }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 16px;
+            font-size: 12px;
+            color: #7f8c8d;
+            border-top: 1px solid #dde4e8;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a class="header-logo" href="#">
+            <!-- Team Logo SVG -->
+            <svg class="team-logo" viewBox="0 0 310 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Network icon (파비콘 동일 형상) -->
+                <line x1="8" y1="30" x2="18" y2="15" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                <line x1="18" y1="15" x2="24" y2="35" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                <line x1="24" y1="35" x2="8" y2="30" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="8" cy="30" r="3.5" fill="#fff"/>
+                <circle cx="18" cy="15" r="3.5" fill="#fff"/>
+                <circle cx="24" cy="35" r="3.5" fill="#fff"/>
+                <!-- DIGITAL ENGINEERING -->
+                <text x="38" y="27" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="19" font-weight="400" font-style="italic" fill="#fff" letter-spacing="0.5">DIGITAL ENGINEERING TEAM</text>
+                <!-- KOREA AEROSPACE INDUSTRIES, LTD. -->
+                <text x="39" y="37" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,0.55)" letter-spacing="2">KOREA AEROSPACE INDUSTRIES, LTD.</text>
+            </svg>
+            <h1>Knowledge Explorer</h1>
+        </a>
+        <nav class="header-nav">
+            <a href="#">Home</a>
+            <a href="#">About</a>
+            <a href="#">Bookmarks</a>
+            <a href="#">Search</a>
+        </nav>
+    </header>
+
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h2>Contents</h2>
+            <div class="sidebar-item active"><span class="sidebar-icon">&#9679;</span> Home</div>
+            <div class="sidebar-item"><span class="sidebar-icon">&#9654;</span> Design Standards</div>
+            <div class="sidebar-item"><span class="sidebar-icon">&#9654;</span> System Design</div>
+            <div class="sidebar-item"><span class="sidebar-icon">&#9654;</span> Standards & Specs</div>
+            <div class="sidebar-item"><span class="sidebar-icon">&#9654;</span> Test & Evaluation</div>
+            <div class="sidebar-item"><span class="sidebar-icon">&#9654;</span> Manufacturing</div>
+            <div class="sidebar-item"><span class="sidebar-icon">&#9654;</span> Quality & Cert</div>
+            <div class="sidebar-item"><span class="sidebar-icon">&#9654;</span> Operations</div>
+        </aside>
+
+        <!-- Main -->
+        <main class="main">
+            <div class="banner">
+                <div class="banner-content">
+                    <h2>Knowledge Explorer</h2>
+                    <p>Explore knowledge in documents, find answers with AI</p>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat"><strong>14</strong> Documents</div>
+                <div class="stat"><strong>26,048</strong> Terms</div>
+                <div class="stat"><strong>0</strong> Bookmarks</div>
+            </div>
+
+            <div class="categories">
+                <div class="category">
+                    <h3>Design Standards</h3>
+                    <p>Structure, System, EE guidelines</p>
+                </div>
+                <div class="category">
+                    <h3>Standards & Specs</h3>
+                    <p>MIL-STD, AS/EN, internal</p>
+                </div>
+                <div class="category">
+                    <h3>Test & Evaluation</h3>
+                    <p>Structural, environmental, flight</p>
+                </div>
+                <div class="category">
+                    <h3>Manufacturing</h3>
+                    <p>Composites, machining, surface</p>
+                </div>
+                <div class="category">
+                    <h3>Quality & Cert</h3>
+                    <p>QM, config, airworthiness</p>
+                </div>
+                <div class="category">
+                    <h3>Operations</h3>
+                    <p>Manuals, maintenance, ILS</p>
+                </div>
+            </div>
+
+            <footer class="footer">&copy; 2026 Digital Engineering Team</footer>
+        </main>
+    </div>
+</body>
+</html>

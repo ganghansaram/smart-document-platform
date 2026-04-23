@@ -1,0 +1,36 @@
+**MIL-STD-38784B** 
+
+   - e. Chapter, section and paragraph headings shall be descriptive of the contents of the division they head; “General” and “Miscellaneous” shall not be used unless no other title will suffice. 
+
+   - f. Statements which explain applicability for individual items of equipment shall use specific serial number(s), block designator(s), specific model designator(s) or similar identification. Such terms as “on later equipment” and “on early serial numbers” shall not be used. 
+
+   - g. Technical publications shall make no reference to age, sex, race or national origin. Use sex neutral terms, except avoid use of the word “person” (terms such as “midshipman” and “workman” are considered sex neutral). Terms such as male and female connectors, pins, etc., are acceptable. 
+
+- 4.8.1 References. The text shall refer to: 
+
+   - a. Only models or types covered by the manual. To facilitate coverage of modified or additional models or types at a later date, references should be held to a minimum consistent with clarity. 
+
+   - b. The basic number of Government specifications and standards. When the contractor cannot ascertain the Government specification number, the contractor shall request this information from the acquiring activity, furnishing complete information concerning the material's composition, properties, characteristics, applications, manufacturer's specification number, etc. 
+
+   - c. Temperature readings as calibrated on the equipment. If other than Fahrenheit, the equivalent in Fahrenheit shall follow in parentheses. General temperature references, such as room temperature, shall normally be given in degrees Fahrenheit. 
+
+   - d. Speed, distance and other instrument readings as calibrated on the equipment. 
+
+   - e. Switch positions and panel markings exactly as marked on the equipment. However, symbols on panel markings may be spelled out when they cannot be produced by the composing equipment, such as the symbol for “ohm”, “infinity”, etc. 
+
+   - f. Measurements in U.S. standard units (ounces, pounds, gallons, inches, feet, knots, miles, etc.) except instances in which metric measurements are required. When the metric system is used on the equipment, conversion to U.S. standards shall follow in parentheses. If the detail specification so requires, conversion of U.S. measurements to metric measurements shall be indicated. 
+
+   - g. Illustrations by figure number, including section letter/number when applicable, and the sheet number for multisheet illustrations, when applicable. References shall be made only to illustrations within the same manual or another volume of the same manual. 
+
+   - h. Figure numbers first, followed by the index number (see 3.2.12). For example: “(figure 2-6, 34).” However, when multiple references in a paragraph refer to the same figure, only the first reference needs to indicate the figure number. If two or more figures are involved in the same sequence, the figure with the greater number of items shall be cited as described above. Index callouts (see 3.2.3 and 3.2.12) for items on remaining figures shall have the index number follow the figure number, e.g., “(figure 3-5, 21).” In such cases, the paragraph lead-in shall contain a statement similar to the following: “Item numbers below refer to figure 3-4 unless otherwise indicated.” When the sequence is unbroken for procedures requiring two or more pages, the figure number followed by a dash and the word “Continued” shall be repeated after the first reference on each succeeding page. 
+
+   - i. Parts on diagrams by enough of their reference designator to identify the item. For example: Resistor A6R11. 
+
+   - j. Tables by table number. Reference shall be made only to tables within the same manual or another volume of the same manual. 
+
+   - k. Other supporting paragraphs in the same manual or another volume of the same manual, by exact paragraph number followed by the volume/part number (if applicable) in parentheses. 
+
+   - l. Other subordinate paragraphs of the same primary paragraph as “above” or “below.” or by exact paragraph number. 
+
+**16** Source: http://assist.dla.mil -- Downloaded: 2023-04-10T20:01Z Check the source to verify that this is the current version before use. 
+
