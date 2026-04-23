@@ -6,8 +6,14 @@
 var _cachedHeadingEls = [];
 var _cachedLinks = [];
 
-// 자동 추적 활성화 상태
-var _autoTrackEnabled = false;
+// 자동 추적 활성화 상태 (localStorage 선호도 우선, 기본값 ON)
+var _autoTrackEnabled = (function() {
+    try {
+        var saved = localStorage.getItem('explorer.autoTrack');
+        if (saved === null) return true;
+        return saved === '1';
+    } catch (e) { return true; }
+})();
 
 // 생성된 ID 추적 (중복 방지)
 var _generatedIds = new Set();
@@ -80,6 +86,11 @@ function updateSectionNav() {
     // 헤딩 위치 및 링크 캐싱 후 스크롤 추적 시작
     cacheHeadingPositions();
     trackActiveSection();
+
+    // 기본 UX — 문서 로드 시 목차 전체 펼침 + Auto Track 상태 반영
+    expandAllSections();
+    applyAutoTrackUI();
+    if (_autoTrackEnabled && typeof onContentScroll === 'function') onContentScroll();
 }
 
 /**
@@ -306,29 +317,39 @@ function trackActiveSection() {
 }
 
 /**
- * 자동 추적 토글
+ * 자동 추적 버튼 UI 상태를 현재 _autoTrackEnabled 값에 맞춰 반영
+ * (토글 없이 DOM만 동기화 — 초기화 진입점 등에서 사용)
+ */
+function applyAutoTrackUI() {
+    var btn = document.getElementById('toggle-auto-track');
+    if (!btn) return;
+    var icon = btn.querySelector('.icon');
+    if (_autoTrackEnabled) {
+        btn.classList.add('active');
+        btn.title = 'Auto Track: ON';
+        if (icon) {
+            icon.classList.remove('icon-auto-track-off');
+            icon.classList.add('icon-auto-track-on');
+        }
+    } else {
+        btn.classList.remove('active');
+        btn.title = 'Auto Track: OFF';
+        if (icon) {
+            icon.classList.remove('icon-auto-track-on');
+            icon.classList.add('icon-auto-track-off');
+        }
+    }
+}
+
+/**
+ * 자동 추적 토글 — 상태 변경 + localStorage 저장 + UI 동기화
  */
 function toggleAutoTrack() {
     _autoTrackEnabled = !_autoTrackEnabled;
-    var btn = document.getElementById('toggle-auto-track');
-    if (btn) {
-        var icon = btn.querySelector('.icon');
-        if (_autoTrackEnabled) {
-            btn.classList.add('active');
-            btn.title = 'Auto Track: ON';
-            if (icon) {
-                icon.classList.remove('icon-auto-track-off');
-                icon.classList.add('icon-auto-track-on');
-            }
-        } else {
-            btn.classList.remove('active');
-            btn.title = 'Auto Track: OFF';
-            if (icon) {
-                icon.classList.remove('icon-auto-track-on');
-                icon.classList.add('icon-auto-track-off');
-            }
-        }
-    }
+    try { localStorage.setItem('explorer.autoTrack', _autoTrackEnabled ? '1' : '0'); } catch (e) {}
+    applyAutoTrackUI();
+    // ON 전환 즉시 현재 스크롤 위치 기준 하이라이트
+    if (_autoTrackEnabled && typeof onContentScroll === 'function') onContentScroll();
 }
 
 /**
