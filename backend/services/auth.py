@@ -35,6 +35,9 @@ def init_db():
             password_hash TEXT NOT NULL,
             role TEXT NOT NULL DEFAULT 'admin',
             allowed_ip TEXT NOT NULL DEFAULT '',
+            name TEXT,
+            description TEXT,
+            last_login_at TEXT,
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS sessions (
@@ -44,12 +47,18 @@ def init_db():
             expires_at TEXT NOT NULL
         );
     """)
-    # 기존 DB 마이그레이션: allowed_ip 컬럼 추가
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN allowed_ip TEXT NOT NULL DEFAULT ''")
-        conn.commit()
-    except Exception:
-        pass  # 이미 존재
+    # 기존 DB 마이그레이션: 신규 컬럼 추가 (이미 존재하면 무시)
+    for ddl in (
+        "ALTER TABLE users ADD COLUMN allowed_ip TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE users ADD COLUMN name TEXT",
+        "ALTER TABLE users ADD COLUMN description TEXT",
+        "ALTER TABLE users ADD COLUMN last_login_at TEXT",
+    ):
+        try:
+            conn.execute(ddl)
+            conn.commit()
+        except Exception:
+            pass
     conn.close()
 
 
@@ -73,12 +82,14 @@ def verify_password(password: str, stored_hash: str) -> bool:
 
 # ── 사용자 CRUD ───────────────────────────────────────────
 
-def create_user(username: str, password: str, role: str = "admin", allowed_ip: str = "") -> dict:
+def create_user(username: str, password: str, role: str = "admin", allowed_ip: str = "",
+                name: Optional[str] = None, description: Optional[str] = None) -> dict:
     conn = _get_conn()
     try:
         conn.execute(
-            "INSERT INTO users (username, password_hash, role, allowed_ip) VALUES (?, ?, ?, ?)",
-            (username, hash_password(password), role, allowed_ip.strip()),
+            "INSERT INTO users (username, password_hash, role, allowed_ip, name, description) VALUES (?, ?, ?, ?, ?, ?)",
+            (username, hash_password(password), role, allowed_ip.strip(),
+             (name or "").strip() or None, (description or "").strip() or None),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
@@ -103,13 +114,18 @@ def authenticate(username: str, password: str) -> Optional[dict]:
 def list_users() -> list:
     conn = _get_conn()
     try:
-        rows = conn.execute("SELECT id, username, role, allowed_ip, created_at FROM users ORDER BY id").fetchall()
+        rows = conn.execute(
+            "SELECT id, username, role, allowed_ip, name, description, last_login_at, created_at "
+            "FROM users ORDER BY id"
+        ).fetchall()
         return [dict(r) for r in rows]
     finally:
         conn.close()
 
 
-def update_user(user_id: int, username: str = None, password: str = None, role: str = None, allowed_ip: str = None) -> Optional[dict]:
+def update_user(user_id: int, username: str = None, password: str = None, role: str = None,
+                allowed_ip: str = None, name: Optional[str] = None,
+                description: Optional[str] = None) -> Optional[dict]:
     conn = _get_conn()
     try:
         parts, params = [], []
@@ -121,6 +137,10 @@ def update_user(user_id: int, username: str = None, password: str = None, role: 
             parts.append("role = ?"); params.append(role)
         if allowed_ip is not None:
             parts.append("allowed_ip = ?"); params.append(allowed_ip.strip())
+        if name is not None:
+            parts.append("name = ?"); params.append(name.strip() or None)
+        if description is not None:
+            parts.append("description = ?"); params.append(description.strip() or None)
         if not parts:
             return None
         params.append(user_id)
@@ -143,9 +163,13 @@ def delete_user(user_id: int) -> bool:
 
 
 def _user_dict(row) -> dict:
+    keys = row.keys()
     return {
         "id": row["id"], "username": row["username"], "role": row["role"],
-        "allowed_ip": row["allowed_ip"] if "allowed_ip" in row.keys() else "",
+        "allowed_ip": row["allowed_ip"] if "allowed_ip" in keys else "",
+        "name": row["name"] if "name" in keys else None,
+        "description": row["description"] if "description" in keys else None,
+        "last_login_at": row["last_login_at"] if "last_login_at" in keys else None,
         "created_at": row["created_at"],
     }
 
@@ -177,6 +201,10 @@ def create_session(user_id: int) -> str:
             "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)",
             (token, user_id, expires.isoformat()),
         )
+        conn.execute(
+            "UPDATE users SET last_login_at = datetime('now') WHERE id = ?",
+            (user_id,),
+        )
         conn.commit()
         return token
     finally:
@@ -187,7 +215,7 @@ def get_session_user(token: str) -> Optional[dict]:
     conn = _get_conn()
     try:
         row = conn.execute("""
-            SELECT u.id, u.username, u.role, u.created_at
+            SELECT u.id, u.username, u.role, u.name, u.created_at
             FROM sessions s JOIN users u ON s.user_id = u.id
             WHERE s.token = ? AND s.expires_at > datetime('now')
         """, (token,)).fetchone()

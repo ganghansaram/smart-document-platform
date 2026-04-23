@@ -719,10 +719,15 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
    ══════════════════════════════════════════════════════════════════════════════ */
 
 /* ── 사용자 테이블 ─────────────────────────────────────────────────────────── */
+.admin-users-table-wrap {
+    overflow-x: auto;
+}
+
 .admin-users-table {
     width: 100%;
     border-collapse: collapse;
     font-size: var(--font-body);
+    min-width: 720px;
 }
 
 .admin-users-table th {

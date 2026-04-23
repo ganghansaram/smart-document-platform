@@ -26,6 +26,8 @@ class UserCreateRequest(BaseModel):
     password: str
     role: str = "admin"
     allowed_ip: str = ""
+    name: Optional[str] = None
+    description: Optional[str] = None
 
 
 class UserUpdateRequest(BaseModel):
@@ -33,6 +35,8 @@ class UserUpdateRequest(BaseModel):
     password: Optional[str] = None
     role: Optional[str] = None
     allowed_ip: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
 
 
 # ── 공개 엔드포인트 ──────────────────────────────────────
@@ -85,7 +89,10 @@ def get_users(user: dict = Depends(require_admin)):
 @router.post("/auth/users")
 def add_user(body: UserCreateRequest, user: dict = Depends(require_admin)):
     try:
-        new_user = create_user(body.username, body.password, body.role, body.allowed_ip)
+        new_user = create_user(
+            body.username, body.password, body.role, body.allowed_ip,
+            name=body.name, description=body.description,
+        )
         return {"success": True, "user": new_user}
     except Exception as e:
         if "UNIQUE" in str(e):
@@ -95,7 +102,10 @@ def add_user(body: UserCreateRequest, user: dict = Depends(require_admin)):
 
 @router.put("/auth/users/{user_id}")
 def edit_user(user_id: int, body: UserUpdateRequest, user: dict = Depends(require_admin)):
-    updated = update_user(user_id, body.username, body.password, body.role, body.allowed_ip)
+    updated = update_user(
+        user_id, body.username, body.password, body.role, body.allowed_ip,
+        name=body.name, description=body.description,
+    )
     if not updated:
         raise HTTPException(status_code=404, detail="User not found")
     return {"success": True, "user": updated}
