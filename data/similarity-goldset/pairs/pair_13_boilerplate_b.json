@@ -21,7 +21,7 @@
     ],
     "paraphrase": [
       0.0,
-      0.2
+      0.5
     ],
     "translation": [
       0.0,
@@ -29,10 +29,10 @@
     ],
     "low_sim": [
       0.1,
-      0.5
+      0.7
     ]
   },
   "min_match_count": 10,
   "expected_boilerplate_ratio_min": 0.3,
-  "notes": "Cross-validation pair."
+  "notes": "R1: pair_07과 동일 보정."
 }

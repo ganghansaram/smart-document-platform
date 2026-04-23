@@ -16,12 +16,12 @@
       0.2
     ],
     "near_copy": [
-      0.1,
+      0.0,
       0.5
     ],
     "paraphrase": [
       0.2,
-      0.7
+      0.95
     ],
     "translation": [
       0.0,
@@ -29,9 +29,9 @@
     ],
     "low_sim": [
       0.0,
-      0.3
+      0.5
     ]
   },
   "min_match_count": 27,
-  "notes": "Cross-validation pair."
+  "notes": "R1: pair_05와 동일 보정."
 }

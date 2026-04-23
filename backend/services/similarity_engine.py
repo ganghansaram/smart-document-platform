@@ -86,6 +86,10 @@ def _trans_fp_max():
 def _min_match_words():
     return getattr(config, "VERIFY_SIMILARITY_MIN_MATCH_WORDS", 8)
 
+# ── Cross-language sem 임계값 (R1 캘리브레이션) ──
+def _cross_lang_sem_th():
+    return getattr(config, "VERIFY_SIMILARITY_CROSS_LANG_SEM_TH", 0.65)
+
 # ── 검사 설정 기본값 (Phase 1.4) ──
 def _exclusion_defaults():
     return getattr(config, "VERIFY_SIMILARITY_DEFAULTS", {
@@ -379,9 +383,10 @@ def _classify_match(fp_score: float, sem_score: float, th_high: float,
     # near_copy 우선 (어휘 일치도 높을 때, high threshold)
     if fp_score >= 0.40 and sem_score >= th_high:
         return TYPE_NEAR_COPY
-    # translation: 다른 언어 + 어휘 거의 0 + 의미 medium 이상
-    # bge-m3 cross-lingual 점수는 monolingual 대비 낮으므로 th_medium 사용
-    if cross_language and fp_score < trans_max and sem_score >= th_medium:
+    # translation: 다른 언어 + 어휘 거의 0 + 의미 cross-lang 임계값 이상
+    # R1 캘리브레이션: bge-m3 cross-lingual 점수 분포 반영 (Korean-English 정상 0.65~0.75)
+    cross_lang_th = _cross_lang_sem_th()
+    if cross_language and fp_score < trans_max and sem_score >= cross_lang_th:
         return TYPE_TRANSLATION
     # paraphrase: 어휘 낮음 + 의미 medium 이상 (동일 언어 의역)
     # heavily paraphrased 영문도 bge-m3 sem_score가 0.75~0.85 구간에 분포
@@ -407,6 +412,7 @@ def _detect_boilerplate(sentences: list) -> set:
     if not phrases:
         return set()
 
+    bp_threshold = getattr(config, "VERIFY_SIMILARITY_BOILERPLATE_TH", 0.40)
     indices = set()
     for i, sent in enumerate(sentences):
         sent_lower = sent.lower()
@@ -423,8 +429,8 @@ def _detect_boilerplate(sentences: list) -> set:
                 for j in range(pos, pos + len(phrase)):
                     covered.add(j)
                 start = pos + 1
-        # 50% 이상이 정형 구문으로 구성되면 boilerplate 판정
-        if len(covered) / len(sent_lower) >= 0.5:
+        # 임계값 이상이 정형 구문으로 구성되면 boilerplate 판정 (기본 40%)
+        if len(covered) / len(sent_lower) >= bp_threshold:
             indices.add(i)
 
     if indices:

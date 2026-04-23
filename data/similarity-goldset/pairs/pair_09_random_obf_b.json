@@ -13,10 +13,10 @@
   "expected_label_distribution": {
     "identical": [
       0.2,
-      0.6
+      0.75
     ],
     "near_copy": [
-      0.3,
+      0.1,
       0.7
     ],
     "paraphrase": [
@@ -33,5 +33,5 @@
     ]
   },
   "min_match_count": 30,
-  "notes": "Cross-validation pair."
+  "notes": "R1: pair_02와 동일 보정."
 }

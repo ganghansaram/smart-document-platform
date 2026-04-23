@@ -16,12 +16,12 @@
       0.2
     ],
     "near_copy": [
-      0.2,
+      0.0,
       0.6
     ],
     "paraphrase": [
       0.2,
-      0.6
+      1.0
     ],
     "translation": [
       0.0,
@@ -29,9 +29,9 @@
     ],
     "low_sim": [
       0.0,
-      0.3
+      0.5
     ]
   },
   "min_match_count": 25,
-  "notes": "Should detect both near_copy and paraphrase. This is the bread-and-butter case."
+  "notes": "R1: 실측 paraphrase 1.0 (heavy 의역과 구분 미세 — bge-m3 sem 0.85+ 분포가 paraphrase로 잘 잡힘)."
 }

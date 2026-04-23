@@ -133,9 +133,16 @@ VERIFY_SIMILARITY_EMBEDDING_BATCH = 64     # 임베딩 배치 크기
 # 분류 임계값 (Phase 1.1 신규 — 하드코딩 제거)
 VERIFY_SIMILARITY_PARA_FP_MAX = 0.40       # paraphrase 어휘 fingerprint 상한
 VERIFY_SIMILARITY_TRANS_FP_MAX = 0.10      # translation 어휘 fingerprint 상한 (다른 언어)
+# Cross-language(다른 스크립트) 의미 임계값 — bge-m3 cross-lingual 점수 분포 반영 (R1 캘리브레이션)
+# Korean-English 정상 번역도 sem 0.65~0.75 구간에 분포 (monolingual 0.85+ 대비 낮음)
+VERIFY_SIMILARITY_CROSS_LANG_SEM_TH = 0.65  # translation 분류용 별도 임계값
 
 # 짧은 매칭 필터 (Phase 1.3 신규)
 VERIFY_SIMILARITY_MIN_MATCH_WORDS = 8      # 매칭 대상 문장 최소 단어 수
+
+# 정형 구문 검출 임계값 (R1 캘리브레이션 — boilerplate-heavy 변형이 paraphrase로 새는 현상 해소)
+# 문장의 N% 이상이 정형 구문 phrase로 구성되면 boilerplate 판정
+VERIFY_SIMILARITY_BOILERPLATE_TH = 0.40    # 0.50 → 0.40 (보수적 → 균형)
 
 # 5단계 신호등 경계 (Phase 2 — Plan §7.1)
 # 기존 LOW/HIGH 2단계는 호환 유지, 신규 5단계 추가
