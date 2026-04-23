@@ -4641,6 +4641,7 @@
                     + '.criteria-summary-bands .mini-band { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; color: white; }'
                     + '.formula { font-family: "Consolas", "Courier New", monospace; padding: 8px 12px; background: #f8fafc; border: 1px solid #e0e0e0; border-radius: 4px; margin: 6px 0; font-size: 11px; line-height: 1.5; }'
                     + '.disclaimer { font-size: 11px; color: #555; padding: 8px 12px; background: #fffbeb; border-left: 3px solid #f59e0b; margin: 8px 0 0; line-height: 1.5; }'
+                    + '.disclaimer-compact { font-size: 10.5px; padding: 5px 10px; margin: 4px 0 0; line-height: 1.4; }'
                     + '.disclaimer strong { color: #92400e; }'
                     + '.algo-list { font-size: 11px; color: #555; padding-left: 20px; line-height: 1.6; }'
                     + '@media print {'
@@ -4749,9 +4750,11 @@
                 }
                 html += '</div>';
 
-                // Disclaimer (항상 결과지에 포함)
-                html += '<div class="disclaimer"><strong>' + escapeHTML(disclaimer.main) + '</strong><br>'
-                    + escapeHTML(disclaimer.long) + '</div>';
+                // Disclaimer — 결과지엔 1줄 요약만 (전문은 별첨 B)
+                html += '<div class="disclaimer disclaimer-compact">'
+                    + '<strong>' + escapeHTML(disclaimer.main) + '</strong> '
+                    + '<span>· 합법적 인용·정형구문·약어·규격 번호도 매칭될 수 있어 수동 검토 필요</span>'
+                    + '</div>';
 
                 html += '</section>'; // sheet-result
 
@@ -4823,6 +4826,10 @@
                         }
                         html += '</ul>';
                     }
+
+                    html += '<h3>면책 고지 전문</h3>'
+                        + '<div class="disclaimer"><strong>' + escapeHTML(disclaimer.main) + '</strong><br>'
+                        + escapeHTML(disclaimer.long) + '</div>';
 
                     html += '</section>';
                 }
