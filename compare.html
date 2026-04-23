@@ -1335,6 +1335,207 @@
                 document.addEventListener('keydown', escHandler);
             }
 
+            // ── Plan-38 §6.4 — 검사 설정 5옵션 (사용자 토글, 즉시 재계산) ──
+            var SIM_CHECK_DEFAULTS = {
+                exclude_boilerplate:  true,
+                exclude_short_match:  true,
+                exclude_toc:          true,
+                exclude_caption:      true,
+                exclude_cited_quote:  false   // 사용자 선택 (기본 OFF)
+            };
+            var SIM_CHECK_KEY = 'sim-check-settings';
+
+            function simLoadCheckSettings() {
+                var s = Object.assign({}, SIM_CHECK_DEFAULTS);
+                try {
+                    var raw = localStorage.getItem(SIM_CHECK_KEY);
+                    if (raw) Object.assign(s, JSON.parse(raw));
+                } catch (e) {}
+                return s;
+            }
+            function simSaveCheckSettings(settings) {
+                try { localStorage.setItem(SIM_CHECK_KEY, JSON.stringify(settings)); } catch (e) {}
+            }
+
+            // exclusion_reason → 설정 키 매핑
+            var SIM_EXCL_TO_KEY = {
+                boilerplate:         'exclude_boilerplate',
+                boilerplate_pattern: 'exclude_boilerplate',
+                short_match:         'exclude_short_match',
+                toc_heading:         'exclude_toc',
+                caption:             'exclude_caption',
+                cited_quote:         'exclude_cited_quote'
+                // references_section, spec_number_only는 ALWAYS_SKIP — 토글 없음
+            };
+            // 백엔드 자동 제외 (항상 active, 토글 없음)
+            var SIM_AUTO_EXCLUDED = ['references_section', 'spec_number_only'];
+
+            function simIsActiveExclusion(reason, settings) {
+                if (!reason) return false;
+                if (SIM_AUTO_EXCLUDED.indexOf(reason) >= 0) return true;
+                var key = SIM_EXCL_TO_KEY[reason];
+                return key && settings[key] === true;
+            }
+
+            // 사용자 설정 적용 — 점수/4그룹/breakdown/하이라이트 즉시 갱신
+            function simRecomputeFromSettings() {
+                if (!simLastResult) return;
+                var settings = simLoadCheckSettings();
+                var data = simLastResult;
+                var matches = data.matches || [];
+                var s = data.summary || {};
+                var eb = s.exclusion_breakdown || {};
+                var total = s.total_sentences || 0;
+
+                // ── 매칭 sentence 카운트 (활성 제외는 빠짐) ──
+                var typeCounts = { identical: 0, near_copy: 0, paraphrase: 0, translation: 0, low_sim: 0 };
+                for (var i = 0; i < matches.length; i++) {
+                    var m = matches[i];
+                    if (simIsActiveExclusion(m.exclusion_reason, settings)) continue;
+                    var sc = (m.target_idx_end !== undefined ? m.target_idx_end : m.target_idx) - m.target_idx + 1;
+                    if (typeCounts[m.type] !== undefined) typeCounts[m.type] += sc;
+                }
+
+                // ── 활성 제외 sentence 수 (분모 보정) ──
+                var excludedCount = 0;
+                if (settings.exclude_boilerplate) excludedCount += (eb.boilerplate || 0) + (eb.boilerplate_pattern || 0);
+                if (settings.exclude_toc)         excludedCount += eb.toc_heading || 0;
+                if (settings.exclude_caption)     excludedCount += eb.caption || 0;
+                if (settings.exclude_cited_quote) excludedCount += eb.cited_quote || 0;
+                excludedCount += (eb.references_section || 0) + (eb.spec_number_only || 0);  // 자동
+
+                var substantive = typeCounts.identical + typeCounts.near_copy;
+                var derived     = typeCounts.paraphrase + typeCounts.translation;
+                var effectiveTotal = Math.max(total - excludedCount, 1);
+                var adjusted = Math.min(100, Math.round((substantive + derived * 0.5) / effectiveTotal * 1000) / 10);
+
+                // ── 점수 카드 + 4그룹 바 즉시 갱신 ──
+                var scoreEl = document.querySelector('.sim-score');
+                if (scoreEl) {
+                    // 텍스트 노드만 교체 (ⓘ 버튼 보존)
+                    var btn = scoreEl.querySelector('.sim-score-info');
+                    scoreEl.innerHTML = adjusted + '% ' + (btn ? btn.outerHTML : '');
+                }
+                // hint 갱신
+                var hint = document.getElementById('toolbar-hint');
+                if (hint) hint.textContent = '유사율 ' + adjusted + '% (실질 ' + (substantive*100/effectiveTotal).toFixed(1) + '% · 의역·번역 ' + (derived*100/effectiveTotal).toFixed(1) + '%)';
+
+                // 4그룹 바 갱신
+                var suspectN = substantive + derived;
+                var reviewN  = typeCounts.low_sim;
+                var excludedN = excludedCount;
+                var cleanN = Math.max(0, total - suspectN - reviewN - excludedN);
+                var pct = function(n) { return total > 0 ? n / total * 100 : 0; };
+                var bar = document.querySelector('.sim-group-bar');
+                if (bar) {
+                    bar.innerHTML = ''
+                        + (suspectN  > 0 ? '<div class="sim-group-seg sg-suspect"  style="width:' + pct(suspectN)  + '%"></div>' : '')
+                        + (reviewN   > 0 ? '<div class="sim-group-seg sg-review"   style="width:' + pct(reviewN)   + '%"></div>' : '')
+                        + (excludedN > 0 ? '<div class="sim-group-seg sg-excluded" style="width:' + pct(excludedN) + '%"></div>' : '')
+                        + (cleanN    > 0 ? '<div class="sim-group-seg sg-clean"    style="width:' + pct(cleanN)    + '%"></div>' : '');
+                }
+                var labels = document.querySelector('.sim-group-labels');
+                if (labels) {
+                    var info = labels.querySelector('.sim-group-info');
+                    labels.innerHTML = ''
+                        + '<span class="sim-group-label"><span class="sim-group-dot sg-suspect"></span>표절 의심 ' + suspectN + '</span>'
+                        + '<span class="sim-group-label"><span class="sim-group-dot sg-review"></span>참고 가능 ' + reviewN + '</span>'
+                        + '<span class="sim-group-label"><span class="sim-group-dot sg-excluded"></span>제외 영역 ' + excludedN + '</span>'
+                        + '<span class="sim-group-label"><span class="sim-group-dot sg-clean"></span>일반 ' + cleanN + '</span>'
+                        + (info ? info.outerHTML : '');
+                }
+
+                // ── 매칭 카드 시각 처리 — 활성 제외는 흐리게 ──
+                var cards = document.querySelectorAll('.sim-match-item');
+                for (var ci = 0; ci < cards.length; ci++) {
+                    var card = cards[ci];
+                    var idx = parseInt(card.getAttribute('data-idx'));
+                    var m = matches[idx];
+                    if (m && simIsActiveExclusion(m.exclusion_reason, settings)) {
+                        card.classList.add('sim-match-excluded');
+                    } else {
+                        card.classList.remove('sim-match-excluded');
+                    }
+                }
+            }
+
+            // ── 모달 C: 검사 설정 도움말 (Plan-38 §5.4) ──
+            function showSimCheckHelpModal() {
+                var help = simHelp || {};
+                var cs = help.check_settings || {
+                    exclude_boilerplate:  { label: '정형구문 제외',         default: true,  description: 'in accordance with, the contractor shall 등 표준 문구를 점수에서 제외' },
+                    exclude_short_match:  { label: '짧은 매칭 제외 (8단어 미만)', default: true,  description: 'Turnitin 표준 — 단어 수가 적은 매칭은 의미 있는 표절로 간주하지 않음' },
+                    exclude_toc:          { label: '목차/장절 헤딩 제외',    default: true,  description: '"1.1 SCOPE" 같은 헤딩 라인은 점수에서 제외' },
+                    exclude_caption:      { label: '표/그림 캡션 제외',       default: true,  description: '"Figure 5-1", "Table 3-2", "그림 1" 등 캡션은 점수에서 제외' },
+                    exclude_cited_quote:  { label: '인용·출처 표시 제외',     default: false, description: '큰따옴표 인용·각주·내주가 포함된 문장 제외 (필요 시 사용자가 켬)' }
+                };
+                var auto = help.auto_exclusions || {
+                    references_section:  { label: '참고문헌 섹션',     description: 'References / 참고문헌 / Bibliography 헤더 이후 섹션은 항상 제외' },
+                    spec_number_only:    { label: '규격 번호 단독 매칭', description: 'MIL-STD-XXX 같은 규격 번호만 일치하는 짧은 매칭은 항상 제외' }
+                };
+
+                var rowsHtml = '';
+                var keys = ['exclude_boilerplate','exclude_short_match','exclude_toc','exclude_caption','exclude_cited_quote'];
+                for (var i = 0; i < keys.length; i++) {
+                    var k = keys[i];
+                    var v = cs[k] || {};
+                    var defBadge = v.default
+                        ? '<span class="sim-help-band-badge sim-help-band-green">기본 ON</span>'
+                        : '<span class="sim-help-band-badge" style="background:var(--text-muted)">기본 OFF</span>';
+                    rowsHtml += '<tr><td><strong>' + escapeHTML(v.label || k) + '</strong></td>'
+                        + '<td>' + defBadge + '</td>'
+                        + '<td>' + escapeHTML(v.description || '') + '</td></tr>';
+                }
+                var autoHtml = '';
+                var autoKeys = ['references_section','spec_number_only'];
+                for (var j = 0; j < autoKeys.length; j++) {
+                    var ak = autoKeys[j];
+                    var av = auto[ak] || {};
+                    autoHtml += '<tr><td><strong>' + escapeHTML(av.label || ak) + '</strong></td>'
+                        + '<td><span class="sim-help-band-badge" style="background:var(--active-color)">자동</span></td>'
+                        + '<td>' + escapeHTML(av.description || '') + '</td></tr>';
+                }
+
+                var overlay = document.createElement('div');
+                overlay.className = 'modal-overlay sim-help-modal sim-check-help-modal';
+                overlay.innerHTML =
+                    '<div class="modal-box">'
+                    + '<div class="modal-header"><h3>검사 설정 가이드</h3>'
+                    +   '<button class="modal-close" data-action="close" aria-label="닫기">&times;</button>'
+                    + '</div>'
+                    + '<div class="modal-body">'
+                    +   '<div class="sim-help-section">'
+                    +     '<h4>사용자 토글 5옵션</h4>'
+                    +     '<p style="font-size:var(--font-small);color:var(--text-light);margin:0 0 8px">옵션 변경 시 점수가 즉시 재계산됩니다 (재검사 불필요).</p>'
+                    +     '<table class="sim-help-bands"><thead><tr><th>옵션</th><th>기본값</th><th>설명</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>'
+                    +   '</div>'
+                    +   '<div class="sim-help-section">'
+                    +     '<h4>자동 제외 (사용자 토글 없음)</h4>'
+                    +     '<table class="sim-help-bands"><thead><tr><th>항목</th><th>처리</th><th>설명</th></tr></thead><tbody>' + autoHtml + '</tbody></table>'
+                    +   '</div>'
+                    + '</div>'
+                    + '<div class="modal-footer">'
+                    +   '<button class="btn btn-primary" data-action="close">닫기</button>'
+                    + '</div>'
+                    + '</div>';
+                document.body.appendChild(overlay);
+                requestAnimationFrame(function() { overlay.classList.add('open'); });
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay || e.target.getAttribute('data-action') === 'close') {
+                        overlay.classList.remove('open');
+                        setTimeout(function() { overlay.remove(); }, 200);
+                    }
+                });
+                var escH = function(e) {
+                    if (e.key === 'Escape') {
+                        overlay.classList.remove('open');
+                        setTimeout(function() { overlay.remove(); }, 200);
+                        document.removeEventListener('keydown', escH);
+                    }
+                };
+                document.addEventListener('keydown', escH);
+            }
+
             // ── 모달 A: 매칭 유형 가이드 (Plan-38 §5.4) ──
             // 2축 다이어그램(어휘 × 의미) + 6라벨 정의표. SSOT(simHelp.labels)에서 파생.
             function showSimLabelHelpModal() {
@@ -2210,6 +2411,36 @@
                 }
                 html += '</div>';
 
+                // Plan-38 §6.4 — 검사 설정 5옵션 패널 (사용자 토글, 즉시 재계산)
+                var settings = simLoadCheckSettings();
+                html += '<details class="sim-check-settings" id="sim-check-settings"' + (settings._open ? ' open' : '') + '>';
+                html += '<summary>'
+                    +   '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+                    +   '<span>검사 설정</span>'
+                    +   '<button type="button" class="sim-score-info sim-check-info" data-action="show-checksettings-help" '
+                    +     'title="검사 설정 가이드" aria-label="검사 설정 가이드">ⓘ</button>'
+                    + '</summary>';
+                html += '<div class="sim-check-options">';
+                var settingDefs = [
+                    { key: 'exclude_boilerplate',  label: '정형구문 제외',           hint: '"the contractor shall" 등' },
+                    { key: 'exclude_short_match',  label: '짧은 매칭 제외 (8단어 미만)', hint: 'Turnitin 표준' },
+                    { key: 'exclude_toc',          label: '목차/장절 헤딩 제외',      hint: '"1.1 SCOPE" 등' },
+                    { key: 'exclude_caption',      label: '표/그림 캡션 제외',         hint: '"Figure 5-1", "표 1" 등' },
+                    { key: 'exclude_cited_quote',  label: '인용·출처 표시 제외',       hint: '"…" / [N] / (Author, 2020)' }
+                ];
+                for (var ci = 0; ci < settingDefs.length; ci++) {
+                    var sd = settingDefs[ci];
+                    var on = settings[sd.key] !== false;  // 기본 ON (cited_quote만 false)
+                    if (sd.key === 'exclude_cited_quote') on = settings[sd.key] === true;  // 기본 OFF
+                    html += '<label class="sim-check-option" title="' + escapeHTML(sd.hint) + '">';
+                    html += '<input type="checkbox"' + (on ? ' checked' : '') + ' data-sim-check="' + sd.key + '"> ';
+                    html += '<span class="sim-check-label">' + escapeHTML(sd.label) + '</span>';
+                    html += '</label>';
+                }
+                html += '<div class="sim-check-note">참고문헌·규격 번호 단독 매칭은 항상 자동 제외됩니다.</div>';
+                html += '</div>';
+                html += '</details>';
+
                 // 인라인 필터 체크박스
                 html += '<div class="sim-filter-inline" id="sim-filter-inline">';
                 var filterTypes = [
@@ -2273,6 +2504,14 @@
                 document.getElementById('sim-nav-group').style.display = '';
                 simApplyFilter();
                 updateExportBtn();
+
+                // Plan-38 §6.4 — 사용자 설정이 백엔드 기본값과 다르면 즉시 재계산
+                var userSettings = simLoadCheckSettings();
+                var hasOverride = false;
+                for (var k in SIM_CHECK_DEFAULTS) {
+                    if (userSettings[k] !== SIM_CHECK_DEFAULTS[k]) { hasOverride = true; break; }
+                }
+                if (hasOverride) simRecomputeFromSettings();
 
                 // 이력 저장
                 var simScoreColor = summary.similarity_score >= 70 ? 'var(--color-error)' :
@@ -2363,12 +2602,31 @@
                         showSimLabelHelpModal();
                         return;
                     }
+                    // ⓘ 검사 설정 가이드 (모달 C)
+                    var checkBtn = e.target.closest('[data-action="show-checksettings-help"]');
+                    if (checkBtn) {
+                        e.stopPropagation();
+                        e.preventDefault();  // <details summary> 클릭 토글 방지
+                        showSimCheckHelpModal();
+                        return;
+                    }
                     // 매칭 카드 → 본문 점프
                     var item = e.target.closest('.sim-match-item');
                     if (!item || !simLastResult) return;
                     var idx = parseInt(item.getAttribute('data-idx'));
                     if (isNaN(idx)) return;
                     simNavigateToMatch(idx);
+                });
+
+                // Plan-38 §6.4 — 검사 설정 체크박스 변경 → 즉시 재계산
+                sidebarBody.addEventListener('change', function(e) {
+                    var cb = e.target.closest('[data-sim-check]');
+                    if (!cb) return;
+                    var key = cb.getAttribute('data-sim-check');
+                    var settings = simLoadCheckSettings();
+                    settings[key] = cb.checked;
+                    simSaveCheckSettings(settings);
+                    simRecomputeFromSettings();
                 });
             })();
 
