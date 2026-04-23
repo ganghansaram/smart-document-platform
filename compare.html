@@ -1009,6 +1009,16 @@
                     if (typeof renderIntelTerms === 'function') renderIntelTerms();
                 } else if (mode === 'similarity' && simLastResult) {
                     simShowResults(simLastResult, { skipOnboarding: true, skipHistory: true });
+                    // 이전에 수동 제외한 매칭의 본문 하이라이트 재표시 + 배너 복원
+                    var matches = simLastResult.matches || [];
+                    for (var ri = 0; ri < matches.length; ri++) {
+                        if (matches[ri].user_excluded) {
+                            var els = document.querySelectorAll('[data-sim-idx="' + ri + '"]');
+                            for (var ei = 0; ei < els.length; ei++) els[ei].classList.add('sim-hl-user-excluded');
+                        }
+                    }
+                    // 수동 제외 반영한 점수로 재계산 (백엔드 기본값 덮어쓰기)
+                    simRecomputeFromSettings();
                 }
             }
 
@@ -1404,12 +1414,18 @@
                 var eb = s.exclusion_breakdown || {};
                 var total = s.total_sentences || 0;
 
-                // ── 매칭 sentence 카운트 (활성 제외는 빠짐) ──
+                // ── 매칭 sentence 카운트 (자동 제외 + 사용자 수동 제외 모두 빠짐) ──
                 var typeCounts = { identical: 0, near_copy: 0, paraphrase: 0, translation: 0, low_sim: 0 };
+                var userExcludedSpan = 0;
                 for (var i = 0; i < matches.length; i++) {
                     var m = matches[i];
                     if (simIsActiveExclusion(m.exclusion_reason, settings)) continue;
                     var sc = (m.target_idx_end !== undefined ? m.target_idx_end : m.target_idx) - m.target_idx + 1;
+                    if (m.user_excluded) {
+                        // 사용자 제외 → 분모에서 차감 (자동 제외와 중복되지 않게 여기서만 집계)
+                        userExcludedSpan += sc;
+                        continue;
+                    }
                     if (typeCounts[m.type] !== undefined) typeCounts[m.type] += sc;
                 }
 
@@ -1420,6 +1436,7 @@
                 if (settings.exclude_caption)     excludedCount += eb.caption || 0;
                 if (settings.exclude_cited_quote) excludedCount += eb.cited_quote || 0;
                 excludedCount += (eb.references_section || 0) + (eb.spec_number_only || 0);  // 자동
+                excludedCount += userExcludedSpan;  // 사용자 수동 제외
 
                 var substantive = typeCounts.identical + typeCounts.near_copy;
                 var derived     = typeCounts.paraphrase + typeCounts.translation;
@@ -1474,6 +1491,9 @@
                         card.classList.remove('sim-match-excluded');
                     }
                 }
+
+                // 사용자 제외 배너는 재계산 후 실제 점수 반영 값으로 다시 갱신
+                if (typeof simUpdateExclusionBanner === 'function') simUpdateExclusionBanner();
             }
 
             // ── 모달 C: 검사 설정 도움말 (Plan-38 §5.4) ──
@@ -2344,8 +2364,32 @@
                 }
             }
 
+            // 수동 제외 사유 카테고리 (UI 라벨 + 내부 키)
+            var SIM_USER_EXCLUDE_REASONS = [
+                { key: 'table_noise',       label: '테이블 추출 잡음', hint: '기호·단위·짧은 셀 파편 등' },
+                { key: 'standard_citation', label: '정형 인용',       hint: '법령·규격·표준 문구' },
+                { key: 'self_citation',     label: '자기 인용',       hint: '저자의 이전 연구·논문' },
+                { key: 'common_term',       label: '일반 용어',       hint: '업계 공통 표현' },
+                { key: 'other',             label: '기타',           hint: '자유 입력' }
+            ];
+            function simFindReasonLabel(key) {
+                for (var i = 0; i < SIM_USER_EXCLUDE_REASONS.length; i++) {
+                    if (SIM_USER_EXCLUDE_REASONS[i].key === key) return SIM_USER_EXCLUDE_REASONS[i].label;
+                }
+                return key || '';
+            }
+
             function simShowResults(data, opts) {
                 opts = opts || {};
+                // 매칭에 수동 제외 필드 초기화 (이미 있으면 보존 — 모드 전환 복원용)
+                if (data && data.matches) {
+                    for (var _mi = 0; _mi < data.matches.length; _mi++) {
+                        var _mm = data.matches[_mi];
+                        if (_mm.user_excluded === undefined) _mm.user_excluded = false;
+                        if (_mm.user_exclude_reason === undefined) _mm.user_exclude_reason = null;
+                        if (_mm.user_exclude_note === undefined) _mm.user_exclude_note = '';
+                    }
+                }
                 var summary = data.summary;
                 var matches = data.matches;
                 var bd = summary.breakdown || {};
@@ -2496,14 +2540,30 @@
                         var typeInfo = SIM_TYPE_MAP[typeKey] || SIM_TYPE_MAP.low_sim;
                         var simPct = m.similarity ? (m.similarity * 100).toFixed(1) : '—';
 
-                        html += '<div class="sim-match-item" data-idx="' + i + '">';
+                        var itemCls = 'sim-match-item' + (m.user_excluded ? ' sim-user-excluded' : '');
+                        html += '<div class="' + itemCls + '" data-idx="' + i + '">';
                         html += '<div class="sim-match-header">';
                         html += '<span class="badge ' + typeInfo.badge + ' sim-match-badge">' + simPct + '%</span>';
                         html += '<span class="sim-match-level" title="' + escapeHTML(typeInfo.tooltip || '') + '">' + typeInfo.label + '</span>';
                         if (m.detection_layer) html += '<span class="sim-match-method">' + (DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer) + '</span>';
+                        // 제외/복원 버튼 (카드 우측)
+                        if (m.user_excluded) {
+                            html += '<button type="button" class="sim-match-action-btn sim-match-restore-btn" data-sim-action="restore" title="제외 취소 (복원)" aria-label="제외 취소">'
+                                + '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>'
+                                + '</button>';
+                        } else {
+                            html += '<button type="button" class="sim-match-action-btn sim-match-exclude-btn" data-sim-action="exclude" title="이 매칭 항목 제외" aria-label="제외">'
+                                + '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                                + '</button>';
+                        }
                         html += '</div>';
                         html += '<div class="sim-match-text-a">' + escapeHTML(m.target_text.substring(0, 100)) + (m.target_text.length > 100 ? '...' : '') + '</div>';
                         html += '<div class="sim-match-text-b">' + escapeHTML(m.ref_text.substring(0, 100)) + (m.ref_text.length > 100 ? '...' : '') + '</div>';
+                        if (m.user_excluded) {
+                            var reasonLabel = simFindReasonLabel(m.user_exclude_reason);
+                            var noteHtml = m.user_exclude_note ? ' · ' + escapeHTML(m.user_exclude_note) : '';
+                            html += '<div class="sim-match-exclude-note">수동 제외 · ' + escapeHTML(reasonLabel) + noteHtml + '</div>';
+                        }
                         html += '</div>';
                     }
                 }
@@ -2624,6 +2684,23 @@
                         showSimCheckHelpModal();
                         return;
                     }
+                    // 수동 제외 / 복원 버튼 (카드 클릭보다 우선)
+                    var actionBtn = e.target.closest('[data-sim-action]');
+                    if (actionBtn && simLastResult) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        var card = actionBtn.closest('.sim-match-item');
+                        if (!card) return;
+                        var actIdx = parseInt(card.getAttribute('data-idx'));
+                        if (isNaN(actIdx) || !simLastResult.matches[actIdx]) return;
+                        var action = actionBtn.getAttribute('data-sim-action');
+                        if (action === 'exclude') {
+                            showSimExcludeReasonModal(actIdx);
+                        } else if (action === 'restore') {
+                            simApplyUserExclusion(actIdx, false);
+                        }
+                        return;
+                    }
                     // 매칭 카드 → 본문 점프
                     var item = e.target.closest('.sim-match-item');
                     if (!item || !simLastResult) return;
@@ -2643,6 +2720,158 @@
                     simRecomputeFromSettings();
                 });
             })();
+
+            // ── 수동 제외 사유 모달 ──
+            function showSimExcludeReasonModal(matchIdx) {
+                if (!simLastResult || !simLastResult.matches[matchIdx]) return;
+                var m = simLastResult.matches[matchIdx];
+                var preview = (m.target_text || '').substring(0, 80);
+                if ((m.target_text || '').length > 80) preview += '…';
+
+                var reasonOptions = SIM_USER_EXCLUDE_REASONS.map(function(r, i) {
+                    return '<label class="sim-excl-option">'
+                        + '<input type="radio" name="sim-excl-reason" value="' + r.key + '"' + (i === 0 ? ' checked' : '') + '>'
+                        + '<div class="sim-excl-option-body">'
+                        +   '<div class="sim-excl-option-title">' + escapeHTML(r.label) + '</div>'
+                        +   '<div class="sim-excl-option-hint">' + escapeHTML(r.hint) + '</div>'
+                        + '</div>'
+                        + '</label>';
+                }).join('');
+
+                var overlay = document.createElement('div');
+                overlay.className = 'modal-overlay blur';
+                overlay.innerHTML = '<div class="modal-box" style="max-width:460px">'
+                    + '<div class="modal-header"><h3>매칭 항목 제외</h3>'
+                    + '<button class="modal-close" id="sim-excl-close">&times;</button></div>'
+                    + '<div class="modal-body">'
+                    + '<div class="sim-excl-preview"><strong>대상:</strong> ' + escapeHTML(preview) + '</div>'
+                    + '<p style="font-size:var(--font-body);color:var(--text-secondary);margin:0 0 var(--space-sm)">제외 사유를 선택하세요 (점수에서 감산됩니다).</p>'
+                    + '<div class="sim-excl-options">' + reasonOptions + '</div>'
+                    + '<div class="sim-excl-note-wrap" style="display:none">'
+                    +   '<label class="form-group">'
+                    +     '<span style="font-size:var(--font-caption);color:var(--text-secondary)">사유 상세 (선택)</span>'
+                    +     '<input type="text" class="form-input" id="sim-excl-note" placeholder="예: 5페이지 표 단위 기호" maxlength="60">'
+                    +   '</label>'
+                    + '</div>'
+                    + '<div style="display:flex;justify-content:flex-end;gap:var(--space-sm);margin-top:var(--space-lg)">'
+                    +   '<button class="btn btn-secondary" id="sim-excl-cancel">취소</button>'
+                    +   '<button class="btn btn-primary" id="sim-excl-ok">제외</button>'
+                    + '</div>'
+                    + '</div></div>';
+                document.body.appendChild(overlay);
+
+                function close() { overlay.remove(); }
+                overlay.querySelector('#sim-excl-close').addEventListener('click', close);
+                overlay.querySelector('#sim-excl-cancel').addEventListener('click', close);
+                overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+
+                // 기타 선택 시 자유 입력 표시
+                var noteWrap = overlay.querySelector('.sim-excl-note-wrap');
+                var radios = overlay.querySelectorAll('input[name="sim-excl-reason"]');
+                for (var ri = 0; ri < radios.length; ri++) {
+                    radios[ri].addEventListener('change', function() {
+                        noteWrap.style.display = this.value === 'other' ? '' : 'none';
+                    });
+                }
+
+                overlay.querySelector('#sim-excl-ok').addEventListener('click', function() {
+                    var selected = overlay.querySelector('input[name="sim-excl-reason"]:checked');
+                    var reasonKey = selected ? selected.value : 'other';
+                    var noteEl = overlay.querySelector('#sim-excl-note');
+                    var note = (reasonKey === 'other' && noteEl) ? (noteEl.value || '').trim() : '';
+                    close();
+                    simApplyUserExclusion(matchIdx, true, reasonKey, note);
+                });
+            }
+
+            // ── 수동 제외 상태 적용 + 점수·UI 재계산 ──
+            function simApplyUserExclusion(matchIdx, excluded, reasonKey, note) {
+                if (!simLastResult || !simLastResult.matches[matchIdx]) return;
+                var m = simLastResult.matches[matchIdx];
+                m.user_excluded = !!excluded;
+                m.user_exclude_reason = excluded ? (reasonKey || 'other') : null;
+                m.user_exclude_note = excluded ? (note || '') : '';
+
+                // 매칭 카드 DOM 갱신 (렌더 재사용 — simShowResults 재호출은 과함 → 부분 갱신)
+                simUpdateMatchCard(matchIdx);
+                simUpdateExclusionBanner();
+                simRecomputeFromSettings();
+                // 하이라이트도 시각적 구분 갱신
+                var highlightEls = document.querySelectorAll('[data-sim-idx="' + matchIdx + '"]');
+                for (var hi = 0; hi < highlightEls.length; hi++) {
+                    highlightEls[hi].classList.toggle('sim-hl-user-excluded', !!excluded);
+                }
+                updateExportBtn();
+            }
+
+            // 매칭 카드 한 개만 다시 그림 (전체 리렌더 회피)
+            function simUpdateMatchCard(idx) {
+                var card = document.querySelector('.sim-match-item[data-idx="' + idx + '"]');
+                if (!card || !simLastResult) return;
+                var m = simLastResult.matches[idx];
+                card.classList.toggle('sim-user-excluded', !!m.user_excluded);
+
+                // 기존 action 버튼 교체
+                var oldBtn = card.querySelector('.sim-match-action-btn');
+                if (oldBtn) oldBtn.remove();
+                var header = card.querySelector('.sim-match-header');
+                if (header) {
+                    if (m.user_excluded) {
+                        header.insertAdjacentHTML('beforeend',
+                            '<button type="button" class="sim-match-action-btn sim-match-restore-btn" data-sim-action="restore" title="제외 취소 (복원)" aria-label="제외 취소">'
+                            + '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>'
+                            + '</button>');
+                    } else {
+                        header.insertAdjacentHTML('beforeend',
+                            '<button type="button" class="sim-match-action-btn sim-match-exclude-btn" data-sim-action="exclude" title="이 매칭 항목 제외" aria-label="제외">'
+                            + '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                            + '</button>');
+                    }
+                }
+
+                // 사유 배지 갱신
+                var oldNote = card.querySelector('.sim-match-exclude-note');
+                if (oldNote) oldNote.remove();
+                if (m.user_excluded) {
+                    var reasonLabel = simFindReasonLabel(m.user_exclude_reason);
+                    var noteText = m.user_exclude_note ? ' · ' + m.user_exclude_note : '';
+                    var badge = document.createElement('div');
+                    badge.className = 'sim-match-exclude-note';
+                    badge.textContent = '수동 제외 · ' + reasonLabel + noteText;
+                    card.appendChild(badge);
+                }
+            }
+
+            // 사이드바 상단 "원점수 → 조정점수" 배너 업데이트
+            function simUpdateExclusionBanner() {
+                if (!simLastResult) return;
+                var banner = document.getElementById('sim-excl-banner');
+                var excludedCount = 0;
+                var matches = simLastResult.matches || [];
+                for (var i = 0; i < matches.length; i++) {
+                    if (matches[i].user_excluded) excludedCount++;
+                }
+                if (excludedCount === 0) {
+                    if (banner) banner.remove();
+                    return;
+                }
+                var summary = simLastResult.summary || {};
+                var tiers = summary.tiers || {};
+                var origScore = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
+                // 조정점수는 sim-score 요소에서 실제 재계산된 값 읽기
+                var curScoreEl = document.querySelector('.sim-score');
+                var curScoreNum = curScoreEl ? parseFloat(curScoreEl.textContent) : origScore;
+
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'sim-excl-banner';
+                    banner.className = 'sim-excl-banner';
+                    var scoreCard = document.querySelector('.sim-summary');
+                    if (scoreCard && scoreCard.parentNode) scoreCard.parentNode.insertBefore(banner, scoreCard.nextSibling);
+                }
+                banner.innerHTML = '<span class="sim-excl-banner-label">수동 제외 ' + excludedCount + '건 반영</span>'
+                    + '<span class="sim-excl-banner-scores">원점수 <strong>' + origScore + '%</strong> → 조정 <strong>' + curScoreNum + '%</strong></span>';
+            }
 
             function simNavigateToMatch(idx) {
                 if (!simLastResult) return;
@@ -4533,7 +4762,27 @@
                     var summary = simLastResult.summary;
                     var tiers = summary.tiers || {};
                     payload.files = { a: simState.a.filename || '', b: simState.b.filename || '' };
-                    payload.score = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
+                    var origScore = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
+                    // 현재 DOM의 sim-score 값이 실제 조정된 점수 (수동 제외 반영)
+                    var domScoreEl = document.querySelector('.sim-score');
+                    var domScore = domScoreEl ? parseFloat(domScoreEl.textContent) : origScore;
+                    payload.score = isNaN(domScore) ? origScore : domScore;
+                    payload.score_original = origScore;
+                    // 수동 제외 집계
+                    var userExclCount = 0;
+                    var userExclBreakdown = {};
+                    var _ms = simLastResult.matches || [];
+                    for (var _u = 0; _u < _ms.length; _u++) {
+                        if (_ms[_u].user_excluded) {
+                            userExclCount++;
+                            var _rk = _ms[_u].user_exclude_reason || 'other';
+                            userExclBreakdown[_rk] = (userExclBreakdown[_rk] || 0) + 1;
+                        }
+                    }
+                    payload.user_exclusions = {
+                        count: userExclCount,
+                        breakdown: userExclBreakdown
+                    };
                     // 5단계 신호등 (백엔드 Phase 2) — 백엔드 verdict 우선, fallback으로 3단계
                     payload.verdict = summary.verdict || '';            // "blue"|"green"|... (Phase 2)
                     payload.verdict_label = summary.verdict_label || ''; // 한국어 라벨 (Phase 2)
@@ -4561,7 +4810,11 @@
                             method: DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer || '',
                             target_text: m.target_text,
                             ref_text: m.ref_text,
-                            exclusion_reason: m.exclusion_reason || null
+                            exclusion_reason: m.exclusion_reason || null,
+                            user_excluded: !!m.user_excluded,
+                            user_exclude_reason: m.user_exclude_reason || null,
+                            user_exclude_reason_label: m.user_excluded ? simFindReasonLabel(m.user_exclude_reason) : '',
+                            user_exclude_note: m.user_exclude_note || ''
                         });
                     }
                 } else if (currentMode === 'verify') {
@@ -4653,6 +4906,11 @@
                     + '.match-text-content { color: #1a1a1a; }'
                     + '.match-excluded { opacity: 0.6; }'
                     + '.match-excluded::after { content: " (제외 영역)"; font-size: 10px; color: #888; }'
+                    + '.match-user-excluded { background: #fffbeb; border-color: #f59e0b; }'
+                    + '.match-user-excluded .match-header::after { content: " · 수동 제외"; color: #92400e; font-weight: 600; font-size: 10px; }'
+                    + '.user-excl-summary { margin: 4px 0 10px; padding: 6px 10px; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 3px; font-size: 10.5px; color: #92400e; }'
+                    + '.user-excl-summary strong { color: #78350f; }'
+                    + '.score-original-note { font-size: 10.5px; color: #92400e; margin-top: 4px; }'
                     + '.sheet { break-after: page; page-break-after: always; }'
                     + '.sheet:last-of-type { break-after: auto; page-break-after: auto; }'
                     + '.sheet-label { display: inline-block; font-size: 10px; font-weight: 600; color: #666; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; padding: 2px 8px; background: #eef2f6; border-radius: 3px; }'
@@ -4708,6 +4966,11 @@
                     html += '<div class="score-meta-line">실질 ' + p.tiers.substantive + '% · 의역·번역 ' + p.tiers.derived + '% · 정형구문 ' + (p.tiers.boilerplate || 0) + '%';
                     if (p.tiers.excluded !== undefined) html += ' · 제외 ' + p.tiers.excluded + '%';
                     html += '</div>';
+                }
+                // 수동 제외 반영 표시 (투명성)
+                var uex = p.user_exclusions || { count: 0 };
+                if (uex.count > 0 && p.score_original !== undefined && p.score_original !== p.score) {
+                    html += '<div class="score-original-note">원점수 ' + p.score_original + '% · 수동 제외 ' + uex.count + '건 반영</div>';
                 }
                 html += '</div></div>';
 
@@ -4785,12 +5048,27 @@
                     html += '<section class="sheet sheet-appendix-a">';
                     html += '<div class="sheet-label appendix">별첨 A · APPENDIX A</div>';
                     html += '<h2>매칭 상세 목록 (' + p.matches.length + '건)</h2>';
+
+                    // 수동 제외 집계 (있을 때만)
+                    var uexA = p.user_exclusions || { count: 0, breakdown: {} };
+                    if (uexA.count > 0) {
+                        var bdParts = [];
+                        var labelMap = { table_noise:'테이블 추출 잡음', standard_citation:'정형 인용', self_citation:'자기 인용', common_term:'일반 용어', other:'기타' };
+                        for (var _rk in uexA.breakdown) {
+                            bdParts.push((labelMap[_rk] || _rk) + ' ' + uexA.breakdown[_rk]);
+                        }
+                        html += '<div class="user-excl-summary">'
+                            + '<strong>수동 제외 ' + uexA.count + '건</strong> — ' + escapeHTML(bdParts.join(' · ')) + '. 점수는 해당 매칭의 문장 수만큼 감산되었습니다.'
+                            + '</div>';
+                    }
+
                     if (p.matches.length === 0) {
                         html += '<p style="color:#888;font-size:12px">매칭된 구간이 없습니다.</p>';
                     } else {
                         for (var i = 0; i < p.matches.length; i++) {
                             var m = p.matches[i];
                             var excl = m.exclusion_reason ? ' match-excluded' : '';
+                            if (m.user_excluded) excl += ' match-user-excluded';
                             html += '<div class="match-detail' + excl + '">'
                                 + '<div class="match-header">'
                                 + '<span>#' + m.index + '</span>'
@@ -4801,6 +5079,10 @@
                                 + '<div class="match-text"><span class="match-text-label">대상:</span> <span class="match-text-content">' + escapeHTML(m.target_text.substring(0, 280)) + (m.target_text.length > 280 ? '…' : '') + '</span></div>';
                             if (m.ref_text) {
                                 html += '<div class="match-text"><span class="match-text-label">참조:</span> <span class="match-text-content">' + escapeHTML(m.ref_text.substring(0, 280)) + (m.ref_text.length > 280 ? '…' : '') + '</span></div>';
+                            }
+                            if (m.user_excluded) {
+                                var uexNote = m.user_exclude_note ? ' · ' + m.user_exclude_note : '';
+                                html += '<div class="match-text" style="color:#92400e;font-size:10.5px"><span class="match-text-label">제외 사유:</span> ' + escapeHTML((m.user_exclude_reason_label || '') + uexNote) + '</div>';
                             }
                             html += '</div>';
                         }

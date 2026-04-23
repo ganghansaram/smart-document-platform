@@ -1394,6 +1394,149 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     margin-bottom: 6px;
 }
 
+/* ── 수동 제외 — 카드 액션 버튼 ── */
+.sim-match-action-btn {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+.sim-match-item:hover .sim-match-action-btn,
+.sim-match-item.sim-user-excluded .sim-match-action-btn {
+    opacity: 1;
+}
+.sim-match-exclude-btn:hover {
+    background: var(--color-error);
+    color: white;
+}
+.sim-match-restore-btn {
+    opacity: 1;
+    color: var(--active-color);
+}
+.sim-match-restore-btn:hover {
+    background: var(--active-color);
+    color: white;
+}
+
+/* ── 수동 제외 — 카드 상태 ── */
+.sim-match-item.sim-user-excluded {
+    opacity: 0.55;
+    background: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 6px,
+        var(--hover-bg) 6px,
+        var(--hover-bg) 7px
+    );
+}
+.sim-match-item.sim-user-excluded:hover {
+    opacity: 0.8;
+}
+.sim-match-exclude-note {
+    margin-top: 6px;
+    padding: 3px 8px;
+    background: var(--color-warning-bg, #fffbeb);
+    color: var(--color-warning-text, #92400e);
+    border-left: 2px solid var(--color-warning, #f59e0b);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.4;
+}
+
+/* ── 본문 하이라이트 — 수동 제외 매칭 시각 구분 ── */
+.sim-hl-user-excluded {
+    opacity: 0.45;
+    text-decoration: line-through;
+    text-decoration-color: var(--text-muted);
+    text-decoration-thickness: 1px;
+}
+
+/* ── 사이드바 상단 원점수 → 조정점수 배너 ── */
+.sim-excl-banner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px 12px;
+    margin: 8px 0 12px;
+    padding: 8px 12px;
+    background: var(--color-warning-bg, #fffbeb);
+    border: 1px solid var(--color-warning, #f59e0b);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+}
+.sim-excl-banner-label {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-warning-text, #92400e);
+}
+.sim-excl-banner-scores {
+    color: var(--text-secondary);
+}
+.sim-excl-banner-scores strong {
+    color: var(--text-dark);
+}
+
+/* ── 제외 사유 선택 모달 ── */
+.sim-excl-preview {
+    padding: 8px 10px;
+    margin: 0 0 var(--space-md);
+    background: var(--hover-bg);
+    border-left: 3px solid var(--active-color);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+    color: var(--text-secondary);
+    line-height: 1.5;
+    word-break: break-all;
+}
+.sim-excl-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+.sim-excl-option {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.sim-excl-option:hover {
+    background: var(--hover-bg);
+    border-color: var(--active-color);
+}
+.sim-excl-option input[type="radio"] {
+    flex-shrink: 0;
+    margin-top: 2px;
+    accent-color: var(--active-color);
+}
+.sim-excl-option-body { flex: 1; min-width: 0; }
+.sim-excl-option-title {
+    font-size: var(--font-body);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-dark);
+    margin-bottom: 2px;
+}
+.sim-excl-option-hint {
+    font-size: var(--font-caption);
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
 /* Plan-38 §8.7 — 빈 상태 디자인 보강 */
 .sim-empty-state {
     text-align: center;
