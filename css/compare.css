@@ -1330,37 +1330,6 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     margin-bottom: 6px;
 }
 
-/* Plan-38 §8.2 — 출처 번호 마커 */
-.sim-source-marker {
-    display: inline-block;
-    min-width: 22px;
-    padding: 1px 6px;
-    background: var(--active-color);
-    color: white;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-caption);
-    font-weight: var(--font-weight-semibold);
-    text-align: center;
-    line-height: 1.4;
-    flex-shrink: 0;
-}
-
-/* 본문 하이라이트 출처 마커 (sup) */
-.sim-hl-marker {
-    display: inline-block;
-    padding: 0 4px;
-    margin-right: 4px;
-    background: var(--active-color);
-    color: white;
-    border-radius: var(--radius-sm);
-    font-size: 0.7em;
-    font-weight: var(--font-weight-semibold);
-    text-decoration: none;
-    vertical-align: super;
-    line-height: 1;
-    cursor: help;
-}
-
 /* Plan-38 §8.7 — 빈 상태 디자인 보강 */
 .sim-empty-state {
     text-align: center;

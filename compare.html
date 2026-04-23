@@ -2475,12 +2475,9 @@
                         var typeKey = m.type || (m.level === 'high' ? 'identical' : 'paraphrase');
                         var typeInfo = SIM_TYPE_MAP[typeKey] || SIM_TYPE_MAP.low_sim;
                         var simPct = m.similarity ? (m.similarity * 100).toFixed(1) : '—';
-                        // Plan-38 §8.2 — 출처 번호 마커 (1:1이라 모두 [1])
-                        var sourceNum = (m.source_num !== undefined) ? m.source_num : 1;
 
                         html += '<div class="sim-match-item" data-idx="' + i + '">';
                         html += '<div class="sim-match-header">';
-                        html += '<span class="sim-source-marker" title="출처 ' + sourceNum + '">[' + sourceNum + ']</span>';
                         html += '<span class="badge ' + typeInfo.badge + ' sim-match-badge">' + simPct + '%</span>';
                         html += '<span class="sim-match-level" title="' + escapeHTML(typeInfo.tooltip || '') + '">' + typeInfo.label + '</span>';
                         if (m.detection_layer) html += '<span class="sim-match-method">' + (DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer) + '</span>';
@@ -2547,7 +2544,7 @@
                     divB.innerHTML = data.display_html_b;
                 }
 
-                // 매칭 결과 → data-sent-idx로 직접 조회 → 하이라이트 + 출처 마커 (Plan-38 §8.2)
+                // 매칭 결과 → data-sent-idx로 직접 조회 → 하이라이트
                 var matches = data.matches || [];
                 for (var i = 0; i < matches.length; i++) {
                     var m = matches[i];
@@ -2556,8 +2553,6 @@
                     var endT = m.target_idx_end !== undefined ? m.target_idx_end : startT;
                     var startR = m.ref_idx;
                     var endR = m.ref_idx_end !== undefined ? m.ref_idx_end : startR;
-                    var sourceNum = (m.source_num !== undefined) ? m.source_num : 1;
-                    var markerHtml = '<sup class="sim-hl-marker" title="출처 ' + sourceNum + ' · ' + (SIM_TYPE_MAP[type]?.label || type) + '">[' + sourceNum + ']</sup>';
 
                     // 대상 패널 (A)
                     for (var si = startT; si <= endT; si++) {
@@ -2565,10 +2560,6 @@
                         for (var ei = 0; ei < els.length; ei++) {
                             els[ei].classList.add('sim-hl', 'sim-hl-' + type);
                             els[ei].setAttribute('data-sim-idx', String(i));
-                            // 첫 매칭 문장에만 출처 마커 (병합된 매칭의 시작 위치)
-                            if (si === startT && ei === 0 && !els[ei].querySelector('.sim-hl-marker')) {
-                                els[ei].insertAdjacentHTML('afterbegin', markerHtml);
-                            }
                         }
                     }
 
@@ -2579,9 +2570,6 @@
                             for (var ei = 0; ei < els.length; ei++) {
                                 els[ei].classList.add('sim-hl', 'sim-hl-' + type);
                                 els[ei].setAttribute('data-sim-idx', String(i));
-                                if (si === startR && ei === 0 && !els[ei].querySelector('.sim-hl-marker')) {
-                                    els[ei].insertAdjacentHTML('afterbegin', markerHtml);
-                                }
                             }
                         }
                     }
@@ -4448,8 +4436,7 @@
                             method: DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer || '',
                             target_text: m.target_text,
                             ref_text: m.ref_text,
-                            exclusion_reason: m.exclusion_reason || null,
-                            source_num: 1  // 1:1 비교 — 모두 출처 [1]
+                            exclusion_reason: m.exclusion_reason || null
                         });
                     }
                 } else if (currentMode === 'verify') {
@@ -4640,7 +4627,6 @@
                         var excl = m.exclusion_reason ? ' match-excluded' : '';
                         html += '<div class="match-detail' + excl + '">'
                             + '<div class="match-header">'
-                            + '<span class="src-num">[' + m.source_num + ']</span>'
                             + '<span>#' + m.index + '</span>'
                             + '<span class="match-badge mb-' + m.type_key + '">' + escapeHTML(m.type) + '</span>'
                             + '<span>유사도 ' + escapeHTML(m.similarity) + '</span>'
