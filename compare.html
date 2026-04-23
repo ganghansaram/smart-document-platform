@@ -572,8 +572,9 @@
 
                 // 상태 초기화
                 docState[side] = { file: null, text: null, paragraphs: [], filename: '' };
-                // 유사도 모드 상태도 리셋
+                // 유사도 모드 상태도 리셋 (이전 검사 결과는 해당 문서와 무관해져 stale)
                 if (simState[side]) simClearSide(side);
+                simLastResult = null;
                 label.textContent = getDefaultLabel(side);
                 label.title = '';
                 removeBtn.classList.remove('visible');
@@ -991,6 +992,26 @@
                 }
             }
 
+            // ── 현재 모드의 저장된 결과를 DOM에 재렌더 (모드 전환 시 상태 복원) ──
+            function restoreMode(mode) {
+                if (mode === 'compare' && diffState.changes.length > 0) {
+                    renderDiffHighlights(diffState.changes);
+                    renderSidebar(diffState.changes);
+                    showDiffUI(true);
+                    updateNavigation();
+                    updateMinimapMarkers();
+                } else if (mode === 'verify' && validateState.issues.length > 0) {
+                    renderValidationHighlights(validateState.issues);
+                    renderValidationSidebar();
+                    showValidationUI(true);
+                    if (typeof renderIntelScorecard === 'function') renderIntelScorecard();
+                    if (typeof renderIntelStructure === 'function') renderIntelStructure();
+                    if (typeof renderIntelTerms === 'function') renderIntelTerms();
+                } else if (mode === 'similarity' && simLastResult) {
+                    simShowResults(simLastResult, { skipOnboarding: true, skipHistory: true });
+                }
+            }
+
             // ── 모드 전환 ──
             function setMode(mode) {
                 if (mode === currentMode) return;
@@ -1069,16 +1090,16 @@
                     phTextA.textContent = getDefaultLabel('a');
                 }
 
-                // 사이드바 타이틀/빈 메시지 변경 (sidebarBody 리셋 포함)
+                // 사이드바 타이틀 변경. 내용은 restoreMode가 결과 있으면 채우고, 없으면 아래에서 기본 메시지.
                 var sidebarBody = document.getElementById('cp-sidebar-body');
-                if (mode === 'compare') {
-                    sidebarTitle.textContent = '변경 사항';
-                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">결과가 여기에 표시됩니다</div>';
-                } else if (mode === 'verify') {
-                    sidebarTitle.textContent = '검증 결과';
-                    sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">결과가 여기에 표시됩니다</div>';
-                } else if (mode === 'similarity') {
-                    sidebarTitle.textContent = '유사도 결과';
+                if (mode === 'compare') sidebarTitle.textContent = '변경 사항';
+                else if (mode === 'verify') sidebarTitle.textContent = '검증 결과';
+                else if (mode === 'similarity') sidebarTitle.textContent = '유사도 결과';
+
+                var hasPrevResult = (mode === 'compare' && diffState.changes.length > 0)
+                                 || (mode === 'verify' && validateState.issues.length > 0)
+                                 || (mode === 'similarity' && !!simLastResult);
+                if (!hasPrevResult) {
                     sidebarBody.innerHTML = '<div class="cp-sidebar-empty" id="cp-sidebar-empty">결과가 여기에 표시됩니다</div>';
                 }
                 sidebarEmpty = document.getElementById('cp-sidebar-empty');
@@ -1092,8 +1113,8 @@
                     document.querySelectorAll('.sim-minimap-mark').forEach(function(m) { m.remove(); });
                 }
 
+                // 모드별 전용 UI 토글 (다른 모드 결과 상태는 변수로 보존)
                 if (mode === 'verify') {
-                    clearDiff();
                     showDiffUI(false);
                     vdSettingsBtn.style.display = '';
                     vdRevalidateBtn.style.display = '';
@@ -1102,11 +1123,8 @@
                     if (simOnboardBtn) simOnboardBtn.style.display = 'none';
                     restoreDocPanels();
                 } else if (mode === 'similarity') {
-                    clearDiff();
-                    clearValidation();
                     showDiffUI(false);
-                    vdNavGroup.style.display = 'none';
-                    vdFilterGroup.style.display = 'none';
+                    showValidationUI(false);
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     document.getElementById('sim-nav-group').style.display = simLastResult ? '' : 'none';
@@ -1114,9 +1132,7 @@
                     if (simOnboardBtn1) simOnboardBtn1.style.display = '';
                     simRestorePanels();
                 } else {
-                    clearValidation();
-                    vdNavGroup.style.display = 'none';
-                    vdFilterGroup.style.display = 'none';
+                    showValidationUI(false);
                     vdSettingsBtn.style.display = 'none';
                     vdRevalidateBtn.style.display = 'none';
                     document.getElementById('sim-nav-group').style.display = 'none';
@@ -1126,6 +1142,9 @@
                     if (editMode) toggleEditMode();
                     restoreDocPanels();
                 }
+
+                // 현재 모드의 저장된 결과 복원 (DOM 재렌더, 상태 변수는 그대로)
+                restoreMode(mode);
 
                 updateActionButtons();
                 updateExportBtn();
@@ -2325,7 +2344,8 @@
                 }
             }
 
-            function simShowResults(data) {
+            function simShowResults(data, opts) {
+                opts = opts || {};
                 var summary = data.summary;
                 var matches = data.matches;
                 var bd = summary.breakdown || {};
@@ -2510,20 +2530,22 @@
 
                 // Plan-38 R-feedback Issue#3 — 첫 검사 결과 표시 직후 온보딩 1회
                 // (사용자가 결과 화면을 본 다음 "이게 뭔지 알려드릴게요" 의 자연스러운 흐름)
-                if (typeof showSimOnboarding === 'function') {
+                if (!opts.skipOnboarding && typeof showSimOnboarding === 'function') {
                     setTimeout(showSimOnboarding, 800);
                 }
 
                 // 이력 저장
-                var simScoreColor = summary.similarity_score >= 70 ? 'var(--color-error)' :
-                                    summary.similarity_score >= 40 ? 'var(--color-warning)' : 'var(--color-success-btn)';
-                addHistory({
-                    timestamp: new Date().toISOString(),
-                    mode: 'similarity',
-                    files: { a: simState.a.filename, b: simState.b.filename },
-                    score: summary.similarity_score + '%',
-                    scoreColor: simScoreColor
-                });
+                if (!opts.skipHistory) {
+                    var simScoreColor = summary.similarity_score >= 70 ? 'var(--color-error)' :
+                                        summary.similarity_score >= 40 ? 'var(--color-warning)' : 'var(--color-success-btn)';
+                    addHistory({
+                        timestamp: new Date().toISOString(),
+                        mode: 'similarity',
+                        files: { a: simState.a.filename, b: simState.b.filename },
+                        score: summary.similarity_score + '%',
+                        scoreColor: simScoreColor
+                    });
+                }
             }
 
             // ── 유사도 하이라이트 적용 (백엔드 태깅 HTML 기반) ──
