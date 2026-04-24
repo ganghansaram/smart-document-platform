@@ -90,6 +90,12 @@ DEFAULT_SETTINGS: dict = {
         "ai_timeout": 60,
         "ai_system_prompt": "",
     },
+    "llm_gateway": {
+        "enabled": False,
+        "max_concurrent": 8,
+        "max_queue": 32,
+        "stream_slots": 3,
+    },
     "verify": {
         "sim_threshold_high": 0.85,
         "sim_threshold_medium": 0.75,
@@ -274,12 +280,14 @@ def apply_to_config(settings: dict) -> list[str]:
     _set(ai, "max_agent_iterations", "MAX_AGENT_ITERATIONS", restart_needed, immediate=True)
     _set(ai, "chat_system_prompt", "CHAT_SYSTEM_PROMPT", restart_needed, immediate=True)
 
-    # Plan-44 Phase 2b: LLM Gateway 설정 (Semaphore 런타임 반영)
+    # Plan-44 Phase 2b: LLM Gateway 설정
+    # enabled 는 즉시 반영 (flag 분기만). 다른 값들은 Semaphore 재생성이 대기 요청 교착을
+    # 유발할 수 있어 재시작 필요 (code-reviewer Critical 반영).
     gw = settings.get("llm_gateway", {})
     _set(gw, "enabled",        "LLM_GATEWAY_ENABLED",        restart_needed, immediate=True)
-    _set(gw, "max_concurrent", "LLM_GATEWAY_MAX_CONCURRENT", restart_needed, immediate=True)
-    _set(gw, "max_queue",      "LLM_GATEWAY_MAX_QUEUE",      restart_needed, immediate=True)
-    _set(gw, "stream_slots",   "LLM_GATEWAY_STREAM_SLOTS",   restart_needed, immediate=True)
+    _set(gw, "max_concurrent", "LLM_GATEWAY_MAX_CONCURRENT", restart_needed)
+    _set(gw, "max_queue",      "LLM_GATEWAY_MAX_QUEUE",      restart_needed)
+    _set(gw, "stream_slots",   "LLM_GATEWAY_STREAM_SLOTS",   restart_needed)
 
     sess = settings.get("session", {})
     _set(sess, "max_conversation_turns", "MAX_CONVERSATION_TURNS", restart_needed, immediate=True)

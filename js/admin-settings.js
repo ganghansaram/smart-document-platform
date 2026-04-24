@@ -60,6 +60,24 @@ var SETTINGS_SCHEMA = {
                             ]
                         },
                         {
+                            title: 'AI 동시성 제어 (LLM Gateway)',
+                            desc: '여러 사용자 동시 AI 호출 시 Ollama 부하를 제한합니다. 관리자 대시보드의 "AI 동시성 상태" 에서 현재 수치 확인 가능.',
+                            fields: [
+                                { group: 'llm_gateway', key: 'enabled', label: 'Gateway 활성화', type: 'toggle',
+                                  restart: false,
+                                  desc: '비활성화 시 Semaphore 우회 (shadow 단계·롤백용). 즉시 반영.' },
+                                { group: 'llm_gateway', key: 'max_concurrent', label: '동시 LLM 호출 최대', type: 'number',
+                                  restart: true, min: 1, max: 32, step: 1,
+                                  desc: '채팅·요약·분류·번역 LLM 호출 공유 상한 (스트림 제외). 기본 8. 변경 시 재시작 필요 (활성 Semaphore 교체로 대기 요청 교착 방지).' },
+                                { group: 'llm_gateway', key: 'stream_slots', label: '스트림 전용 슬롯', type: 'number',
+                                  restart: true, min: 1, max: 16, step: 1,
+                                  desc: 'Q&A 스트림 전용 슬롯 수. 긴 스트림이 짧은 채팅을 굶지 않도록 분리. 기본 3. 변경 시 재시작 필요.' },
+                                { group: 'llm_gateway', key: 'max_queue', label: '대기열 최대 요청 수', type: 'number',
+                                  restart: true, min: 4, max: 256, step: 1,
+                                  desc: '대기 요청 한도 초과 시 사용자에게 HTTP 429(자동 재시도 토스트). 기본 32. 변경 시 재시작 필요.' },
+                            ]
+                        },
+                        {
                             title: '보안',
                             fields: [
                                 { group: 'security', key: 'login_required', label: '열람 로그인 필수', type: 'toggle',

@@ -47,12 +47,12 @@
 - [x] 2a-2. `ai_summary.py` 2곳의 `OllamaProvider()` 직접 생성 제거 → `get_provider(model_override=...)` 호출로 통일. `get_provider` 시그니처 확장 (`model_override: Optional[str]`, 빈 문자열·공백 자동 정규화로 호출자 부담 제거)
 - [x] 2a-3. **보류** — `query_rewriter.rewrite_query` 는 `chat.py:205` 에서 이미 `asyncio.to_thread` 로 스레드 풀 실행 중. 이벤트 루프 블로킹 없음 → async 전환 실익 없음. 보류 근거 문서화로 완료.
 
-**Phase 2b: LLM Gateway 본체 (Week 1 후반, ~3~5일)** 🟨 (0 / 5)
-- [ ] 2b-1. `services/llm_gateway.py` 신설 — 글로벌 Semaphore + 스트림 전용 슬롯 + 용도별 weight (chat=1 / translation=2 / summary=2 / qa_stream=1)
-- [ ] 2b-2. 호출부 이식 (`ai_summary`, `query_rewriter`, `translator_service.ai_selection_query`, `compare_service._call_ollama_classify`, `notebook_chat` 스트림)
-- [ ] 2b-3. 기존 `_translation_semaphore` → Gateway weight 슬롯 재구현 (기존 409 UX 계약 유지)
-- [ ] 2b-4. Settings GUI: `LLM_GATEWAY_MAX_CONCURRENT` / `MAX_QUEUE` / `STREAM_SLOTS` 노출 (런타임 반영)
-- [ ] 2b-5. `LLM_GATEWAY_ENABLED=false` 롤백 플래그 — 1주 shadow 운영용
+**Phase 2b: LLM Gateway 본체 (Week 1 후반, ~3~5일)** ✅ (5 / 5)
+- [x] 2b-1. `services/llm_gateway.py` 신설 — 단발 Semaphore(`_sem`) + 스트림 전용 Semaphore(`_stream_sem`) 2-풀 구조. 원안의 용도별 weight 는 deadlock/starvation 리스크로 단순화. `llm_generate` / `llm_stream` / `acquire_slot` / `release_slot` / `get_status` / `shutdown` 공개 API
+- [x] 2b-2. 호출부 이식 3 파일 — `ai_summary.py` 5곳 → `llm_generate(purpose="summary")` / `notebook_chat.py` → `llm_stream(purpose="qa_stream")` / `compare_service._call_ollama_classify` → Phase 2a 공유 client + Gateway `acquire_slot("classify")` (structured output format 파라미터 필요해 provider 직통). `translator_service.ai_selection_query` / `query_rewriter` 는 동기 경로라 별도 처리(보류)
+- [x] 2b-3. **독립 유지 결정** — `_translation_semaphore` 는 GPU 자원 제어 전용, Gateway 단발 sem 과 분리. pdf2zh subprocess 가 Gateway 바깥이라 통합 실익 없음. 기존 409 UX 계약 보존
+- [x] 2b-4. Settings GUI 공통 탭에 "AI 동시성 제어 (LLM Gateway)" 섹션 신설 — 4개 필드(enabled/max_concurrent/stream_slots/max_queue), 모두 restart:false 로 런타임 반영. `settings_service.apply_to_config` 에 llm_gateway 그룹 4개 매핑
+- [x] 2b-5. `LLM_GATEWAY_ENABLED=False` 기본값 — shadow 단계. Flag OFF 시 `llm_generate`/`llm_stream`/`acquire_slot` 모두 Semaphore 우회, Phase 2a 와 동일 동작
 
 **Phase 2c: 부하 테스트 (Week 2, ~1.5일) — 용도 분리 필수** 🟨 (0 / 3)
 - [ ] 2c-1. **개발 PC 스모크** — locust 등으로 100 가짜 동시 요청, deadlock·메모리 누수·429 경로·프론트 재시도 **구조 검증** (GPU 없이도 가능. 숫자 튜닝은 아님)
@@ -78,7 +78,7 @@
 | 레이어 | 진척 | 총 항목 | 상태 |
 |--------|------|---------|------|
 | L1 (즉시) | **17 / 17** | 17 | ✅ 전체 완료 (2026-04-24) |
-| L2 (사전 준비) | **3 / 13** | 13 | 🟨 Phase 2a ✅ 완료, Phase 2b 진행 예정 |
+| L2 (사전 준비) | **8 / 13** | 13 | 🟨 Phase 2a·2b ✅ 완료, Phase 2c(부하 테스트) 대기 |
 | L3 (전환) | **0 / 3** | 3 | ⏸ 200+ 동시 또는 L2 튜닝 후 지표 지속 초과 시 |
 
 ---

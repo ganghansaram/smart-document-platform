@@ -818,20 +818,21 @@ async def _call_ollama_classify(changes: list[dict]) -> list[dict]:
     }
 
     async def _do():
-        client = _get_shared_client()
-        resp = await client.post(
-            f"{config.OLLAMA_URL}/api/generate",
-            json=payload,
-            timeout=float(timeout),
-        )
-        resp.raise_for_status()
-        return resp.json().get("response", "")
+        # 재시도 간 대기 중엔 sem 해제되도록 _do 내부에서 acquire/release (Critical 반영)
+        sem = await acquire_slot("classify")
+        try:
+            client = _get_shared_client()
+            resp = await client.post(
+                f"{config.OLLAMA_URL}/api/generate",
+                json=payload,
+                timeout=float(timeout),
+            )
+            resp.raise_for_status()
+            return resp.json().get("response", "")
+        finally:
+            release_slot(sem)
 
-    sem = await acquire_slot("classify")
-    try:
-        raw = await call_with_retry_async(_do, purpose="classify")
-    finally:
-        release_slot(sem)
+    raw = await call_with_retry_async(_do, purpose="classify")
     parsed = json.loads(raw)
     if not isinstance(parsed, list):
         raise ValueError("LLM 응답이 배열 형식이 아닙니다")
