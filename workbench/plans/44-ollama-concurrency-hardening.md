@@ -18,10 +18,10 @@
 - [x] 1-4. 스트리밍 슬롯 점유 특성 docs 에 명시 (`num_parallel` 슬롯은 스트림 종료까지 점유)
 - [x] 1-5. 검증 스크립트(`/api/ps` / 동시요청 / `nvidia-smi` / 503 재현) 문서화
 
-**Phase 3: 503→429 변환 + 백오프** ⬜ (0 / 3)
-- [ ] 3-1. `services/llm_retry.py` 공통 백오프 헬퍼 (지수 + jitter, 최대 3회)
-- [ ] 3-2. FastAPI 공통 예외 핸들러 — Ollama 503 → HTTP 429 + `Retry-After`
-- [ ] 3-3. 호출부 4곳 적용 (`llm_provider`, `query_rewriter`, `translator_service.ai_selection_query`, `compare_service._call_ollama_classify`)
+**Phase 3: 503→429 변환 + 백오프** ✅ (3 / 3)
+- [x] 3-1. `services/llm_retry.py` — `LLMQueueFullError` + `call_with_retry_async/sync` (지수 백오프, jitter, 최대 3회, 503/ConnectError/ReadTimeout 대상)
+- [x] 3-2. `main.py` 에 `@app.exception_handler(LLMQueueFullError)` 등록 — 429 + `Retry-After` 헤더 + `retry_after` body
+- [x] 3-3. 호출부 5곳 적용 (`llm_provider.OllamaProvider.generate/stream`, `OpenAICompatProvider.generate/stream`, `translator_service.ai_selection_query`, `compare_service._call_ollama_classify`, `query_rewriter` 503 로그 구분)
 
 **Phase 4: 프론트 RequestGuard** ⬜ (0 / 4)
 - [ ] 4-1. `js/request-guard.js` 신설 (inFlight Map + AbortController + 자동 abort)
@@ -60,7 +60,7 @@
 
 | 레이어 | 진척 | 총 항목 | 상태 |
 |--------|------|---------|------|
-| L1 (즉시) | **5 / 17** | 17 | 🟨 Phase 1 완료, Phase 3 진행 중 |
+| L1 (즉시) | **8 / 17** | 17 | 🟨 Phase 1·3 완료, Phase 5 백엔드 진행 중 |
 | L2 (조건부) | **0 / 8** | 8 | ⏸ 트리거 대기 |
 | L3 (전환) | **0 / 3** | 3 | ⏸ 트리거 대기 |
 

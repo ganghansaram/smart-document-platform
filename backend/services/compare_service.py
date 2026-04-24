@@ -787,7 +787,12 @@ def _build_prompt(changes: list[dict]) -> str:
 
 
 async def _call_ollama_classify(changes: list[dict]) -> list[dict]:
-    """Ollama 구조화 출력으로 변경 구간 분류"""
+    """Ollama 구조화 출력으로 변경 구간 분류.
+
+    503/타임아웃 재시도는 call_with_retry_async 가 처리 (최대 3회, 지수 백오프).
+    """
+    from services.llm_retry import call_with_retry_async
+
     model = _get_model()
     system = _get_system_prompt()
     prompt = _build_prompt(changes)
@@ -807,16 +812,17 @@ async def _call_ollama_classify(changes: list[dict]) -> list[dict]:
         "options": {"temperature": temperature},
     }
 
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            f"{config.OLLAMA_URL}/api/generate",
-            json=payload,
-            timeout=float(timeout),
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        raw = data.get("response", "")
+    async def _do():
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{config.OLLAMA_URL}/api/generate",
+                json=payload,
+                timeout=float(timeout),
+            )
+            resp.raise_for_status()
+            return resp.json().get("response", "")
 
+    raw = await call_with_retry_async(_do, purpose="classify")
     parsed = json.loads(raw)
     if not isinstance(parsed, list):
         raise ValueError("LLM 응답이 배열 형식이 아닙니다")
@@ -865,23 +871,18 @@ async def classify_changes(changes: list[dict]) -> list[dict]:
         batch = changes[i:i + batch_size]
 
         try:
+            # 내부 call_with_retry_async 가 503/타임아웃 최대 3회 재시도
             results = await _call_ollama_classify(batch)
             all_results.extend(results)
         except Exception as e:
-            logger.warning("AI 분류 배치 %d 실패, 재시도: %s", i // batch_size, e)
-            # 1회 재시도
-            try:
-                results = await _call_ollama_classify(batch)
-                all_results.extend(results)
-            except Exception as e2:
-                logger.error("AI 분류 배치 %d 재시도 실패: %s", i // batch_size, e2)
-                # 실패한 배치의 항목은 UNKNOWN으로 채움
-                for c in batch:
-                    all_results.append({
-                        "index": c["index"],
-                        "tag": "UNKNOWN",
-                        "confidence": 0.0,
-                        "explanation": f"분류 실패: {e2}",
-                    })
+            logger.error("AI 분류 배치 %d 실패 (재시도 후): %s", i // batch_size, e)
+            # 실패한 배치의 항목은 UNKNOWN으로 채움
+            for c in batch:
+                all_results.append({
+                    "index": c["index"],
+                    "tag": "UNKNOWN",
+                    "confidence": 0.0,
+                    "explanation": f"분류 실패: {e}",
+                })
 
     return _validate_classifications(all_results, len(changes))

@@ -50,6 +50,7 @@ class OllamaProvider(LLMProvider):
         return self.model
 
     async def generate(self, prompt: str, system: Optional[str] = None, **opts) -> str:
+        from services.llm_retry import call_with_retry_async
         temperature = opts.get("temperature", 0)
         timeout = opts.get("timeout", 120)
 
@@ -65,17 +66,21 @@ class OllamaProvider(LLMProvider):
             "options": {"temperature": temperature},
         }
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{self.url}/api/chat",
-                json=payload,
-                timeout=timeout,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return data.get("message", {}).get("content", "")
+        async def _call():
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    f"{self.url}/api/chat",
+                    json=payload,
+                    timeout=timeout,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data.get("message", {}).get("content", "")
+
+        return await call_with_retry_async(_call, purpose="chat")
 
     async def generate_stream(self, prompt: str, system: Optional[str] = None, **opts) -> AsyncIterator[str]:
+        from services.llm_retry import LLMQueueFullError, _parse_retry_after
         temperature = opts.get("temperature", 0)
         timeout = opts.get("timeout", 300)
 
@@ -91,6 +96,7 @@ class OllamaProvider(LLMProvider):
             "options": {"temperature": temperature},
         }
 
+        # 스트리밍은 토큰 일부만 받은 후 재시도하면 의미 파손 → 503 만 감지해 즉시 변환
         async with httpx.AsyncClient() as client:
             async with client.stream(
                 "POST",
@@ -98,6 +104,10 @@ class OllamaProvider(LLMProvider):
                 json=payload,
                 timeout=timeout,
             ) as resp:
+                if resp.status_code == 503:
+                    raise LLMQueueFullError(
+                        retry_after=_parse_retry_after(resp.headers)
+                    )
                 resp.raise_for_status()
                 async for line in resp.aiter_lines():
                     if not line:
@@ -140,6 +150,7 @@ class OpenAICompatProvider(LLMProvider):
         return headers
 
     async def generate(self, prompt: str, system: Optional[str] = None, **opts) -> str:
+        from services.llm_retry import call_with_retry_async
         temperature = opts.get("temperature", 0)
         timeout = opts.get("timeout", 120)
 
@@ -155,18 +166,22 @@ class OpenAICompatProvider(LLMProvider):
             "stream": False,
         }
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{self.base_url}/v1/chat/completions",
-                headers=self._headers(),
-                json=payload,
-                timeout=timeout,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return data["choices"][0]["message"]["content"]
+        async def _call():
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    f"{self.base_url}/v1/chat/completions",
+                    headers=self._headers(),
+                    json=payload,
+                    timeout=timeout,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data["choices"][0]["message"]["content"]
+
+        return await call_with_retry_async(_call, purpose="chat")
 
     async def generate_stream(self, prompt: str, system: Optional[str] = None, **opts) -> AsyncIterator[str]:
+        from services.llm_retry import LLMQueueFullError, _parse_retry_after
         temperature = opts.get("temperature", 0)
         timeout = opts.get("timeout", 300)
 
@@ -190,6 +205,10 @@ class OpenAICompatProvider(LLMProvider):
                 json=payload,
                 timeout=timeout,
             ) as resp:
+                if resp.status_code == 503:
+                    raise LLMQueueFullError(
+                        retry_after=_parse_retry_after(resp.headers)
+                    )
                 resp.raise_for_status()
                 async for line in resp.aiter_lines():
                     if not line.startswith("data: "):

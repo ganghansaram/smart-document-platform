@@ -102,6 +102,14 @@ def rewrite_query(question: str, history: List[dict]) -> str:
         logger.info("쿼리 재작성: '%s' → '%s'", question, rewritten)
         return rewritten
 
+    except requests.HTTPError as e:
+        status = e.response.status_code if e.response is not None else None
+        if status == 503:
+            # Ollama 큐 포화 — 쿼리 재작성은 부가 기능이므로 즉시 폴백
+            logger.info("쿼리 재작성 스킵 (Ollama 큐 포화, 폴백 사용)")
+        else:
+            logger.warning("쿼리 재작성 실패 (폴백 사용): %s", e)
+        return fallback
     except Exception as e:
         logger.warning("쿼리 재작성 실패 (폴백 사용): %s", e)
         return fallback

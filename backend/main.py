@@ -212,12 +212,31 @@ def _path_to_subsystem(path: str) -> str:
     return "platform"
 
 
+# Plan-44 Phase 3: Ollama 503(큐 포화) → HTTP 429 + Retry-After 변환
+from services.llm_retry import LLMQueueFullError as _LLMQueueFullError
+
+
+@app.exception_handler(_LLMQueueFullError)
+async def _llm_queue_full_handler(request: _Request, exc: _LLMQueueFullError):
+    """Ollama 큐 포화 시 클라이언트에 429 + Retry-After 로 응답.
+    프론트엔드 RequestGuard 가 이 헤더를 읽고 자동 재시도(카운트다운 토스트)."""
+    retry_after = max(1, int(round(exc.retry_after)))
+    return _JSONResponse(
+        status_code=429,
+        headers={"Retry-After": str(retry_after)},
+        content={"detail": str(exc), "retry_after": retry_after},
+    )
+
+
 @app.exception_handler(Exception)
 async def _global_exception_handler(request: _Request, exc: Exception):
     """처리되지 않은 예외를 500 으로 응답하면서 analytics 에 기록 (rate-limit 적용).
     FastAPI/Starlette HTTPException 은 기본 처리기에 위임 (404/401/409 등 가로채지 않음)."""
     if isinstance(exc, (_HTTPException, _StarletteHTTPException)):
         raise exc
+    if isinstance(exc, _LLMQueueFullError):
+        # 전용 핸들러로 위임 (방어적 — FastAPI 디스패치가 먼저 처리해야 정상)
+        return await _llm_queue_full_handler(request, exc)
     path = request.url.path
     logger.exception("Unhandled exception at %s: %s", path, exc)
     if _should_record_error(path):

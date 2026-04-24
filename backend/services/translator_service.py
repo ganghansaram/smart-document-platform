@@ -680,9 +680,14 @@ def create_document_zip(username: str, doc_id: str) -> Optional[Path]:
 # AI 선택 번역/요약
 # ══════════════════════════════════════
 
-def ai_selection_query(text: str, action: str, model: Optional[str] = None) -> str:
-    """선택 텍스트에 대해 Ollama로 번역/요약 수행"""
+def ai_selection_query(text: str, action: str, model: Optional[str] = None) -> dict:
+    """선택 텍스트에 대해 Ollama로 번역/요약 수행.
+
+    Ollama 503(큐 포화) 시 재시도 후에도 지속되면 LLMQueueFullError → 상위
+    전역 예외 핸들러가 HTTP 429 + Retry-After 로 변환.
+    """
     import requests
+    from services.llm_retry import call_with_retry_sync
 
     if action == "translate":
         system_prompt = config.TRANSLATOR_AI_TRANSLATE_PROMPT
@@ -693,19 +698,22 @@ def ai_selection_query(text: str, action: str, model: Optional[str] = None) -> s
 
     use_model = model or config.TRANSLATOR_MODEL or config.OLLAMA_MODEL
 
-    resp = requests.post(
-        f"{config.OLLAMA_URL}/api/generate",
-        json={
-            "model": use_model,
-            "system": system_prompt,
-            "prompt": text,
-            "stream": False,
-            "options": {"temperature": 0.3},
-        },
-        timeout=config.TRANSLATOR_AI_SELECTION_TIMEOUT,
-    )
-    resp.raise_for_status()
-    return {"result": resp.json().get("response", "").strip(), "model": use_model}
+    def _call():
+        resp = requests.post(
+            f"{config.OLLAMA_URL}/api/generate",
+            json={
+                "model": use_model,
+                "system": system_prompt,
+                "prompt": text,
+                "stream": False,
+                "options": {"temperature": 0.3},
+            },
+            timeout=config.TRANSLATOR_AI_SELECTION_TIMEOUT,
+        )
+        resp.raise_for_status()
+        return {"result": resp.json().get("response", "").strip(), "model": use_model}
+
+    return call_with_retry_sync(_call, purpose="selection")
 
 
 # ══════════════════════════════════════
