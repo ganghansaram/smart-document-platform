@@ -271,8 +271,32 @@ async def health_check():
     except Exception:
         checks["disk"] = "unknown"
 
+    # FAISS 벡터 인덱스 최신성 (search-index.json mtime 과 비교)
+    # search-index 는 업로드 시 즉시 갱신되고, vector-index 는 후속으로 rebuild 됨.
+    # search-index 가 더 새로우면 vector-index 재생성 필요.
+    # 2초 버퍼: FAT 파일시스템 mtime granularity 및 rebuild 직후 타임스탬프 차이 흡수
+    from pathlib import Path
+    search_idx = Path(config.SEARCH_INDEX_PATH)
+    vector_faiss = Path(str(config.VECTOR_INDEX_PATH) + ".faiss")
+    try:
+        vec_exists = vector_faiss.exists()
+        src_exists = search_idx.exists()
+        if not vec_exists and not src_exists:
+            checks["faiss"] = "ok"  # 빈 시스템 (초기 설치)
+        elif not vec_exists:
+            checks["faiss"] = "missing"  # 콘텐츠는 있는데 벡터 없음
+        elif not src_exists:
+            checks["faiss"] = "ok"  # 콘텐츠 삭제된 상태
+        elif search_idx.stat().st_mtime > vector_faiss.stat().st_mtime + 2:
+            checks["faiss"] = "stale"
+        else:
+            checks["faiss"] = "ok"
+    except Exception:
+        checks["faiss"] = "unknown"
+
     overall = "ok" if all(
-        v == "ok" for k, v in checks.items() if k != "disk_free_gb"
+        v == "ok" for k, v in checks.items()
+        if k not in ("disk_free_gb",)
     ) else "degraded"
     return {"status": overall, "checks": checks}
 
