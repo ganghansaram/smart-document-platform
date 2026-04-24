@@ -826,15 +826,19 @@
     }
 
     // Dismiss 클릭 바인딩 — 대시보드 컨테이너에 event delegation
-    document.addEventListener('click', function(e) {
-        var target = e.target;
-        if (target && target.matches && target.matches('[data-dismiss-banner]')) {
-            try {
-                localStorage.setItem(_AD_BANNER_KEY, String(Date.now() + 24 * 3600 * 1000));
-            } catch (err) {}
-            var banner = target.closest('.ad-alert');
-            if (banner) banner.remove();
-        }
-    });
+    // 페이지 내 핫리로드·중복 IIFE 실행 방어로 document 플래그 체크
+    if (!document._adBannerDismissBound) {
+        document._adBannerDismissBound = true;
+        document.addEventListener('click', function(e) {
+            var target = e.target;
+            if (target && target.matches && target.matches('[data-dismiss-banner]')) {
+                try {
+                    localStorage.setItem(_AD_BANNER_KEY, String(Date.now() + 24 * 3600 * 1000));
+                } catch (err) {}
+                var banner = target.closest('.ad-alert');
+                if (banner) banner.remove();
+            }
+        });
+    }
 
 })();

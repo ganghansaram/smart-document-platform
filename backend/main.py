@@ -344,9 +344,14 @@ async def health_check():
 
 # ── Plan-44 Phase 5: AI 동시성 상태 지표 (관리자 대시보드 연동) ──
 
+from fastapi import Depends as _Depends
+from dependencies import require_admin as _require_admin
+
+
 @app.get("/api/metrics/ai-status")
-async def ai_status():
-    """대시보드 AI 동시성 상태 패널용 — 4 지표 + L2/L3 트리거 판정."""
+async def ai_status(_user: dict = _Depends(_require_admin)):
+    """대시보드 AI 동시성 상태 패널용 — 4 지표 + L2/L3 트리거 판정.
+    관리자 전용 (운영 지표 비공개)."""
     from services.ai_metrics import get_ai_status
     return get_ai_status()
 

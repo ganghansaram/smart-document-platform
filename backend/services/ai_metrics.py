@@ -29,12 +29,17 @@ logger = logging.getLogger(__name__)
 
 _WINDOW_SEC = 3600  # 1시간
 
-# (timestamp, purpose, duration_ms, status) — status: "ok"/"503"/"error"/"timeout"
+# (timestamp, purpose, duration_ms, status) — status: "ok"/"503"/"error"/"timeout"/"cancelled"
 _events: deque = deque()
 _lock = threading.Lock()
 
 _active_streams: int = 0
 _active_streams_lock = threading.Lock()
+
+# 락 획득 순서 규칙 (deadlock 방지): _lock → _active_streams_lock
+# get_indicators() 가 _lock 하에서 이벤트 스냅샷 후 lock 해제,
+# 이후 _active_streams_lock 을 별도 획득하므로 순서 이슈 없음.
+# 향후 두 락을 동시에 들어야 하는 코드 추가 시 반드시 이 순서 유지.
 
 
 # ── 기록 API ────────────────────────────────────────────────────
