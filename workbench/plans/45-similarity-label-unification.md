@@ -359,11 +359,16 @@ function computeScore(matches, totalSentences, activeSettings) {
 - 검증: JSON 문법 PASS · Copyleaks 공식 샘플 (76+50+89)/(597-105)=43.7% 일치 · 프론트 기존 접근 경로 전부 유효
 - 보고서: `workbench/reports/plan-45-feedback-2026-04-25.md`
 
-### Phase 2 — `resolveCategory` + `computeScore` 도입 (0.7일)
-- §2의 두 함수 구현
-- 기존 `simRecomputeFromSettings` 재작성 (Copyleaks 공식, 가중치 제거)
-- 기존 `tiers.substantive/derived` hint 문구 폐기 → "유사율 43.7%" 단순 표기
-- 단위 테스트 U1~U10 (§7.1)
+### Phase 2 — `resolveCategory` + `computeScore` 도입 (0.7일) ✅ **완료 (2026-04-25)**
+- `SIM_TYPE_TO_CATEGORY` + `resolveCategory()` 단일 판정 함수 신설 (compare.html:2374~)
+- `computeScore()` 순수 계산 함수 신설 (Copyleaks aggregatedScore 공식, 가중치 없음)
+- `simRecomputeFromSettings()` 재작성 (compare.html:1411~) — computeScore 재사용
+- `tiers.substantive/derived` hint 폐기 → "유사율 N%" 단순 표기
+- `simShowResults`에서 `simRecomputeFromSettings` 무조건 호출로 변경 (백엔드 구공식 값 화면 노출 차단)
+- 단위 테스트 U1~U10: **21/21 PASS** (`tests/sim_phase2_test.js`)
+- Copyleaks 샘플 검증: (76+50+89)/(597-105) = 43.7% ✓
+- 보고서: `workbench/reports/plan-45-phase2-feedback-2026-04-25.md`
+- **잔여 (Phase 3~5 예정)**: 4그룹 바 DOM, HTML/TXT 리포트 tiers 참조, `m.level` 폴백 코드
 
 ### Phase 3 — 사이드바 UI 재구성 (1일)
 - 4 카테고리 필터 체크박스

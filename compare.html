@@ -1408,59 +1408,32 @@
             }
 
             // 사용자 설정 적용 — 점수/4그룹/breakdown/하이라이트 즉시 갱신
+            // Plan-45 Phase 2: computeScore() + resolveCategory() 기반 재작성 (Copyleaks 공식, 가중치 없음)
+            // 4그룹 바 렌더링은 Phase 3에서 4 카테고리 기반으로 교체 예정 — 현재는 레거시 호환 유지
             function simRecomputeFromSettings() {
                 if (!simLastResult) return;
                 var settings = simLoadCheckSettings();
                 var data = simLastResult;
                 var matches = data.matches || [];
-                var s = data.summary || {};
-                var eb = s.exclusion_breakdown || {};
-                var total = s.total_sentences || 0;
+                var total = (data.summary && data.summary.total_sentences) || 0;
 
-                // ── 매칭 sentence 카운트 (자동 제외 + 사용자 수동 제외 모두 빠짐) ──
-                var typeCounts = { identical: 0, near_copy: 0, paraphrase: 0, translation: 0, low_sim: 0 };
-                var userExcludedSpan = 0;
-                for (var i = 0; i < matches.length; i++) {
-                    var m = matches[i];
-                    if (simIsActiveExclusion(m.exclusion_reason, settings)) continue;
-                    var sc = (m.target_idx_end !== undefined ? m.target_idx_end : m.target_idx) - m.target_idx + 1;
-                    if (m.user_excluded) {
-                        // 사용자 제외 → 분모에서 차감 (자동 제외와 중복되지 않게 여기서만 집계)
-                        userExcludedSpan += sc;
-                        continue;
-                    }
-                    if (typeCounts[m.type] !== undefined) typeCounts[m.type] += sc;
-                }
+                var result = computeScore(matches, total, settings);
+                var score = result.score;
 
-                // ── 활성 제외 sentence 수 (분모 보정) ──
-                var excludedCount = 0;
-                if (settings.exclude_boilerplate) excludedCount += (eb.boilerplate || 0) + (eb.boilerplate_pattern || 0);
-                if (settings.exclude_toc)         excludedCount += eb.toc_heading || 0;
-                if (settings.exclude_caption)     excludedCount += eb.caption || 0;
-                if (settings.exclude_cited_quote) excludedCount += eb.cited_quote || 0;
-                excludedCount += (eb.references_section || 0) + (eb.spec_number_only || 0);  // 자동
-                excludedCount += userExcludedSpan;  // 사용자 수동 제외
-
-                var substantive = typeCounts.identical + typeCounts.near_copy;
-                var derived     = typeCounts.paraphrase + typeCounts.translation;
-                var effectiveTotal = Math.max(total - excludedCount, 1);
-                var adjusted = Math.min(100, Math.round((substantive + derived * 0.5) / effectiveTotal * 1000) / 10);
-
-                // ── 점수 카드 + 4그룹 바 즉시 갱신 ──
+                // ── 점수 카드 갱신 ──
                 var scoreEl = document.querySelector('.sim-score');
                 if (scoreEl) {
-                    // 텍스트 노드만 교체 (ⓘ 버튼 보존)
                     var btn = scoreEl.querySelector('.sim-score-info');
-                    scoreEl.innerHTML = adjusted + '% ' + (btn ? btn.outerHTML : '');
+                    scoreEl.innerHTML = score + '% ' + (btn ? btn.outerHTML : '');
                 }
-                // hint 갱신
+                // Plan-45 v3: hint 단순화 — 카테고리 breakdown은 사이드바에서 확인
                 var hint = document.getElementById('toolbar-hint');
-                if (hint) hint.textContent = '유사율 ' + adjusted + '% (실질 ' + (substantive*100/effectiveTotal).toFixed(1) + '% · 의역·번역 ' + (derived*100/effectiveTotal).toFixed(1) + '%)';
+                if (hint) hint.textContent = '유사율 ' + score + '%';
 
-                // 4그룹 바 갱신
-                var suspectN = substantive + derived;
-                var reviewN  = typeCounts.low_sim;
-                var excludedN = excludedCount;
+                // ── 4그룹 바 갱신 (레거시 호환 — Phase 3에서 4 카테고리로 교체) ──
+                var suspectN = result.counts.identical + result.counts.near_copy + result.counts.paraphrased;
+                var reviewN  = result.counts.low_similarity;
+                var excludedN = result.excluded;
                 var cleanN = Math.max(0, total - suspectN - reviewN - excludedN);
                 var pct = function(n) { return total > 0 ? n / total * 100 : 0; };
                 var bar = document.querySelector('.sim-group-bar');
@@ -1482,13 +1455,13 @@
                         + (info ? info.outerHTML : '');
                 }
 
-                // ── 매칭 카드 시각 처리 — 활성 제외는 흐리게 ──
+                // ── 매칭 카드 시각 처리 — 자동 제외는 흐리게 (resolveCategory 단일 경로) ──
                 var cards = document.querySelectorAll('.sim-match-item');
                 for (var ci = 0; ci < cards.length; ci++) {
                     var card = cards[ci];
                     var idx = parseInt(card.getAttribute('data-idx'));
                     var m = matches[idx];
-                    if (m && simIsActiveExclusion(m.exclusion_reason, settings)) {
+                    if (m && resolveCategory(m, settings) === 'excluded_auto') {
                         card.classList.add('sim-match-excluded');
                     } else {
                         card.classList.remove('sim-match-excluded');
@@ -2371,6 +2344,50 @@
                 }
             }
 
+            // ─────────────────────────────────────────────────────────────
+            // Plan-45 Phase 2 — 단일 카테고리 판정 + 점수 계산 (Copyleaks 공식)
+            // 모든 UI 렌더 경로는 resolveCategory() 를 거쳐 카테고리를 결정한다.
+            // 이 함수 외 경로로 카테고리를 얻는 코드는 존재해선 안 된다.
+            // 판정 우선순위: user_excluded > 자동 제외 > 유형별 카테고리
+            // ─────────────────────────────────────────────────────────────
+            var SIM_TYPE_TO_CATEGORY = {
+                identical:   'identical',
+                near_copy:   'near_copy',
+                paraphrase:  'paraphrased',
+                translation: 'paraphrased',   // 번역은 의역에 통합 (Plan-45 §2.2)
+                low_sim:     'low_similarity'
+            };
+
+            function resolveCategory(match, settings) {
+                if (!match) return null;
+                if (match.user_excluded) return 'excluded_manual';
+                if (match.type === 'boilerplate') return 'excluded_auto';
+                if (simIsActiveExclusion(match.exclusion_reason, settings)) return 'excluded_auto';
+                return SIM_TYPE_TO_CATEGORY[match.type] || 'low_similarity';
+            }
+
+            // Copyleaks aggregatedScore 공식 (가중치 없음)
+            // 유사율 = (동일 + 거의 동일 + 의역) / (전체 문장 - 제외) × 100
+            // low_similarity 는 점수 제외 (참고용)
+            function computeScore(matches, totalSentences, settings) {
+                var counts = { identical: 0, near_copy: 0, paraphrased: 0, low_similarity: 0 };
+                var excluded = 0;
+                for (var i = 0; i < matches.length; i++) {
+                    var m = matches[i];
+                    var cat = resolveCategory(m, settings);
+                    var span = (m.target_idx_end !== undefined ? m.target_idx_end : m.target_idx) - m.target_idx + 1;
+                    if (cat === 'excluded_auto' || cat === 'excluded_manual') {
+                        excluded += span;
+                    } else if (counts[cat] !== undefined) {
+                        counts[cat] += span;
+                    }
+                }
+                var scored = counts.identical + counts.near_copy + counts.paraphrased;
+                var denominator = Math.max(totalSentences - excluded, 1);
+                var score = Math.min(100, Math.round(scored / denominator * 1000) / 10);
+                return { score: score, counts: counts, excluded: excluded, totalSentences: totalSentences };
+            }
+
             // 수동 제외 사유 카테고리 (UI 라벨 + 내부 키)
             var SIM_USER_EXCLUDE_REASONS = [
                 { key: 'table_noise',       label: '테이블 추출 잡음', hint: '기호·단위·짧은 셀 파편 등' },
@@ -2403,12 +2420,9 @@
                 var tiers = summary.tiers || {};
                 var hint = document.getElementById('toolbar-hint');
 
-                // 3-tier 요약이 있으면 활용
-                if (tiers.adjusted !== undefined) {
-                    hint.textContent = '유사율 ' + tiers.adjusted + '% (실질 ' + tiers.substantive + '% · 의역 ' + tiers.derived + '%)';
-                } else {
-                    hint.textContent = '유사율 ' + summary.similarity_score + '%';
-                }
+                // Plan-45 v3: hint 는 simRecomputeFromSettings() 가 Copyleaks 공식으로 최종 갱신.
+                // 초기값은 시각적 flash 방지용 placeholder (백엔드 tiers 값은 구 공식이라 사용 X)
+                hint.textContent = '유사율 계산 중…';
 
                 var sidebarBody = document.getElementById('cp-sidebar-body');
                 var html = '<div class="sim-results">';
@@ -2587,13 +2601,8 @@
                 simApplyFilter();
                 updateExportBtn();
 
-                // Plan-38 §6.4 — 사용자 설정이 백엔드 기본값과 다르면 즉시 재계산
-                var userSettings = simLoadCheckSettings();
-                var hasOverride = false;
-                for (var k in SIM_CHECK_DEFAULTS) {
-                    if (userSettings[k] !== SIM_CHECK_DEFAULTS[k]) { hasOverride = true; break; }
-                }
-                if (hasOverride) simRecomputeFromSettings();
+                // Plan-45 v3: 항상 Copyleaks 공식으로 재계산 (백엔드 tiers 는 구 공식이라 화면값으로 쓰지 않음)
+                simRecomputeFromSettings();
 
                 // Plan-38 R-feedback Issue#3 — 첫 검사 결과 표시 직후 온보딩 1회
                 // (사용자가 결과 화면을 본 다음 "이게 뭔지 알려드릴게요" 의 자연스러운 흐름)
