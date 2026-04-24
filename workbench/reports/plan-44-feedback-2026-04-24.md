@@ -1,7 +1,73 @@
-# Plan-44 실행 피드백 — Ollama 동시성·안정성 강화 L1
+# Plan-44 실행 피드백 — Ollama 동시성·안정성 강화 L1 + L2 (Phase 2a + 2b)
 
-> 실행일 2026-04-24 · 실행자 Claude (/plan-execute) · 대상 계획서 `workbench/plans/44-ollama-concurrency-hardening.md`
-> 범위: L1 (Phase 1 + 3 + 4 + 5), L2·L3 는 트리거 지표 수집 후 판단
+> 실행일 2026-04-24 · 실행자 Claude (/plan-execute) · 대상 계획서 `workbench/plans/44-ollama-concurrency-hardening.md` (v4)
+> 범위: L1 (Phase 1 + 3 + 4 + 5) 완료 + L2 Phase 2a + 2b 완료 (100명 실 오픈 D-21 대비 사전 착수)
+
+---
+
+## L2 Phase 2a + 2b 추가 (2026-04-24 오후)
+
+### 운영 로드맵 반영
+
+- 현재: 15명 내부 테스트 (동시 2~3명)
+- 2026-05-15 전후: **100명+ 실 오픈** (피크 동시 10~15명 추정)
+- 관찰 기간 부족 → 오픈 전 선제 구축 + 부하 테스트 기반 튜닝으로 전환
+
+### Phase 2a — 부하 무관 선행 개선 (커밋 `3c6f3d8`)
+
+| 항목 | 결과 |
+|---|---|
+| 2a-1 httpx 싱글턴 | ✅ `_get_shared_client()` + `Limits(50/20)` + lifespan aclose + `/api/health` 도 공유 client 경유 |
+| 2a-2 ai_summary 정상화 | ✅ `get_provider(model_override)` 확장, 빈문자열 정규화, 5곳 `provider.generate` 통일 |
+| 2a-3 query_rewriter | ⊘ 보류 (이미 `asyncio.to_thread` 스레드풀 — 블로킹 없음) |
+
+code-reviewer 지적 모두 반영 (Critical 2 건, Warning 1 건).
+
+### Phase 2b — LLM Gateway 본체 (커밋 `b77a577`, `7893fbd`, `afc0507`)
+
+| 항목 | 결과 |
+|---|---|
+| 2b-1 Gateway 신설 | ✅ 단발 `_sem` + 스트림 전용 `_stream_sem` 2-풀 구조. weight 복잡도 제거로 단순화·deadlock 방지 |
+| 2b-2 호출부 이식 | ✅ 3 파일 (ai_summary, notebook_chat, compare_service). translator/query_rewriter 는 동기 경로라 별도 처리 보류 |
+| 2b-3 translation semaphore | ✅ 독립 유지 결정 (pdf2zh subprocess 가 Gateway 바깥이라 통합 실익 없음) |
+| 2b-4 Settings GUI | ✅ 공통 탭 "AI 동시성 제어" 섹션 4 필드 + `DEFAULT_SETTINGS` 블록 + apply_to_config 매핑 |
+| 2b-5 롤백 플래그 | ✅ `LLM_GATEWAY_ENABLED=False` 기본값 (shadow). Flag OFF 시 Semaphore 우회 |
+
+### Phase 2b code-reviewer 지적 반영
+
+- **Critical 1** (Semaphore 재생성 대기 교착): `_ensure_sems` 는 최초 1회만 생성, config 변경은 재시작 시 반영. `get_status` 에 `pending_restart` 필드 추가
+- **Critical 2** (compare 180초 slot 독점): `acquire_slot` 을 `_do` 내부로 이동 — 재시도 간 대기 시 sem 해제
+- **Warning 1** (DEFAULT_SETTINGS 누락): `llm_gateway` 블록 추가
+- **Warning 2** (`_sem._value` 내부 속성): `_active_single`/`_active_stream` 자체 카운터로 대체
+- **Warning 3** (restart 표기): Critical 1 해결로 `max_concurrent` 등 `restart:true`, `enabled` 만 `restart:false`
+
+### 자가검증 (TestClient)
+
+- `/api/settings` POST → `restart_needed=['LLM_GATEWAY_MAX_CONCURRENT', ...]` 반환 (활성값과 config 불일치 감지)
+- `get_status` 활성값 유지 + `pending_restart=True` 표시
+- `acquire_slot` Flag OFF → None / Flag ON → Semaphore + active 카운터 증감 확인
+- 기존 API 회귀 없음 (dashboard / metrics / ai-status 모두 200)
+- llm_gateway.py import + main.py 기동 + lifespan shutdown 훅 검증
+
+### 진행 대시보드
+
+```
+L1           17 / 17  ✅  완료
+L2 (2a+2b)    8 / 13  ✅  완료 (2c 부하 테스트 / 2d 대시보드 Gateway 지표 / 2e 안정화 대기)
+L3 (vLLM)     0 / 3   ⏸
+```
+
+### 다음 단계
+
+- **Phase 2c** (Week 2): 부하 테스트 — 개발 PC 스모크 (버그 사냥) + 회사 VM 실 로드 (Semaphore 값 튜닝)
+- **Phase 2d**: `.ad-ai-status` 에 Gateway 2차 그리드 (슬롯 사용률·대기열·429 도넛)
+- **Phase 2e**: 100명 오픈 후 1~2주 안정화, 롤백 플래그 제거
+
+---
+
+## 아래는 L1 원본 보고서 (참고)
+
+
 
 ## 요약
 
