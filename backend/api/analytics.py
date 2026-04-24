@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from typing import Optional
 
-from dependencies import require_admin
+from dependencies import require_admin, get_optional_user
 from services.analytics import (
     get_client_ip, record_heartbeat, record_event,
     get_active_user_count, get_active_user_list,
@@ -21,6 +21,7 @@ router = APIRouter(tags=["analytics"])
 
 class HeartbeatBody(BaseModel):
     username: Optional[str] = None
+    subsystem: Optional[str] = None
 
 
 # -- Public endpoints ----------------------------------------------------------
@@ -28,8 +29,13 @@ class HeartbeatBody(BaseModel):
 @router.post("/analytics/heartbeat")
 def heartbeat(request: Request, body: HeartbeatBody = None):
     ip = get_client_ip(request)
-    username = body.username if body else None
-    record_heartbeat(ip, username=username)
+    # username 은 body 우선, 없으면 세션 쿠키에서 폴백 (클라이언트 생략 시에도 집계)
+    username = body.username if body and body.username else None
+    subsystem = body.subsystem if body else None
+    if username is None:
+        u = get_optional_user(request)
+        username = u["username"] if u else None
+    record_heartbeat(ip, username=username, subsystem=subsystem)
     return {"ok": True}
 
 
@@ -37,8 +43,12 @@ def heartbeat(request: Request, body: HeartbeatBody = None):
 def page_view(request: Request, body: dict):
     ip = get_client_ip(request)
     url = body.get("url", "")
+    subsystem = body.get("subsystem") or "explorer"
     if url:
-        record_event("page_view", ip, {"url": url})
+        u = get_optional_user(request)
+        record_event("page_view", ip, {"url": url},
+                     username=u["username"] if u else None,
+                     subsystem=subsystem)
     return {"ok": True}
 
 

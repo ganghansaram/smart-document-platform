@@ -270,7 +270,11 @@ async def chat(request: ChatRequest, raw_request: Request):
     # Analytics: record chat event
     try:
         from services.analytics import record_event, get_client_ip
-        record_event("chat", get_client_ip(raw_request), None)
+        from dependencies import get_optional_user
+        u = get_optional_user(raw_request)
+        record_event("chat", get_client_ip(raw_request), None,
+                     username=u["username"] if u else None,
+                     subsystem="explorer")
     except Exception:
         pass
 
@@ -341,7 +345,11 @@ async def chat_stream(request: ChatRequest, raw_request: Request):
     # Analytics
     try:
         from services.analytics import record_event, get_client_ip
-        record_event("chat", get_client_ip(raw_request), None)
+        from dependencies import get_optional_user
+        u = get_optional_user(raw_request)
+        record_event("chat", get_client_ip(raw_request), None,
+                     username=u["username"] if u else None,
+                     subsystem="explorer")
     except Exception:
         pass
 

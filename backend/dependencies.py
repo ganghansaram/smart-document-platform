@@ -1,6 +1,7 @@
 """
 FastAPI 의존성 — 인증 체크
 """
+from typing import Optional
 from fastapi import Request, HTTPException
 from services.auth import get_session_user
 
@@ -16,6 +17,15 @@ def get_current_user(request: Request) -> dict:
     if not user:
         raise HTTPException(status_code=401, detail="Session expired or invalid")
     return user
+
+
+def get_optional_user(request: Request) -> Optional[dict]:
+    """로그인 여부 선택 — 쿠키가 있고 유효하면 user dict, 아니면 None.
+    비로그인 허용 엔드포인트에서 analytics 계측용 username 추출에 사용."""
+    token = request.cookies.get("session_token")
+    if not token:
+        return None
+    return get_session_user(token)
 
 
 def require_editor(request: Request) -> dict:

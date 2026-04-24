@@ -94,7 +94,11 @@ def search(request: SearchRequest, raw_request: Request):
     # Analytics: record search event
     try:
         from services.analytics import record_event, get_client_ip
-        record_event("search", get_client_ip(raw_request), {"query": request.query})
+        from dependencies import get_optional_user
+        u = get_optional_user(raw_request)
+        record_event("search", get_client_ip(raw_request), {"query": request.query},
+                     username=u["username"] if u else None,
+                     subsystem="explorer")
     except Exception:
         pass
 
