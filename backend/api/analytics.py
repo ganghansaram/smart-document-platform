@@ -8,7 +8,7 @@ from typing import Optional
 from dependencies import require_admin, get_optional_user
 from services.analytics import (
     get_client_ip, record_heartbeat, record_event,
-    get_active_user_count, get_active_user_list,
+    get_active_user_count, get_active_ip_count, get_active_user_list,
     get_today_visitors, get_week_visitors,
     get_total_visitors, get_daily_visitors, get_top_pages,
     get_top_searches, get_chat_stats, get_daily_chat,
@@ -55,7 +55,9 @@ def page_view(request: Request, body: dict):
 
 @router.get("/analytics/active-users")
 def active_users():
-    return {"count": get_active_user_count()}
+    # Plan-43: count 의미가 "로그인 사용자 수" 로 전환됨 (username 유니크).
+    # ip_count 는 기존 IP 유니크 카운트 (익명 포함) — 확장용.
+    return {"count": get_active_user_count(), "ip_count": get_active_ip_count()}
 
 
 # -- Admin-only endpoints ------------------------------------------------------
@@ -75,8 +77,9 @@ async def dashboard(user: dict = Depends(require_admin)):
         health_resp = {"status": "unknown", "checks": {}}
 
     return {
-        # 기존 필드 (하위 호환)
+        # 기존 필드 (Plan-43: active_users 의미가 "로그인 사용자 유니크" 로 전환)
         "active_users": get_active_user_count(),
+        "active_ips": get_active_ip_count(),
         "today_visitors": get_today_visitors(),
         "week_visitors": get_week_visitors(),
         "total_visitors": get_total_visitors(),

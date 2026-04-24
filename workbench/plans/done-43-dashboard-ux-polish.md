@@ -1,8 +1,9 @@
-# Plan-43: 대시보드 UX 개선 — 건강 뱃지 위치·"현재 접속" 의미·기간 표기·갱신 표시
+/# Plan-43: 대시보드 UX 개선 — 건강 뱃지 위치·"현재 접속" 의미·기간 표기·갱신 표시
 
-> 작성일 2026-04-24 · 상태: 초안 (승인 대기) · 담당: 미정
+> 작성일 2026-04-24 · 상태: **✅ 완료** (Step 1~6/6) · 담당: Claude (/plan-execute)
 > 전제: Plan-41 완료 (`done-41-dashboard-platform-wide.md`, commit `97e8bd1`)
 > 관련 피드백: `workbench/reports/plan-41-feedback-2026-04-24.md`
+> 본 계획 피드백: [plan-43-feedback-2026-04-24.md](../reports/plan-43-feedback-2026-04-24.md)
 
 ## 1. 요약
 

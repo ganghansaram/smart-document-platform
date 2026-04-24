@@ -123,7 +123,21 @@ def record_event(event_type: str, ip: str, metadata: Optional[dict],
 # -- Query: Active users ------------------------------------------------------
 
 def get_active_user_count() -> int:
-    """IP 유니크 카운트 (서브시스템 무관). 상단 요약 카드용."""
+    """현재 로그인 사용자 유니크 카운트 (username 기준, 익명·로그인페이지 체류 제외).
+    Plan-43: 기존 IP 유니크 → username 유니크로 전환. 관리자가 "누가 지금
+    쓰고 있나" 를 즉시 파악할 수 있도록 의미 명확화."""
+    now = time.time()
+    _cleanup_expired(now)
+    usernames = {
+        data.get("username")
+        for (_ip, _sub), data in _active_users.items()
+        if data.get("username")  # None·공백 제외
+    }
+    return len(usernames)
+
+
+def get_active_ip_count() -> int:
+    """IP 유니크 카운트 (익명·로그인페이지 체류 포함). 네트워크 수준 접근 수치."""
     now = time.time()
     _cleanup_expired(now)
     return len({ip for (ip, _sub) in _active_users.keys()})

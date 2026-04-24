@@ -80,9 +80,11 @@
 
     // -- Dashboard Rendering -------------------------------------------------
 
-    /**
-     * Render the analytics dashboard into #main-content
-     */
+    // Plan-43: 자동 갱신 (30초) — 기존 _pollActiveUsers 주기와 동일
+    var _dashRefreshInterval = null;
+    var _dashRefreshTarget = null;
+    var _DASH_REFRESH_MS = 30000;
+
     /**
      * @param {string|HTMLElement} [container] - container element or ID (default: '#main-content')
      */
@@ -92,8 +94,12 @@
             : (container || document.getElementById('main-content'));
         if (!target) return;
 
-        target.innerHTML = '<div class="analytics-dashboard"><div class="ad-loading">Loading dashboard...</div></div>';
-        if (typeof updateSectionNav === 'function') updateSectionNav();
+        // 초기 진입 시에만 로딩 스피너, 자동 갱신 시엔 이전 화면 유지
+        if (target !== _dashRefreshTarget) {
+            target.innerHTML = '<div class="analytics-dashboard"><div class="ad-loading">Loading dashboard...</div></div>';
+            if (typeof updateSectionNav === 'function') updateSectionNav();
+        }
+        _dashRefreshTarget = target;
 
         fetch(_backendUrl + '/api/analytics/dashboard', { credentials: 'include' })
             .then(function(r) {
@@ -109,38 +115,86 @@
                 return r.json();
             })
             .then(function(data) {
+                // 자동 갱신 중에도 대상 컨테이너가 DOM 에서 분리됐으면 중단
+                if (!document.body.contains(target)) {
+                    _stopDashboardAutoRefresh();
+                    return;
+                }
                 _renderDashboardHTML(target, data);
+                _startDashboardAutoRefresh();
             })
             .catch(function(err) {
-                target.innerHTML = '<div class="analytics-dashboard">' +
-                    '<div class="ad-no-data">' + err.message + '</div></div>';
+                if (document.body.contains(target)) {
+                    target.innerHTML = '<div class="analytics-dashboard">' +
+                        '<div class="ad-no-data">' + _escHtml(err.message) + '</div></div>';
+                }
+                _stopDashboardAutoRefresh();
             });
     };
+
+    function _startDashboardAutoRefresh() {
+        if (_dashRefreshInterval) return;
+        _dashRefreshInterval = setInterval(function() {
+            if (!_dashRefreshTarget || !document.body.contains(_dashRefreshTarget)) {
+                _stopDashboardAutoRefresh();
+                return;
+            }
+            window.renderAnalyticsDashboard(_dashRefreshTarget);
+        }, _DASH_REFRESH_MS);
+    }
+
+    function _stopDashboardAutoRefresh() {
+        if (_dashRefreshInterval) {
+            clearInterval(_dashRefreshInterval);
+            _dashRefreshInterval = null;
+        }
+        _dashRefreshTarget = null;
+    }
+
+    function _formatUpdateTime(d) {
+        function pad(n) { return (n < 10 ? '0' : '') + n; }
+        return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    }
 
     function _renderDashboardHTML(container, data) {
         var html = '<div class="analytics-dashboard">';
 
+        // 0. Last update timestamp (Plan-43)
+        html += '<div class="ad-last-update-wrap">';
+        html += '<span class="ad-last-update" title="데이터 기준 시각 · 30초마다 자동 갱신">' +
+                _formatUpdateTime(new Date()) + ' 업데이트</span>';
+        html += '</div>';
+
         // 1. Platform summary (플랫폼 전체 합산)
         html += '<div class="ad-summary">';
-        html += '<div class="ad-card ad-card-clickable" id="ad-active-card" title="클릭하여 접속자 IP 확인">';
-        html += '<div class="ad-card-label">현재 접속</div>';
+        var ipCount = (data.active_ips != null) ? data.active_ips : 0;
+        var activeTitle = '로그인된 사용자 유니크 (최근 2분 활동). 전체 IP 접근 수 ' +
+                          ipCount + '개 (익명·로그인페이지 포함). 클릭: 상세 목록.';
+        html += '<div class="ad-card ad-card-clickable" id="ad-active-card" title="' + _escHtml(activeTitle) + '">';
+        html += '<div class="ad-card-label">현재 로그인 사용자</div>';
         html += '<div class="ad-card-value active">' + (data.active_users || 0) + '</div>';
+        if (ipCount > (data.active_users || 0)) {
+            html += '<div class="ad-card-sub">총 IP ' + ipCount + '</div>';
+        }
         html += '</div>';
         html += _summaryCard('오늘 방문', data.today_visitors, '');
         html += _summaryCard('이번 주', data.week_visitors, '');
         html += _summaryCard('누적 방문', data.total_visitors, '');
         html += '</div>';
 
-        // 2. Subsystem tiles (Plan-41)
+        // 2. System health badges (Plan-43: 상단 이동 — 운영 상태 최우선)
+        html += _renderHealthBadges(data.health);
+
+        // 3. Subsystem tiles (Plan-41)
         html += _renderSubsystemTiles(data.by_subsystem);
 
-        // 3. Daily visitors chart
+        // 4. Daily visitors chart
         html += '<div class="ad-vbar-chart">';
         html += '<div class="ad-section-title">접속 추이 (최근 14일)</div>';
         html += _verticalBarChart(data.daily_visitors, 'visitor');
         html += '</div>';
 
-        // 4. Top pages
+        // 5. Top pages
         html += '<div class="ad-hbar-chart">';
         html += '<div class="ad-section-title">인기 문서 TOP 10</div>';
         if (data.top_pages && data.top_pages.length > 0) {
@@ -150,7 +204,7 @@
         }
         html += '</div>';
 
-        // 5. Top searches
+        // 6. Top searches
         html += '<div class="ad-hbar-chart">';
         html += '<div class="ad-section-title">검색 키워드 TOP 10</div>';
         if (data.top_searches && data.top_searches.length > 0) {
@@ -160,10 +214,10 @@
         }
         html += '</div>';
 
-        // 6. Top users (Plan-41)
+        // 7. Top users (Plan-41)
         html += _renderTopUsers(data.top_users);
 
-        // 7. Chat stats
+        // 8. Chat stats
         html += '<div class="ad-chat-stats">';
         html += '<div class="ad-section-title">챗봇 사용 통계</div>';
         var cs = data.chat_stats || { total: 0, today: 0 };
@@ -176,14 +230,11 @@
         }
         html += '</div>';
 
-        // 8. Feedback stats
+        // 9. Feedback stats (Plan-43: 데이터 있을 때만 렌더)
         html += _renderFeedbackSection(data.feedback);
 
-        // 9. Recent failures (Plan-41)
+        // 10. Recent failures (Plan-41)
         html += _renderRecentFailures(data.recent_failures);
-
-        // 10. System health badges (Plan-41)
-        html += _renderHealthBadges(data.health);
 
         // 11. Action buttons
         html += '<div class="ad-actions">';
@@ -327,6 +378,9 @@
         var summary = feedback.summary || { total: { positive: 0, negative: 0, rate: 0 }, by_route: {}, by_confidence: {} };
         var totalCount = (summary.total.positive || 0) + (summary.total.negative || 0);
 
+        // Plan-43: 데이터 없으면 섹션 자체 숨김 (공간 낭비 방지)
+        if (totalCount === 0) return '';
+
         var html = '<div class="ad-feedback-section">';
         html += '<div class="ad-section-title">챗봇 피드백 분석</div>';
 
@@ -467,11 +521,16 @@
     // -- Subsystem Tiles (Plan-41) -------------------------------------------
 
     var _SUBSYSTEM_LABELS = {
-        explorer:   'Explorer',
-        translator: 'Translator',
-        verify:     'Verify',
-        notebook:   'Notebook'
+        explorer:   { label: 'Explorer',   subtitle: '웹북 탐색' },
+        translator: { label: 'Translator', subtitle: 'PDF 번역' },
+        verify:     { label: 'Verify',     subtitle: '문서 비교' },
+        notebook:   { label: 'Notebook',   subtitle: '지식 관리' }
     };
+
+    function _subsystemLabel(key) {
+        var s = _SUBSYSTEM_LABELS[key];
+        return s ? s.label : (key || '-');
+    }
 
     function _renderSubsystemTiles(by_subsystem) {
         var html = '<div class="ad-subsystem-grid">';
@@ -483,11 +542,17 @@
         }
         ['explorer', 'translator', 'verify', 'notebook'].forEach(function(key) {
             var s = by_subsystem[key] || { today_sessions: 0, metrics: {}, failures_today: 0, trend: [] };
+            var info = _SUBSYSTEM_LABELS[key] || { label: key, subtitle: '' };
             html += '<div class="ad-tile ad-tile-' + key + '">';
             html += '<div class="ad-tile-header">';
-            html += '<span class="ad-tile-title">' + _SUBSYSTEM_LABELS[key] + '</span>';
+            html += '<div class="ad-tile-heading">';
+            html += '<span class="ad-tile-title">' + info.label + '</span>';
+            if (info.subtitle) {
+                html += '<span class="ad-tile-subtitle">' + info.subtitle + '</span>';
+            }
+            html += '</div>';
             if (s.failures_today > 0) {
-                html += '<span class="ad-tile-fail-badge" title="오늘 실패 이벤트">⚠ ' + s.failures_today + '</span>';
+                html += '<span class="ad-tile-fail-badge" title="오늘 발생한 실패 이벤트">⚠ ' + s.failures_today + ' 오늘</span>';
             }
             html += '</div>';
             html += '<div class="ad-tile-sessions"><span class="ad-tile-num">' + (s.today_sessions || 0) +
@@ -562,15 +627,16 @@
     function _renderRecentFailures(failures) {
         var list = Array.isArray(failures) ? failures : [];
         var html = '<div class="ad-failures">';
-        html += '<div class="ad-section-title">최근 실패 이벤트 (' + list.length + ')</div>';
+        html += '<div class="ad-section-title">최근 실패 이벤트 <span class="ad-section-hint">(최신 ' +
+                list.length + '건, 기간 무관)</span></div>';
         if (list.length === 0) {
-            html += '<div class="ad-no-data">최근 24시간 실패 이벤트 없음</div></div>';
+            html += '<div class="ad-no-data">기록된 실패 이벤트 없음</div></div>';
             return html;
         }
         failures = list;
         html += '<div class="ad-fail-list">';
         failures.forEach(function(f) {
-            var subLabel = _SUBSYSTEM_LABELS[f.subsystem] || (f.subsystem || '-');
+            var subLabel = _subsystemLabel(f.subsystem);
             var meta = f.metadata || {};
             var detail = '';
             if (f.event_type === 'error' && meta.endpoint) {
