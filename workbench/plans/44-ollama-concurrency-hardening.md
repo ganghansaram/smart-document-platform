@@ -24,10 +24,10 @@
 - [x] 3-3. 호출부 5곳 적용 (`llm_provider.OllamaProvider.generate/stream`, `OpenAICompatProvider.generate/stream`, `translator_service.ai_selection_query`, `compare_service._call_ollama_classify`, `query_rewriter` 503 로그 구분)
 
 **Phase 4: 프론트 RequestGuard** ✅ (4 / 4)
-- [x] 4-1. `js/request-guard.js` 신설 — `fetchWithRetry` (429 자동 재시도), `guard/abort/abortAll/isBusy`, `beforeunload` 전체 abort
+- [x] 4-1. `js/request-guard.js` 신설 — `fetchWithRetry` (429 자동 재시도, Retry-After 헤더 + 대기 중 abort 감지). `guard()` 계열 미사용 확인 후 YAGNI 제거 (simplify 리뷰)
 - [x] 4-2. LLM fetch 4곳 이식 (`ai-chat.js:/api/chat` + `/api/chat/stream`, `translator.js:/ai/selection`, `compare.html:/compare/ai-classify`)
 - [x] 4-3. `js/toast.js` 에 `showRetryToast(sec)` 추가 — 카운트다운 + warning 색, showToast 와 타이머 공유
-- [x] 4-4. `beforeunload` 리스너로 모든 RequestGuard.guard() 호출 abort (브라우저 기본 fetch abort 에 추가 보호선)
+- [x] 4-4. 페이지 이탈·탭 전환 시 중단은 브라우저 fetch 기본 동작으로 처리 (각 호출부의 개별 AbortController + 429 재시도 중 signal.aborted 감지로 충분; 별도 abortAll 훅은 YAGNI 로 제거)
 
 **Phase 5: 헬스·지표 + 관리자 대시보드 섹션 (디자인 시스템 준수)** ✅ (5 / 5)
 - [x] 5-1. `/api/health` 에 `ollama_latency_ms`, `ollama_503_last_hour` 필드 추가 (overall 판정 제외 처리)

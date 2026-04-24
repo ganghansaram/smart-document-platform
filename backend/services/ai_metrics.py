@@ -30,7 +30,8 @@ logger = logging.getLogger(__name__)
 _WINDOW_SEC = 3600  # 1시간
 
 # (timestamp, purpose, duration_ms, status) — status: "ok"/"503"/"error"/"timeout"/"cancelled"
-_events: deque = deque()
+# maxlen 은 극단 상황(초당 수천 호출) 메모리 상한 방어. 정상 운영 시 시간 기반 퇴거가 우선.
+_events: deque = deque(maxlen=10000)
 _lock = threading.Lock()
 
 _active_streams: int = 0
@@ -83,10 +84,12 @@ def get_indicators() -> dict:
         latencies_ok = sorted(e[2] for e in _events if e[3] == "ok")
         count_503 = sum(1 for e in _events if e[3] == "503")
 
-    p95 = latencies_ok[int(len(latencies_ok) * 0.95)] if latencies_ok else 0.0
-    # 95th percentile: 표본 적을 때 마지막 원소로 fallback
-    if latencies_ok and p95 == 0.0:
-        p95 = latencies_ok[-1]
+    if latencies_ok:
+        # nearest-rank: 마지막 인덱스를 넘지 않도록 clamp (표본 1개여도 안전)
+        idx = min(len(latencies_ok) - 1, int(len(latencies_ok) * 0.95))
+        p95 = latencies_ok[idx]
+    else:
+        p95 = 0.0
 
     with _active_streams_lock:
         active = _active_streams

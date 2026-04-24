@@ -1002,7 +1002,7 @@ body[data-theme="dark"] .ad-modal-overlay {
 
 .ad-ai-status .ad-section-hint {
     color: var(--ad-text-secondary);
-    font-size: 0.8rem;
+    font-size: 12px;
     font-weight: normal;
 }
 
@@ -1044,26 +1044,26 @@ body[data-theme="dark"] .ad-modal-overlay {
 }
 
 .ad-ai-metric-label {
-    font-size: 0.82rem;
+    font-size: 13px;
     color: var(--ad-text-secondary);
 }
 
 .ad-ai-metric-value {
-    font-size: 1.6rem;
+    font-size: 26px;
     font-weight: 600;
     color: var(--ad-text);
     line-height: 1.1;
 }
 
 .ad-ai-metric-unit {
-    font-size: 0.95rem;
+    font-size: 15px;
     font-weight: 400;
     color: var(--ad-text-secondary);
     margin-left: 3px;
 }
 
 .ad-ai-metric-threshold {
-    font-size: 0.74rem;
+    font-size: 11px;
     color: var(--ad-text-secondary);
 }
 
@@ -1071,7 +1071,7 @@ body[data-theme="dark"] .ad-modal-overlay {
     margin-top: var(--space-md);
     padding-top: var(--space-sm);
     border-top: 1px dashed var(--ad-border);
-    font-size: 0.85rem;
+    font-size: 13px;
     color: var(--ad-text-secondary);
 }
 
@@ -1099,7 +1099,7 @@ body[data-theme="dark"] .ad-modal-overlay {
 
 .ad-alert-warning .ad-alert-icon {
     color: var(--ad-warning);
-    font-size: 1.3rem;
+    font-size: 20px;
     flex-shrink: 0;
     margin-top: 2px;
     line-height: 1;
@@ -1114,12 +1114,12 @@ body[data-theme="dark"] .ad-modal-overlay {
 
 .ad-alert-title {
     color: var(--ad-text);
-    font-size: 0.95rem;
+    font-size: 15px;
 }
 
 .ad-alert-desc {
     color: var(--ad-text-secondary);
-    font-size: 0.88rem;
+    font-size: 14px;
     line-height: 1.4;
 }
 

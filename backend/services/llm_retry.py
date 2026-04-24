@@ -71,21 +71,14 @@ async def call_with_retry_async(
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     purpose: str = "llm",
 ) -> T:
-    """비동기 httpx 호출 재시도 래퍼. 모든 경로(CancelledError 포함)에서 _record 보장."""
+    """비동기 httpx 호출 재시도 래퍼."""
     import httpx
     start = time.perf_counter()
-    recorded = {"v": False}
-
-    def _mark(s: str):
-        if not recorded["v"]:
-            _record(purpose, start, s)
-            recorded["v"] = True
-
     try:
         for attempt in range(max_attempts):
             try:
                 result = await func()
-                _mark("ok")
+                _record(purpose, start, "ok")
                 return result
             except httpx.HTTPStatusError as e:
                 status = e.response.status_code
@@ -96,11 +89,11 @@ async def call_with_retry_async(
                                     purpose, delay, attempt + 1, max_attempts)
                         await asyncio.sleep(delay)
                         continue
-                    _mark("503")
+                    _record(purpose, start, "503")
                     raise LLMQueueFullError(
                         retry_after=_parse_retry_after(e.response.headers)
                     ) from e
-                _mark("error")
+                _record(purpose, start, "error")
                 raise
             except (httpx.ConnectError, httpx.ReadTimeout) as e:
                 if attempt < max_attempts - 1:
@@ -110,12 +103,13 @@ async def call_with_retry_async(
                                 attempt + 1, max_attempts)
                     await asyncio.sleep(delay)
                     continue
-                _mark("timeout")
+                _record(purpose, start, "timeout")
                 raise
         raise RuntimeError(f"LLM retry exhausted (unreachable) for {purpose}")
-    finally:
-        # CancelledError 등 예상 밖 경로 — 계측 누락 방지
-        _mark("cancelled")
+    except asyncio.CancelledError:
+        # 태스크 취소(페이지 이탈·shutdown)도 계측 누락 없이 기록
+        _record(purpose, start, "cancelled")
+        raise
 
 
 # ── 동기 (requests) ────────────────────────────────────────────
@@ -126,48 +120,38 @@ def call_with_retry_sync(
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     purpose: str = "llm",
 ) -> T:
-    """동기 requests 호출 재시도 래퍼. 모든 경로에서 _record 보장."""
+    """동기 requests 호출 재시도 래퍼."""
     import requests
     start = time.perf_counter()
-    recorded = {"v": False}
-
-    def _mark(s: str):
-        if not recorded["v"]:
-            _record(purpose, start, s)
-            recorded["v"] = True
-
-    try:
-        for attempt in range(max_attempts):
-            try:
-                result = func()
-                _mark("ok")
-                return result
-            except requests.HTTPError as e:
-                status = e.response.status_code if e.response is not None else None
-                if status == 503:
-                    if attempt < max_attempts - 1:
-                        delay = _backoff_delay(attempt)
-                        logger.info("LLM(%s) 503 queue-full, %.1fs retry (%d/%d)",
-                                    purpose, delay, attempt + 1, max_attempts)
-                        time.sleep(delay)
-                        continue
-                    _mark("503")
-                    raise LLMQueueFullError(
-                        retry_after=_parse_retry_after(
-                            e.response.headers if e.response is not None else None)
-                    ) from e
-                _mark("error")
-                raise
-            except (requests.ConnectionError, requests.Timeout) as e:
+    for attempt in range(max_attempts):
+        try:
+            result = func()
+            _record(purpose, start, "ok")
+            return result
+        except requests.HTTPError as e:
+            status = e.response.status_code if e.response is not None else None
+            if status == 503:
                 if attempt < max_attempts - 1:
                     delay = _backoff_delay(attempt)
-                    logger.info("LLM(%s) %s, %.1fs retry (%d/%d)",
-                                purpose, type(e).__name__, delay,
-                                attempt + 1, max_attempts)
+                    logger.info("LLM(%s) 503 queue-full, %.1fs retry (%d/%d)",
+                                purpose, delay, attempt + 1, max_attempts)
                     time.sleep(delay)
                     continue
-                _mark("timeout")
-                raise
-        raise RuntimeError(f"LLM retry exhausted (unreachable) for {purpose}")
-    finally:
-        _mark("cancelled")
+                _record(purpose, start, "503")
+                raise LLMQueueFullError(
+                    retry_after=_parse_retry_after(
+                        e.response.headers if e.response is not None else None)
+                ) from e
+            _record(purpose, start, "error")
+            raise
+        except (requests.ConnectionError, requests.Timeout) as e:
+            if attempt < max_attempts - 1:
+                delay = _backoff_delay(attempt)
+                logger.info("LLM(%s) %s, %.1fs retry (%d/%d)",
+                            purpose, type(e).__name__, delay,
+                            attempt + 1, max_attempts)
+                time.sleep(delay)
+                continue
+            _record(purpose, start, "timeout")
+            raise
+    raise RuntimeError(f"LLM retry exhausted (unreachable) for {purpose}")
