@@ -1261,29 +1261,167 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 .sim-verdict-moderate { color: var(--color-warning); }
 .sim-verdict-warning { color: var(--color-error); }
 
-.sim-filter-inline {
-    display: flex;
-    flex-wrap: wrap;
+/* ══════════════════════════════════════════════════════════════════
+   Plan-45 v3 — 4 카테고리 체계 (Copyleaks 모방)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* 7지표 카드 표지 (Copyleaks sample report 양식) */
+.sim-indicators {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 6px;
     margin-top: 8px;
+    padding: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+}
+.sim-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--bg-default);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+    line-height: 1.3;
+}
+.sim-ind-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.sim-ind-identical       .sim-ind-dot { background: var(--color-error); }
+.sim-ind-near_copy       .sim-ind-dot { background: var(--color-warning); }
+.sim-ind-paraphrased     .sim-ind-dot { background: var(--color-info); }
+.sim-ind-low_similarity  .sim-ind-dot { background: var(--text-muted); }
+.sim-ind-excluded        .sim-ind-dot { background: var(--border-color); }
+.sim-ind-label {
+    color: var(--text-light);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sim-ind-count {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-default);
+    font-variant-numeric: tabular-nums;
+}
+.sim-ind-total {
+    grid-column: 1 / -1;
+    background: var(--active-color-subtle);
+}
+.sim-ind-total .sim-ind-count {
+    color: var(--active-color);
+}
+
+/* 4 카테고리 누적바 (Copyleaks 색상) */
+.sim-category-bar {
+    display: flex;
+    width: 100%;
+    height: 6px;
+    margin-top: 8px;
+    border-radius: var(--radius-sm);
+    background: var(--border-color);
+    overflow: hidden;
+}
+.sim-cat-seg {
+    height: 100%;
+    transition: width var(--transition-fast);
+}
+.sim-cat-seg.sc-identical      { background: var(--color-error); }
+.sim-cat-seg.sc-near_copy      { background: var(--color-warning); }
+.sim-cat-seg.sc-paraphrased    { background: var(--color-info); }
+.sim-cat-seg.sc-low_similarity { background: var(--text-muted); }
+.sim-cat-seg.sc-excluded       { background: var(--border-color); }
+.sim-cat-seg.sc-clean          { background: transparent; }
+
+.sim-category-info {
+    margin-top: 4px;
+    float: right;
+    font-size: var(--font-caption);
+    padding: 1px 4px;
+}
+
+/* 결과 필터 바 (👁 아이콘 + 카테고리 체크박스 4개) */
+.sim-filter-bar {
+    margin-top: 12px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-color);
 }
-.sim-filter-chip {
+.sim-filter-header {
     display: flex;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
     font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
     color: var(--text-light);
+    margin-bottom: 6px;
+}
+.sim-filter-header svg {
+    color: var(--text-muted);
+}
+.sim-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.sim-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    font-size: var(--font-caption);
+    color: var(--text-default);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     user-select: none;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.sim-filter-chip:hover {
+    background: var(--hover-bg);
+    border-color: var(--active-color);
 }
 .sim-filter-chip input[type="checkbox"] {
     margin: 0;
     cursor: pointer;
+    accent-color: var(--active-color);
 }
-.sim-filter-chip:hover {
-    color: var(--text-dark);
+.sim-filter-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.sim-filter-chip-identical      .sim-filter-dot { background: var(--color-error); }
+.sim-filter-chip-near_copy      .sim-filter-dot { background: var(--color-warning); }
+.sim-filter-chip-paraphrased    .sim-filter-dot { background: var(--color-info); }
+.sim-filter-chip-low_similarity .sim-filter-dot { background: var(--text-muted); }
+.sim-filter-label {
+    font-weight: var(--font-weight-medium);
+}
+.sim-filter-count {
+    color: var(--text-light);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--font-caption);
+    padding: 0 4px;
+    min-width: 20px;
+    text-align: center;
+    background: var(--bg-default);
+    border-radius: var(--radius-sm);
+}
+
+/* 필터 모두 OFF 시 빈 상태 */
+.sim-filter-empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-muted);
 }
 
 /* ── 내보내기 포맷 선택 모달 ── */

@@ -370,12 +370,74 @@ function computeScore(matches, totalSentences, activeSettings) {
 - 보고서: `workbench/reports/plan-45-phase2-feedback-2026-04-25.md`
 - **잔여 (Phase 3~5 예정)**: 4그룹 바 DOM, HTML/TXT 리포트 tiers 참조, `m.level` 폴백 코드
 
-### Phase 3 — 사이드바 UI 재구성 (1일)
-- 4 카테고리 필터 체크박스
-- 매칭 카드 카테고리별 섹션 헤더
-- 점수 카드 = 7지표 표지 (§4.1)
-- 검사 설정 접이식 / 필터 인라인 (시각 분리)
+### Phase 3 — 사이드바 UI 재구성 (1일) ⚠️ **부분 완료 (2026-04-25) — Phase 3.5로 완성도 보정**
+- 4 카테고리 필터 체크박스 (`sim-filter-bar`) — SSOT `simHelp.categories` 경유, 👁 아이콘으로 검사 설정(⚙)과 시각 분리
+- 점수 카드 7지표 표지 (`sim-indicators`) — 동일/거의 동일/의역/약한 유사/제외/전체 Copyleaks 양식
+- 4 카테고리 누적바 (`sim-category-bar`) — 빨강/연빨강/보라/회색
 - 빈 상태 2종 (매칭 0 / 필터 모두 OFF)
+- 카드에 `data-sim-cat` 속성 + `m.level` 폴백 제거
+- `simApplyFilter` data-sim-filter-cat 기반 재작성 (3경로 동기, V1 불변)
+- `simRenderMinimap` resolveCategory 기반 색상 맵 (S1 불변, Critical 1건 수정)
+- 초기 점수 `computeScore()` 인라인 계산 (flash 방지)
+- 검증: 21/21 테스트 PASS · E3 축약어 전면 제거 · code-reviewer Critical 0건 · review-ui 하드코딩 0건
+- 보고서: `workbench/reports/plan-45-phase3-feedback-2026-04-25.md`
+- **누락·이관 사항 (Phase 3.5 에서 처리)**:
+  - 용어 불일치 — 카드 라벨 "일치"(카테고리 "동일"과 불일치), "번역"(카테고리 "의역"에 통합됐으나 카드에 노출됨) → E4 불변 위반
+  - Playwright 실측 검증 누락 (스킬 Phase 4.4 미수행)
+  - design-reviewer 에이전트 리뷰 부재 (레이아웃 위계·정보 밀도 전문가 검토 없음)
+  - 매칭 카드 카테고리별 섹션 헤더 미구현 (계획서 원안 항목)
+  - 수동 제외 toast [복원] 링크 (Phase 4 제외 패널과 병행 처리)
+
+### Phase 3.5 — UI 완성도 보정 (0.7일)
+
+**착수 근거**: Phase 3이 기능 구현은 완료했으나 (a) 용어 불일치, (b) 실측 검증 누락, (c) 디자인 전문가 리뷰 부재로 완성도가 불충분. Plan-45 불변 원칙 중 E4(용어 일관성) 위반 상태.
+
+#### Step 1 — 용어 통일 (SSOT 수정)
+- `data/help/similarity-help.json` `labels.identical.ko` "일치" → **"동일"**
+- `labels.translation.ko` "번역" → **"의역"** (paraphrased 카테고리와 완전 통합)
+- **선택**: 카드 hover 툴팁에 "번역 (다른 언어)" 부가 정보 — 데이터 보존 vs UI 단순화 트레이드오프, 구현 중 결정
+- 이 계획서 §2.2 문구 수정: "카드 번역 라벨 유지" → "카드도 4 라벨로 완전 통일"
+- 검증: grep 으로 `"일치"` · `"번역"` 라벨 리터럴 잔존 0건 (tests/sim_label_consistency.sh 사전 작성)
+
+#### Step 2 — Playwright 실측 스크린샷
+- 로컬 dev 서버 구동 확인 (`http://localhost:8080/compare.html`)
+- 유사도 검사 시나리오 실행 (샘플 문서 2개 업로드 → 검사)
+- 라이트/다크 테마 각 스크린샷 저장
+- `workbench/screenshots/plan-45-phase3.5-{YYYYMMDD-HHMM}/` 경로 고정
+- 콘솔 에러·네트워크 4xx/5xx 수집
+
+#### Step 3 — design-reviewer 에이전트 호출
+- 입력: Phase 3 변경 diff + Step 2 스크린샷
+- 요청 범위:
+  - 시각 위계 (점수 카드 → 7지표 → 필터 → 카드 리스트 흐름)
+  - 정보 밀도 (280px 폭 내 컨트롤 6~7 블록 과다 여부)
+  - 공간 배분 (접이식 `<details>` vs 인라인 필터의 visual weight)
+  - 터치 타겟 크기 (체크박스·ⓘ 버튼 최소 24×24 / 44×44)
+  - 다크모드 대비비 (WCAG AA)
+  - 카드 카테고리별 섹션 헤더 구조 제안
+- 출력: Critical / Warning / Suggestion 분류
+
+#### Step 4 — 리뷰 반영 + 카드 카테고리 섹션 헤더 구현
+- design-reviewer Critical 0건까지 조치
+- `simShowResults` 카드 렌더 루프에서 카테고리별 섹션 헤더 삽입
+  - 구조: `<div class="sim-cat-section-header" data-cat="...">동일 (N건)</div>`
+  - 필터로 카테고리 숨김 시 섹션 헤더도 함께 숨김 (simApplyFilter 확장)
+- 레이아웃 정리 (지적사항 기반, 예상): 7지표 카드 콤팩트 모드, 검사 설정 hover 시 미리보기, 불필요한 여백 조정
+
+#### Step 5 — 재검증
+- 단위 테스트 21/21 유지
+- 구문 파싱 PASS
+- E3/E4 불변 grep 확인
+- Playwright 재실측 — Before/After 스크린샷 비교
+- design-reviewer 재호출 (Critical/Warning 해소 확인)
+
+**완료 기준**:
+- E4 불변 회복 (한 화면 동일 개체 단일 이름)
+- design-reviewer Critical 0건
+- 카드 섹션 헤더 DOM 확인
+- 스크린샷 before/after 비교 저장
+
+**보고서**: `workbench/reports/plan-45-phase3.5-feedback-{YYYY-MM-DD}.md`
 
 ### Phase 4 — 제외 패널 분리 (0.7일)
 - 메인 리스트에서 자동·수동 제외 카드 제거
@@ -488,7 +550,7 @@ pre-commit hook 또는 CI에 연결. 드리프트가 코드에 들어가기 전 
 ## 유사도 분류 체계 (Plan-45)
 
 - **카테고리 (4)**: 동일 / 거의 동일 / 의역 / 약한 유사 (Copyleaks 모방)
-- **유형 (6)**: 일치 / 거의 동일 / 의역 / 번역 / 약한 유사 / 공통 정형구문
+- **유형 (내부 6종, 카드 라벨은 카테고리와 동일 4개로 축소)**: `identical` / `near_copy` / `paraphrase` / `translation` / `low_sim` / `boilerplate` (알고리즘 키). 사용자 UI 라벨은 **동일 / 거의 동일 / 의역 / 약한 유사 / 공통 정형구문** 5개 (translation 은 "의역"으로 통합 표시 — Phase 3.5 Step 1)
 - **공식**: (동일 + 거의 동일 + 의역) / (전체 문장 - 제외) × 100 (가중치 없음)
 - **규칙**:
   1. 라벨은 `data/help/similarity-help.json` 경유만 허용 (하드코딩 금지)
@@ -527,6 +589,7 @@ pre-commit hook 또는 CI에 연결. 드리프트가 코드에 들어가기 전 
 - `sim-user-excluded` 반투명·줄무늬 CSS — **제거**, 제외 패널로 이동
 - DETECTION_LAYER 카드 노출 — **기본 숨김**, hover 툴팁만
 - `tiers.substantive/derived` hint 문구 — **폐기**, 단순 "유사율 N%"
+- 카드 라벨의 "일치"·"번역" — **폐기** (Phase 3.5): 카테고리 라벨과 완전 통일 ("동일"·"의역"으로 표시)
 
 ---
 
@@ -543,6 +606,21 @@ pre-commit hook 또는 CI에 연결. 드리프트가 코드에 들어가기 전 
 7. **UI**: 사이드바 5블록, 카테고리별 섹션 카드
 8. **보고서**: HTML 단일 포맷 + `window.print()`로 PDF 저장. 표지(7지표) + 카테고리별 섹션 + 부록
 9. **드리프트 방지**: grep 자동 테스트 + CLAUDE.md 규칙 + 단일 판정 함수
-10. **공수**: 단일 PR 4.3일
+10. **공수**: 단일 PR **5.0일** (Phase 1~3 완료 + Phase 3.5 신설 0.7일 + Phase 4~7 2.3일)
 
-승인 시 Phase 1 착수.
+---
+
+## 11. 진행 상태 (2026-04-25 기준)
+
+| Phase | 공수 | 상태 | 커밋 |
+|---|---|---|---|
+| 1 SSOT v3 | 0.3일 | ✅ 완료 | `8c88264` |
+| 2 resolveCategory + computeScore | 0.7일 | ✅ 완료 | `6689565` |
+| 3 사이드바 UI 재구성 | 1.0일 | ⚠️ 부분 완료 | (미커밋) |
+| **3.5 UI 완성도 보정 (신설)** | **0.7일** | **⏳ 다음 단계** | — |
+| 4 제외 패널 분리 | 0.7일 | 대기 | — |
+| 5 HTML 리포트 재구성 | 0.8일 | 대기 | — |
+| 6 가이드·모달·온보딩 | 0.4일 | 대기 | — |
+| 7 드리프트 방지 + 회귀 | 0.4일 | 대기 | — |
+
+Phase 3.5 착수로 용어 통일·레이아웃 실측 검증·design-reviewer 리뷰 3가지를 묶어서 해소.

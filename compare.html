@@ -1407,9 +1407,8 @@
                 return key && settings[key] === true;
             }
 
-            // 사용자 설정 적용 — 점수/4그룹/breakdown/하이라이트 즉시 갱신
-            // Plan-45 Phase 2: computeScore() + resolveCategory() 기반 재작성 (Copyleaks 공식, 가중치 없음)
-            // 4그룹 바 렌더링은 Phase 3에서 4 카테고리 기반으로 교체 예정 — 현재는 레거시 호환 유지
+            // 사용자 설정 적용 — 점수/4 카테고리/누적바/하이라이트 즉시 갱신
+            // Plan-45 v3: computeScore() + resolveCategory() 기반 (Copyleaks 공식, 가중치 없음)
             function simRecomputeFromSettings() {
                 if (!simLastResult) return;
                 var settings = simLoadCheckSettings();
@@ -1430,29 +1429,37 @@
                 var hint = document.getElementById('toolbar-hint');
                 if (hint) hint.textContent = '유사율 ' + score + '%';
 
-                // ── 4그룹 바 갱신 (레거시 호환 — Phase 3에서 4 카테고리로 교체) ──
-                var suspectN = result.counts.identical + result.counts.near_copy + result.counts.paraphrased;
-                var reviewN  = result.counts.low_similarity;
-                var excludedN = result.excluded;
-                var cleanN = Math.max(0, total - suspectN - reviewN - excludedN);
+                // Plan-45 v3: 7지표 카드 + 4 카테고리 누적바 갱신 (SSOT categories 기준)
+                var c = result.counts;
+                var updateInd = function(key, val) {
+                    var el = document.querySelector('[data-ind="' + key + '"]');
+                    if (el) el.textContent = val;
+                };
+                updateInd('identical', c.identical);
+                updateInd('near_copy', c.near_copy);
+                updateInd('paraphrased', c.paraphrased);
+                updateInd('low_similarity', c.low_similarity);
+                updateInd('excluded', result.excluded);
+                updateInd('total', total);
+
+                // 필터 칩 카운트도 동기 갱신
+                ['identical', 'near_copy', 'paraphrased', 'low_similarity'].forEach(function(k) {
+                    var fc = document.querySelector('[data-filter-count="' + k + '"]');
+                    if (fc) fc.textContent = c[k];
+                });
+
+                // 4 카테고리 누적바 갱신
+                var cleanN = Math.max(0, total - c.identical - c.near_copy - c.paraphrased - c.low_similarity - result.excluded);
                 var pct = function(n) { return total > 0 ? n / total * 100 : 0; };
-                var bar = document.querySelector('.sim-group-bar');
+                var bar = document.querySelector('.sim-category-bar');
                 if (bar) {
                     bar.innerHTML = ''
-                        + (suspectN  > 0 ? '<div class="sim-group-seg sg-suspect"  style="width:' + pct(suspectN)  + '%"></div>' : '')
-                        + (reviewN   > 0 ? '<div class="sim-group-seg sg-review"   style="width:' + pct(reviewN)   + '%"></div>' : '')
-                        + (excludedN > 0 ? '<div class="sim-group-seg sg-excluded" style="width:' + pct(excludedN) + '%"></div>' : '')
-                        + (cleanN    > 0 ? '<div class="sim-group-seg sg-clean"    style="width:' + pct(cleanN)    + '%"></div>' : '');
-                }
-                var labels = document.querySelector('.sim-group-labels');
-                if (labels) {
-                    var info = labels.querySelector('.sim-group-info');
-                    labels.innerHTML = ''
-                        + '<span class="sim-group-label"><span class="sim-group-dot sg-suspect"></span>표절 의심 ' + suspectN + '</span>'
-                        + '<span class="sim-group-label"><span class="sim-group-dot sg-review"></span>참고 가능 ' + reviewN + '</span>'
-                        + '<span class="sim-group-label"><span class="sim-group-dot sg-excluded"></span>제외 영역 ' + excludedN + '</span>'
-                        + '<span class="sim-group-label"><span class="sim-group-dot sg-clean"></span>일반 ' + cleanN + '</span>'
-                        + (info ? info.outerHTML : '');
+                        + (c.identical > 0      ? '<div class="sim-cat-seg sc-identical"      style="width:' + pct(c.identical)      + '%" title="동일 ' + c.identical + '문장"></div>' : '')
+                        + (c.near_copy > 0      ? '<div class="sim-cat-seg sc-near_copy"      style="width:' + pct(c.near_copy)      + '%" title="거의 동일 ' + c.near_copy + '문장"></div>' : '')
+                        + (c.paraphrased > 0    ? '<div class="sim-cat-seg sc-paraphrased"    style="width:' + pct(c.paraphrased)    + '%" title="의역 ' + c.paraphrased + '문장"></div>' : '')
+                        + (c.low_similarity > 0 ? '<div class="sim-cat-seg sc-low_similarity" style="width:' + pct(c.low_similarity) + '%" title="약한 유사 ' + c.low_similarity + '문장"></div>' : '')
+                        + (result.excluded > 0  ? '<div class="sim-cat-seg sc-excluded"       style="width:' + pct(result.excluded)  + '%" title="제외 ' + result.excluded + '문장"></div>' : '')
+                        + (cleanN > 0           ? '<div class="sim-cat-seg sc-clean"          style="width:' + pct(cleanN)           + '%" title="매칭 없음 ' + cleanN + '문장"></div>' : '');
                 }
 
                 // ── 매칭 카드 시각 처리 — 자동 제외는 흐리게 (resolveCategory 단일 경로) ──
@@ -2427,70 +2434,53 @@
                 var sidebarBody = document.getElementById('cp-sidebar-body');
                 var html = '<div class="sim-results">';
 
+                // Plan-45 v3: 초기 점수·카운트를 v3 공식으로 인라인 계산 (flash 방지 — 백엔드 tiers 구공식 값 미사용)
+                var totalSents = summary.total_sentences || 0;
+                var initialSettings = simLoadCheckSettings();
+                var initialResult = computeScore(matches || [], totalSents, initialSettings);
+                var initialCounts = initialResult.counts;
+                var initialExcluded = initialResult.excluded;
+                var scoreVal = initialResult.score;
+
                 // 요약 통계
                 html += '<div class="sim-summary">';
-                var scoreVal = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
-                // 점수 + ⓘ 도움말 버튼 (Plan-38 §5.4 모달 B)
+                // 점수 + ⓘ 도움말 버튼
                 html += '<div class="sim-score">' + scoreVal + '%'
                     + ' <button type="button" class="sim-score-info" data-action="show-score-help"'
                     + ' title="점수 산출 기준 보기" aria-label="점수 산출 기준">ⓘ</button>'
                     + '</div>';
-                // 판정 라벨
+                // 판정 라벨 (5단계 신호등은 simRecomputeFromSettings 에서 최종 갱신되나 초기값도 v3 점수 기반)
                 var verdictLabel, verdictClass;
                 var verdictTip;
                 if (scoreVal >= verdictBoundHigh) { verdictLabel = '주의'; verdictClass = 'sim-verdict-warning'; verdictTip = '유사도 ' + verdictBoundHigh + '% 이상'; }
                 else if (scoreVal >= verdictBoundLow) { verdictLabel = '보통'; verdictClass = 'sim-verdict-moderate'; verdictTip = '유사도 ' + verdictBoundLow + '~' + verdictBoundHigh + '% 구간'; }
                 else { verdictLabel = '양호'; verdictClass = 'sim-verdict-good'; verdictTip = '유사도 ' + verdictBoundLow + '% 미만'; }
                 html += '<div class="sim-verdict ' + verdictClass + '">' + verdictLabel + ' <span class="tooltip-icon" data-tooltip="' + verdictTip + '">?</span></div>';
-                html += '<div class="sim-stats">전체 ' + summary.total_sentences + '문장';
 
-                if (bd.identical) {
-                    var types = ['identical', 'near_copy', 'paraphrase', 'low_sim'];
-                    for (var ti = 0; ti < types.length; ti++) {
-                        var t = types[ti];
-                        if (bd[t] && bd[t].count > 0) {
-                            var info = SIM_TYPE_MAP[t] || {};
-                            html += ' · <span style="color:' + (info.color || '') + '">' + (info.label || t) + ' ' + bd[t].count + '</span>';
-                        }
-                    }
-                } else {
-                    // 호환: breakdown 없으면 기존 필드 사용
-                    html += ' · <span style="color:var(--color-error)">높은 ' + summary.high_count + '</span>';
-                    html += ' · <span style="color:var(--color-warning)">중간 ' + summary.medium_count + '</span>';
-                }
+                // 7지표 표지 카드 (Copyleaks 샘플 리포트 양식)
+                html += '<div class="sim-indicators" role="list">';
+                html += '<div class="sim-indicator sim-ind-identical" role="listitem"><span class="sim-ind-dot"></span><span class="sim-ind-label">동일</span><span class="sim-ind-count" data-ind="identical">' + initialCounts.identical + '</span></div>';
+                html += '<div class="sim-indicator sim-ind-near_copy" role="listitem"><span class="sim-ind-dot"></span><span class="sim-ind-label">거의 동일</span><span class="sim-ind-count" data-ind="near_copy">' + initialCounts.near_copy + '</span></div>';
+                html += '<div class="sim-indicator sim-ind-paraphrased" role="listitem"><span class="sim-ind-dot"></span><span class="sim-ind-label">의역</span><span class="sim-ind-count" data-ind="paraphrased">' + initialCounts.paraphrased + '</span></div>';
+                html += '<div class="sim-indicator sim-ind-low_similarity" role="listitem"><span class="sim-ind-dot"></span><span class="sim-ind-label">약한 유사</span><span class="sim-ind-count" data-ind="low_similarity">' + initialCounts.low_similarity + '</span></div>';
+                html += '<div class="sim-indicator sim-ind-excluded" role="listitem"><span class="sim-ind-dot"></span><span class="sim-ind-label">제외</span><span class="sim-ind-count" data-ind="excluded">' + initialExcluded + '</span></div>';
+                html += '<div class="sim-indicator sim-ind-total" role="listitem"><span class="sim-ind-label">전체 문장</span><span class="sim-ind-count" data-ind="total">' + totalSents + '</span></div>';
                 html += '</div>';
 
-                // 카피킬러식 4그룹 누적 바 (Plan-38 §8.1 Layer 1)
-                // 표절 의심 / 참고 가능 / 제외 영역 / 일반 (매칭 없음)
-                var totalSents = summary.total_sentences || 0;
-                if (totalSents > 0 && bd.identical) {
-                    var suspect = (bd.identical?.count || 0) + (bd.near_copy?.count || 0)
-                                + (bd.paraphrase?.count || 0) + (bd.translation?.count || 0);
-                    var review  = bd.low_sim?.count || 0;
-                    var excluded = (bd.boilerplate?.count || 0)
-                                 + ((summary.exclusion_breakdown?.toc_heading) || 0)
-                                 + ((summary.exclusion_breakdown?.caption) || 0)
-                                 + ((summary.exclusion_breakdown?.references_section) || 0)
-                                 + ((summary.exclusion_breakdown?.spec_number_only) || 0)
-                                 + ((summary.exclusion_breakdown?.boilerplate_pattern) || 0);
-                    var clean = Math.max(0, totalSents - suspect - review - excluded);
+                // 4 카테고리 누적바 (Copyleaks 색상: 빨강/연빨강/보라/회색)
+                if (totalSents > 0) {
                     var pct = function(n) { return totalSents > 0 ? (n / totalSents * 100) : 0; };
-
-                    html += '<div class="sim-group-bar" title="카피킬러식 4그룹 분류">';
-                    if (suspect > 0)  html += '<div class="sim-group-seg sg-suspect"  style="width:' + pct(suspect)  + '%" title="표절 의심 ' + suspect + '문장"></div>';
-                    if (review > 0)   html += '<div class="sim-group-seg sg-review"   style="width:' + pct(review)   + '%" title="참고 가능 ' + review + '문장"></div>';
-                    if (excluded > 0) html += '<div class="sim-group-seg sg-excluded" style="width:' + pct(excluded) + '%" title="제외 영역 ' + excluded + '문장"></div>';
-                    if (clean > 0)    html += '<div class="sim-group-seg sg-clean"    style="width:' + pct(clean)    + '%" title="일반 ' + clean + '문장"></div>';
+                    var cleanN = Math.max(0, totalSents - initialCounts.identical - initialCounts.near_copy - initialCounts.paraphrased - initialCounts.low_similarity - initialExcluded);
+                    html += '<div class="sim-category-bar" title="카테고리별 매칭 분포">';
+                    if (initialCounts.identical > 0)      html += '<div class="sim-cat-seg sc-identical"      style="width:' + pct(initialCounts.identical)      + '%" title="동일 ' + initialCounts.identical + '문장"></div>';
+                    if (initialCounts.near_copy > 0)      html += '<div class="sim-cat-seg sc-near_copy"      style="width:' + pct(initialCounts.near_copy)      + '%" title="거의 동일 ' + initialCounts.near_copy + '문장"></div>';
+                    if (initialCounts.paraphrased > 0)    html += '<div class="sim-cat-seg sc-paraphrased"    style="width:' + pct(initialCounts.paraphrased)    + '%" title="의역 ' + initialCounts.paraphrased + '문장"></div>';
+                    if (initialCounts.low_similarity > 0) html += '<div class="sim-cat-seg sc-low_similarity" style="width:' + pct(initialCounts.low_similarity) + '%" title="약한 유사 ' + initialCounts.low_similarity + '문장"></div>';
+                    if (initialExcluded > 0)              html += '<div class="sim-cat-seg sc-excluded"       style="width:' + pct(initialExcluded)              + '%" title="제외 ' + initialExcluded + '문장"></div>';
+                    if (cleanN > 0)                       html += '<div class="sim-cat-seg sc-clean"          style="width:' + pct(cleanN)                       + '%" title="매칭 없음 ' + cleanN + '문장"></div>';
                     html += '</div>';
-                    html += '<div class="sim-group-labels">';
-                    html += '<span class="sim-group-label"><span class="sim-group-dot sg-suspect"></span>표절 의심 ' + suspect + '</span>';
-                    html += '<span class="sim-group-label"><span class="sim-group-dot sg-review"></span>참고 가능 ' + review + '</span>';
-                    html += '<span class="sim-group-label"><span class="sim-group-dot sg-excluded"></span>제외 영역 ' + excluded + '</span>';
-                    html += '<span class="sim-group-label"><span class="sim-group-dot sg-clean"></span>일반 ' + clean + '</span>';
-                    // Plan-38 §5.4 모달 A — 매칭 유형 가이드 ⓘ
-                    html += '<button type="button" class="sim-score-info sim-group-info" data-action="show-label-help" '
-                        + 'title="매칭 유형 가이드 보기" aria-label="매칭 유형 가이드">ⓘ</button>';
-                    html += '</div>';
+                    // 모달 A (매칭 유형 가이드) ⓘ 버튼은 우측 상단에 단독 배치
+                    html += '<button type="button" class="sim-score-info sim-category-info" data-action="show-label-help" title="매칭 유형 가이드" aria-label="매칭 유형 가이드 보기">ⓘ</button>';
                 }
                 html += '</div>';
 
@@ -2524,45 +2514,63 @@
                 html += '</div>';
                 html += '</details>';
 
-                // 인라인 필터 체크박스
-                html += '<div class="sim-filter-inline" id="sim-filter-inline">';
-                var filterTypes = [
-                    { key: 'identical',  label: '일치',  checked: true },
-                    { key: 'near_copy',  label: '유사',  checked: true },
-                    { key: 'paraphrase', label: '의역',  checked: true },
-                    { key: 'low_sim',    label: '참고',  checked: false },
-                    { key: 'boilerplate',label: '공통',  checked: false }
+                // Plan-45 v3: 4 카테고리 필터 (표시 가시성 게이트)
+                // SSOT categories 경유 — 라벨·기본 체크 상태 모두 simHelp에서 파생
+                html += '<div class="sim-filter-bar" id="sim-filter-bar">';
+                html += '<div class="sim-filter-header" title="결과 필터 — 체크 해제한 카테고리는 숨겨집니다">'
+                    +   '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+                    +   '<span>결과 필터</span>'
+                    + '</div>';
+                html += '<div class="sim-filter-chips">';
+                var categoryDefs = (simHelp && simHelp.categories) ? [
+                    { key: 'identical',      ko: simHelp.categories.identical.ko,      defaultVisible: simHelp.categories.identical.default_visible !== false },
+                    { key: 'near_copy',      ko: simHelp.categories.near_copy.ko,      defaultVisible: simHelp.categories.near_copy.default_visible !== false },
+                    { key: 'paraphrased',    ko: simHelp.categories.paraphrased.ko,    defaultVisible: simHelp.categories.paraphrased.default_visible !== false },
+                    { key: 'low_similarity', ko: simHelp.categories.low_similarity.ko, defaultVisible: simHelp.categories.low_similarity.default_visible === true }
+                ] : [
+                    { key: 'identical',      ko: '동일',      defaultVisible: true },
+                    { key: 'near_copy',      ko: '거의 동일', defaultVisible: true },
+                    { key: 'paraphrased',    ko: '의역',      defaultVisible: true },
+                    { key: 'low_similarity', ko: '약한 유사', defaultVisible: false }
                 ];
-                for (var fi = 0; fi < filterTypes.length; fi++) {
-                    var ft = filterTypes[fi];
-                    var count = bd[ft.key] ? bd[ft.key].count : 0;
-                    if (count > 0 || ft.checked) {
-                        html += '<label class="sim-filter-chip">';
-                        html += '<input type="checkbox"' + (ft.checked ? ' checked' : '') + ' data-sim-filter="' + ft.key + '"> ';
-                        html += ft.label + (count > 0 ? ' ' + count : '');
-                        html += '</label>';
-                    }
+                for (var fi = 0; fi < categoryDefs.length; fi++) {
+                    var cd = categoryDefs[fi];
+                    var count = initialCounts[cd.key] || 0;
+                    html += '<label class="sim-filter-chip sim-filter-chip-' + cd.key + '" title="' + escapeHTML(cd.ko) + '">';
+                    html += '<input type="checkbox"' + (cd.defaultVisible ? ' checked' : '') + ' data-sim-filter-cat="' + cd.key + '"> ';
+                    html += '<span class="sim-filter-dot"></span>';
+                    html += '<span class="sim-filter-label">' + escapeHTML(cd.ko) + '</span>';
+                    html += '<span class="sim-filter-count" data-filter-count="' + cd.key + '">' + count + '</span>';
+                    html += '</label>';
                 }
+                html += '</div>';
                 html += '</div>';
 
                 if (matches.length === 0) {
                     // Plan-38 §8.7 — 빈 상태 디자인 (아이콘 + 가이드)
                     html += '<div class="cp-sidebar-empty sim-empty-state">'
-                        + '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4;margin-bottom:8px">'
+                        + '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" style="opacity:0.4;margin-bottom:8px">'
                         +   '<circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/><path d="M11 8v3M11 14h.01"/>'
                         + '</svg>'
                         + '<div style="font-weight:var(--font-weight-semibold);margin-bottom:4px">유사 구간이 발견되지 않았습니다</div>'
                         + '<div style="font-size:var(--font-caption);color:var(--text-muted);line-height:1.5">대상 문서가 참조와 충분히 독창적입니다.<br>다른 참조 문서와도 비교해보거나, 검사 임계값을 낮춰볼 수 있습니다.</div>'
                         + '</div>';
                 } else {
+                    // Plan-45 v3: 필터 모두 OFF 시 노출될 빈 상태 (display:none 토글로 제어)
+                    html += '<div class="cp-sidebar-empty sim-filter-empty-state" id="sim-filter-empty" style="display:none">'
+                        + '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4;margin-bottom:8px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>'
+                        + '<div style="font-weight:var(--font-weight-semibold);margin-bottom:4px">표시 필터가 모두 꺼져 있습니다</div>'
+                        + '<div style="font-size:var(--font-caption);color:var(--text-muted);line-height:1.5">상단 <strong>결과 필터</strong>에서 카테고리를 하나 이상 켜세요.</div>'
+                        + '</div>';
                     for (var i = 0; i < matches.length; i++) {
                         var m = matches[i];
-                        var typeKey = m.type || (m.level === 'high' ? 'identical' : 'paraphrase');
+                        var typeKey = m.type || 'low_sim';
                         var typeInfo = SIM_TYPE_MAP[typeKey] || SIM_TYPE_MAP.low_sim;
                         var simPct = m.similarity ? (m.similarity * 100).toFixed(1) : '—';
+                        var matchCat = resolveCategory(m, initialSettings);
 
                         var itemCls = 'sim-match-item' + (m.user_excluded ? ' sim-user-excluded' : '');
-                        html += '<div class="' + itemCls + '" data-idx="' + i + '">';
+                        html += '<div class="' + itemCls + '" data-idx="' + i + '" data-sim-cat="' + matchCat + '">';
                         html += '<div class="sim-match-header">';
                         html += '<span class="badge ' + typeInfo.badge + ' sim-match-badge">' + simPct + '%</span>';
                         html += '<span class="sim-match-level" title="' + escapeHTML(typeInfo.tooltip || '') + '">' + typeInfo.label + '</span>';
@@ -2826,6 +2834,8 @@
                 if (!card || !simLastResult) return;
                 var m = simLastResult.matches[idx];
                 card.classList.toggle('sim-user-excluded', !!m.user_excluded);
+                // Plan-45 v3: 카테고리 data attribute 도 갱신 (Phase 4 제외 패널 필터 대비)
+                card.setAttribute('data-sim-cat', resolveCategory(m, simLoadCheckSettings()));
 
                 // 기존 action 버튼 교체
                 var oldBtn = card.querySelector('.sim-match-action-btn');
@@ -2968,30 +2978,44 @@
             }
 
             // ── 유사도 필터 (사이드바 인라인 — change 이벤트 위임) ──
+            // Plan-45 v3: 카테고리 기반 필터 (data-sim-filter-cat)
             (function() {
                 var sidebar = document.getElementById('cp-sidebar-body');
                 if (!sidebar) return;
                 sidebar.addEventListener('change', function(e) {
-                    if (e.target.hasAttribute('data-sim-filter')) {
+                    if (e.target.hasAttribute('data-sim-filter-cat')) {
                         simApplyFilter();
                     }
                 });
             })();
 
+            // Plan-45 v3: 표시 필터 = 단일 가시성 게이트 (점수 영향 없음 — C5 불변)
+            // 카테고리 체크 해제 시: 사이드바 카드·본문 하이라이트·미니맵 마커 3경로 모두 display:none (V1/V3 불변)
             function simApplyFilter() {
                 if (!simLastResult) return;
-                // 체크박스 상태 수집
+                var settings = simLoadCheckSettings();
                 var filters = {};
-                var checkboxes = document.querySelectorAll('[data-sim-filter]');
+                var checkboxes = document.querySelectorAll('[data-sim-filter-cat]');
+                var anyChecked = false;
                 for (var i = 0; i < checkboxes.length; i++) {
-                    filters[checkboxes[i].getAttribute('data-sim-filter')] = checkboxes[i].checked;
+                    var k = checkboxes[i].getAttribute('data-sim-filter-cat');
+                    filters[k] = checkboxes[i].checked;
+                    if (checkboxes[i].checked) anyChecked = true;
                 }
 
                 var matches = simLastResult.matches || [];
+                var visibleCount = 0;
                 for (var i = 0; i < matches.length; i++) {
                     var m = matches[i];
-                    var type = m.type || 'low_sim';
-                    var show = filters[type] !== false; // 체크박스 없는 유형은 표시
+                    var cat = resolveCategory(m, settings);
+                    // Plan-45 Phase 3 임시: 제외 항목(자동/수동)은 필터 체크박스가 없으므로 무조건 숨김.
+                    // Phase 4 에서 접이식 "제외된 N건 보기" 패널로 이동 예정 — 그 전까지는 사용자가 제외 후 확인 불가.
+                    // simApplyUserExclusion 의 toast "[복원]" 링크로 즉시 복원만 가능 (Phase 4 완전 해결).
+                    var filterKey = (cat === 'excluded_auto' || cat === 'excluded_manual')
+                        ? null   // TODO(Plan-45/P4): 제외 패널 분리 시 이 null 분기 제거
+                        : cat;
+                    var show = filterKey && filters[filterKey] === true;
+                    if (show) visibleCount++;
 
                     // 사이드바 카드
                     var card = document.querySelector('.sim-match-item[data-idx="' + i + '"]');
@@ -3003,6 +3027,10 @@
                         hls[j].style.display = show ? '' : 'none';
                     }
                 }
+
+                // 필터 모두 OFF 시 전용 빈 상태 안내 (V5 불변)
+                var emptyEl = document.getElementById('sim-filter-empty');
+                if (emptyEl) emptyEl.style.display = (!anyChecked && matches.length > 0) ? '' : 'none';
 
                 simUpdateNavIndicator();
                 simRenderMinimap();
@@ -3029,15 +3057,25 @@
                 var trackHB = minimapB.clientHeight - ARROW_H * 2;
                 if (trackHA <= 0 || trackHB <= 0) return;
 
+                // Plan-45 v3: 카테고리 기반 색상 매핑 (resolveCategory 단일 경로, S1 불변)
+                var CATEGORY_COLOR = {
+                    identical:       'var(--color-error)',
+                    near_copy:       'var(--color-warning)',
+                    paraphrased:     'var(--color-info)',
+                    low_similarity:  'var(--text-muted)',
+                    excluded_auto:   'var(--border-color)',
+                    excluded_manual: 'var(--text-muted)'
+                };
                 var matches = simLastResult.matches || [];
+                var minimapSettings = simLoadCheckSettings();
                 for (var i = 0; i < matches.length; i++) {
                     var m = matches[i];
-                    // 필터로 숨겨진 항목은 마커도 숨김
+                    // 필터로 숨겨진 항목은 마커도 숨김 (V1 불변: 3경로 동기)
                     var card = document.querySelector('.sim-match-item[data-idx="' + i + '"]');
                     if (card && card.style.display === 'none') continue;
 
-                    var type = m.type || 'low_sim';
-                    var colorVar = 'var(--sim-' + type.replace('_', '-') + '-border, var(--color-info))';
+                    var cat = resolveCategory(m, minimapSettings);
+                    var colorVar = CATEGORY_COLOR[cat] || 'var(--text-muted)';
 
                     // A 패널 마커
                     var elA = panelA.querySelector('[data-sim-idx="' + i + '"]');
