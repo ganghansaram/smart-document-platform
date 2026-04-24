@@ -1,6 +1,6 @@
 # Plan 44: Ollama 동시성·안정성 강화
 
-최종 수정: 2026-04-24 (v2 — 운영 실조사 반영)
+최종 수정: 2026-04-24 (v4 — L1 완료, L2 사전 착수 전환: 100명 오픈 3주 내)
 
 ---
 
@@ -36,23 +36,40 @@
 - [x] 5-4. `admin.html` 대시보드 "AI 동시성 상태" 섹션 — `_renderAIStatus` 신규 (health 뱃지 뒤·서브시스템 타일 앞), `analytics.css` 에 `.ad-ai-*` 토큰 기반 스타일 (반응형 3단계, 다크모드 자동, p95 는 s 로 자동 단위 변환), 대시보드 응답에 `ai_status` 통합
 - [x] 5-5. L2 트리거 배너 `.ad-alert.ad-alert-warning` + 24h dismiss (localStorage) — `_renderL2Banner` 최상단 삽입, `data-dismiss-banner` event delegation, `require_admin` 경유 자동 auth 가드
 
-### L2 — 조건부 (트리거 발동 시에만 착수)
+### L2 — 사전 준비 (100명 실 오픈 3주 내 예정 · 필수)
 
-**Phase 2: LLM Gateway** ⏸ (0 / 7)
-- [ ] 2-0. **L2 트리거 지표 확인** (503 > 5/h, p95 > 8s, 동접 > 7명 중 1개 1주 연속)
-- [ ] 2-1. `services/llm_gateway.py` 신설 — 싱글턴 httpx + 글로벌 Semaphore + 스트림 전용 풀
-- [ ] 2-2. 기존 호출부 6곳 이식 (`llm_provider`, `ai_summary`, `query_rewriter`, `translator_service`, `compare_service`, `notebook_chat`)
-- [ ] 2-3. 기존 `_translation_semaphore` 를 Gateway 의 weight 슬롯으로 재구현
-- [ ] 2-4. Settings GUI 에 `LLM_GATEWAY_MAX_CONCURRENT`, `MAX_QUEUE`, `STREAM_SLOTS` 노출
-- [ ] 2-5. `LLM_GATEWAY_ENABLED=false` 롤백 플래그 + 2주 shadow 운영
-- [ ] 2-6. 롤백 플래그 제거 + `backlog.md` 에서 항목 정리
+> **착수 근거 (v4)**: 2026-04-24 시점에 실 운영 조건이 변경됨 — 현재 15명 내부 테스트(동시 2~3명) 단계이며, 2~3주 내 실(100명+) 전체 오픈 예정.
+> 100명 중 10%만 업무 시간대에 동시 사용해도 10명 동접 → 기존 "트리거 발동 후 착수" 원칙으론 오픈 후 대응 불가.
+> **관찰 → 착수 → 튜닝** 순서가 불가능하므로, **오픈 전 선제 구축 + 부하 테스트 기반 튜닝** 으로 전환.
 
-**Phase 5 확장 (L2 착수 시)** ⏸ (0 / 1)
-- [ ] 5-6. `ad-ai-status` 섹션 하단에 Gateway 2차 그리드 추가 — 슬롯 사용률 / 대기열 / 용도별 sparkline / 429 도넛 (기존 `.ad-tile-spark`·`.ad-hbar` 재사용)
+**Phase 2a: 부하 무관 선행 개선 (Week 1 전반, ~2일)** 🟨 (0 / 3)
+- [ ] 2a-1. `llm_provider.py` httpx.AsyncClient 싱글턴화 + `Limits(max_connections=50, max_keepalive_connections=20)` + lifespan `aclose()`
+- [ ] 2a-2. `ai_summary.py` 의 `OllamaProvider()` 직접 생성 제거 → `llm_provider.get_provider(model_override)` 확장해 싱글턴 경유
+- [ ] 2a-3. `query_rewriter.py` 동기 `requests.post` → httpx async 전환 (async 체인 이벤트 루프 블로킹 방지)
 
-### L3 — 전환 (임계점 초과 시)
+**Phase 2b: LLM Gateway 본체 (Week 1 후반, ~3~5일)** 🟨 (0 / 5)
+- [ ] 2b-1. `services/llm_gateway.py` 신설 — 글로벌 Semaphore + 스트림 전용 슬롯 + 용도별 weight (chat=1 / translation=2 / summary=2 / qa_stream=1)
+- [ ] 2b-2. 호출부 이식 (`ai_summary`, `query_rewriter`, `translator_service.ai_selection_query`, `compare_service._call_ollama_classify`, `notebook_chat` 스트림)
+- [ ] 2b-3. 기존 `_translation_semaphore` → Gateway weight 슬롯 재구현 (기존 409 UX 계약 유지)
+- [ ] 2b-4. Settings GUI: `LLM_GATEWAY_MAX_CONCURRENT` / `MAX_QUEUE` / `STREAM_SLOTS` 노출 (런타임 반영)
+- [ ] 2b-5. `LLM_GATEWAY_ENABLED=false` 롤백 플래그 — 1주 shadow 운영용
 
-- [ ] **L3 트리거 지표 확인** (503 > 10/h 2주 연속 or 동접 > 15명 or p99 > 20s) ⏸
+**Phase 2c: 부하 테스트 (Week 2, ~1.5일) — 용도 분리 필수** 🟨 (0 / 3)
+- [ ] 2c-1. **개발 PC 스모크** — locust 등으로 100 가짜 동시 요청, deadlock·메모리 누수·429 경로·프론트 재시도 **구조 검증** (GPU 없이도 가능. 숫자 튜닝은 아님)
+- [ ] 2c-2. **회사 VM 실 로드** — 50명 시뮬레이션 (GPU+Ollama 실 환경), p95 지연·VRAM 피크·큐 대기시간 **실측** → Semaphore/큐 임계값 결정
+- [ ] 2c-3. 실측 결과를 `.env` / Settings GUI 초기값으로 반영, 대시보드 임계값(L2 발동선) 현실화
+
+**Phase 2d: 대시보드 Gateway 지표 (Week 2 후반, 반나절)** 🟨 (0 / 1)
+- [ ] 2d-1. `.ad-ai-status` 하단 2차 그리드 추가 — 슬롯 사용률 / 대기열 길이 / 용도별 sparkline / 429 발생률 (기존 `.ad-tile-spark`·`.ad-hbar` 재사용)
+
+**Phase 2e: 오픈 후 안정화 (Week 3 이후)** 🟨 (0 / 1)
+- [ ] 2e-1. 100명 오픈 후 1주 운영 관찰 → 필요 시 Settings 값 재조정 → 안정 확인 후 `LLM_GATEWAY_ENABLED` 플래그 제거 (`backlog.md` 이관)
+
+### L3 — 전환 보류 (Ollama + 튜닝으로 100명/동시 10~15명까지 감당 가능 전제)
+
+> **판단**: vLLM 전환은 200+ 동시 사용자 또는 L2 튜닝 후에도 지표 지속 초과 시 착수. 현 규모에선 과투자.
+
+- [ ] **L3 트리거 지표 확인** (p99 > 20s 2주 연속 or 동접 > 15명 지속 or 503 > 10/h) ⏸
 - [ ] vLLM / TGI POC 계획서 작성 (별도 Plan 번호) ⏸
 - [ ] 모델 호환성 + 폐쇄망 배포 + 운영자 학습 비용 평가 ⏸
 
@@ -61,8 +78,8 @@
 | 레이어 | 진척 | 총 항목 | 상태 |
 |--------|------|---------|------|
 | L1 (즉시) | **17 / 17** | 17 | ✅ 전체 완료 (2026-04-24) |
-| L2 (조건부) | **0 / 8** | 8 | ⏸ 트리거 대기 |
-| L3 (전환) | **0 / 3** | 3 | ⏸ 트리거 대기 |
+| L2 (사전 준비) | **0 / 13** | 13 | 🟨 100명 오픈 3주 내 착수 예정 |
+| L3 (전환) | **0 / 3** | 3 | ⏸ 200+ 동시 또는 L2 튜닝 후 지표 지속 초과 시 |
 
 ---
 
@@ -125,38 +142,53 @@ AI 요약(Map-Reduce), Q&A 스트리밍, 쿼리 재작성, Compare AI 분류, �
 
 ## 우선순위 레이어 — 실행 전략
 
-업계 관행·코드 실측·플랫폼 특성을 종합해 Phase 를 **3단계**로 분리한다.
+업계 관행·코드 실측·플랫폼 특성·**운영 로드맵** 을 종합해 Phase 를 **3단계**로 분리한다.
 
-| 레이어 | 구성 | 공수 | 무게 영향 | 실행 조건 |
-|--------|------|------|----------|----------|
-| **L1: 즉시 실행** | Phase 1 + 3 + 4 + 5(최소) | **4~5일** | 미미 | 지표·증상 없어도 무조건 이득 |
-| **L2: 조건부** | Phase 2 (LLM Gateway) | 5~7일 | 중 (SPOF 전환) | **트리거 발동 시** 착수 |
-| **L3: 전환** | vLLM POC (별도 계획서) | 별도 | 대 | **임계점 초과 시** 착수 |
+| 레이어 | 구성 | 공수 | 무게 영향 | 실행 조건 (v4) |
+|--------|------|------|----------|-------------------|
+| **L1: 즉시 실행** | Phase 1 + 3 + 4 + 5(최소) | 4~5일 | 미미 | ✅ **2026-04-24 완료** |
+| **L2: 사전 준비** | Phase 2a/2b/2c/2d (LLM Gateway + 부하 테스트) | 6~9일 | 중 (SPOF 전환, 부하 테스트로 완화) | 🟨 **100명 실 오픈 3주 내** 필수 (현재 단계) |
+| **L3: 전환** | vLLM POC (별도 계획서) | 별도 | 대 | ⏸ 200+ 동시 또는 L2 튜닝 후 지속 초과 시 |
 
-### L2/L3 트리거 지표
+### 운영 로드맵 (v4 추가)
 
-Phase 5 에서 수집할 지표 중 **하나라도 1주 연속** 발동하면 다음 레이어 착수 검토:
+| 시점 | 전체 사용자 | 동시 사용 추정 | 대응 |
+|------|-----------|--------------|------|
+| 현재 (2026-04-24) | 15명 내부 테스트 | 2~3명 | ✅ L1 만으로 충분 |
+| **~2026-05-15** (D-21) | 여전히 15명 | 2~3명 | 🟨 **L2 구축 + 부하 테스트 기간** |
+| **~2026-05-15 오픈** | 100명+ 실 전체 | 피크 10~15명 추정 (업무 시간 몰림) | 운영 (L2 적용 상태, 대시보드 상시 모니터링) |
+| 오픈 후 1~2주 | — | 실측 피크 확인 | Phase 2e 안정화, 롤백 플래그 제거 |
 
-**L2 (Phase 2) 발동**:
+### L2/L3 지표 — 의미 재정의 (v4)
+
+기존엔 "**L2 착수 판단용 트리거**" 였다면, v4 부터는:
+
+- **L2 지표** = **오픈 후 상시 모니터링용 경계선**. 초기값은 Phase 2c 실 부하 테스트 결과로
+  갱신됨 (현재 임계값은 업계 벤치 + 추정치 기반이며 튜닝 대상). 오픈 후 `fired` 지속 시
+  Settings 값 재조정.
+- **L3 지표** = **vLLM 전환 판단용 트리거**. L2 적용 후에도 지표 지속 초과 시에만 의미.
+
+**L2 경계선 (초기값, Phase 2c 로 검증)**:
 - `ollama_503_rate > 5 회/시간`
 - `llm_p95_latency > 8s`
-- `peak_concurrent_users > 7 명` (실접속 세션 기준)
+- `peak_concurrent_users > 7 명`
 - `기능별 호출자가 느끼는 대기시간 불만` (정성적 피드백)
 
-**L3 (vLLM) 발동** (Phase 2 적용 후에도):
+**L3 트리거 (Phase 2 적용 후에도)**:
 - `ollama_503_rate > 10 회/시간` 2주 연속
-- `peak_concurrent_users > 15 명`
+- `peak_concurrent_users > 15 명` 지속
 - `p99_latency > 20s`
-- 조직 요구 SLA 가 Ollama 한계를 명시적으로 초과
+- 조직 SLA 가 Ollama 한계를 명시적으로 초과
 
-### 왜 이렇게 나눴나
+### 왜 L2 를 지금(v4) 착수하나
 
-- **L1** 은 각각 독립적으로 가치가 있고, 서로를 전제하지 않으며, 플랫폼 무게를 거의
-  늘리지 않는다. 특히 Phase 5 (지표) 없이 L2 착수 타이밍을 판단할 수 없다.
-- **L2** 는 "현재 부하 패턴을 알고 튜닝" 해야 하는데, 실수요 없이 만들면 숫자가 자의적이
-  되고 운영 중 재조정 이력만 쌓인다. 또한 아키텍처 무게와 실패 모드 변화 비용이 크다
-  (아래 리스크 섹션 참조).
-- **L3** 는 폐쇄망 + Vanilla 제약상 전환 부담이 크므로 명확한 트리거 없이는 착수 금지.
+- v2~v3 당시엔 "실수요 없이 만들면 임계값 자의적 → 관찰 후 착수" 원칙이었음.
+- v4 시점: **3주 내 실 오픈 확정** → 관찰 시간(1~2주)과 오픈 시점이 겹침. 오픈 후 착수 시
+  사용자는 이미 체감 지연을 겪고 있음.
+- **임계값 자의성 문제는 Phase 2c 부하 테스트로 해소** (개발 PC 스모크 + 회사 VM 실측).
+- Phase 2 를 쪼개 **2a(부하 무관 개선)** 먼저 진행 후 **2b(Gateway 본체)** 착수하므로,
+  2a 단계까지는 구조적 리스크(SPOF 전환) 도 발생하지 않음 — 점진 적용.
+- **L3 (vLLM) 은 여전히 보류**. Ollama + L2 튜닝으로 100명/동시 10~15명은 감당 가능.
 
 ---
 
@@ -518,26 +550,33 @@ Gateway 도입되면 `ad-ai-metrics` 하단에 **두 번째 그리드** 추가:
 
 ---
 
-## Phase 2: LLM Gateway (L2 — 조건부)
+## Phase 2: LLM Gateway (L2 — 사전 준비, 100명 오픈 3주 내 필수)
 
-> ⚠️ **착수 전 L2 트리거 지표 확인 필수**. 사전 대비 차원의 "미리 구현"은 권장하지 않음
-> (리스크 섹션 참조).
+> ✅ **v4 전환**: 기존의 "트리거 발동 후 착수" 원칙은 100명 오픈 일정(3주 내) 과 맞지 않음.
+> Phase 2 를 **2a (부하 무관) → 2b (Gateway 본체) → 2c (부하 테스트) → 2d (대시보드 확장)
+> → 2e (안정화)** 로 쪼개 점진 적용. 임계값 자의성 문제는 Phase 2c 부하 테스트로 해소.
 
-### 2-0. Phase 2 의 재정의된 가치
+### 주차별 타임라인
 
-이전 버전(v1)에서 Phase 2 를 "병목 해소 본진"으로 과대 포지셔닝했으나, 조사 결과
-Ollama 자체의 `MAX_QUEUE` + Phase 1·3 만으로 **~5명 동접까지는 충분**. Phase 2 의 실질
-가치는 다음으로 재정의된다:
+| 주차 | 목표 | 결과물 |
+|------|------|--------|
+| Week 1 전반 (~2일) | Phase 2a 부하 무관 개선 | httpx 싱글턴, ai_summary 정상화, query_rewriter async |
+| Week 1 후반 (~3~5일) | Phase 2b Gateway 본체 | llm_gateway.py, 호출부 이식, Settings 연동, 롤백 플래그 |
+| Week 2 전반 (~1.5일) | Phase 2c 부하 테스트 | 개발 PC 스모크 → 회사 VM 실측 → 임계값 확정 |
+| Week 2 후반 (~반나절) | Phase 2d 대시보드 확장 | .ad-ai-status 하단 Gateway 2차 그리드 |
+| Week 3 | **100명 실 오픈** + 모니터링 | 실시간 대시보드 감시 + 필요 시 튜닝 조정 |
+| Week 3 이후 | Phase 2e 안정화 | 롤백 플래그 제거, backlog 이관 |
 
-- ✅ **`httpx.AsyncClient` 싱글턴 + 연결 풀** — 독립적 이득, TCP 연결 재사용
-- ✅ **용도별 weight / 우선순위** — interactive(채팅) vs background(요약) 구분.
-  Ollama 단일 큐는 FIFO 평등 처리라 긴 요약이 들어오면 짧은 채팅이 뒤에서 굶음
-- ✅ **스트림 전용 슬롯 분리** — Phase 1 에서 식별된 "스트림이 슬롯 오래 점유" 문제 해소
-- ✅ **503 → 429 + Retry-After 변환 + 프론트 자동 재시도** — Phase 3 로 이미 해결됨
-  → Gateway 에선 통합 유지
-- ✅ **관측 통합** — 모든 LLM 호출이 한 지점을 지나므로 지표·로깅 단순
-- ⚠️ **앱 레이어 Semaphore** — Ollama 서버 측 MAX_QUEUE 와 중복. 주요 가치는 "큐 대기 전
-  조기 차단" (Ollama 에 도달하기 전에 429 응답)
+### 2-0. Phase 2 의 가치 (v4)
+
+Phase 2 의 가치는 사용자 규모에 따라 달라진다. 100명 규모 대비:
+
+- ✅ **`httpx.AsyncClient` 싱글턴 + 연결 풀** — TCP 재사용으로 동시 10+명에서 백엔드 부하 감소
+- ✅ **스트림 전용 슬롯 분리** — `num_parallel=2` 환경에서 긴 Q&A 스트림 2개로 짧은 채팅이 굶는 문제 해소 (100명 규모 체감 큼)
+- ✅ **용도별 weight / 우선순위** — Ollama FIFO 큐의 평등 처리를 interactive 우선으로 전환
+- ✅ **앱 레이어 Semaphore + MAX_QUEUE** — Ollama 도달 전 조기 차단, 429+Retry-After 로 사용자 친화
+- ✅ **관측 통합** — 대시보드 지표 신뢰도 향상
+- ✅ **ai_summary.py 싱글턴 우회 제거** — 이미 식별된 버그성 패턴 정상화 (Phase 2a 에서 선행)
 
 ### 2-1. `backend/services/llm_gateway.py` 신설
 
@@ -582,8 +621,56 @@ async def shutdown(): ...  # 진행 중 호출 대기 → 풀 정리
 
 - `LLM_GATEWAY_ENABLED=false` 환경변수로 **전체 우회 가능** (기존 경로로 폴백)
 - 기본값 `true` 는 Phase 2 완료 후 **1주 관찰** 뒤 확정
-- **롤백 플래그 제거 기한**: Phase 2 안정 확인 후 2 릴리즈 이내 (CLAUDE.md 의 "죽은 호환
-  코드 유지 금지" 준수). 이 기한을 backlog.md 에 이관 항목으로 기록.
+- **롤백 플래그 제거 기한**: 2e 단계에서 운영 안정 확인 후 2 릴리즈 이내 (CLAUDE.md 의
+  "죽은 호환 코드 유지 금지" 준수). 이 기한을 backlog.md 에 이관 항목으로 기록.
+
+### 2-5. Phase 2c 부하 테스트 — 용도 분리 (v4 신설)
+
+일반 개발 관행상 부하 테스트는 Staging 환경에서 수행하는 것이 정석이지만, 우리 환경엔
+별도 Staging 이 없다 (개발 PC ↔ 회사 VM). 그래서 **용도를 엄격 분리**:
+
+#### 2c-1. 개발 PC 스모크 (버그 사냥용)
+
+- **도구**: `locust` (Python, 폐쇄망 설치 가능) 또는 간단 `aiohttp` 스크립트
+- **대상 엔드포인트**: 전 LLM 경유 API + Gateway 내부 경로
+- **시나리오**:
+  - 100 가짜 사용자가 동시에 채팅/요약/번역/분류 무작위 호출 (60초간)
+  - LLM 응답을 mock (또는 `time.sleep(randint(500, 3000))` delay) 으로 대체 — **GPU 없이 실행**
+- **검증 목표 (성능 숫자 아님)**:
+  - Semaphore deadlock 발생하지 않는가
+  - 롤백 플래그(`LLM_GATEWAY_ENABLED`) 전환 시 인플라이트 요청 정상 처리되는가
+  - 메모리 / asyncio Task 누수 없는가 (`htop`, Python `tracemalloc`)
+  - 429 응답 + `Retry-After` 형식 정확한가
+  - 프론트 RequestGuard 가 실제 429 수신 시 카운트다운·자동 재시도 동작하는가
+- **소요**: 2~3시간
+- **산출물**: `workbench/reports/plan-44-phase2c-smoke-<ts>.md`
+
+#### 2c-2. 회사 VM 실 로드 (숫자 튜닝용)
+
+- **도구**: locust (VM 에 사전 설치) — 운영자 협조 필요
+- **대상**: 실 Ollama + GPU (L40 48GB), L1 적용된 상태에서 L2 추가 후 비교
+- **시나리오 (단계별)**:
+  - ① 5명 동시 — baseline p95 확인
+  - ② 20명 동시 (피크 추정치) — Semaphore·큐 거동 관찰
+  - ③ 50명 동시 (상한 테스트) — 한계점·회복 시간 확인
+- **측정 지표**:
+  - p95 / p99 응답 시간 (기능별: 채팅·요약·번역·분류)
+  - `nvidia-smi` VRAM 피크 사용량 (`num_parallel=2` / `=4` 두 시나리오)
+  - Ollama 큐 대기 시간 분포
+  - 429 발생률 + 재시도 성공률
+- **결과 활용**:
+  - `LLM_GATEWAY_MAX_CONCURRENT` / `MAX_QUEUE` / `STREAM_SLOTS` **초기값 확정**
+  - 대시보드 L2 경계선 (현재 `p95_latency_ms>8000` 등) 현실화
+  - 필요 시 `OLLAMA_NUM_PARALLEL` 2차 상향 (2→4) 판단
+- **소요**: 반나절 ~ 1일 (VM 예약·설치 포함)
+- **산출물**: `workbench/reports/plan-44-phase2c-vm-load-<ts>.md` + 수치 기반 Settings 권장값
+
+### 2-6. Phase 2e 오픈 후 안정화 (v4 신설)
+
+- 실 오픈 후 1주: 관리자 대시보드 매일 점검, `fired` 상태 발생 시 Settings 즉시 조정
+- 오픈 후 2주: 피크 사용 패턴 안정화 확인 → `LLM_GATEWAY_ENABLED=true` 확정
+- 오픈 후 3~4주: 롤백 경로(`=false`) 제거 커밋, `backlog.md` 에서 해당 항목 정리
+- L3 (vLLM) 판단 보류 — L2 튜닝으로 충분한지 2~4주 관찰 후 결정
 
 ---
 
@@ -621,26 +708,36 @@ async def shutdown(): ...  # 진행 중 호출 대기 → 풀 정리
 
 ## 성공 기준
 
-### L1 완료 기준
-- [ ] Ollama env 5종 `.env.example` + 운영 가이드 반영 (NUM_PARALLEL=2, MAX_QUEUE=64, KEEP_ALIVE=30m, MAX_LOADED_MODELS=2, FLASH_ATTENTION=1)
-- [ ] `nvidia-smi` 실측으로 피크 VRAM 여유 5GB 이상 확인
-- [ ] 공통 예외 핸들러로 Ollama 503 → HTTP 429 + `Retry-After` 변환
-- [ ] `js/request-guard.js` 배포, 서브시스템 4곳 이식
-- [ ] 429 응답 시 프론트 자동 재시도 + 카운트다운 토스트 작동
-- [ ] `/api/health` 에 `ollama_latency_ms`, `ollama_503_last_hour` 필드 노출
-- [ ] 기존 기능 회귀 0건
+### L1 완료 기준 — ✅ 전체 달성 (2026-04-24)
+- [x] Ollama env 5종 `.env.example` + 운영 가이드 반영 (NUM_PARALLEL=2, MAX_QUEUE=64, KEEP_ALIVE=30m, MAX_LOADED_MODELS=2, FLASH_ATTENTION=1)
+- [x] `nvidia-smi` 실측 절차 docs 에 명시 (실제 실측은 운영자 영역)
+- [x] 공통 예외 핸들러로 Ollama 503 → HTTP 429 + `Retry-After` 변환
+- [x] `js/request-guard.js` 배포, 서브시스템 4곳 이식
+- [x] 429 응답 시 프론트 자동 재시도 + 카운트다운 토스트 작동
+- [x] `/api/health` 에 `ollama_latency_ms`, `ollama_503_last_hour` 필드 노출
+- [x] 관리자 대시보드 "AI 동시성 상태" 섹션 + L2 트리거 배너 (Playwright 검증 완료)
+- [x] 기존 기능 회귀 0건 (code-reviewer + /review-ui + /simplify 통과)
 
-### L2 착수 전 확인
-- [ ] 1주 이상 지표 수집
-- [ ] L2 트리거 지표 중 1개 이상 발동 확인
-- [ ] 또는 정성적 피드백(사용자 불만) 누적 확인
+### L2 착수 기준 (v4) — 운영 일정 기반
+- [x] 실 오픈 예정일(D-21) 확정 — **2026-05-15 전후 100명 오픈**
+- [ ] Phase 2a 부하 무관 개선 완료
+- [ ] Phase 2b Gateway 본체 완료
+- [ ] Phase 2c 부하 테스트 완료 (개발 PC 스모크 + 회사 VM 실 로드)
 
-### L2 완료 기준 (발동 시)
-- [ ] 10 동시 채팅 + 4 동시 번역 + 2 요약 시나리오에서 타임아웃 0 회, 평균 응답 p95 ≤ 기존 대비 120%
-- [ ] 스트림 전용 슬롯 분리로 "긴 스트림 중 짧은 채팅 기아" 0건
-- [ ] `/api/metrics` Gateway 상태 실시간 확인 가능
-- [ ] `LLM_GATEWAY_ENABLED=false` 로 롤백 시 기존 동작 100% 복원
-- [ ] 2주 shadow 운영에서 동시성 버그 0건 확인 후 롤백 플래그 제거
+### L2 완료 기준 (오픈 전 충족 필수)
+- [ ] 개발 PC 스모크 테스트 통과 — 100 동시 가짜 요청에서 deadlock/누수/예외 0건
+- [ ] 회사 VM 실 로드 테스트 통과 — 20명 동시(피크 추정) 에서 p95 ≤ 8s, 50명 상한 테스트에서 graceful degradation (429 재시도로 복구)
+- [ ] VRAM 피크 여유 5GB 이상 (`nvidia-smi` 실측)
+- [ ] 스트림 전용 슬롯 분리로 "긴 스트림 중 짧은 채팅 기아" 재현 없음
+- [ ] `/api/metrics/ai-status` 에 Gateway 상태(슬롯/큐) 노출, 대시보드에 2차 그리드 표시
+- [ ] `LLM_GATEWAY_ENABLED=false` 로 롤백 시 L1 상태 기능 100% 복원
+- [ ] `ai_summary.py` 의 OllamaProvider() 직접 생성 0곳 (Phase 2a 완료)
+- [ ] 기존 기능 회귀 0건 (L1 체크리스트 재검증)
+
+### 오픈 후 (Phase 2e)
+- [ ] 1주 관찰 — 대시보드 `fired` 발생률, 사용자 피드백 수집
+- [ ] 2주 관찰 — 롤백 플래그 제거 승인 판단
+- [ ] 4주 관찰 — L3 (vLLM) 착수 필요 여부 결정
 
 ---
 
@@ -699,3 +796,18 @@ async def shutdown(): ...  # 진행 중 호출 대기 → 풀 정리
   - 디자인 시스템 준수 명세 — `--ad-*` 토큰 재사용, `color-mix(in oklab, ...)`, `.badge`/`.btn` 공통 컴포넌트, 반응형 3단계(<960/<700), 다크모드 자동, `role`/`aria-*` 접근성
   - 백엔드 지표 계측을 `services/ai_metrics.py` + Plan-41 `analytics_events` 재사용으로 설계 (별도 테이블 추가 없음)
   - Phase 5 섹션 번호 재정렬 (기반→UI→알림 순서: 5-1 health / 5-2 metrics API / 5-3 백엔드 지표 / 5-4 대시보드 섹션 / 5-5 배너 / 5-6 L2 확장)
+- **v4 (2026-04-24)**: L1 완료 + 운영 로드맵 반영 → L2 사전 착수 전환.
+  - **L1 전체 완료** (17/17, 커밋 9건, Playwright 검증 완료)
+  - 운영 로드맵 공개: 현재 15명 내부 테스트 → **2026-05-15 전후 100명 실 오픈**. 피크 동시 사용 10~15명 추정
+  - L2 "트리거 발동 후 착수" 원칙 폐기 — 관찰 기간과 오픈 시점이 겹침. **오픈 전 선제 구축 + 부하 테스트 기반 튜닝**으로 전환
+  - Phase 2 를 **2a/2b/2c/2d/2e** 로 쪼갬:
+    - 2a (부하 무관 선행) — httpx 싱글턴, ai_summary 싱글턴 우회 정상화, query_rewriter async 전환 (~2일)
+    - 2b (Gateway 본체) — llm_gateway.py, 호출부 이식, Settings GUI, 롤백 플래그 (~3~5일)
+    - 2c (부하 테스트) — **용도 분리 신설**: 개발 PC 스모크(버그 사냥) + 회사 VM 실 로드(숫자 튜닝)
+    - 2d (대시보드 Gateway 2차 그리드)
+    - 2e (오픈 후 안정화, 롤백 플래그 제거)
+  - L2 총 항목 8 → 13 (부하 테스트 3건 + 안정화 1건 + 2a 3건 추가, 2b 내부 정리)
+  - L2 지표 의미 재정의: "착수 판단용 트리거" → "오픈 후 상시 모니터링 경계선" (초기값은 2c 실측으로 갱신)
+  - L3 (vLLM) 은 여전히 보류 — Ollama+L2 튜닝으로 100명/동시 10~15명 감당 가능 전제. 200+ 동시 또는 L2 튜닝 후 지표 지속 초과 시에만 착수
+  - 성공 기준 섹션을 L1 달성 표시 + L2 착수/완료 기준 재작성 + 오픈 후 운영 기준 신설
+  - 주차별 타임라인 표 추가 (Phase 2 본문 상단)
