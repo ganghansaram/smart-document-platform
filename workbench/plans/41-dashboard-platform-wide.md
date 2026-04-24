@@ -1,6 +1,6 @@
 # Plan-41: 대시보드 플랫폼 전체 관점 재설계
 
-> 작성일 2026-04-24 · 상태: **진행 중** (Step 1~8/12 완료 — 전 서브시스템 계측 활성화) · 담당: Claude (/plan-execute)
+> 작성일 2026-04-24 · 상태: **진행 중** (Step 1~9/12 완료 — 대시보드 API 확장 완료) · 담당: Claude (/plan-execute)
 > 의존: [Plan-42 사용자 프로필 확장](./42-user-profile-extension.md) — 머지 완료 (23c7965)
 
 ## 진행 상태
@@ -15,7 +15,7 @@
 | 6 · `seed_demo_data` 서브시스템 이벤트 확장 | ✅ | (step6 commit) | Translator/Verify/Notebook 이벤트 + 샘플 사용자 6명(testbot/emp001~005), 30일 2,377 이벤트 생성 |
 | 7 · `analytics.js` `initAnalytics(subsystem)` 확장 | ✅ | (step7 commit) | IIFE `_subsystem` 캡슐화, heartbeat/page-view body 에 포함, trackPageView(url, subsystem) 2번째 인자 옵셔널 |
 | 8 · 전 서브시스템 HTML analytics 로드 + initAnalytics(subsystem) | ✅ | (step8 commit) | 6페이지 (index/admin/translator/compare/launcher/login) 태그 통일: explorer/admin/translator/verify/launcher/login |
-| 9 · `/api/analytics/dashboard` 응답 확장 | ⏳ | — | — |
+| 9 · `/api/analytics/dashboard` 응답 확장 | ✅ | (step9 commit) | by_subsystem / top_users (Plan-42 name JOIN) / recent_failures / health 4필드 추가. seed_demo_data 보강 (오늘 포함 + 비-Explorer visits) |
 | 10 · 대시보드 UI (타일·활발한 사용자·실패 피드·건강 뱃지) | ⏳ | — | — |
 | 11 · CSS (tokens 변수 준수, 다크모드) | ⏳ | — | — |
 | 12 · 최종 검증 | ⏳ | — | — |

@@ -2,6 +2,7 @@
 Analytics service -- SQLite event storage + in-memory active users
 """
 import json
+import logging
 import os
 import random
 import sqlite3
@@ -12,6 +13,8 @@ from typing import Dict, List, Optional
 from fastapi import Request
 
 import config
+
+logger = logging.getLogger(__name__)
 
 _db_path = config.ANALYTICS_DB_PATH
 
@@ -222,6 +225,132 @@ def get_top_pages(limit: int = 10) -> List[dict]:
             GROUP BY url ORDER BY cnt DESC LIMIT ?
         """, (limit,)).fetchall()
         return [{"url": r["url"], "count": r["cnt"]} for r in rows]
+    finally:
+        conn.close()
+
+
+# -- Query: Subsystem stats (Plan-41) ------------------------------------------
+
+_SUBSYSTEMS = ("explorer", "translator", "verify", "notebook")
+
+# 각 서브시스템 타일에 노출할 핵심 지표 정의 (event_type → 라벨)
+_SUBSYSTEM_METRICS = {
+    "explorer":   [("page_view", "문서 열람"), ("chat", "챗봇")],
+    "translator": [("translate", "번역"), ("summarize", "요약")],
+    "verify":     [("compare", "비교"), ("upload", "업로드")],
+    "notebook":   [("chat", "Q&A"), ("summarize", "요약")],
+}
+
+
+def get_subsystem_stats(days: int = 14) -> dict:
+    """서브시스템별 오늘/14일 세션/지표/실패/추이 반환. 대시보드 타일용."""
+    conn = _get_conn()
+    try:
+        result = {}
+        for sub in _SUBSYSTEMS:
+            # 오늘 세션 수 (IP 유니크)
+            today_sessions = conn.execute(
+                "SELECT COUNT(DISTINCT ip) AS cnt FROM events "
+                "WHERE subsystem=? AND event_type='visit' "
+                "AND date(timestamp)=date('now','localtime')",
+                (sub,)
+            ).fetchone()["cnt"] or 0
+
+            # 지표 카운트 (오늘 기준)
+            metrics = {}
+            for event_type, label in _SUBSYSTEM_METRICS.get(sub, []):
+                cnt = conn.execute(
+                    "SELECT COUNT(*) AS cnt FROM events "
+                    "WHERE subsystem=? AND event_type=? "
+                    "AND date(timestamp)=date('now','localtime')",
+                    (sub, event_type)
+                ).fetchone()["cnt"] or 0
+                metrics[event_type] = {"label": label, "count": cnt}
+
+            # 오늘 실패 건수
+            failures_today = conn.execute(
+                "SELECT COUNT(*) AS cnt FROM events "
+                "WHERE subsystem=? AND status='error' "
+                "AND date(timestamp)=date('now','localtime')",
+                (sub,)
+            ).fetchone()["cnt"] or 0
+
+            # 14일 추이 (세션 수 기준)
+            trend = conn.execute("""
+                SELECT date(timestamp) AS day, COUNT(DISTINCT ip) AS cnt
+                FROM events
+                WHERE subsystem=? AND event_type='visit'
+                  AND timestamp >= datetime('now','localtime',?)
+                GROUP BY day ORDER BY day
+            """, (sub, f"-{days} days")).fetchall()
+
+            result[sub] = {
+                "today_sessions": today_sessions,
+                "metrics": metrics,
+                "failures_today": failures_today,
+                "trend": [{"day": r["day"], "count": r["cnt"]} for r in trend],
+            }
+        return result
+    finally:
+        conn.close()
+
+
+# -- Query: Top users (Plan-41) ------------------------------------------------
+
+def get_top_users(days: int = 7, limit: int = 10) -> List[dict]:
+    """활발한 사용자 TOP. users 테이블 name JOIN (Plan-42).
+    name 이 없으면 username 단독 표시."""
+    conn = _get_conn()
+    try:
+        # Events DB 와 Auth DB 가 동일 파일이면 JOIN, 다르면 name 없이 반환.
+        try:
+            conn.execute(f"ATTACH DATABASE '{config.AUTH_DB_PATH}' AS auth_db")
+            rows = conn.execute("""
+                SELECT e.username, u.name, COUNT(*) AS cnt
+                FROM events e LEFT JOIN auth_db.users u ON u.username = e.username
+                WHERE e.username IS NOT NULL
+                  AND e.timestamp >= datetime('now','localtime',?)
+                GROUP BY e.username ORDER BY cnt DESC LIMIT ?
+            """, (f"-{days} days", limit)).fetchall()
+            result = [
+                {"username": r["username"], "name": r["name"], "count": r["cnt"]}
+                for r in rows
+            ]
+            conn.execute("DETACH DATABASE auth_db")
+            return result
+        except Exception as e:
+            # JOIN 실패 시 username 단독 폴백 (auth DB 경로 불일치·잠금·권한 등)
+            logger.warning("top_users: auth_db ATTACH JOIN 실패, username 단독 폴백: %s", e)
+            rows = conn.execute("""
+                SELECT username, COUNT(*) AS cnt FROM events
+                WHERE username IS NOT NULL
+                  AND timestamp >= datetime('now','localtime',?)
+                GROUP BY username ORDER BY cnt DESC LIMIT ?
+            """, (f"-{days} days", limit)).fetchall()
+            return [{"username": r["username"], "name": None, "count": r["cnt"]}
+                    for r in rows]
+    finally:
+        conn.close()
+
+
+# -- Query: Recent failures (Plan-41) ------------------------------------------
+
+def get_recent_failures(limit: int = 20) -> List[dict]:
+    """최근 실패 이벤트 (status='error'). 대시보드 실패 피드용."""
+    conn = _get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT timestamp, event_type, subsystem, username, metadata
+            FROM events WHERE status='error'
+            ORDER BY timestamp DESC LIMIT ?
+        """, (limit,)).fetchall()
+        return [{
+            "timestamp": r["timestamp"],
+            "event_type": r["event_type"],
+            "subsystem": r["subsystem"],
+            "username": r["username"],
+            "metadata": json.loads(r["metadata"]) if r["metadata"] else None,
+        } for r in rows]
     finally:
         conn.close()
 
@@ -440,7 +569,8 @@ def seed_demo_data(days: int = 30):
             return f"10.0.{random.randint(1,10)}.{random.randint(1,254)}"
 
         rows = []
-        for d in range(days, 0, -1):
+        # days-1 ~ 0 — 오늘(d=0) 포함, 대시보드 타일 "오늘 세션" 미리보기용
+        for d in range(days - 1, -1, -1):
             day = now - timedelta(days=d)
             day_str = day.strftime("%Y-%m-%d")
             is_weekday = day.weekday() < 5
@@ -468,6 +598,12 @@ def seed_demo_data(days: int = 30):
                 rows.append((_ts(day_str), "chat", _ip(), None,
                              _pick_user(), "explorer", None))
 
+            # ── Translator visits (heartbeat 모의) ──
+            n_trans_visits = random.randint(3, 8) if is_weekday else random.randint(1, 4)
+            for _ in range(n_trans_visits):
+                rows.append((_ts(day_str), "visit", _ip(), None,
+                             _pick_user(), "translator", None))
+
             # ── Translator upload + translate + summarize ──
             n_uploads = random.randint(1, 3) if is_weekday else random.randint(0, 1)
             for _ in range(n_uploads):
@@ -490,6 +626,12 @@ def seed_demo_data(days: int = 30):
                              json.dumps({"doc_id": random.choice(sample_docs),
                                          "mode": "generate"}),
                              _pick_user(), "translator", "started"))
+
+            # ── Verify visits (heartbeat 모의) ──
+            n_verify_visits = random.randint(1, 4) if is_weekday else random.randint(0, 2)
+            for _ in range(n_verify_visits):
+                rows.append((_ts(day_str), "visit", _ip(), None,
+                             _pick_user(), "verify", None))
 
             # ── Verify upload + compare ──
             for _ in range(random.randint(0, 2) if is_weekday else 0):
@@ -517,6 +659,12 @@ def seed_demo_data(days: int = 30):
                     })
                 rows.append((_ts(day_str), "compare", _ip(),
                              json.dumps(meta), _pick_user(), "verify", status))
+
+            # ── Notebook visits (heartbeat 모의) ──
+            n_nb_visits = random.randint(1, 3) if is_weekday else random.randint(0, 1)
+            for _ in range(n_nb_visits):
+                rows.append((_ts(day_str), "visit", _ip(), None,
+                             _pick_user(), "notebook", None))
 
             # ── Notebook Q&A ──
             for _ in range(random.randint(0, 5) if is_weekday else random.randint(0, 2)):

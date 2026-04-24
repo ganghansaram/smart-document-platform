@@ -13,6 +13,7 @@ from services.analytics import (
     get_total_visitors, get_daily_visitors, get_top_pages,
     get_top_searches, get_chat_stats, get_daily_chat,
     get_feedback_summary, get_recent_negative, get_daily_feedback,
+    get_subsystem_stats, get_top_users, get_recent_failures,
     reset_all, seed_demo_data,
 )
 
@@ -65,8 +66,16 @@ def active_user_list(user: dict = Depends(require_admin)):
 
 
 @router.get("/analytics/dashboard")
-def dashboard(user: dict = Depends(require_admin)):
+async def dashboard(user: dict = Depends(require_admin)):
+    # Plan-41: health 는 기존 /api/health 로직 재사용 (중복 구현 회피)
+    from main import health_check as _health_check
+    try:
+        health_resp = await _health_check()
+    except Exception:
+        health_resp = {"status": "unknown", "checks": {}}
+
     return {
+        # 기존 필드 (하위 호환)
         "active_users": get_active_user_count(),
         "today_visitors": get_today_visitors(),
         "week_visitors": get_week_visitors(),
@@ -81,6 +90,11 @@ def dashboard(user: dict = Depends(require_admin)):
             "recent_negative": get_recent_negative(10),
             "daily": get_daily_feedback(14),
         },
+        # Plan-41 신규 필드
+        "by_subsystem": get_subsystem_stats(14),
+        "top_users": get_top_users(days=7, limit=10),
+        "recent_failures": get_recent_failures(20),
+        "health": health_resp,
     }
 
 
