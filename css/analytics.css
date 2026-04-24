@@ -980,3 +980,169 @@ body[data-theme="dark"] .ad-modal-overlay {
         justify-content: space-between;
     }
 }
+
+/* ============================================================
+   Plan-44 Phase 5 — AI 동시성 상태 섹션 + L2 트리거 배너
+   ============================================================ */
+
+.ad-ai-status {
+    background: var(--ad-bg-card);
+    border: 1px solid var(--ad-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.ad-ai-status .ad-section-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.ad-ai-status .ad-section-hint {
+    color: var(--ad-text-secondary);
+    font-size: 0.8rem;
+    font-weight: normal;
+}
+
+#ad-ai-overall {
+    margin-left: auto;
+}
+
+.ad-ai-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+}
+
+.ad-ai-metric {
+    position: relative;
+    padding: var(--space-md);
+    border-left: 3px solid var(--ad-success);
+    background: color-mix(in oklab, var(--ad-success) 6%, transparent);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ad-ai-metric[data-state="warning"] {
+    border-left-color: var(--ad-warning);
+    background: color-mix(in oklab, var(--ad-warning) 9%, transparent);
+}
+
+.ad-ai-metric[data-state="fired"] {
+    border-left-color: var(--ad-danger);
+    background: color-mix(in oklab, var(--ad-danger) 11%, transparent);
+}
+
+.ad-ai-metric .badge {
+    align-self: flex-start;
+    margin-top: 4px;
+}
+
+.ad-ai-metric-label {
+    font-size: 0.82rem;
+    color: var(--ad-text-secondary);
+}
+
+.ad-ai-metric-value {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--ad-text);
+    line-height: 1.1;
+}
+
+.ad-ai-metric-unit {
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--ad-text-secondary);
+    margin-left: 3px;
+}
+
+.ad-ai-metric-threshold {
+    font-size: 0.74rem;
+    color: var(--ad-text-secondary);
+}
+
+.ad-ai-footer {
+    margin-top: var(--space-md);
+    padding-top: var(--space-sm);
+    border-top: 1px dashed var(--ad-border);
+    font-size: 0.85rem;
+    color: var(--ad-text-secondary);
+}
+
+.ad-ai-trigger-label {
+    color: var(--ad-text);
+    font-weight: 600;
+}
+
+.ad-ai-trigger-hint {
+    color: color-mix(in oklab, var(--ad-text-secondary) 80%, transparent);
+}
+
+/* --- L2 트리거 배너 ----------------------------------------- */
+
+.ad-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+    border: 1px solid var(--ad-warning);
+    background: color-mix(in oklab, var(--ad-warning) 14%, var(--ad-bg-card));
+}
+
+.ad-alert-warning .ad-alert-icon {
+    color: var(--ad-warning);
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+    line-height: 1;
+}
+
+.ad-alert-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ad-alert-title {
+    color: var(--ad-text);
+    font-size: 0.95rem;
+}
+
+.ad-alert-desc {
+    color: var(--ad-text-secondary);
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+
+.ad-alert-actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-shrink: 0;
+    align-items: center;
+}
+
+/* --- 반응형 (Plan-41 step 11 기준) -------------------------- */
+
+@media (max-width: 960px) {
+    .ad-ai-metrics { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px) {
+    .ad-ai-metrics { grid-template-columns: 1fr; }
+    .ad-alert {
+        flex-direction: column;
+    }
+    .ad-alert-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}

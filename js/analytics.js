@@ -165,6 +165,9 @@
                 _formatUpdateTime(new Date()) + ' 업데이트</span>';
         html += '</div>';
 
+        // 0-a. L2 트리거 배너 (Plan-44 Phase 5 — 조건부 노출)
+        html += _renderL2Banner(data.ai_status);
+
         // 1. Platform summary (플랫폼 전체 합산)
         html += '<div class="ad-summary">';
         var ipCount = (data.active_ips != null) ? data.active_ips : 0;
@@ -184,6 +187,9 @@
 
         // 2. System health badges (Plan-43: 상단 이동 — 운영 상태 최우선)
         html += _renderHealthBadges(data.health);
+
+        // 2-a. AI 동시성 상태 (Plan-44 Phase 5)
+        html += _renderAIStatus(data.ai_status);
 
         // 3. Subsystem tiles (Plan-41)
         html += _renderSubsystemTiles(data.by_subsystem);
@@ -703,5 +709,132 @@
         if (v === 'error' || v === 'unreachable') return 'ad-badge-error';
         return 'ad-badge-neutral';
     }
+
+    // -- AI 동시성 상태 (Plan-44 Phase 5) ------------------------------------
+
+    var _AI_METRIC_LABELS = {
+        p95_latency_ms:          { label: 'p95 응답 지연',    unit: 'ms' },
+        ollama_503_per_hour:     { label: '503 오류 / 시간',  unit: '건' },
+        peak_concurrent_users_1h:{ label: '피크 동접 (1h)',   unit: '명' },
+        active_streams:          { label: '활성 스트림',       unit: '개' }
+    };
+
+    function _metricState(value, limit) {
+        if (value >= limit) return 'fired';
+        if (value >= limit * 0.7) return 'warning';
+        return 'ok';
+    }
+
+    function _renderAIStatus(status) {
+        if (!status || !status.indicators) {
+            return ''; // 데이터 없으면 섹션 자체 비노출 (Plan-43 빈 섹션 숨김 원칙)
+        }
+        var ind = status.indicators;
+        var th  = (status.thresholds && status.thresholds.l2) || {};
+        var trig = (status.triggers && status.triggers.l2_status) || 'normal';
+        var overallClass = trig === 'fired' ? 'badge-error'
+                         : trig === 'warning' ? 'badge-warning'
+                         : 'badge-success';
+        var overallLabel = trig === 'fired' ? '발동'
+                         : trig === 'warning' ? '주의'
+                         : '정상';
+
+        var html = '<section class="ad-ai-status" role="region" aria-labelledby="ad-ai-title">';
+        html += '<div class="ad-section-title" id="ad-ai-title">';
+        html += 'AI 동시성 상태';
+        html += '<span class="ad-section-hint">(Ollama · 30초 갱신)</span>';
+        html += '<span class="badge ' + overallClass + '" id="ad-ai-overall" aria-live="polite">' + overallLabel + '</span>';
+        html += '</div>';
+
+        html += '<div class="ad-ai-metrics">';
+        Object.keys(_AI_METRIC_LABELS).forEach(function(key) {
+            var meta = _AI_METRIC_LABELS[key];
+            var value = ind[key] == null ? 0 : ind[key];
+            var limit = th[key];
+            var state = (limit != null) ? _metricState(value, limit) : 'ok';
+            var stateClass = state === 'fired' ? 'badge-error'
+                           : state === 'warning' ? 'badge-warning'
+                           : 'badge-success';
+            var stateLabel = state === 'fired' ? '발동'
+                           : state === 'warning' ? '주의'
+                           : '정상';
+            var threshold = (limit != null) ? ('임계 ' + limit + ' ' + meta.unit) : '';
+            // p95_latency 는 초 단위로 표기하면 읽기 쉬움
+            var displayValue = value;
+            var displayUnit = meta.unit;
+            if (key === 'p95_latency_ms' && value >= 1000) {
+                displayValue = (value / 1000).toFixed(2);
+                displayUnit = 's';
+            }
+            html += '<div class="ad-ai-metric" data-state="' + state + '">';
+            html += '<div class="ad-ai-metric-label">' + _escHtml(meta.label) + '</div>';
+            html += '<div class="ad-ai-metric-value">' + _escHtml(String(displayValue)) +
+                    '<span class="ad-ai-metric-unit">' + _escHtml(displayUnit) + '</span></div>';
+            if (threshold) {
+                html += '<div class="ad-ai-metric-threshold">' + _escHtml(threshold) + '</div>';
+            }
+            html += '<span class="badge ' + stateClass + '" aria-label="' + stateLabel + '">' + stateLabel + '</span>';
+            html += '</div>';
+        });
+        html += '</div>';
+
+        // 하단 요약 — Phase 2 착수 조건
+        var triggerText = (trig === 'fired')
+            ? '충족 — Phase 2(LLM Gateway) 착수 권장'
+            : (trig === 'warning')
+                ? '근접 — 추세 관찰 필요'
+                : '미충족 (안정 운영 중)';
+        html += '<div class="ad-ai-footer">';
+        html += '<span class="ad-ai-trigger-label">Phase 2 착수 조건:</span> ';
+        html += '<span class="ad-ai-trigger-status">' + _escHtml(triggerText) + '</span>';
+        if (status.last_updated) {
+            html += '<span class="ad-ai-trigger-hint"> · 갱신 ' + _escHtml(status.last_updated) + '</span>';
+        }
+        html += '</div>';
+        html += '</section>';
+        return html;
+    }
+
+    // -- L2 트리거 배너 (최상단, dismiss 24h) --------------------------------
+
+    var _AD_BANNER_KEY = 'ad-ai-banner-dismissed';
+
+    function _renderL2Banner(status) {
+        if (!status || !status.triggers || status.triggers.l2_status !== 'fired') {
+            return '';
+        }
+        // auth-admin 가드는 서버 측 /api/analytics/dashboard 에 require_admin 이 이미
+        // 있고, 이 대시보드 자체가 관리자 전용 화면이므로 추가 가드 불필요
+        // dismiss 유효기간 내면 렌더 생략
+        try {
+            var until = parseInt(localStorage.getItem(_AD_BANNER_KEY) || '0', 10);
+            if (until && Date.now() < until) return '';
+        } catch (e) {}
+
+        var html = '<div class="ad-alert ad-alert-warning" role="alert" aria-live="assertive" data-banner="ai-l2-trigger">';
+        html += '<span class="ad-alert-icon" aria-hidden="true">⚠</span>';
+        html += '<div class="ad-alert-body">';
+        html += '<strong class="ad-alert-title">AI 동시성 부담 증가</strong>';
+        html += '<span class="ad-alert-desc">Phase 2(LLM Gateway) 착수 조건이 충족되었습니다. 계획서 44 를 확인하세요.</span>';
+        html += '</div>';
+        html += '<div class="ad-alert-actions">';
+        html += '<a class="btn btn-sm btn-secondary" href="#ad-ai-title">상세 지표로 이동</a>';
+        html += '<button class="btn btn-sm btn-ghost" type="button" data-dismiss-banner aria-label="24시간 닫기">24시간 닫기</button>';
+        html += '</div>';
+        html += '</div>';
+        return html;
+    }
+
+    // Dismiss 클릭 바인딩 — 대시보드 컨테이너에 event delegation
+    document.addEventListener('click', function(e) {
+        var target = e.target;
+        if (target && target.matches && target.matches('[data-dismiss-banner]')) {
+            try {
+                localStorage.setItem(_AD_BANNER_KEY, String(Date.now() + 24 * 3600 * 1000));
+            } catch (err) {}
+            var banner = target.closest('.ad-alert');
+            if (banner) banner.remove();
+        }
+    });
 
 })();

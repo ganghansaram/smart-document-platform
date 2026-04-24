@@ -98,7 +98,17 @@ async def dashboard(user: dict = Depends(require_admin)):
         "top_users": get_top_users(days=7, limit=10),
         "recent_failures": get_recent_failures(20),
         "health": health_resp,
+        # Plan-44 Phase 5: AI 동시성 상태 (4 지표 + L2/L3 트리거 판정)
+        "ai_status": _safe_ai_status(),
     }
+
+
+def _safe_ai_status():
+    try:
+        from services.ai_metrics import get_ai_status
+        return get_ai_status()
+    except Exception:
+        return None
 
 
 @router.delete("/analytics/reset")
