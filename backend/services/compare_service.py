@@ -789,9 +789,14 @@ def _build_prompt(changes: list[dict]) -> str:
 async def _call_ollama_classify(changes: list[dict]) -> list[dict]:
     """Ollama 구조화 출력으로 변경 구간 분류.
 
-    503/타임아웃 재시도는 call_with_retry_async 가 처리 (최대 3회, 지수 백오프).
+    Plan-44 P2a/P2b:
+    - 공유 httpx 클라이언트 재사용 (_get_shared_client)
+    - Gateway Semaphore 획득 (format 파라미터가 필요해 llm_generate 로 직교환 불가 → acquire_slot)
+    - 503/타임아웃 재시도는 call_with_retry_async (최대 3회, 지수 백오프)
     """
     from services.llm_retry import call_with_retry_async
+    from services.llm_provider import _get_shared_client
+    from services.llm_gateway import acquire_slot, release_slot
 
     model = _get_model()
     system = _get_system_prompt()
@@ -813,16 +818,20 @@ async def _call_ollama_classify(changes: list[dict]) -> list[dict]:
     }
 
     async def _do():
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{config.OLLAMA_URL}/api/generate",
-                json=payload,
-                timeout=float(timeout),
-            )
-            resp.raise_for_status()
-            return resp.json().get("response", "")
+        client = _get_shared_client()
+        resp = await client.post(
+            f"{config.OLLAMA_URL}/api/generate",
+            json=payload,
+            timeout=float(timeout),
+        )
+        resp.raise_for_status()
+        return resp.json().get("response", "")
 
-    raw = await call_with_retry_async(_do, purpose="classify")
+    sem = await acquire_slot("classify")
+    try:
+        raw = await call_with_retry_async(_do, purpose="classify")
+    finally:
+        release_slot(sem)
     parsed = json.loads(raw)
     if not isinstance(parsed, list):
         raise ValueError("LLM 응답이 배열 형식이 아닙니다")

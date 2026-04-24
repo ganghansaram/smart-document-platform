@@ -146,6 +146,21 @@ async def llm_stream(
         _release(sem)
 
 
+async def acquire_slot(purpose: str = "chat") -> Optional[asyncio.Semaphore]:
+    """외부 호출자용 — provider.generate 우회가 필요한 경우(Ollama structured output 등).
+
+    반환값: Flag OFF 시 None, ON 시 Semaphore. 반드시 release_slot(sem) 호출.
+    """
+    if not _enabled():
+        return None
+    return await _acquire(purpose)
+
+
+def release_slot(sem: Optional[asyncio.Semaphore]) -> None:
+    if sem is not None:
+        _release(sem)
+
+
 async def shutdown() -> None:
     """main.py lifespan shutdown 훅 — 현재는 no-op.
 

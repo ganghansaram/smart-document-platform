@@ -227,12 +227,17 @@ def _normalize_mindmap_node(node: dict, depth: int = 0, max_depth: int = 2) -> d
 
 async def generate_mindmap_tree(
     text: str,
-    provider=None,
+    model_override: Optional[str] = None,
     progress_callback=None,
 ) -> dict | None:
-    """LLM으로 마인드맵 트리 생성. 실패 시 None (폴백은 호출자가 처리)."""
-    if provider is None:
-        provider = get_provider(model_override=getattr(config, "TRANSLATOR_MODEL", ""))
+    """LLM으로 마인드맵 트리 생성. 실패 시 None (폴백은 호출자가 처리).
+
+    Plan-44 Phase 2b: Gateway 경유 (`llm_generate`, purpose='summary').
+    model_override 가 None 이면 config.TRANSLATOR_MODEL 사용.
+    """
+    from services.llm_gateway import llm_generate
+    if model_override is None:
+        model_override = getattr(config, "TRANSLATOR_MODEL", "")
 
     if progress_callback:
         progress_callback("마인드맵 구조 생성 중...")
@@ -241,8 +246,10 @@ async def generate_mindmap_tree(
     input_text = text[:6000] if len(text) > 6000 else text
 
     try:
-        resp = await provider.generate(
-            input_text, system=_MINDMAP_PROMPT_SYSTEM, temperature=0.2, timeout=90
+        resp = await llm_generate(
+            input_text, system=_MINDMAP_PROMPT_SYSTEM,
+            purpose="summary", model_override=model_override,
+            temperature=0.2, timeout=90,
         )
         tree = _parse_mindmap_response(resp)
         if tree and tree.get("children"):
@@ -282,9 +289,9 @@ async def generate_summary(
 
     text = _strip_frontmatter(full_text).strip()
 
-    # 요약 전용 모델이 있으면 해당 모델 provider, 없으면 기본 싱글턴. httpx 는 공유 pool 재사용.
-    provider = get_provider(model_override=getattr(config, "TRANSLATOR_MODEL", ""))
-    model_name = provider.model_name
+    # 요약 전용 모델이 있으면 해당 모델, 없으면 기본. Plan-44 P2b: Gateway 경유.
+    model_override = getattr(config, "TRANSLATOR_MODEL", "")
+    model_name = get_provider(model_override=model_override).model_name  # 로깅용
 
     # threshold: config에 설정값이 있으면 사용, 없으면 기본값
     threshold = getattr(config, "TRANSLATOR_AI_SUMMARY_THRESHOLD", 0) or _DEFAULT_SUMMARY_THRESHOLD
@@ -293,17 +300,18 @@ async def generate_summary(
 
     if len(text) <= threshold:
         # ── 단일 패스 (컨텍스트에 들어가는 문서) ──
-        result = await _generate_direct(text, provider, progress_callback)
+        result = await _generate_direct(text, model_override, progress_callback)
         result["strategy"] = "direct"
         result["sections"] = []
     else:
         # ── 계층적 요약 (컨텍스트 초과 문서) ──
-        result = await _generate_hierarchical(text, provider, progress_callback)
+        result = await _generate_hierarchical(text, model_override, progress_callback)
         result["strategy"] = "hierarchical"
 
-    # ── 마인드맵 트리 생성 (요약 완료 후, 동일 provider 재사용) ──
-    mindmap_tree = await generate_mindmap_tree(text, provider=provider,
-                                                progress_callback=progress_callback)
+    # ── 마인드맵 트리 생성 ──
+    mindmap_tree = await generate_mindmap_tree(
+        text, model_override=model_override, progress_callback=progress_callback,
+    )
 
     elapsed = time.monotonic() - start_time
 
@@ -321,13 +329,17 @@ async def generate_summary(
     }
 
 
-async def _generate_direct(text: str, provider, progress_callback=None) -> dict:
+async def _generate_direct(text: str, model_override: Optional[str],
+                           progress_callback=None) -> dict:
     """단일 패스: 전문 → LLM 1회 → 요약 + 키워드 동시."""
+    from services.llm_gateway import llm_generate
     if progress_callback:
         progress_callback("단일 패스 요약 생성 중...")
 
-    response = await provider.generate(
-        text, system=_DIRECT_PROMPT_SYSTEM, temperature=0.3, timeout=120
+    response = await llm_generate(
+        text, system=_DIRECT_PROMPT_SYSTEM,
+        purpose="summary", model_override=model_override,
+        temperature=0.3, timeout=120,
     )
     parsed = _parse_direct_response(response)
     return {
@@ -336,8 +348,10 @@ async def _generate_direct(text: str, provider, progress_callback=None) -> dict:
     }
 
 
-async def _generate_hierarchical(text: str, provider, progress_callback=None) -> dict:
+async def _generate_hierarchical(text: str, model_override: Optional[str],
+                                  progress_callback=None) -> dict:
     """계층적 요약: 섹션 분할 → 섹션별 요약 → 통합 → 키워드."""
+    from services.llm_gateway import llm_generate
     if progress_callback:
         progress_callback("섹션 분할 중...")
 
@@ -354,8 +368,10 @@ async def _generate_hierarchical(text: str, provider, progress_callback=None) ->
         prompt = f"## 섹션 제목: {sec['heading']}\n\n{content}"
 
         try:
-            resp = await provider.generate(
-                prompt, system=_SECTION_PROMPT_SYSTEM, temperature=0.3, timeout=90
+            resp = await llm_generate(
+                prompt, system=_SECTION_PROMPT_SYSTEM,
+                purpose="summary", model_override=model_override,
+                temperature=0.3, timeout=90,
             )
             section_results.append({
                 "heading": sec["heading"],
@@ -377,8 +393,10 @@ async def _generate_hierarchical(text: str, provider, progress_callback=None) ->
     summaries_text = "\n\n".join(
         f"## {s['heading']}\n{s['summary']}" for s in section_results
     )
-    overall = await provider.generate(
-        summaries_text, system=_MERGE_PROMPT_SYSTEM, temperature=0.3, timeout=90
+    overall = await llm_generate(
+        summaries_text, system=_MERGE_PROMPT_SYSTEM,
+        purpose="summary", model_override=model_override,
+        temperature=0.3, timeout=90,
     )
 
     # 3. 키워드 추출
@@ -386,8 +404,10 @@ async def _generate_hierarchical(text: str, provider, progress_callback=None) ->
         progress_callback("키워드 추출 중...")
 
     kw_text = text[:6000]
-    kw_resp = await provider.generate(
-        kw_text, system=_KEYWORD_PROMPT_SYSTEM, temperature=0.1, timeout=60
+    kw_resp = await llm_generate(
+        kw_text, system=_KEYWORD_PROMPT_SYSTEM,
+        purpose="summary", model_override=model_override,
+        temperature=0.1, timeout=60,
     )
     keywords = _parse_keywords_response(kw_resp)
 

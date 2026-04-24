@@ -171,11 +171,15 @@ async def ask_document_stream(
     # 4. 프롬프트 구성
     prompt = _build_qa_prompt(question, context, history)
 
-    # 5. LLM 스트리밍 호출
-    provider = get_provider()
-    model_name = provider.model_name
+    # 5. LLM 스트리밍 호출 (Plan-44 P2b: Gateway 경유 — qa_stream 전용 슬롯)
+    from services.llm_gateway import llm_stream
+    model_name = get_provider().model_name  # 로깅용
 
-    token_iter = provider.generate_stream(prompt, system=_QA_SYSTEM_PROMPT, temperature=0.3, timeout=180)
+    token_iter = llm_stream(
+        prompt, system=_QA_SYSTEM_PROMPT,
+        purpose="qa_stream",
+        temperature=0.3, timeout=180,
+    )
 
     # 6. 대화 기록 저장 (사용자 메시지 먼저, 어시스턴트는 스트리밍 완료 후 호출자가 저장)
     session.add_message("user", question)
