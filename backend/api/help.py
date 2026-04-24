@@ -16,22 +16,14 @@ router = APIRouter(prefix="/help", tags=["help"])
 # 프로젝트 루트 / data / help
 _HELP_DIR = Path(__file__).parent.parent.parent / "data" / "help"
 
-# 캐시 (런타임 재로드 없음 — 파일 수정 시 서버 재시작 필요)
-_cache: dict[str, dict] = {}
-
 
 def _load(name: str) -> dict:
-    if name in _cache:
-        return _cache[name]
     fp = _HELP_DIR / f"{name}.json"
     if not fp.exists():
         raise HTTPException(status_code=404, detail=f"help '{name}' not found")
     try:
         with open(fp, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        _cache[name] = data
-        logger.info("help 콘텐츠 로드: %s (version=%s)", name, data.get("version"))
-        return data
+            return json.load(f)
     except json.JSONDecodeError as e:
         logger.exception("help JSON 파싱 실패: %s", name)
         raise HTTPException(status_code=500, detail=f"help '{name}' parse error: {e}")
