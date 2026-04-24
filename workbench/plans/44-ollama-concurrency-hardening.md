@@ -42,10 +42,10 @@
 > 100명 중 10%만 업무 시간대에 동시 사용해도 10명 동접 → 기존 "트리거 발동 후 착수" 원칙으론 오픈 후 대응 불가.
 > **관찰 → 착수 → 튜닝** 순서가 불가능하므로, **오픈 전 선제 구축 + 부하 테스트 기반 튜닝** 으로 전환.
 
-**Phase 2a: 부하 무관 선행 개선 (Week 1 전반, ~2일)** 🟨 (0 / 3)
-- [ ] 2a-1. `llm_provider.py` httpx.AsyncClient 싱글턴화 + `Limits(max_connections=50, max_keepalive_connections=20)` + lifespan `aclose()`
-- [ ] 2a-2. `ai_summary.py` 의 `OllamaProvider()` 직접 생성 제거 → `llm_provider.get_provider(model_override)` 확장해 싱글턴 경유
-- [ ] 2a-3. `query_rewriter.py` 동기 `requests.post` → httpx async 전환 (async 체인 이벤트 루프 블로킹 방지)
+**Phase 2a: 부하 무관 선행 개선 (Week 1 전반, ~2일)** ✅ (3 / 3)
+- [x] 2a-1. `llm_provider.py` httpx.AsyncClient 싱글턴화 (`_get_shared_client` + `_shared_client` 모듈 싱글턴 + `Limits(max_connections=50, max_keepalive_connections=20)`) + `aclose_shared_client()` main.py lifespan shutdown 훅 + `/api/health` 도 공유 client 경유(code-reviewer 지적 반영)
+- [x] 2a-2. `ai_summary.py` 2곳의 `OllamaProvider()` 직접 생성 제거 → `get_provider(model_override=...)` 호출로 통일. `get_provider` 시그니처 확장 (`model_override: Optional[str]`, 빈 문자열·공백 자동 정규화로 호출자 부담 제거)
+- [x] 2a-3. **보류** — `query_rewriter.rewrite_query` 는 `chat.py:205` 에서 이미 `asyncio.to_thread` 로 스레드 풀 실행 중. 이벤트 루프 블로킹 없음 → async 전환 실익 없음. 보류 근거 문서화로 완료.
 
 **Phase 2b: LLM Gateway 본체 (Week 1 후반, ~3~5일)** 🟨 (0 / 5)
 - [ ] 2b-1. `services/llm_gateway.py` 신설 — 글로벌 Semaphore + 스트림 전용 슬롯 + 용도별 weight (chat=1 / translation=2 / summary=2 / qa_stream=1)
@@ -78,7 +78,7 @@
 | 레이어 | 진척 | 총 항목 | 상태 |
 |--------|------|---------|------|
 | L1 (즉시) | **17 / 17** | 17 | ✅ 전체 완료 (2026-04-24) |
-| L2 (사전 준비) | **0 / 13** | 13 | 🟨 100명 오픈 3주 내 착수 예정 |
+| L2 (사전 준비) | **3 / 13** | 13 | 🟨 Phase 2a ✅ 완료, Phase 2b 진행 예정 |
 | L3 (전환) | **0 / 3** | 3 | ⏸ 200+ 동시 또는 L2 튜닝 후 지표 지속 초과 시 |
 
 ---

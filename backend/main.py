@@ -44,6 +44,12 @@ async def lifespan(app):
     except (_asyncio.CancelledError, Exception):
         pass
     await _graceful_shutdown()
+    # Plan-44 Phase 2a-1: 공유 httpx 클라이언트 정리
+    try:
+        from services.llm_provider import aclose_shared_client
+        await aclose_shared_client()
+    except Exception as e:
+        logger.warning("LLM 공유 client aclose 실패 (무시): %s", e)
     logger.info("서버 종료 완료")
 
 
@@ -282,16 +288,15 @@ async def health_check():
     except Exception:
         checks["database"] = "error"
 
-    # Ollama 확인 (httpx 비동기 — 이벤트 루프 블로킹 방지)
-    # Plan-44 Phase 5: latency_ms 기록 + 최근 1시간 503 카운트 동반 노출
+    # Ollama 확인 — Plan-44 Phase 2a-1: 공유 httpx 클라이언트 재사용
     try:
-        import httpx
         import time as _t
+        from services.llm_provider import _get_shared_client
         t0 = _t.perf_counter()
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            resp = await client.get(f"{config.OLLAMA_URL}/api/tags")
-            checks["ollama"] = "ok" if resp.status_code == 200 else "unreachable"
-            checks["ollama_latency_ms"] = round((_t.perf_counter() - t0) * 1000, 1)
+        shared = _get_shared_client()
+        resp = await shared.get(f"{config.OLLAMA_URL}/api/tags", timeout=3.0)
+        checks["ollama"] = "ok" if resp.status_code == 200 else "unreachable"
+        checks["ollama_latency_ms"] = round((_t.perf_counter() - t0) * 1000, 1)
     except Exception:
         checks["ollama"] = "unreachable"
         checks["ollama_latency_ms"] = None

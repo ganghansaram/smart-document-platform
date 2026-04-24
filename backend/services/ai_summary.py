@@ -232,11 +232,7 @@ async def generate_mindmap_tree(
 ) -> dict | None:
     """LLM으로 마인드맵 트리 생성. 실패 시 None (폴백은 호출자가 처리)."""
     if provider is None:
-        provider = get_provider()
-        model_override = getattr(config, "TRANSLATOR_MODEL", "")
-        if model_override:
-            from services.llm_provider import OllamaProvider
-            provider = OllamaProvider(config.OLLAMA_URL, model_override)
+        provider = get_provider(model_override=getattr(config, "TRANSLATOR_MODEL", ""))
 
     if progress_callback:
         progress_callback("마인드맵 구조 생성 중...")
@@ -286,12 +282,8 @@ async def generate_summary(
 
     text = _strip_frontmatter(full_text).strip()
 
-    provider = get_provider()
-    # 요약 전용 모델이 설정되어 있으면 별도 Ollama 인스턴스 생성
-    model_name_override = getattr(config, "TRANSLATOR_MODEL", "")
-    if model_name_override:
-        from services.llm_provider import OllamaProvider
-        provider = OllamaProvider(config.OLLAMA_URL, model_name_override)
+    # 요약 전용 모델이 있으면 해당 모델 provider, 없으면 기본 싱글턴. httpx 는 공유 pool 재사용.
+    provider = get_provider(model_override=getattr(config, "TRANSLATOR_MODEL", ""))
     model_name = provider.model_name
 
     # threshold: config에 설정값이 있으면 사용, 없으면 기본값

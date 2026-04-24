@@ -16,6 +16,37 @@ import config
 logger = logging.getLogger(__name__)
 
 
+# ── 공유 httpx.AsyncClient (Plan-44 Phase 2a-1) ──
+# 매 LLM 호출마다 새 클라이언트를 만들면 TCP handshake 반복 → 연결 재사용 없음.
+# 싱글턴 + connection pool 로 10명 동시 접속 시 TCP 연결 수가 크게 감소.
+# main.py lifespan shutdown 에서 aclose_shared_client() 호출 필수.
+_shared_client: Optional[httpx.AsyncClient] = None
+
+
+def _get_shared_client() -> httpx.AsyncClient:
+    """공유 클라이언트 lazy init. 닫혔으면 재생성."""
+    global _shared_client
+    if _shared_client is None or _shared_client.is_closed:
+        _shared_client = httpx.AsyncClient(
+            limits=httpx.Limits(
+                max_connections=50,
+                max_keepalive_connections=20,
+            ),
+        )
+    return _shared_client
+
+
+async def aclose_shared_client() -> None:
+    """lifespan shutdown 훅 — 공유 클라이언트 정리."""
+    global _shared_client
+    if _shared_client is not None and not _shared_client.is_closed:
+        try:
+            await _shared_client.aclose()
+        except Exception as e:
+            logger.warning("llm_provider 공유 client aclose 실패: %s", e)
+    _shared_client = None
+
+
 class LLMProvider:
     """LLM 프로바이더 인터페이스"""
 
@@ -67,15 +98,15 @@ class OllamaProvider(LLMProvider):
         }
 
         async def _call():
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    f"{self.url}/api/chat",
-                    json=payload,
-                    timeout=timeout,
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                return data.get("message", {}).get("content", "")
+            client = _get_shared_client()
+            resp = await client.post(
+                f"{self.url}/api/chat",
+                json=payload,
+                timeout=timeout,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data.get("message", {}).get("content", "")
 
         return await call_with_retry_async(_call, purpose="chat")
 
@@ -100,38 +131,38 @@ class OllamaProvider(LLMProvider):
         # 스트리밍은 토큰 일부만 받은 후 재시도하면 의미 파손 → 503 만 감지해 즉시 변환
         mark_stream_start()
         try:
-            async with httpx.AsyncClient() as client:
-                async with client.stream(
-                    "POST",
-                    f"{self.url}/api/chat",
-                    json=payload,
-                    timeout=timeout,
-                ) as resp:
-                    if resp.status_code == 503:
-                        raise LLMQueueFullError(
-                            retry_after=_parse_retry_after(resp.headers)
-                        )
-                    resp.raise_for_status()
-                    async for line in resp.aiter_lines():
-                        if not line:
-                            continue
-                        try:
-                            chunk = json.loads(line)
-                            token = chunk.get("message", {}).get("content", "")
-                            if token:
-                                yield token
-                            if chunk.get("done"):
-                                break
-                        except json.JSONDecodeError:
-                            continue
+            client = _get_shared_client()
+            async with client.stream(
+                "POST",
+                f"{self.url}/api/chat",
+                json=payload,
+                timeout=timeout,
+            ) as resp:
+                if resp.status_code == 503:
+                    raise LLMQueueFullError(
+                        retry_after=_parse_retry_after(resp.headers)
+                    )
+                resp.raise_for_status()
+                async for line in resp.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        chunk = json.loads(line)
+                        token = chunk.get("message", {}).get("content", "")
+                        if token:
+                            yield token
+                        if chunk.get("done"):
+                            break
+                    except json.JSONDecodeError:
+                        continue
         finally:
             mark_stream_end()
 
     async def health_check(self) -> bool:
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(f"{self.url}/api/tags", timeout=5)
-                return resp.status_code == 200
+            client = _get_shared_client()
+            resp = await client.get(f"{self.url}/api/tags", timeout=5)
+            return resp.status_code == 200
         except Exception:
             return False
 
@@ -172,16 +203,16 @@ class OpenAICompatProvider(LLMProvider):
         }
 
         async def _call():
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    f"{self.base_url}/v1/chat/completions",
-                    headers=self._headers(),
-                    json=payload,
-                    timeout=timeout,
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                return data["choices"][0]["message"]["content"]
+            client = _get_shared_client()
+            resp = await client.post(
+                f"{self.base_url}/v1/chat/completions",
+                headers=self._headers(),
+                json=payload,
+                timeout=timeout,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
 
         return await call_with_retry_async(_call, purpose="chat")
 
@@ -205,45 +236,45 @@ class OpenAICompatProvider(LLMProvider):
 
         mark_stream_start()
         try:
-            async with httpx.AsyncClient() as client:
-                async with client.stream(
-                    "POST",
-                    f"{self.base_url}/v1/chat/completions",
-                    headers=self._headers(),
-                    json=payload,
-                    timeout=timeout,
-                ) as resp:
-                    if resp.status_code == 503:
-                        raise LLMQueueFullError(
-                            retry_after=_parse_retry_after(resp.headers)
-                        )
-                    resp.raise_for_status()
-                    async for line in resp.aiter_lines():
-                        if not line.startswith("data: "):
-                            continue
-                        data_str = line[6:]
-                        if data_str.strip() == "[DONE]":
-                            break
-                        try:
-                            chunk = json.loads(data_str)
-                            delta = chunk["choices"][0].get("delta", {})
-                            token = delta.get("content", "")
-                            if token:
-                                yield token
-                        except (json.JSONDecodeError, KeyError, IndexError):
-                            continue
+            client = _get_shared_client()
+            async with client.stream(
+                "POST",
+                f"{self.base_url}/v1/chat/completions",
+                headers=self._headers(),
+                json=payload,
+                timeout=timeout,
+            ) as resp:
+                if resp.status_code == 503:
+                    raise LLMQueueFullError(
+                        retry_after=_parse_retry_after(resp.headers)
+                    )
+                resp.raise_for_status()
+                async for line in resp.aiter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    data_str = line[6:]
+                    if data_str.strip() == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data_str)
+                        delta = chunk["choices"][0].get("delta", {})
+                        token = delta.get("content", "")
+                        if token:
+                            yield token
+                    except (json.JSONDecodeError, KeyError, IndexError):
+                        continue
         finally:
             mark_stream_end()
 
     async def health_check(self) -> bool:
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(
-                    f"{self.base_url}/v1/models",
-                    headers=self._headers(),
-                    timeout=5,
-                )
-                return resp.status_code == 200
+            client = _get_shared_client()
+            resp = await client.get(
+                f"{self.base_url}/v1/models",
+                headers=self._headers(),
+                timeout=5,
+            )
+            return resp.status_code == 200
         except Exception:
             return False
 
@@ -253,8 +284,8 @@ class OpenAICompatProvider(LLMProvider):
 _provider_instance: Optional[LLMProvider] = None
 
 
-def get_provider() -> LLMProvider:
-    """현재 설정에 맞는 LLM 프로바이더 인스턴스 반환 (싱글턴)"""
+def _get_or_create_default() -> LLMProvider:
+    """현재 설정에 맞는 기본 LLM 프로바이더 싱글턴."""
     global _provider_instance
 
     provider_type = getattr(config, "LLM_PROVIDER", "ollama")
@@ -286,6 +317,29 @@ def get_provider() -> LLMProvider:
         logger.info("LLM 프로바이더: Ollama (%s, %s)", config.OLLAMA_URL, config.OLLAMA_MODEL)
 
     return _provider_instance
+
+
+def get_provider(model_override: Optional[str] = None) -> LLMProvider:
+    """현재 설정에 맞는 LLM 프로바이더 반환.
+
+    model_override: 지정 시 해당 모델용 경량 provider 를 즉석 생성해 반환.
+                    내부 httpx 는 공유 싱글턴 client (_get_shared_client) 를 쓰므로
+                    매번 새 provider 를 만들어도 TCP 연결 풀은 재사용된다.
+                    None / 빈문자열이면 기본 싱글턴 (_provider_instance) 을 반환.
+    """
+    # 빈 문자열·공백은 "override 없음"과 동일 취급 (호출자 방어 중복 제거)
+    if isinstance(model_override, str) and not model_override.strip():
+        model_override = None
+    base = _get_or_create_default()
+    if model_override and model_override != base.model_name:
+        provider_type = getattr(config, "LLM_PROVIDER", "ollama")
+        if provider_type == "openai_compat":
+            endpoint = getattr(config, "LLM_ENDPOINT", "")
+            api_key = getattr(config, "LLM_API_KEY", "")
+            if endpoint:
+                return OpenAICompatProvider(endpoint, model_override, api_key)
+        return OllamaProvider(config.OLLAMA_URL, model_override)
+    return base
 
 
 def reset_provider():
