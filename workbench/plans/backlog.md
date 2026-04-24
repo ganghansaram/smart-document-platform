@@ -6,6 +6,23 @@
 
 ---
 
+## 대시보드 Phase 3 확장 (Plan-41/43 후속)
+
+> 출처: `done-41-...` 잔여 / `done-43-...` 후속
+
+핵심 UX (Plan-41/43) 완료. 다음은 운영 데이터 쌓인 뒤 실수요 기반으로 판단 권장:
+
+- **타일·사용자 드릴다운** — 타일 클릭 → 서브시스템 상세 뷰, 사용자 행 클릭 → 활동 타임라인
+- **시간 범위 필터** — 7/14/30일 드롭다운, 다수 백엔드 쿼리 `days` 파라미터 연동 필요
+- **2-column 레이아웃** — 세로 스크롤 길이 단축, 반응형 재설계 리스크 큼
+- **자동 refresh pause 토글** — 피드 검토 중 일시 정지
+- **수동 새로고침 버튼** — pill 옆 🔄
+- **접근성 감사** — 타일 `aria-describedby`, 이모지 `aria-hidden`, focus-trap, 키보드 네비 — 별도 감사 계획 권장
+- **Translator 백그라운드 완료 이벤트** — 현재 `status='started'` 만, `services/translator_service.py` 완료 시점 emit 필요
+- **`debug.demo_seed_enabled` 플래그** — 프로덕션 배포 시 데모 버튼 숨김
+
+---
+
 ---
 
 ## DOCX 변환기 — 북마크 localStorage 마이그레이션 도구
