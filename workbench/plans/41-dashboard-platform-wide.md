@@ -1,7 +1,33 @@
 # Plan-41: 대시보드 플랫폼 전체 관점 재설계
 
-> 작성일 2026-04-24 · 상태: 초안 (승인 대기) · 담당: 미정
-> 의존: [Plan-42 사용자 프로필 확장](./42-user-profile-extension.md) — 독립 머지 가능, 없어도 username 단독 폴백
+> 작성일 2026-04-24 · 상태: **진행 중** (Step 1~3/12 완료) · 담당: Claude (/plan-execute)
+> 의존: [Plan-42 사용자 프로필 확장](./42-user-profile-extension.md) — 머지 완료 (23c7965)
+
+## 진행 상태
+
+| Step | 상태 | 커밋 | 비고 |
+|------|------|------|------|
+| 1 · 백엔드 계측 스키마 (events subsystem/status) | ✅ | `43b5b08` | `record_event` keyword-only 인자, 세션 키 (IP, subsystem), `get_active_session_count` 신규 |
+| 2 · 기존 record_event username 보강 | ✅ | `bea923c` | `get_optional_user` 헬퍼, chat/search/heartbeat/page_view 4곳 보강 |
+| 3 · Translator record_event (upload/translate/summarize/notebook chat) | ✅ | (step3 commit) | `_record_translator_event` 헬퍼 + 6곳 (Notebook chat 포함), 예외 분기에도 error status 기록 |
+| 4 · Compare + main.py exception handler | 🔄 진행 중 | — | Notebook chat 은 Step 3 `/document/{id}/chat/stream` 에서 처리 완료 |
+| 5 · `/api/health` FAISS 최신성 체크 추가 | ⏳ | — | — |
+| 6 · `seed_demo_data` 서브시스템 이벤트 확장 | ⏳ | — | — |
+| 7 · `analytics.js` `initAnalytics(subsystem)` 확장 | ⏳ | — | — |
+| 8 · translator/compare/launcher/login HTML analytics 로드 | ⏳ | — | — |
+| 9 · `/api/analytics/dashboard` 응답 확장 | ⏳ | — | — |
+| 10 · 대시보드 UI (타일·활발한 사용자·실패 피드·건강 뱃지) | ⏳ | — | — |
+| 11 · CSS (tokens 변수 준수, 다크모드) | ⏳ | — | — |
+| 12 · 최종 검증 | ⏳ | — | — |
+
+## 실행 중 발견 사항 (계획서 대비)
+
+- **§4.5 수정**: `/api/health` 는 이미 `backend/main.py:183` 에 존재 (database/ollama/disk 체크). "없으면 신규"가 아닌 **FAISS 최신성만 추가**로 Step 5 수행
+- **§5.3 보완**: Step 1~2 에서 `record_event` 시그니처를 keyword-only (`*, subsystem, status`) 로 확장해 기존 호출 무수정 호환 확보
+- **§5.3 보완**: `chat.py`/`search.py` 엔드포인트가 `get_current_user` Depends 없이 `raw_request` 만 받는 상태 → `get_optional_user` 신규 헬퍼로 쿠키 기반 폴백 (비로그인 허용 유지)
+- **§4.2 "세션" 정의 확정**: 상단 요약 카드는 `get_active_user_count()` 로 IP 유니크 유지 (기존 의미 불변), 서브시스템 타일은 `get_active_session_count(subsystem)` 로 `(IP, subsystem)` 유니크
+
+---
 
 ## 1. 요약
 

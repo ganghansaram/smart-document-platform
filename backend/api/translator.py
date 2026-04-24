@@ -37,6 +37,19 @@ import config
 router = APIRouter(prefix="/translator", tags=["translator"])
 
 
+# ── Analytics 헬퍼 ──
+def _record_translator_event(raw_request, user, event_type, metadata=None,
+                             *, subsystem="translator", status=None):
+    """Translator/Notebook 계측용. 실패가 비즈니스 로직 영향 주지 않도록 silent."""
+    try:
+        from services.analytics import record_event, get_client_ip
+        record_event(event_type, get_client_ip(raw_request), metadata,
+                     username=user["username"] if user else None,
+                     subsystem=subsystem, status=status)
+    except Exception:
+        pass
+
+
 # ── 검색 ──
 
 @router.get("/search")
@@ -222,6 +235,7 @@ async def api_ai_selection(
 
 @router.post("/upload")
 async def api_upload_pdf(
+    raw_request: Request,
     file: UploadFile = File(...),
     user: dict = Depends(get_current_user),
 ):
@@ -230,15 +244,26 @@ async def api_upload_pdf(
         raise HTTPException(status_code=400, detail="PDF 파일만 업로드할 수 있습니다")
 
     contents = await file.read()
-    if len(contents) > config.TRANSLATOR_MAX_PDF_SIZE:
-        size_mb = len(contents) / 1024 / 1024
+    size = len(contents)
+    if size > config.TRANSLATOR_MAX_PDF_SIZE:
+        size_mb = size / 1024 / 1024
         max_mb = config.TRANSLATOR_MAX_PDF_SIZE / 1024 / 1024
+        _record_translator_event(
+            raw_request, user, "upload",
+            {"filename": file.filename, "size": size, "ext": "pdf"},
+            status="error",
+        )
         raise HTTPException(
             status_code=400,
             detail=f"파일 크기 초과: {size_mb:.1f}MB (최대 {max_mb:.0f}MB)",
         )
 
     meta = upload_pdf(contents, file.filename, user["username"])
+    _record_translator_event(
+        raw_request, user, "upload",
+        {"filename": file.filename, "size": size, "ext": "pdf"},
+        status="ok",
+    )
     return meta
 
 
@@ -286,25 +311,32 @@ async def api_rename_document(
 async def api_start_page_translation(
     doc_id: str,
     page_num: int,
+    raw_request: Request,
     body: dict = Body(default={}),
     user: dict = Depends(get_current_user),
 ):
     """단일 페이지 번역 시작 → 202 Accepted (하위 호환)"""
     model = body.get("model")
+    meta_ev = {"doc_id": doc_id, "pages": [page_num], "engine": "pmt"}
     try:
         start_page_translation(user["username"], doc_id, str(page_num), model)
     except FileNotFoundError:
+        _record_translator_event(raw_request, user, "translate", meta_ev, status="error")
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
     except ValueError as e:
+        _record_translator_event(raw_request, user, "translate", meta_ev, status="error")
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
+        _record_translator_event(raw_request, user, "translate", meta_ev, status="error")
         raise HTTPException(status_code=409, detail=str(e))
+    _record_translator_event(raw_request, user, "translate", meta_ev, status="started")
     return JSONResponse(status_code=202, content={"status": "translating", "doc_id": doc_id, "page": page_num})
 
 
 @router.post("/translate/{doc_id}/pages")
 async def api_start_range_translation(
     doc_id: str,
+    raw_request: Request,
     body: dict = Body(...),
     user: dict = Depends(get_current_user),
 ):
@@ -321,14 +353,19 @@ async def api_start_range_translation(
         raise HTTPException(status_code=400, detail="최대 5페이지까지 범위 번역 가능합니다")
 
     pages_str = str(page_start) if page_start == page_end else f"{page_start}-{page_end}"
+    meta_ev = {"doc_id": doc_id, "pages": list(range(page_start, page_end + 1)), "engine": "pmt"}
     try:
         start_page_translation(user["username"], doc_id, pages_str, model)
     except FileNotFoundError:
+        _record_translator_event(raw_request, user, "translate", meta_ev, status="error")
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
     except ValueError as e:
+        _record_translator_event(raw_request, user, "translate", meta_ev, status="error")
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
+        _record_translator_event(raw_request, user, "translate", meta_ev, status="error")
         raise HTTPException(status_code=409, detail=str(e))
+    _record_translator_event(raw_request, user, "translate", meta_ev, status="started")
     return JSONResponse(status_code=202, content={
         "status": "translating", "doc_id": doc_id,
         "page_start": page_start, "page_end": page_end,
@@ -444,19 +481,25 @@ async def api_download_zip(
 async def api_start_web_translation(
     doc_id: str,
     page_num: int,
+    raw_request: Request,
     body: dict = Body(default={}),
     user: dict = Depends(get_current_user),
 ):
     """웹 뷰 번역 시작 (추출+번역 일괄) → 202 Accepted"""
     model = body.get("model")
+    meta_ev = {"doc_id": doc_id, "pages": [page_num], "engine": "web"}
     try:
         start_web_translation(user["username"], doc_id, page_num, model)
     except FileNotFoundError:
+        _record_translator_event(raw_request, user, "translate", meta_ev, status="error")
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
     except ValueError as e:
+        _record_translator_event(raw_request, user, "translate", meta_ev, status="error")
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
+        _record_translator_event(raw_request, user, "translate", meta_ev, status="error")
         raise HTTPException(status_code=409, detail=str(e))
+    _record_translator_event(raw_request, user, "translate", meta_ev, status="started")
     return JSONResponse(
         status_code=202,
         content={"status": "translating", "doc_id": doc_id, "page": page_num, "mode": "web"},
@@ -560,6 +603,7 @@ async def api_serve_extracted_view_full(
 @router.post("/document/{doc_id}/summary")
 async def api_generate_summary(
     doc_id: str,
+    raw_request: Request,
     body: dict = Body(default={}),
     user: dict = Depends(get_current_user),
 ):
@@ -576,8 +620,12 @@ async def api_generate_summary(
 
     if result == "exists":
         summary = get_summary(user["username"], doc_id)
+        _record_translator_event(raw_request, user, "summarize",
+                                 {"doc_id": doc_id, "mode": "cached"}, status="ok")
         return {"status": "exists", "summary": summary}
 
+    _record_translator_event(raw_request, user, "summarize",
+                             {"doc_id": doc_id, "mode": "generate"}, status="started")
     return JSONResponse(
         status_code=202,
         content={"status": "generating", "doc_id": doc_id},
@@ -633,6 +681,7 @@ class NotebookChatRequest(BaseModel):
 async def api_document_chat_stream(
     doc_id: str,
     request: NotebookChatRequest,
+    raw_request: Request,
     user: dict = Depends(get_current_user),
 ):
     """문서 Q&A 스트리밍 (NDJSON). Explorer chat/stream과 동일 포맷."""
@@ -643,6 +692,12 @@ async def api_document_chat_stream(
     question = request.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="질문이 비어있습니다")
+
+    _record_translator_event(
+        raw_request, user, "chat",
+        {"doc_id": doc_id},
+        subsystem="notebook", status="started",
+    )
 
     conversation_id = request.conversation_id
 
