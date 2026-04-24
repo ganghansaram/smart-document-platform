@@ -1,6 +1,6 @@
 # Plan-41: 대시보드 플랫폼 전체 관점 재설계
 
-> 작성일 2026-04-24 · 상태: **진행 중** (Step 1~6/12 완료 — 백엔드 계측 토대 + 데모 데이터) · 담당: Claude (/plan-execute)
+> 작성일 2026-04-24 · 상태: **진행 중** (Step 1~7/12 완료 — 프론트엔드 착수) · 담당: Claude (/plan-execute)
 > 의존: [Plan-42 사용자 프로필 확장](./42-user-profile-extension.md) — 머지 완료 (23c7965)
 
 ## 진행 상태
@@ -13,7 +13,7 @@
 | 4 · Compare + main.py exception handler | ✅ | (step4 commit) | Compare upload/validate/similarity 계측, 전역 예외 핸들러 + rate-limit + path→subsystem 매핑 |
 | 5 · `/api/health` FAISS 최신성 체크 추가 | ✅ | (step5 commit) | search-index vs vector-index mtime 비교, 4상태 (ok/stale/missing/unknown), 빈 시스템 false-alarm 방지 |
 | 6 · `seed_demo_data` 서브시스템 이벤트 확장 | ✅ | (step6 commit) | Translator/Verify/Notebook 이벤트 + 샘플 사용자 6명(testbot/emp001~005), 30일 2,377 이벤트 생성 |
-| 7 · `analytics.js` `initAnalytics(subsystem)` 확장 | ⏳ | — | — |
+| 7 · `analytics.js` `initAnalytics(subsystem)` 확장 | ✅ | (step7 commit) | IIFE `_subsystem` 캡슐화, heartbeat/page-view body 에 포함, trackPageView(url, subsystem) 2번째 인자 옵셔널 |
 | 8 · translator/compare/launcher/login HTML analytics 로드 | ⏳ | — | — |
 | 9 · `/api/analytics/dashboard` 응답 확장 | ⏳ | — | — |
 | 10 · 대시보드 UI (타일·활발한 사용자·실패 피드·건강 뱃지) | ⏳ | — | — |
@@ -26,6 +26,7 @@
 - **§5.3 보완**: Step 1~2 에서 `record_event` 시그니처를 keyword-only (`*, subsystem, status`) 로 확장해 기존 호출 무수정 호환 확보
 - **§5.3 보완**: `chat.py`/`search.py` 엔드포인트가 `get_current_user` Depends 없이 `raw_request` 만 받는 상태 → `get_optional_user` 신규 헬퍼로 쿠키 기반 폴백 (비로그인 허용 유지)
 - **§4.2 "세션" 정의 확정**: 상단 요약 카드는 `get_active_user_count()` 로 IP 유니크 유지 (기존 의미 불변), 서브시스템 타일은 `get_active_session_count(subsystem)` 로 `(IP, subsystem)` 유니크
+- **§5.3/§7 수정 — analytics.js 분할 보류**: 원 계획은 `analytics-core.js` + `analytics-dashboard.js` 2파일 분리였으나, `index.html`/`admin.html` 스크립트 태그 변경 리스크 및 대시보드 렌더러 ~8KB gzipped 영향 미미 판단 → **파일명 유지 + 내부 확장** 방식으로 Step 7 수행. Step 8 에서 HTML 호출부 갱신만 진행
 
 ---
 

@@ -7,13 +7,18 @@
         ? AUTH_CONFIG.backendUrl : '';
     var _heartbeatInterval = null;
     var _activeUsersPollInterval = null;
+    var _subsystem = null;  // Plan-41: 서브시스템 태그 (initAnalytics 호출 시 설정)
 
     // -- Init ----------------------------------------------------------------
 
     /**
-     * Initialize analytics: start heartbeat + active users poll
+     * Initialize analytics: start heartbeat + active users poll.
+     * @param {string} [subsystem] - 'explorer' | 'translator' | 'verify' |
+     *                               'notebook' | 'launcher' | 'login'.
+     *                               생략 시 백엔드에서 COALESCE('explorer') 처리.
      */
-    window.initAnalytics = function() {
+    window.initAnalytics = function(subsystem) {
+        _subsystem = subsystem || null;
         // Send initial heartbeat
         _sendHeartbeat();
         // Heartbeat every 60 seconds
@@ -32,7 +37,7 @@
         fetch(_backendUrl + '/api/analytics/heartbeat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username }),
+            body: JSON.stringify({ username: username, subsystem: _subsystem }),
             credentials: 'include'
         }).catch(function() { /* silent */ });
     }
@@ -40,15 +45,16 @@
     // -- Page View Tracking --------------------------------------------------
 
     /**
-     * Track a page view event
+     * Track a page view event.
      * @param {string} url - The content URL being viewed
+     * @param {string} [subsystem] - 서브시스템 명시 (생략 시 initAnalytics 에 주입된 값)
      */
-    window.trackPageView = function(url) {
+    window.trackPageView = function(url, subsystem) {
         if (!url || url === 'contents/home.html') return;
         fetch(_backendUrl + '/api/analytics/page-view', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url }),
+            body: JSON.stringify({ url: url, subsystem: subsystem || _subsystem }),
             credentials: 'include'
         }).catch(function() { /* silent */ });
     };
