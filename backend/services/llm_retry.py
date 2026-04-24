@@ -15,6 +15,15 @@ import random
 import time
 from typing import Awaitable, Callable, TypeVar
 
+
+def _record(purpose: str, start: float, status: str) -> None:
+    """ai_metrics.record_llm_call 훅 (Phase 5). lazy import 로 순환 방지."""
+    try:
+        from services.ai_metrics import record_llm_call
+        record_llm_call(purpose, (time.perf_counter() - start) * 1000, status)
+    except Exception:
+        pass
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
@@ -64,9 +73,12 @@ async def call_with_retry_async(
 ) -> T:
     """비동기 httpx 호출 재시도 래퍼."""
     import httpx
+    start = time.perf_counter()
     for attempt in range(max_attempts):
         try:
-            return await func()
+            result = await func()
+            _record(purpose, start, "ok")
+            return result
         except httpx.HTTPStatusError as e:
             status = e.response.status_code
             if status == 503:
@@ -76,9 +88,11 @@ async def call_with_retry_async(
                                 purpose, delay, attempt + 1, max_attempts)
                     await asyncio.sleep(delay)
                     continue
+                _record(purpose, start, "503")
                 raise LLMQueueFullError(
                     retry_after=_parse_retry_after(e.response.headers)
                 ) from e
+            _record(purpose, start, "error")
             raise
         except (httpx.ConnectError, httpx.ReadTimeout) as e:
             if attempt < max_attempts - 1:
@@ -88,6 +102,7 @@ async def call_with_retry_async(
                             attempt + 1, max_attempts)
                 await asyncio.sleep(delay)
                 continue
+            _record(purpose, start, "timeout")
             raise
     raise RuntimeError(f"LLM retry exhausted (unreachable) for {purpose}")
 
@@ -102,9 +117,12 @@ def call_with_retry_sync(
 ) -> T:
     """동기 requests 호출 재시도 래퍼."""
     import requests
+    start = time.perf_counter()
     for attempt in range(max_attempts):
         try:
-            return func()
+            result = func()
+            _record(purpose, start, "ok")
+            return result
         except requests.HTTPError as e:
             status = e.response.status_code if e.response is not None else None
             if status == 503:
@@ -114,10 +132,12 @@ def call_with_retry_sync(
                                 purpose, delay, attempt + 1, max_attempts)
                     time.sleep(delay)
                     continue
+                _record(purpose, start, "503")
                 raise LLMQueueFullError(
                     retry_after=_parse_retry_after(
                         e.response.headers if e.response is not None else None)
                 ) from e
+            _record(purpose, start, "error")
             raise
         except (requests.ConnectionError, requests.Timeout) as e:
             if attempt < max_attempts - 1:
@@ -127,5 +147,6 @@ def call_with_retry_sync(
                             attempt + 1, max_attempts)
                 time.sleep(delay)
                 continue
+            _record(purpose, start, "timeout")
             raise
     raise RuntimeError(f"LLM retry exhausted (unreachable) for {purpose}")

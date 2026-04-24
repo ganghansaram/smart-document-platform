@@ -81,6 +81,7 @@ class OllamaProvider(LLMProvider):
 
     async def generate_stream(self, prompt: str, system: Optional[str] = None, **opts) -> AsyncIterator[str]:
         from services.llm_retry import LLMQueueFullError, _parse_retry_after
+        from services.ai_metrics import mark_stream_start, mark_stream_end
         temperature = opts.get("temperature", 0)
         timeout = opts.get("timeout", 300)
 
@@ -97,30 +98,34 @@ class OllamaProvider(LLMProvider):
         }
 
         # 스트리밍은 토큰 일부만 받은 후 재시도하면 의미 파손 → 503 만 감지해 즉시 변환
-        async with httpx.AsyncClient() as client:
-            async with client.stream(
-                "POST",
-                f"{self.url}/api/chat",
-                json=payload,
-                timeout=timeout,
-            ) as resp:
-                if resp.status_code == 503:
-                    raise LLMQueueFullError(
-                        retry_after=_parse_retry_after(resp.headers)
-                    )
-                resp.raise_for_status()
-                async for line in resp.aiter_lines():
-                    if not line:
-                        continue
-                    try:
-                        chunk = json.loads(line)
-                        token = chunk.get("message", {}).get("content", "")
-                        if token:
-                            yield token
-                        if chunk.get("done"):
-                            break
-                    except json.JSONDecodeError:
-                        continue
+        mark_stream_start()
+        try:
+            async with httpx.AsyncClient() as client:
+                async with client.stream(
+                    "POST",
+                    f"{self.url}/api/chat",
+                    json=payload,
+                    timeout=timeout,
+                ) as resp:
+                    if resp.status_code == 503:
+                        raise LLMQueueFullError(
+                            retry_after=_parse_retry_after(resp.headers)
+                        )
+                    resp.raise_for_status()
+                    async for line in resp.aiter_lines():
+                        if not line:
+                            continue
+                        try:
+                            chunk = json.loads(line)
+                            token = chunk.get("message", {}).get("content", "")
+                            if token:
+                                yield token
+                            if chunk.get("done"):
+                                break
+                        except json.JSONDecodeError:
+                            continue
+        finally:
+            mark_stream_end()
 
     async def health_check(self) -> bool:
         try:
@@ -182,6 +187,7 @@ class OpenAICompatProvider(LLMProvider):
 
     async def generate_stream(self, prompt: str, system: Optional[str] = None, **opts) -> AsyncIterator[str]:
         from services.llm_retry import LLMQueueFullError, _parse_retry_after
+        from services.ai_metrics import mark_stream_start, mark_stream_end
         temperature = opts.get("temperature", 0)
         timeout = opts.get("timeout", 300)
 
@@ -197,33 +203,37 @@ class OpenAICompatProvider(LLMProvider):
             "stream": True,
         }
 
-        async with httpx.AsyncClient() as client:
-            async with client.stream(
-                "POST",
-                f"{self.base_url}/v1/chat/completions",
-                headers=self._headers(),
-                json=payload,
-                timeout=timeout,
-            ) as resp:
-                if resp.status_code == 503:
-                    raise LLMQueueFullError(
-                        retry_after=_parse_retry_after(resp.headers)
-                    )
-                resp.raise_for_status()
-                async for line in resp.aiter_lines():
-                    if not line.startswith("data: "):
-                        continue
-                    data_str = line[6:]
-                    if data_str.strip() == "[DONE]":
-                        break
-                    try:
-                        chunk = json.loads(data_str)
-                        delta = chunk["choices"][0].get("delta", {})
-                        token = delta.get("content", "")
-                        if token:
-                            yield token
-                    except (json.JSONDecodeError, KeyError, IndexError):
-                        continue
+        mark_stream_start()
+        try:
+            async with httpx.AsyncClient() as client:
+                async with client.stream(
+                    "POST",
+                    f"{self.base_url}/v1/chat/completions",
+                    headers=self._headers(),
+                    json=payload,
+                    timeout=timeout,
+                ) as resp:
+                    if resp.status_code == 503:
+                        raise LLMQueueFullError(
+                            retry_after=_parse_retry_after(resp.headers)
+                        )
+                    resp.raise_for_status()
+                    async for line in resp.aiter_lines():
+                        if not line.startswith("data: "):
+                            continue
+                        data_str = line[6:]
+                        if data_str.strip() == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data_str)
+                            delta = chunk["choices"][0].get("delta", {})
+                            token = delta.get("content", "")
+                            if token:
+                                yield token
+                        except (json.JSONDecodeError, KeyError, IndexError):
+                            continue
+        finally:
+            mark_stream_end()
 
     async def health_check(self) -> bool:
         try:

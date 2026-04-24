@@ -31,8 +31,18 @@ async def lifespan(app):
     apply_settings_on_startup()  # settings.json → config 적용
     _reset_stuck_tasks()
     _cleanup_stale_preprocessed()
+    # Plan-44 Phase 5: AI 지표 시간별 스냅샷 루프
+    import asyncio as _asyncio
+    from services.ai_metrics import snapshot_loop
+    _snapshot_task = _asyncio.create_task(snapshot_loop(3600))
+    app.state._snapshot_task = _snapshot_task
     yield
     # ── shutdown ──
+    _snapshot_task.cancel()
+    try:
+        await _snapshot_task
+    except (_asyncio.CancelledError, Exception):
+        pass
     await _graceful_shutdown()
     logger.info("서버 종료 완료")
 
@@ -273,13 +283,23 @@ async def health_check():
         checks["database"] = "error"
 
     # Ollama 확인 (httpx 비동기 — 이벤트 루프 블로킹 방지)
+    # Plan-44 Phase 5: latency_ms 기록 + 최근 1시간 503 카운트 동반 노출
     try:
         import httpx
+        import time as _t
+        t0 = _t.perf_counter()
         async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.get(f"{config.OLLAMA_URL}/api/tags")
             checks["ollama"] = "ok" if resp.status_code == 200 else "unreachable"
+            checks["ollama_latency_ms"] = round((_t.perf_counter() - t0) * 1000, 1)
     except Exception:
         checks["ollama"] = "unreachable"
+        checks["ollama_latency_ms"] = None
+    try:
+        from services.ai_metrics import get_ollama_503_last_hour
+        checks["ollama_503_last_hour"] = get_ollama_503_last_hour()
+    except Exception:
+        checks["ollama_503_last_hour"] = 0
 
     # 디스크 확인
     try:
@@ -313,11 +333,22 @@ async def health_check():
     except Exception:
         checks["faiss"] = "unknown"
 
+    # overall 판정에서 수치 필드(disk_free_gb, ollama_latency_ms, ollama_503_last_hour) 제외
+    _non_status_keys = ("disk_free_gb", "ollama_latency_ms", "ollama_503_last_hour")
     overall = "ok" if all(
         v == "ok" for k, v in checks.items()
-        if k not in ("disk_free_gb",)
+        if k not in _non_status_keys
     ) else "degraded"
     return {"status": overall, "checks": checks}
+
+
+# ── Plan-44 Phase 5: AI 동시성 상태 지표 (관리자 대시보드 연동) ──
+
+@app.get("/api/metrics/ai-status")
+async def ai_status():
+    """대시보드 AI 동시성 상태 패널용 — 4 지표 + L2/L3 트리거 판정."""
+    from services.ai_metrics import get_ai_status
+    return get_ai_status()
 
 
 if __name__ == "__main__":

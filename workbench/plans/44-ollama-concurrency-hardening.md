@@ -29,10 +29,10 @@
 - [ ] 4-3. `js/toast.js` 에 `showRetryToast(sec)` 추가 + 429 자동 재시도 카운트다운
 - [ ] 4-4. 페이지 이탈·탭 전환 시 해당 key abort 훅
 
-**Phase 5: 헬스·지표 + 관리자 대시보드 섹션 (디자인 시스템 준수)** ⬜ (0 / 5)
-- [ ] 5-1. `/api/health` 에 `ollama_latency_ms`, `ollama_503_last_hour` 필드 추가
-- [ ] 5-2. `/api/metrics/ai-status` 신설 — 4지표 (`p95_latency_ms`, `ollama_503_per_hour`, `peak_concurrent_users_1h`, `active_streams`) + 트리거 상태(`normal`/`warning`/`fired`) 노출
-- [ ] 5-3. `services/ai_metrics.py` — 롤링 버퍼(1h) + 일별 스냅샷(analytics_events 재사용), Phase 3 재시도 핸들러에서 `record_llm_call` 훅
+**Phase 5: 헬스·지표 + 관리자 대시보드 섹션 (디자인 시스템 준수)** 🟨 (3 / 5)
+- [x] 5-1. `/api/health` 에 `ollama_latency_ms`, `ollama_503_last_hour` 필드 추가 (overall 판정 제외 처리)
+- [x] 5-2. `/api/metrics/ai-status` 신설 — 4지표 + 임계값 + 트리거 상태(`normal`/`warning`/`fired`) 노출
+- [x] 5-3. `services/ai_metrics.py` — 1h 롤링 버퍼 + L2/L3 임계값 판정 + `snapshot_loop` (lifespan task, 1시간 주기 `analytics_events` 저장) + llm_retry 에 `record_llm_call` 훅 + generate_stream 에 `mark_stream_start/end`
 - [ ] 5-4. `admin.html` 대시보드 "AI 동시성 상태" 섹션 — `.ad-ai-status` 마크업 + `analytics.css` 에 `--ad-*` 토큰 기반 신규 스타일 (반응형 3단계, 다크모드 자동)
 - [ ] 5-5. L2 트리거 배너 `.ad-alert.ad-alert-warning` + 24h dismiss (localStorage) — `auth-admin` 가드
 
@@ -60,7 +60,7 @@
 
 | 레이어 | 진척 | 총 항목 | 상태 |
 |--------|------|---------|------|
-| L1 (즉시) | **8 / 17** | 17 | 🟨 Phase 1·3 완료, Phase 5 백엔드 진행 중 |
+| L1 (즉시) | **11 / 17** | 17 | 🟨 Phase 1·3·5(백엔드) 완료, Phase 4·5(UI) 진행 중 |
 | L2 (조건부) | **0 / 8** | 8 | ⏸ 트리거 대기 |
 | L3 (전환) | **0 / 3** | 3 | ⏸ 트리거 대기 |
 
