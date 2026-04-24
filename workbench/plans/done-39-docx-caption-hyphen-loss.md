@@ -1,6 +1,6 @@
 # Plan-39 — DOCX 캡션 하이픈 손실 문제 진단
 
-**상태**: 진단 단계 (원인 후보 좁힘 완료, 확정 미완)
+**상태**: ✅ **해결** (2026-04-24, 사용자 확인)
 **작성**: 2026-04-23
 **관련 시스템**: `tools/converter/`, `tools/docx2html-standalone/`, `tools/heading-numberer/`
 **관련 메모리**: `memory/MEMORY.md` — "STYLEREF + SEQ 합성 캡션", "장절번호 평문화"

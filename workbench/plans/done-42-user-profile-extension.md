@@ -1,7 +1,8 @@
 # Plan-42: 사용자 프로필 확장 (Name · Description · Last Login)
 
-> 작성일 2026-04-24 · 상태: 초안 (승인 대기) · 담당: 미정
-> 관계: [Plan-41 대시보드 재설계](./41-dashboard-platform-wide.md) — 상호 독립, 머지 순서 자유
+> 작성일 2026-04-24 · 상태: **✅ 완료** · 담당: Claude (/plan-execute) · 구현 커밋 `23c7965`
+> 관계: [Plan-41 대시보드 재설계](./done-41-dashboard-platform-wide.md) — 상호 독립, 머지 순서 자유
+> 피드백: [plan-42-feedback-2026-04-24.md](../reports/plan-42-feedback-2026-04-24.md)
 
 ## 1. 요약
 
