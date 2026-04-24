@@ -120,7 +120,7 @@
     function _renderDashboardHTML(container, data) {
         var html = '<div class="analytics-dashboard">';
 
-        // Summary cards
+        // 1. Platform summary (플랫폼 전체 합산)
         html += '<div class="ad-summary">';
         html += '<div class="ad-card ad-card-clickable" id="ad-active-card" title="클릭하여 접속자 IP 확인">';
         html += '<div class="ad-card-label">현재 접속</div>';
@@ -131,13 +131,16 @@
         html += _summaryCard('누적 방문', data.total_visitors, '');
         html += '</div>';
 
-        // Daily visitors chart
+        // 2. Subsystem tiles (Plan-41)
+        html += _renderSubsystemTiles(data.by_subsystem);
+
+        // 3. Daily visitors chart
         html += '<div class="ad-vbar-chart">';
         html += '<div class="ad-section-title">접속 추이 (최근 14일)</div>';
         html += _verticalBarChart(data.daily_visitors, 'visitor');
         html += '</div>';
 
-        // Top pages
+        // 4. Top pages
         html += '<div class="ad-hbar-chart">';
         html += '<div class="ad-section-title">인기 문서 TOP 10</div>';
         if (data.top_pages && data.top_pages.length > 0) {
@@ -147,7 +150,7 @@
         }
         html += '</div>';
 
-        // Top searches
+        // 5. Top searches
         html += '<div class="ad-hbar-chart">';
         html += '<div class="ad-section-title">검색 키워드 TOP 10</div>';
         if (data.top_searches && data.top_searches.length > 0) {
@@ -157,7 +160,10 @@
         }
         html += '</div>';
 
-        // Chat stats
+        // 6. Top users (Plan-41)
+        html += _renderTopUsers(data.top_users);
+
+        // 7. Chat stats
         html += '<div class="ad-chat-stats">';
         html += '<div class="ad-section-title">챗봇 사용 통계</div>';
         var cs = data.chat_stats || { total: 0, today: 0 };
@@ -170,10 +176,16 @@
         }
         html += '</div>';
 
-        // Feedback stats
+        // 8. Feedback stats
         html += _renderFeedbackSection(data.feedback);
 
-        // Action buttons
+        // 9. Recent failures (Plan-41)
+        html += _renderRecentFailures(data.recent_failures);
+
+        // 10. System health badges (Plan-41)
+        html += _renderHealthBadges(data.health);
+
+        // 11. Action buttons
         html += '<div class="ad-actions">';
         html += '<button class="ad-btn" id="ad-seed-btn">데모 데이터 생성</button>';
         html += '<button class="ad-btn ad-btn-danger" id="ad-reset-btn">데이터 초기화</button>';
@@ -450,6 +462,180 @@
                 var body = overlay.querySelector('.ad-modal-body');
                 if (body) body.innerHTML = '<div class="ad-ip-empty">조회 실패</div>';
             });
+    }
+
+    // -- Subsystem Tiles (Plan-41) -------------------------------------------
+
+    var _SUBSYSTEM_LABELS = {
+        explorer:   'Explorer',
+        translator: 'Translator',
+        verify:     'Verify',
+        notebook:   'Notebook'
+    };
+
+    function _renderSubsystemTiles(by_subsystem) {
+        var html = '<div class="ad-subsystem-grid">';
+        html += '<div class="ad-section-title">서브시스템 현황</div>';
+        html += '<div class="ad-tiles">';
+        if (!by_subsystem) {
+            html += '<div class="ad-no-data">데이터 없음</div></div></div>';
+            return html;
+        }
+        ['explorer', 'translator', 'verify', 'notebook'].forEach(function(key) {
+            var s = by_subsystem[key] || { today_sessions: 0, metrics: {}, failures_today: 0, trend: [] };
+            html += '<div class="ad-tile ad-tile-' + key + '">';
+            html += '<div class="ad-tile-header">';
+            html += '<span class="ad-tile-title">' + _SUBSYSTEM_LABELS[key] + '</span>';
+            if (s.failures_today > 0) {
+                html += '<span class="ad-tile-fail-badge" title="오늘 실패 이벤트">⚠ ' + s.failures_today + '</span>';
+            }
+            html += '</div>';
+            html += '<div class="ad-tile-sessions"><span class="ad-tile-num">' + (s.today_sessions || 0) +
+                    '</span><span class="ad-tile-unit">오늘 세션</span></div>';
+            // 지표 (최대 2개 — 타일 레이아웃 보호)
+            html += '<div class="ad-tile-metrics">';
+            var metrics = s.metrics || {};
+            var metricKeys = Object.keys(metrics).slice(0, 2);
+            if (metricKeys.length === 0) {
+                html += '<div class="ad-tile-metrics-empty">지표 없음</div>';
+            } else {
+                metricKeys.forEach(function(ev) {
+                    var m = metrics[ev];
+                    html += '<div class="ad-tile-metric"><span class="ad-tile-metric-label">' +
+                            _escHtml(m.label) + '</span><span class="ad-tile-metric-value">' +
+                            (m.count || 0) + '</span></div>';
+                });
+            }
+            html += '</div>';
+            // 14일 스파크라인
+            html += '<div class="ad-tile-spark">' + _sparkline(s.trend || []) + '</div>';
+            html += '</div>';
+        });
+        html += '</div></div>';
+        return html;
+    }
+
+    function _sparkline(trend) {
+        if (!trend || trend.length === 0) {
+            return '<span class="ad-spark-empty">추이 없음</span>';
+        }
+        var max = Math.max.apply(null, trend.map(function(d) { return d.count; })) || 1;
+        var html = '';
+        trend.forEach(function(d) {
+            var pct = Math.max(Math.round((d.count / max) * 100), 3);
+            html += '<span class="ad-spark-bar" style="height:' + pct + '%" title="' +
+                    _escHtml(d.day || '') + ': ' + d.count + '"></span>';
+        });
+        return html;
+    }
+
+    // -- Top Users (Plan-41) -------------------------------------------------
+
+    function _renderTopUsers(users) {
+        var html = '<div class="ad-topusers">';
+        html += '<div class="ad-section-title">활발한 사용자 TOP 10 (7일)</div>';
+        if (!users || users.length === 0) {
+            html += '<div class="ad-no-data">데이터 없음</div></div>';
+            return html;
+        }
+        var max = Math.max.apply(null, users.map(function(u) { return u.count; })) || 1;
+        html += '<div class="ad-hbar-list">';
+        users.forEach(function(u, i) {
+            var pct = Math.round((u.count / max) * 100);
+            var display = u.name
+                ? _escHtml(u.name) + ' <span class="ad-topuser-id">(' + _escHtml(u.username) + ')</span>'
+                : _escHtml(u.username);
+            html += '<div class="ad-hbar-row">';
+            html += '<span class="ad-hbar-rank">' + (i + 1) + '</span>';
+            html += '<span class="ad-hbar-name">' + display + '</span>';
+            html += '<div class="ad-hbar-track"><div class="ad-hbar-fill" style="width:' + pct +
+                    '%;animation-delay:' + (i * 0.05) + 's"></div></div>';
+            html += '<span class="ad-hbar-count">' + u.count + '</span>';
+            html += '</div>';
+        });
+        html += '</div></div>';
+        return html;
+    }
+
+    // -- Recent Failures (Plan-41) -------------------------------------------
+
+    function _renderRecentFailures(failures) {
+        var list = Array.isArray(failures) ? failures : [];
+        var html = '<div class="ad-failures">';
+        html += '<div class="ad-section-title">최근 실패 이벤트 (' + list.length + ')</div>';
+        if (list.length === 0) {
+            html += '<div class="ad-no-data">최근 24시간 실패 이벤트 없음</div></div>';
+            return html;
+        }
+        failures = list;
+        html += '<div class="ad-fail-list">';
+        failures.forEach(function(f) {
+            var subLabel = _SUBSYSTEM_LABELS[f.subsystem] || (f.subsystem || '-');
+            var meta = f.metadata || {};
+            var detail = '';
+            if (f.event_type === 'error' && meta.endpoint) {
+                detail = meta.endpoint + ' · ' + (meta.exception || '');
+            } else if (meta.doc_id) {
+                detail = 'doc:' + meta.doc_id;
+                if (meta.engine) detail += ' · ' + meta.engine;
+            } else if (meta.filename) {
+                detail = meta.filename;
+            }
+            html += '<div class="ad-fail-item">';
+            html += '<div class="ad-fail-header">';
+            html += '<span class="ad-fail-time">' + _escHtml(f.timestamp || '') + '</span>';
+            html += '<span class="ad-fail-sub ad-tile-' + _escHtml(f.subsystem || '') + '">' +
+                    _escHtml(subLabel) + '</span>';
+            html += '<span class="ad-fail-event">' + _escHtml(f.event_type) + '</span>';
+            if (f.username) html += '<span class="ad-fail-user">' + _escHtml(f.username) + '</span>';
+            html += '</div>';
+            if (detail) html += '<div class="ad-fail-detail">' + _escHtml(detail) + '</div>';
+            html += '</div>';
+        });
+        html += '</div></div>';
+        return html;
+    }
+
+    // -- System Health Badges (Plan-41) --------------------------------------
+
+    function _renderHealthBadges(health) {
+        var html = '<div class="ad-health">';
+        html += '<div class="ad-section-title">시스템 건강</div>';
+        if (!health || !health.checks) {
+            html += '<div class="ad-no-data">상태 조회 실패</div></div>';
+            return html;
+        }
+        var c = health.checks;
+        var diskValue;
+        if (c.disk === 'ok' && c.disk_free_gb != null) {
+            diskValue = c.disk_free_gb + ' GB';
+        } else {
+            diskValue = c.disk || 'unknown';
+        }
+        var items = [
+            { key: 'database', label: '백엔드 DB', value: c.database || 'unknown' },
+            { key: 'ollama',   label: 'Ollama',   value: c.ollama || 'unknown' },
+            { key: 'faiss',    label: 'FAISS',    value: c.faiss || 'unknown' },
+            { key: 'disk',     label: '디스크',    value: diskValue },
+        ];
+        html += '<div class="ad-badges">';
+        items.forEach(function(it) {
+            var cls = _healthBadgeClass(it.value);
+            html += '<span class="ad-badge ' + cls + '">';
+            html += '<span class="ad-badge-label">' + _escHtml(it.label) + '</span>';
+            html += '<span class="ad-badge-value">' + _escHtml(String(it.value)) + '</span>';
+            html += '</span>';
+        });
+        html += '</div></div>';
+        return html;
+    }
+
+    function _healthBadgeClass(value) {
+        var v = String(value).toLowerCase();
+        if (v === 'ok' || /^\d/.test(v)) return 'ad-badge-ok';
+        if (v === 'stale' || v === 'missing' || v === 'low') return 'ad-badge-warn';
+        if (v === 'error' || v === 'unreachable') return 'ad-badge-error';
+        return 'ad-badge-neutral';
     }
 
 })();
