@@ -1,6 +1,6 @@
 # Plan-41: 대시보드 플랫폼 전체 관점 재설계
 
-> 작성일 2026-04-24 · 상태: **진행 중** (Step 1~10/12 완료 — UI 렌더러 구현) · 담당: Claude (/plan-execute)
+> 작성일 2026-04-24 · 상태: **진행 중** (Step 1~11/12 완료 — CSS 스타일링) · 담당: Claude (/plan-execute)
 > 의존: [Plan-42 사용자 프로필 확장](./42-user-profile-extension.md) — 머지 완료 (23c7965)
 
 ## 진행 상태
@@ -17,7 +17,7 @@
 | 8 · 전 서브시스템 HTML analytics 로드 + initAnalytics(subsystem) | ✅ | (step8 commit) | 6페이지 (index/admin/translator/compare/launcher/login) 태그 통일: explorer/admin/translator/verify/launcher/login |
 | 9 · `/api/analytics/dashboard` 응답 확장 | ✅ | (step9 commit) | by_subsystem / top_users (Plan-42 name JOIN) / recent_failures / health 4필드 추가. seed_demo_data 보강 (오늘 포함 + 비-Explorer visits) |
 | 10 · 대시보드 UI (타일·활발한 사용자·실패 피드·건강 뱃지) | ✅ | (step10 commit) | 4 렌더러 신규 — `_renderSubsystemTiles` / `_renderTopUsers` / `_renderRecentFailures` / `_renderHealthBadges`, 빈 데이터 graceful, metric slice(0,2), Array.isArray 방어 |
-| 11 · CSS (tokens 변수 준수, 다크모드) | ⏳ | — | — |
+| 11 · CSS (tokens 변수 준수, 다크모드) | ✅ | (step11 commit) | 신규 위젯 4종 CSS — `.ad-tile`/sparkline/`.ad-fail-item`/`.ad-badge`, 모든 색상 `var(--ad-*)` 기반, `color-mix` 로 계열 톤 생성, 반응형 3단계 (<960/<700) |
 | 12 · 최종 검증 | ⏳ | — | — |
 
 ## 실행 중 발견 사항 (계획서 대비)
