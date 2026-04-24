@@ -1,6 +1,6 @@
 # Plan-41: 대시보드 플랫폼 전체 관점 재설계
 
-> 작성일 2026-04-24 · 상태: **진행 중** (Step 1~5/12 완료) · 담당: Claude (/plan-execute)
+> 작성일 2026-04-24 · 상태: **진행 중** (Step 1~6/12 완료 — 백엔드 계측 토대 + 데모 데이터) · 담당: Claude (/plan-execute)
 > 의존: [Plan-42 사용자 프로필 확장](./42-user-profile-extension.md) — 머지 완료 (23c7965)
 
 ## 진행 상태
@@ -12,7 +12,7 @@
 | 3 · Translator record_event (upload/translate/summarize/notebook chat) | ✅ | (step3 commit) | `_record_translator_event` 헬퍼 + 6곳 (Notebook chat 포함), 예외 분기에도 error status 기록 |
 | 4 · Compare + main.py exception handler | ✅ | (step4 commit) | Compare upload/validate/similarity 계측, 전역 예외 핸들러 + rate-limit + path→subsystem 매핑 |
 | 5 · `/api/health` FAISS 최신성 체크 추가 | ✅ | (step5 commit) | search-index vs vector-index mtime 비교, 4상태 (ok/stale/missing/unknown), 빈 시스템 false-alarm 방지 |
-| 6 · `seed_demo_data` 서브시스템 이벤트 확장 | ⏳ | — | — |
+| 6 · `seed_demo_data` 서브시스템 이벤트 확장 | ✅ | (step6 commit) | Translator/Verify/Notebook 이벤트 + 샘플 사용자 6명(testbot/emp001~005), 30일 2,377 이벤트 생성 |
 | 7 · `analytics.js` `initAnalytics(subsystem)` 확장 | ⏳ | — | — |
 | 8 · translator/compare/launcher/login HTML analytics 로드 | ⏳ | — | — |
 | 9 · `/api/analytics/dashboard` 응답 확장 | ⏳ | — | — |

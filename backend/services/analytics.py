@@ -382,7 +382,7 @@ def reset_all():
 
 
 def seed_demo_data(days: int = 30):
-    """Insert realistic demo data for the last N days."""
+    """Insert realistic demo data for the last N days across all subsystems."""
     conn = _get_conn()
     try:
         now = datetime.now()
@@ -401,38 +401,141 @@ def seed_demo_data(days: int = 30):
             "추진", "무장", "시스템 설계", "체계개발", "FLEX",
             "PMS", "구조 시험", "인터페이스", "성능", "안전",
         ]
+        # 샘플 사용자 — 활동 빈도 차등(testbot·emp001 주력, 나머지 조연)으로
+        # 대시보드 "활발한 사용자 TOP" 위젯에 분포감 있는 결과 형성
+        sample_users = [
+            ("testbot", 0.30),
+            ("emp001", 0.25),
+            ("emp002", 0.18),
+            ("emp003", 0.12),
+            ("emp004", 0.08),
+            ("emp005", 0.07),
+        ]
+        sample_docs = ["doc-abc", "doc-def", "doc-ghi", "doc-jkl", "doc-mno"]
+        sample_translate_engines = ["pmt", "pmt", "pmt", "web"]  # 3:1 비율
+        sample_compare_files = [
+            ("spec_v1.pdf", "spec_v2.pdf"),
+            ("rfp_original.docx", "rfp_revised.docx"),
+            ("design_rev1.pdf", "design_rev2.pdf"),
+        ]
+        error_endpoints = [
+            ("/api/translator/translate/xyz/page/5", "translator"),
+            ("/api/compare/similarity", "verify"),
+            ("/api/chat", "explorer"),
+        ]
+
+        def _pick_user():
+            r = random.random()
+            cum = 0.0
+            for u, w in sample_users:
+                cum += w
+                if r <= cum:
+                    return u
+            return sample_users[-1][0]
+
+        def _ts(day_str):
+            return f"{day_str} {random.randint(8,18):02d}:{random.randint(0,59):02d}:{random.randint(0,59):02d}"
+
+        def _ip():
+            return f"10.0.{random.randint(1,10)}.{random.randint(1,254)}"
 
         rows = []
         for d in range(days, 0, -1):
             day = now - timedelta(days=d)
             day_str = day.strftime("%Y-%m-%d")
-            # Visitors: 5-25 per day, weekdays more
             is_weekday = day.weekday() < 5
+
+            # ── Explorer 방문 / page_view ──
             n_visitors = random.randint(8, 25) if is_weekday else random.randint(3, 12)
             for v in range(n_visitors):
-                ip = f"10.0.{random.randint(1,10)}.{random.randint(1,254)}"
-                ts = f"{day_str} {random.randint(8,18):02d}:{random.randint(0,59):02d}:{random.randint(0,59):02d}"
-                rows.append((ts, "visit", ip, None))
-                # Each visitor views 1-5 pages
+                ip = _ip()
+                user = _pick_user()
+                ts = _ts(day_str)
+                rows.append((ts, "visit", ip, None, user, "explorer", None))
                 for _ in range(random.randint(1, 5)):
                     page = random.choice(sample_pages)
-                    rows.append((ts, "page_view", ip, json.dumps({"url": page})))
+                    rows.append((ts, "page_view", ip,
+                                 json.dumps({"url": page}), user, "explorer", None))
 
-            # Searches: 3-15 per day
-            for _ in range(random.randint(3, 15)):
-                ip = f"10.0.{random.randint(1,10)}.{random.randint(1,254)}"
-                ts = f"{day_str} {random.randint(8,18):02d}:{random.randint(0,59):02d}:{random.randint(0,59):02d}"
-                query = random.choice(sample_queries)
-                rows.append((ts, "search", ip, json.dumps({"query": query})))
+            # ── Explorer 검색 ──
+            for _ in range(random.randint(3, 15) if is_weekday else random.randint(1, 6)):
+                rows.append((_ts(day_str), "search", _ip(),
+                             json.dumps({"query": random.choice(sample_queries)}),
+                             _pick_user(), "explorer", None))
 
-            # Chats: 1-8 per day
-            for _ in range(random.randint(1, 8)):
-                ip = f"10.0.{random.randint(1,10)}.{random.randint(1,254)}"
-                ts = f"{day_str} {random.randint(8,18):02d}:{random.randint(0,59):02d}:{random.randint(0,59):02d}"
-                rows.append((ts, "chat", ip, None))
+            # ── Explorer 챗봇 ──
+            for _ in range(random.randint(1, 8) if is_weekday else random.randint(0, 3)):
+                rows.append((_ts(day_str), "chat", _ip(), None,
+                             _pick_user(), "explorer", None))
+
+            # ── Translator upload + translate + summarize ──
+            n_uploads = random.randint(1, 3) if is_weekday else random.randint(0, 1)
+            for _ in range(n_uploads):
+                rows.append((_ts(day_str), "upload", _ip(),
+                             json.dumps({"filename": f"paper_{random.randint(1,99)}.pdf",
+                                         "size": random.randint(500_000, 20_000_000),
+                                         "ext": "pdf"}),
+                             _pick_user(), "translator", "ok"))
+            n_translates = random.randint(3, 10) if is_weekday else random.randint(1, 4)
+            for _ in range(n_translates):
+                engine = random.choice(sample_translate_engines)
+                status = "error" if random.random() < 0.08 else "started"
+                page = random.randint(1, 30)
+                rows.append((_ts(day_str), "translate", _ip(),
+                             json.dumps({"doc_id": random.choice(sample_docs),
+                                         "pages": [page], "engine": engine}),
+                             _pick_user(), "translator", status))
+            for _ in range(random.randint(0, 3)):
+                rows.append((_ts(day_str), "summarize", _ip(),
+                             json.dumps({"doc_id": random.choice(sample_docs),
+                                         "mode": "generate"}),
+                             _pick_user(), "translator", "started"))
+
+            # ── Verify upload + compare ──
+            for _ in range(random.randint(0, 2) if is_weekday else 0):
+                rows.append((_ts(day_str), "upload", _ip(),
+                             json.dumps({"filename": f"doc_{random.randint(1,99)}.docx",
+                                         "size": random.randint(200_000, 10_000_000),
+                                         "ext": "docx"}),
+                             _pick_user(), "verify", "ok"))
+            n_compares = random.randint(2, 6) if is_weekday else random.randint(0, 2)
+            for _ in range(n_compares):
+                target, ref = random.choice(sample_compare_files)
+                mode = random.choice(["similarity", "similarity", "validate"])
+                status = "error" if random.random() < 0.05 else "ok"
+                meta = {"mode": mode}
+                if mode == "similarity":
+                    meta.update({
+                        "target_len": random.randint(2000, 20000),
+                        "reference_len": random.randint(2000, 20000),
+                        "score": round(random.uniform(0.55, 0.95), 3),
+                    })
+                else:
+                    meta.update({
+                        "paragraph_count": random.randint(30, 200),
+                        "issue_count": random.randint(0, 15),
+                    })
+                rows.append((_ts(day_str), "compare", _ip(),
+                             json.dumps(meta), _pick_user(), "verify", status))
+
+            # ── Notebook Q&A ──
+            for _ in range(random.randint(0, 5) if is_weekday else random.randint(0, 2)):
+                rows.append((_ts(day_str), "chat", _ip(),
+                             json.dumps({"doc_id": random.choice(sample_docs)}),
+                             _pick_user(), "notebook", "started"))
+
+            # ── 산발 5xx 에러 (주 1~3건) ──
+            if random.random() < 0.15:
+                endpoint, sub = random.choice(error_endpoints)
+                rows.append((_ts(day_str), "error", _ip(),
+                             json.dumps({"endpoint": endpoint, "status": 500,
+                                         "exception": random.choice(
+                                             ["TimeoutError", "ValueError", "RuntimeError"])}),
+                             _pick_user(), sub, "error"))
 
         conn.executemany(
-            "INSERT INTO events (timestamp, event_type, ip, metadata) VALUES (?, ?, ?, ?)",
+            "INSERT INTO events (timestamp, event_type, ip, metadata, "
+            "username, subsystem, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
             rows,
         )
         conn.commit()
