@@ -44,6 +44,12 @@ async def lifespan(app):
     except (_asyncio.CancelledError, Exception):
         pass
     await _graceful_shutdown()
+    # Plan-44 Phase 2b: LLM Gateway 정리 (Semaphore / 큐)
+    try:
+        from services.llm_gateway import shutdown as _gw_shutdown
+        await _gw_shutdown()
+    except Exception as e:
+        logger.warning("LLM Gateway shutdown 실패 (무시): %s", e)
     # Plan-44 Phase 2a-1: 공유 httpx 클라이언트 정리
     try:
         from services.llm_provider import aclose_shared_client

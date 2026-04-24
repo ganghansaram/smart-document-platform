@@ -86,6 +86,14 @@ TRANSLATOR_MODEL = ""  # Notebook 전용 모델 (번역+요약 공용). 빈값�
 TRANSLATOR_PMT_TIMEOUT = 3600  # 60분, 레거시 통번역 타임아웃
 TRANSLATOR_PAGE_TIMEOUT = 300  # 5분, 페이지별 번역 타임아웃
 TRANSLATOR_MAX_CONCURRENT = 4  # 동시 번역 최대 수 (GPU 부하 제한)
+
+# Plan-44 Phase 2b: LLM Gateway (동시성 상한 + 스트림 전용 슬롯)
+# 기본값 False = shadow 단계 (Gateway 경유하되 Semaphore 우회, Phase 2a 와 동일 동작)
+# True 로 전환 시 Gateway Semaphore 활성화
+LLM_GATEWAY_ENABLED = False
+LLM_GATEWAY_MAX_CONCURRENT = 8    # 단발 호출(chat/summary/classify/rewrite) 동시 상한
+LLM_GATEWAY_MAX_QUEUE = 32        # 대기열 한도 (초과 시 429)
+LLM_GATEWAY_STREAM_SLOTS = 3      # 스트림 전용 슬롯 (qa_stream), 긴 스트림이 단발 굶주림 유발 방지
 TRANSLATOR_CUSTOM_PROMPT = ""          # --custom-system-prompt
 TRANSLATOR_DISABLE_RICH_TEXT = False    # --disable-rich-text-translate
 TRANSLATOR_TRANSLATE_TABLE = False      # --translate-table-text
