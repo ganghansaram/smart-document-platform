@@ -50,19 +50,33 @@
 - ✅ `ai_metrics.get_ai_status()` 실행 — p95 7500ms 입력 시 `l2_status='warning'` (지표 `p95_latency_ms` 임계값 70% 초과) 판정 정상
 - ✅ JS syntax 검사: `request-guard.js`, `toast.js`, `analytics.js` 모두 통과
 
-### 브라우저 검증 (Playwright) — 미수행
+### 브라우저 검증 (Playwright) — ✅ 완료
 
-개발 서버 기동이 필요하므로 **사용자 환경에서 수동 검증** 요망:
+백엔드·프론트 기동 후 admin.html 로그인(testbot/admin)·대시보드 탭 진입·전 시나리오 확인. 스크린샷은 `workbench/screenshots/plan-44-l1-verify/` 에 저장.
 
-```bash
-cd backend && python main.py              # 백엔드 (port 8000)
-python -m http.server 8080                # 프론트 (port 8080)
-# → admin.html 접속, 로그인(testbot/test1234) → 관리자 대시보드
-# → 확인: "AI 동시성 상태" 섹션이 "시스템 건강" 뒤에 노출되는지
-# → 확인: 라이트/다크 테마 전환 시 색상 자동 반영
-# → 확인: 브라우저 폭 960/700 축소 시 4열→2열→1열 전환
-# → 확인: (선택) force LLM 호출 많이 하여 l2_status='fired' 진입 시 상단 배너 표시
-```
+| # | 시나리오 | 결과 | 스크린샷 |
+|---|---------|-----|---------|
+| 1 | 다크 모드 normal 상태 | ✅ 4열 그리드, 녹색 border+틴트, "정상" 뱃지, Phase 2 footer | `plan-44-02-dark-ai-status.png` |
+| 2 | 라이트 모드 normal | ✅ 흰 배경 + 녹색 틴트 자연스러움 | `plan-44-03-light-ai-status.png` |
+| 3 | 반응형 2열 (<960px) | ✅ `repeat(2,1fr)` 정상 (447×447) | `plan-44-05-responsive-2col.png` |
+| 4 | 반응형 1열 (<700px) | ✅ `1fr` 세로 스택 (910px) | `plan-44-06-responsive-1col.png` |
+| 5 | **L2 fired 시나리오** | ✅ 상단 주황 배너(아이콘·제목·설명·액션 2), 카드 3개 붉은 border+틴트 + 1개 녹색, 섹션 제목 옆 "발동" 빨간 뱃지, footer "충족 — Phase 2 착수 권장" | `plan-44-07-l2-fired-banner.png` |
+
+**네트워크 검증**:
+- `GET /api/analytics/dashboard` → 200, `ai_status` 필드 포함
+- `GET /api/metrics/ai-status` 미인증 → 401
+- `GET /api/metrics/ai-status` admin → 200, `indicators/thresholds/triggers/last_updated` 키 정상
+
+**콘솔**: 에러 0건, 경고 0건 (DOM verbose 메시지 1건 — password form 미감싸기, 플랫폼 공통 사안)
+
+**Plan-43 원칙 준수 확인**:
+- ✅ 건강 뱃지(`.ad-health`) 바로 뒤·서브시스템 타일 앞에 위치
+- ✅ l2_status=normal 일 때 배너 비노출 (빈 섹션 숨김)
+- ✅ `ad-last-update-wrap` 존재 (30초 갱신 라벨)
+
+**개발 환경 이슈(운영 무관)**: 
+- Python `http.server` 가 `Cache-Control` 헤더를 보내지 않고, Chromium 이 `<script>` 로딩 시 HTTP 캐시를 강하게 유지하여 **첫 세션에서 구 버전 analytics.js/css 가 붙는 현상**. 캐시 우회(`?v=` 쿼리)로 신 버전 로드 시 정상 동작 확인.
+- 운영 환경은 Nginx 프록시가 캐시 제어 → 이 이슈 발생하지 않음. 후속 백로그: "개발 편의용 `.env` 옵션 — dev 시 `Cache-Control: no-cache` 헤더를 http.server 가 보내도록 래퍼" 검토.
 
 ### 회귀 영향 스팟체크
 
@@ -113,7 +127,7 @@ python -m http.server 8080                # 프론트 (port 8080)
 
 ## 잔여·후속 제안
 
-- [ ] 운영 서버 기동 후 Playwright 시각 검증 (사용자 수동)
+- [x] ~~운영 서버 기동 후 Playwright 시각 검증~~ — **완료 (2026-04-24)**, 스크린샷 7장
 - [ ] 1주 관찰 — 관리자 대시보드에서 지표 실측값 확인, 임계값 재조정 여지 판단
 - [ ] L2 트리거 발동 시 자동 Slack/이메일 알림 (현재는 대시보드 접속 시에만 확인 가능) — Phase 5 확장 시 고려
 - [ ] `ai_metrics.save_hourly_snapshot` 이 쌓은 이력으로 "최근 7일 추이 sparkline" 추가 (L2 착수 시)
