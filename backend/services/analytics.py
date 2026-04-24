@@ -46,7 +46,8 @@ def init_db():
         );
         CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
         CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp);
-        CREATE INDEX IF NOT EXISTS idx_events_subsystem ON events(subsystem);
+        -- idx_events_subsystem 은 기존 DB 에 subsystem 컬럼이 없을 수 있어
+        -- ALTER TABLE 마이그레이션 뒤 아래 루프에서 생성
 
         CREATE TABLE IF NOT EXISTS chat_feedback (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
