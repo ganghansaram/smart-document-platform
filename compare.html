@@ -354,6 +354,7 @@
 
     <script src="js/config.js"></script>
     <script src="js/platform-header.js"></script>
+    <script src="js/analytics.js"></script>
     <script>
         (function() {
             'use strict';
@@ -1881,6 +1882,10 @@
                 showThemeToggle: true,
                 onAuth: function(user) {
                     document.body.style.visibility = 'visible';
+                    // Plan-41: Verify 서브시스템 계측
+                    if (typeof initAnalytics === 'function') {
+                        initAnalytics('verify');
+                    }
                 }
             });
 

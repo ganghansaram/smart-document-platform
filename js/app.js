@@ -82,9 +82,9 @@ async function initializeApp() {
         await initAuth();
     }
 
-    // Analytics 초기화
+    // Analytics 초기화 (Plan-41: 서브시스템 태그 'explorer')
     if (typeof initAnalytics === 'function') {
-        initAnalytics();
+        initAnalytics('explorer');
     }
 
     // 푸터 초기화

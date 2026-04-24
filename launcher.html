@@ -228,6 +228,7 @@
     <script src="js/config.js"></script>
     <script src="js/platform-header.js"></script>
     <script src="js/platform-footer.js"></script>
+    <script src="js/analytics.js"></script>
     <script>
         initPlatformHeader({
             title: 'Smart Document Platform',
@@ -236,6 +237,10 @@
             onAuth: function(user) {
                 document.body.style.visibility = 'visible';
                 document.body.classList.add('fade-in');
+                // Plan-41: Launcher 서브시스템 계측
+                if (typeof initAnalytics === 'function') {
+                    initAnalytics('launcher');
+                }
             }
         });
 

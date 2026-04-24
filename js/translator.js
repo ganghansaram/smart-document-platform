@@ -21,6 +21,10 @@
                 currentUser = user;
                 document.body.style.visibility = 'visible';
                 document.body.classList.add('fade-in');
+                // Plan-41: Translator 서브시스템 계측
+                if (typeof initAnalytics === 'function') {
+                    initAnalytics('translator');
+                }
                 loadDocuments();
                 loadModels();
             }

@@ -235,11 +235,17 @@
     </div>
 
     <script src="js/config.js"></script>
+    <script src="js/analytics.js"></script>
     <script>
         // 플랫폼 타이틀은 고정 (런타임 설정 오버라이드 없음)
 
         var _backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG)
             ? AUTH_CONFIG.backendUrl : '';
+
+        // Plan-41: 로그인 페이지 계측 (auth 이전, username=None 상태 heartbeat)
+        if (typeof initAnalytics === 'function') {
+            initAnalytics('login');
+        }
 
         var loginWrap     = document.getElementById('login-wrap');
         var usernameInput = document.getElementById('username');
