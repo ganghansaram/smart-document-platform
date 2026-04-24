@@ -155,6 +155,102 @@ GPU 없는 백엔드 컨테이너에서 `_INDEX=local`로 운영하면 CPU 폴�
 
 `.env` 변경 후에는 반드시 `docker compose down && docker compose up -d`로 재시작해야 적용됩니다.
 
+### 2-2-A. Ollama 동시성 튜닝 (Plan-44)
+
+Ollama 는 **컨테이너가 아닌 호스트**(또는 별도 GPU 서버)에서 실행됩니다. 따라서 동시성
+관련 환경변수는 docker-compose 를 거치지 않고 **Ollama 기동 환경에 직접 설정**해야 합니다.
+
+#### 권장값 — 1차 진입 (VRAM 실측 전)
+
+| 변수 | 권장값 | 설명 |
+|------|-------|------|
+| `OLLAMA_NUM_PARALLEL` | `2` | 한 모델 내 동시 처리 슬롯. **KV 캐시가 N배 확장되므로 신중** |
+| `OLLAMA_MAX_QUEUE` | `64` | 대기 요청 상한. 초과 시 503 Service Unavailable |
+| `OLLAMA_KEEP_ALIVE` | `30m` | 모델 idle 유지 시간. 스왑 인/아웃 방지 |
+| `OLLAMA_MAX_LOADED_MODELS` | `2` | 동시 상주 모델 수. TRANSLATOR + gemma3 공존 |
+| `OLLAMA_FLASH_ATTENTION` | `1` | KV 메모리 절감 (Ampere/Ada 이상 GPU) |
+
+#### systemd 적용 예시 (리눅스)
+
+`/etc/systemd/system/ollama.service.d/override.conf` 생성:
+
+```ini
+[Service]
+Environment="OLLAMA_NUM_PARALLEL=2"
+Environment="OLLAMA_MAX_QUEUE=64"
+Environment="OLLAMA_KEEP_ALIVE=30m"
+Environment="OLLAMA_MAX_LOADED_MODELS=2"
+Environment="OLLAMA_FLASH_ATTENTION=1"
+```
+
+적용:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart ollama
+```
+
+#### Windows (회사 Windows PC)
+
+Ollama 설치 폴더의 바로가기 또는 사용자 환경변수에 위 값을 추가하고 Ollama 재시작.
+
+#### VRAM 예산 계산
+
+`num_parallel=N` 이면 모델별 **KV 캐시가 N배로 확장**됩니다. L40 48GB 기준 예시:
+
+| 항목 | VRAM (N=2) | VRAM (N=4) |
+|------|-----------|-----------|
+| TRANSLATOR_MODEL (8B Q4, ctx 8K) | 5 GB | 5 GB |
+| TRANSLATOR_MODEL KV (8K × N) | 2 GB | 4 GB |
+| gemma3:4b (ctx 8K) | 3 GB | 3 GB |
+| gemma3:4b KV (8K × N) | 1 GB | 2 GB |
+| bge-m3 (임베딩) | 2 GB | 2 GB |
+| bge-reranker-v2-m3 | 1 GB | 1 GB |
+| OS/CUDA 리저브 | 5 GB | 5 GB |
+| **합계** | **19 GB** | **22 GB** |
+
+#### 2차 상향 기준
+
+아래 조건이 모두 충족되면 `NUM_PARALLEL=4`, `MAX_LOADED_MODELS=3` 으로 상향:
+
+- `nvidia-smi` 실측 피크 VRAM 여유 **5GB 이상**
+- 동시 번역 2개 + 채팅 3개 시나리오에서 OOM 무발생
+- 1주 운영 중 `ollama_503_last_hour > 0` 빈도 증가
+
+#### 스트리밍 슬롯 점유 특성 (주의)
+
+`num_parallel` 슬롯은 **스트림 종료까지 계속 점유**됩니다. 예: `num_parallel=2` 환경에서
+긴 Q&A 스트림 2개가 30초 응답 중이면 **그동안 새 채팅은 대기**합니다. 이 현상은 Phase 1
+설정만으론 해소 불가 — 트리거 발동 시 Plan-44 Phase 2(LLM Gateway) 에서 스트림 전용
+슬롯을 분리하는 것으로 해결합니다.
+
+#### 검증 절차
+
+```bash
+# 1) KEEP_ALIVE 적용 확인
+curl -s http://ollama-host:11434/api/ps | jq '.models[] | {model, expires_at}'
+# expires_at 이 30분 후로 설정되어야 정상
+
+# 2) 동시 요청 큐잉 확인 (num_parallel=2 가정 → 4개 동시 요청 시 2개 큐)
+seq 4 | xargs -P4 -I{} curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" \
+  -X POST http://ollama-host:11434/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gemma3:4b","prompt":"hi","stream":false}'
+# 앞 2개는 빠르게, 뒤 2개는 대기 후 응답
+
+# 3) VRAM 실측 (30초 모니터)
+nvidia-smi --query-gpu=memory.used,memory.free --format=csv -l 2
+
+# 4) 503 재현 (큐 한도 초과 시)
+seq 100 | xargs -P100 -I{} curl -s -o /dev/null -w "%{http_code}\n" \
+  -X POST http://ollama-host:11434/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gemma3:4b","prompt":"hi","stream":false}' | sort | uniq -c
+# 200 / 503 혼합 응답이면 MAX_QUEUE 정상 동작
+```
+
+트러블슈팅: Phase 3 구현 후 백엔드는 Ollama 503 을 받아 **HTTP 429 + `Retry-After`** 로
+변환해 사용자에게 재시도 토스트를 표시합니다.
+
 ### 2-3. 환경 요구사항
 
 **개발 PC (Windows)**

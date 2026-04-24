@@ -10,6 +10,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
+      # Ollama 는 컨테이너가 아닌 호스트(또는 별도 GPU 서버)에서 실행된다.
+      # OLLAMA_NUM_PARALLEL/MAX_QUEUE/KEEP_ALIVE/MAX_LOADED_MODELS 등 동시성 튜닝은
+      # Ollama 기동 환경에 직접 설정 (systemd unit 또는 쉘 env).
+      # 본 compose 로는 전달되지 않음 — docs/03-DOCKER-OPERATIONS.md 참조 (Plan-44).
       - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
       # Plan-40: 용도별 백엔드 분리. 미설정 시 EMBEDDING_BACKEND(레거시) → 코드 기본값(index=ollama, runtime=local).
       - EMBEDDING_BACKEND=${EMBEDDING_BACKEND:-}

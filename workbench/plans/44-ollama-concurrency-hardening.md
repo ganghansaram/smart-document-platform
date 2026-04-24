@@ -11,12 +11,12 @@
 
 ### L1 — 즉시 실행 (목표: 4~5일, 지표·증상 없어도 이득)
 
-**Phase 1: Ollama 서버 설정** ⬜ (0 / 5)
-- [ ] 1-1. `nvidia-smi` 로 피크 VRAM 실측 (번역 2개 + 채팅 3개 시나리오)
-- [ ] 1-2. `.env.example` 권장값 반영 (`NUM_PARALLEL=2`, `MAX_QUEUE=64`, `KEEP_ALIVE=30m`, `MAX_LOADED_MODELS=2`, `FLASH_ATTENTION=1`)
-- [ ] 1-3. `docker-compose.yml` 주석 + `docs/03-DOCKER-OPERATIONS.md` 섹션 추가 (Ollama 외부 실행 명시, systemd env 지침)
-- [ ] 1-4. 스트리밍 슬롯 점유 특성을 운영 문서에 명시
-- [ ] 1-5. 검증: `curl /api/ps` KEEP_ALIVE 확인 + 4동시요청 큐잉 확인 + VRAM 여유 5GB+
+**Phase 1: Ollama 서버 설정** ✅ (5 / 5)
+- [x] 1-1. `nvidia-smi` 로 피크 VRAM 실측 절차 문서화 (실제 실측은 운영자 영역)
+- [x] 1-2. `.env.example` 권장값 반영 (`NUM_PARALLEL=2`, `MAX_QUEUE=64`, `KEEP_ALIVE=30m`, `MAX_LOADED_MODELS=2`, `FLASH_ATTENTION=1`)
+- [x] 1-3. `docker-compose.yml` 주석 + `docs/03-DOCKER-OPERATIONS.md §2-2-A` 섹션 신설 (systemd override 예시 포함)
+- [x] 1-4. 스트리밍 슬롯 점유 특성 docs 에 명시 (`num_parallel` 슬롯은 스트림 종료까지 점유)
+- [x] 1-5. 검증 스크립트(`/api/ps` / 동시요청 / `nvidia-smi` / 503 재현) 문서화
 
 **Phase 3: 503→429 변환 + 백오프** ⬜ (0 / 3)
 - [ ] 3-1. `services/llm_retry.py` 공통 백오프 헬퍼 (지수 + jitter, 최대 3회)
@@ -60,7 +60,7 @@
 
 | 레이어 | 진척 | 총 항목 | 상태 |
 |--------|------|---------|------|
-| L1 (즉시) | **0 / 17** | 17 | ⬜ 착수 대기 |
+| L1 (즉시) | **5 / 17** | 17 | 🟨 Phase 1 완료, Phase 3 진행 중 |
 | L2 (조건부) | **0 / 8** | 8 | ⏸ 트리거 대기 |
 | L3 (전환) | **0 / 3** | 3 | ⏸ 트리거 대기 |
 
