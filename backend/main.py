@@ -178,6 +178,64 @@ app.include_router(compare.router, prefix="/api")       # Compare API
 app.include_router(help_api.router, prefix="/api")      # Help SSOT API (Plan-38)
 
 
+# ── 전역 예외 핸들러 (5xx 계측) ──
+
+from fastapi import Request as _Request, HTTPException as _HTTPException
+from fastapi.responses import JSONResponse as _JSONResponse
+from starlette.exceptions import HTTPException as _StarletteHTTPException
+
+# 폭주 방지: 동일 path 에서 분당 최대 N건만 기록
+_error_rate_limit: dict = {}
+_ERROR_RATE_MAX_PER_MIN = 10
+
+
+def _should_record_error(path: str) -> bool:
+    import time as _t
+    bucket = int(_t.time() // 60)
+    key = (path, bucket)
+    _error_rate_limit[key] = _error_rate_limit.get(key, 0) + 1
+    # 오래된 버킷 제거 (현재 버킷만 유지)
+    for k in list(_error_rate_limit.keys()):
+        if k[1] < bucket:
+            del _error_rate_limit[k]
+    return _error_rate_limit[key] <= _ERROR_RATE_MAX_PER_MIN
+
+
+def _path_to_subsystem(path: str) -> str:
+    """엔드포인트 path → subsystem 매핑. 에러 이벤트 분석용."""
+    if path.startswith("/api/translator"):
+        return "translator"
+    if path.startswith("/api/compare"):
+        return "verify"
+    if path.startswith("/api/search") or path.startswith("/api/chat") or path.startswith("/api/upload"):
+        return "explorer"
+    return "platform"
+
+
+@app.exception_handler(Exception)
+async def _global_exception_handler(request: _Request, exc: Exception):
+    """처리되지 않은 예외를 500 으로 응답하면서 analytics 에 기록 (rate-limit 적용).
+    FastAPI/Starlette HTTPException 은 기본 처리기에 위임 (404/401/409 등 가로채지 않음)."""
+    if isinstance(exc, (_HTTPException, _StarletteHTTPException)):
+        raise exc
+    path = request.url.path
+    logger.exception("Unhandled exception at %s: %s", path, exc)
+    if _should_record_error(path):
+        try:
+            from services.analytics import record_event, get_client_ip
+            from dependencies import get_optional_user
+            u = get_optional_user(request)
+            record_event("error", get_client_ip(request),
+                         # 민감정보 유출 방지: 예외 타입만 기록, str(exc) 제외
+                         {"endpoint": path, "status": 500,
+                          "exception": type(exc).__name__},
+                         username=u["username"] if u else None,
+                         subsystem=_path_to_subsystem(path), status="error")
+        except Exception:
+            pass
+    return _JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
+
+
 # ── 헬스체크 ──
 
 @app.get("/api/health")

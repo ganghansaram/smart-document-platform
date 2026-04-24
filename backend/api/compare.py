@@ -30,25 +30,42 @@ ALLOWED_EXTENSIONS = {".doc", ".docx", ".pdf"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 
+# ── Analytics 헬퍼 ──
+def _record_verify_event(raw_request, user, event_type, metadata=None, *, status=None):
+    """Verify(Compare) 계측용. 실패가 비즈니스 로직 영향 주지 않도록 silent."""
+    try:
+        from services.analytics import record_event, get_client_ip
+        record_event(event_type, get_client_ip(raw_request), metadata,
+                     username=user["username"] if user else None,
+                     subsystem="verify", status=status)
+    except Exception:
+        pass
+
+
 @router.post("/upload")
 async def api_compare_upload(
+    raw_request: Request,
     file: UploadFile = File(...),
     user: dict = Depends(get_current_user),
 ):
     """문서 업로드 → 텍스트 추출 (파일 저장 없음)"""
     filename = file.filename or ""
     ext = os.path.splitext(filename)[1].lower()
+    meta_ev = {"filename": filename, "ext": ext.lstrip(".")}
 
     if ext not in ALLOWED_EXTENSIONS:
+        _record_verify_event(raw_request, user, "upload", meta_ev, status="error")
         raise HTTPException(
             status_code=400,
             detail=f"지원하지 않는 형식입니다. 허용: {', '.join(ALLOWED_EXTENSIONS)}",
         )
 
     contents = await file.read()
+    meta_ev["size"] = len(contents)
 
     if len(contents) > MAX_FILE_SIZE:
         size_mb = len(contents) / 1024 / 1024
+        _record_verify_event(raw_request, user, "upload", meta_ev, status="error")
         raise HTTPException(
             status_code=400,
             detail=f"파일 크기 초과: {size_mb:.1f}MB (최대 50MB)",
@@ -57,8 +74,10 @@ async def api_compare_upload(
     try:
         result = extract_text(contents, ext)
     except Exception as e:
+        _record_verify_event(raw_request, user, "upload", meta_ev, status="error")
         raise HTTPException(status_code=422, detail=f"텍스트 추출 실패: {e}")
 
+    _record_verify_event(raw_request, user, "upload", meta_ev, status="ok")
     return {
         "filename": filename,
         "format": ext.lstrip("."),
@@ -79,9 +98,16 @@ async def api_compare_validate(
     preset = body.get("preset")
 
     if not paragraphs:
+        _record_verify_event(request, user, "compare",
+                             {"mode": "validate", "preset": preset}, status="error")
         raise HTTPException(status_code=400, detail="paragraphs가 비어 있습니다")
 
     result = validate_paragraphs(paragraphs, preset)
+    _record_verify_event(request, user, "compare", {
+        "mode": "validate", "preset": preset,
+        "paragraph_count": len(paragraphs),
+        "issue_count": len(result.get("issues", [])) if isinstance(result, dict) else 0,
+    }, status="ok")
     return result
 
 
@@ -241,9 +267,16 @@ async def api_similarity(
     target_text = body.get("target_text", "")
     reference_text = body.get("reference_text", "")
 
+    meta_ev = {
+        "mode": "similarity",
+        "target_len": len(target_text),
+        "reference_len": len(reference_text),
+    }
     if not target_text.strip():
+        _record_verify_event(request, user, "compare", meta_ev, status="error")
         raise HTTPException(status_code=400, detail="검사 대상 텍스트가 비어 있습니다")
     if not reference_text.strip():
+        _record_verify_event(request, user, "compare", meta_ev, status="error")
         raise HTTPException(status_code=400, detail="참조 원문 텍스트가 비어 있습니다")
 
     threshold_high = body.get("threshold_high")
@@ -264,8 +297,16 @@ async def api_similarity(
         )
     except Exception as e:
         logger.exception("유사도 검사 실패")
+        _record_verify_event(request, user, "compare", meta_ev, status="error")
         raise HTTPException(status_code=502, detail=f"유사도 검사 실패: {e}")
 
+    if isinstance(result, dict):
+        score = result.get("score")
+        if score is None:
+            score = result.get("overall_score")
+        if score is not None:
+            meta_ev["score"] = score
+    _record_verify_event(request, user, "compare", meta_ev, status="ok")
     return result
 
 
