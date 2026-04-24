@@ -2153,7 +2153,9 @@
 
             // API 호출 (AbortController로 취소 가능)
             _aiAbortController = new AbortController();
-            fetch(API + '/api/translator/ai/selection', {
+            // Plan-44 Phase 4: 429 수신 시 RequestGuard 가 자동 재시도 + 토스트
+            var _tfetch = (window.RequestGuard && window.RequestGuard.fetchWithRetry) || fetch;
+            _tfetch(API + '/api/translator/ai/selection', {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },

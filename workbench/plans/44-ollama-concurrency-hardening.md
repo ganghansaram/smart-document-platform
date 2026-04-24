@@ -23,11 +23,11 @@
 - [x] 3-2. `main.py` 에 `@app.exception_handler(LLMQueueFullError)` 등록 — 429 + `Retry-After` 헤더 + `retry_after` body
 - [x] 3-3. 호출부 5곳 적용 (`llm_provider.OllamaProvider.generate/stream`, `OpenAICompatProvider.generate/stream`, `translator_service.ai_selection_query`, `compare_service._call_ollama_classify`, `query_rewriter` 503 로그 구분)
 
-**Phase 4: 프론트 RequestGuard** ⬜ (0 / 4)
-- [ ] 4-1. `js/request-guard.js` 신설 (inFlight Map + AbortController + 자동 abort)
-- [ ] 4-2. 서브시스템 4곳 이식 (`ai-chat.js`, `translator.js`, `compare.html`, `index.html` reindex)
-- [ ] 4-3. `js/toast.js` 에 `showRetryToast(sec)` 추가 + 429 자동 재시도 카운트다운
-- [ ] 4-4. 페이지 이탈·탭 전환 시 해당 key abort 훅
+**Phase 4: 프론트 RequestGuard** ✅ (4 / 4)
+- [x] 4-1. `js/request-guard.js` 신설 — `fetchWithRetry` (429 자동 재시도), `guard/abort/abortAll/isBusy`, `beforeunload` 전체 abort
+- [x] 4-2. LLM fetch 4곳 이식 (`ai-chat.js:/api/chat` + `/api/chat/stream`, `translator.js:/ai/selection`, `compare.html:/compare/ai-classify`)
+- [x] 4-3. `js/toast.js` 에 `showRetryToast(sec)` 추가 — 카운트다운 + warning 색, showToast 와 타이머 공유
+- [x] 4-4. `beforeunload` 리스너로 모든 RequestGuard.guard() 호출 abort (브라우저 기본 fetch abort 에 추가 보호선)
 
 **Phase 5: 헬스·지표 + 관리자 대시보드 섹션 (디자인 시스템 준수)** 🟨 (3 / 5)
 - [x] 5-1. `/api/health` 에 `ollama_latency_ms`, `ollama_503_last_hour` 필드 추가 (overall 판정 제외 처리)
@@ -60,7 +60,7 @@
 
 | 레이어 | 진척 | 총 항목 | 상태 |
 |--------|------|---------|------|
-| L1 (즉시) | **11 / 17** | 17 | 🟨 Phase 1·3·5(백엔드) 완료, Phase 4·5(UI) 진행 중 |
+| L1 (즉시) | **15 / 17** | 17 | 🟨 Phase 1·3·4·5(백엔드) 완료, Phase 5(UI 5-4/5-5) 진행 중 |
 | L2 (조건부) | **0 / 8** | 8 | ⏸ 트리거 대기 |
 | L3 (전환) | **0 / 3** | 3 | ⏸ 트리거 대기 |
 

@@ -474,7 +474,9 @@ async function requestViaBackend(question) {
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, 60000);
 
-    var response = await fetch(AI_CONFIG.backendUrl + '/api/chat', {
+    // Plan-44 Phase 4: RequestGuard 가 있으면 429 자동 재시도, 없으면 일반 fetch
+    var _fetch = (window.RequestGuard && window.RequestGuard.fetchWithRetry) || fetch;
+    var response = await _fetch(AI_CONFIG.backendUrl + '/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -517,7 +519,9 @@ async function requestViaBackendStream(question) {
     var controller = new AbortController();
     var timeoutId = setTimeout(function() { controller.abort(); }, 180000); // 3분
 
-    var response = await fetch(AI_CONFIG.backendUrl + '/api/chat/stream', {
+    // Plan-44 Phase 4: 429 자동 재시도 (스트림 시작 전 헤더 단계에서만 감지됨)
+    var _fetch = (window.RequestGuard && window.RequestGuard.fetchWithRetry) || fetch;
+    var response = await _fetch(AI_CONFIG.backendUrl + '/api/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

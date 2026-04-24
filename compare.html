@@ -355,6 +355,8 @@
     <script src="js/config.js"></script>
     <script src="js/platform-header.js"></script>
     <script src="js/analytics.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/request-guard.js"></script>
     <script>
         (function() {
             'use strict';
@@ -5348,7 +5350,9 @@
                     });
                 }
 
-                fetch(API_BASE + '/compare/ai-classify', {
+                // Plan-44 Phase 4: 429 자동 재시도 + 토스트 카운트다운
+                var _cfetch = (window.RequestGuard && window.RequestGuard.fetchWithRetry) || fetch;
+                _cfetch(API_BASE + '/compare/ai-classify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
