@@ -1280,12 +1280,14 @@
                     { color: 'orange', range_min: 50, range_max: 74,  label: '상당량 매칭',   meaning: '광범위한 재작성 권고' },
                     { color: 'red',    range_min: 75, range_max: 100, label: '위험',          meaning: '대부분 타 출처와 동일' }
                 ];
+                // Plan-45 v3 (Phase 6): SSOT 정상 시 자동 갱신, fallback도 v3 공식 (Copyleaks aggregatedScore)
                 var formula = (help.score_formula && help.score_formula.equation) ||
-                    '유사율 = (실질 매칭 + 의역·번역 × 0.5) / (전체 문장 - 정형구문) × 100';
+                    '유사율 = (동일 + 거의 동일 + 의역) / (전체 문장 - 제외 문장) × 100';
                 var vars = (help.score_formula && help.score_formula.variables) || {
-                    '실질 매칭': 'identical + near_copy 문장 수',
-                    '의역·번역': 'paraphrase + translation 문장 수 (가중치 ×0.5)',
-                    '정형구문': '업계 표준 문구 (점수 제외)'
+                    '동일': 'identical 매칭 문장 수',
+                    '거의 동일': 'near_copy 매칭 문장 수',
+                    '의역': 'paraphrase + translation 매칭 문장 수',
+                    '제외': '자동 제외 + 수동 제외 (중복 없음)'
                 };
                 var disclaimer = help.disclaimer || {
                     main: '유사도 ≠ 표절 — 검토자의 판단이 최종',
@@ -1603,16 +1605,16 @@
                     // 5라벨 위치 (좌표는 fp/sem 기준; 60+fp*320, 280-sem*240)
                     // identical: fp=0.95, sem=0.95 → x=60+304=364, y=280-228=52
                     + '<circle cx="338" cy="60"  r="8" fill="#dc2626"/>'
-                    + '<text   x="338" y="35" text-anchor="middle" font-size="11" font-weight="600" fill="#dc2626">일치</text>'
+                    + '<text   x="338" y="35" text-anchor="middle" font-size="11" font-weight="600" fill="#dc2626">동일</text>'
                     // near_copy: fp=0.6, sem=0.9 → x=60+192=252, y=280-216=64
                     + '<circle cx="278" cy="76"  r="8" fill="#ea580c"/>'
                     + '<text   x="278" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#ea580c">거의 동일</text>'
                     // paraphrase: fp=0.2, sem=0.85 → x=60+64=124, y=280-204=76
                     + '<circle cx="124" cy="88"  r="8" fill="#2563eb"/>'
                     + '<text   x="124" y="65" text-anchor="middle" font-size="11" font-weight="600" fill="#2563eb">의역</text>'
-                    // translation: fp=0.05, sem=0.85 → x=60+16=76, y=280-204=76
-                    + '<circle cx="80"  cy="120" r="8" fill="#7c3aed"/>'
-                    + '<text   x="80"  y="143" text-anchor="middle" font-size="11" font-weight="600" fill="#7c3aed">번역</text>'
+                    // translation: fp=0.05, sem=0.85 → 의역 카테고리에 통합 (다른 언어)
+                    + '<circle cx="80"  cy="120" r="8" fill="#2563eb"/>'
+                    + '<text   x="80"  y="143" text-anchor="middle" font-size="11" font-weight="600" fill="#2563eb">의역 (번역)</text>'
                     // low_sim: fp=0.15, sem=0.7 → x=60+48=108, y=280-168=112
                     + '<circle cx="160" cy="180" r="8" fill="#6b7280"/>'
                     + '<text   x="160" y="203" text-anchor="middle" font-size="11" font-weight="600" fill="#6b7280">약한 유사</text>'
@@ -1697,13 +1699,13 @@
                     },
                     {
                         title: 'ⓘ를 누르면 기준을 볼 수 있습니다',
-                        body: '<p style="margin:0 0 8px">점수 옆 <strong>ⓘ</strong>는 산식·5단계 신호등·면책을, 4그룹 옆 <strong>ⓘ</strong>는 매칭 유형 가이드(2축 다이어그램)를 보여줍니다.</p>'
-                            + '<p style="margin:0;color:var(--text-light);font-size:var(--font-small)">"왜 이 라벨인지" 즉시 학습할 수 있습니다.</p>'
+                        body: '<p style="margin:0 0 8px">점수 옆 <strong>ⓘ</strong>는 산식·5단계 신호등·면책을, 누적바 옆 <strong>ⓘ</strong>는 매칭 유형 가이드(2축 다이어그램)를 보여줍니다.</p>'
+                            + '<p style="margin:0;color:var(--text-light);font-size:var(--font-small)">"왜 이 카테고리인지" 즉시 학습할 수 있습니다.</p>'
                     },
                     {
-                        title: '결과는 인쇄용 보고서로 출력됩니다',
-                        body: '<p style="margin:0 0 8px">상단 <strong>내보내기</strong> 버튼으로 HTML(A4 인쇄용)·Excel·TXT 보고서를 생성할 수 있습니다.</p>'
-                            + '<p style="margin:0;color:var(--text-light);font-size:var(--font-small)">보고서에는 검사 기준 부록이 자동 첨부되어 회람 시 받는 사람도 즉시 이해할 수 있습니다.</p>'
+                        title: '결과는 PDF 보고서로 출력됩니다',
+                        body: '<p style="margin:0 0 8px">상단 <strong>내보내기</strong> 버튼으로 PDF·HTML 보고서를 생성할 수 있습니다 (PDF 권장).</p>'
+                            + '<p style="margin:0;color:var(--text-light);font-size:var(--font-small)">보고서에는 결과지(A4 1장) + 매칭 상세 + 검사 기준 부록이 자동 분리되어 회람 시 받는 사람도 즉시 이해할 수 있습니다.</p>'
                     }
                 ];
 
@@ -5040,7 +5042,7 @@
                     { color: 'red',    range_min: 75, range_max: 100, label: '위험',        meaning: '대부분 타 출처와 동일' }
                 ];
                 var labels = help.labels || {};
-                var formula = (help.score_formula && help.score_formula.equation) || '유사율 = (실질 매칭 + 의역·번역 × 0.5) / (전체 문장 - 정형구문) × 100';
+                var formula = (help.score_formula && help.score_formula.equation) || '유사율 = (동일 + 거의 동일 + 의역) / (전체 문장 - 제외 문장) × 100';
                 var disclaimer = help.disclaimer || { main: '유사도 ≠ 표절 — 검토자의 판단이 최종', long: '본 점수는 텍스트 유사도를 측정한 것일 뿐, 표절 여부를 자동 판정하지 않습니다.' };
                 var algoRefs = (help.algorithm && help.algorithm.references) || [];
                 var bandColorMap = { blue:'#3b82f6', green:'#22c55e', yellow:'#eab308', orange:'#f97316', red:'#ef4444' };

@@ -477,16 +477,15 @@ function computeScore(matches, totalSentences, activeSettings) {
 - 보고서: `workbench/reports/plan-45-phase5-feedback-2026-04-25.md`
 - **잔여 (Phase 6/7)**: Modal B fallback formula 갱신, TXT export dead code 정리, 별첨 A 페이지 분할 보강
 
-### Phase 6 — 가이드·모달·온보딩 갱신 (0.4일)
-- `verify-guide.html` 유사도 챕터 재작성 (4 카테고리 라벨 기준)
-- 모달 A (2축 다이어그램) 캡션 업데이트 — "동일/거의 동일/의역/약한 유사" 동기
-- **모달 B (점수 산식) — v3 공식으로 갱신** ← 필수
-- 모달 C (검사 설정) 텍스트 검토
-- 온보딩 3-step 텍스트 교체 (1단계는 Phase 3.5에서 이미 갱신, 나머지 점검)
-- **(추가 — Phase 3.5 후속) 도움말 아이콘 통일**:
-  - ⓘ/? 아이콘 4종 정책 통일: 점수 ⓘ(Modal B) / 누적바 ⓘ(Modal A) / 검사 설정 ⓘ(Modal C) / 판정 ?(툴팁)
-  - 결정: 모달 트리거는 ⓘ, hover 툴팁은 ? — 또는 단일 ⓘ로 통합 후 hover/click 동작 규약화
-  - 검사 설정 ⓘ 와 결과 필터 ⓘ 부재의 일관성 검토 (필터에도 ⓘ 추가 또는 검사 설정 ⓘ 제거)
+### Phase 6 — 가이드·모달·온보딩 갱신 (0.4일) ✅ **완료 (2026-04-25)**
+- `verify-guide.html` 유사도 챕터 재작성: **4 카테고리** (동일/거의 동일/의역/약한 유사) 표 + "점수 영향" 컬럼, Copyleaks 공식 + 검증 표기, FAQ 자동/수동 제외 추가
+- Modal A SVG 라벨 v3 동기: "일치"→"동일", "번역"→"의역 (번역)" 색상 통합
+- **Modal B fallback formula** v3 갱신 — "실질 매칭 + 의역·번역 × 0.5" → "(동일 + 거의 동일 + 의역) / (전체 - 제외)"
+- Modal C 검사 설정: 텍스트 정합성 확인 (변경 불필요 — 이미 v3 어휘)
+- 온보딩 2/3단계: "4그룹 옆 ⓘ"→"누적바 옆 ⓘ", "HTML/Excel/TXT"→"PDF·HTML 보고서"
+- ⓘ/? 아이콘 정책: 현재 ⓘ=모달 트리거, ?=hover 툴팁 명확 — 추가 통일 불필요 판단
+- 검증: 21/21 테스트 PASS · 구문 PASS · Plan-38 옛 어휘 (4그룹/표절 의심/참고 가능/제외 영역) 잔존 0건 · Playwright Modal B v3 공식 표시 확인
+- 보고서: `workbench/reports/plan-45-phase6-feedback-2026-04-25.md`
 
 ### Phase 7 — 드리프트 방지 + 회귀 (0.4일)
 - `tests/sim_label_consistency.sh` 작성 (§8.1)
