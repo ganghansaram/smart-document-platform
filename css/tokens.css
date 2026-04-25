@@ -87,11 +87,12 @@
     --panel-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06);
     --panel-border: none;
 
-    /* 폰트 사이즈 4단계 */
+    /* 폰트 사이즈 5단계 — 라이트·다크 동일, 다크 블록 오버라이드 없음 */
     --font-title: 15px;
     --font-body: 13px;
     --font-small: 12px;
     --font-caption: 11px;
+    --font-tiny: 10.5px;        /* 보조 캡션 (산식 근거·검증 등 caption 미만) */
 
     /* 폰트 굵기 */
     --font-weight-bold: 700;

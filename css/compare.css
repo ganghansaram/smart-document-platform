@@ -1035,24 +1035,29 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
     color: var(--active-color);
     margin: 0 0 var(--space-xs);
 }
+/* Plan-47: 산식 박스 시각 무게 강화 — 좌측 3px accent + 본 산식임을 강조 */
 .sim-help-formula {
     font-family: "Consolas", "Courier New", monospace;
     font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
     padding: var(--space-sm) var(--space-md);
     background: var(--bg-card);
     border: 1px solid var(--border-color);
+    border-left: 3px solid var(--active-color);
     border-radius: var(--radius-sm);
     line-height: 1.6;
+    color: var(--text-default);
 }
-/* Phase 3.6: 산식 근거·검증 캡션 — 산식 박스와 시각 종속 관계 명시 (좌측 accent + 연한 배경) */
+/* Plan-47: 산식 근거·검증 캡션 — font-tiny(10.5px)로 산식보다 작게 (위계 정상화)
+ * 시각 종속 관계는 산식 박스 좌측 accent 와 동일 색상 보더로 연결 */
 .sim-help-formula-basis {
     margin-top: 4px;
     padding: 6px 10px;
-    font-size: var(--font-small);
+    font-size: var(--font-tiny);
     color: var(--text-light);
     line-height: 1.5;
     background: var(--bg-default);
-    border-left: 2px solid var(--active-color);
+    border-left: 2px solid var(--border-color);
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 .sim-help-formula-basis div + div {
@@ -1126,14 +1131,29 @@ body[data-theme="dark"] .sim-help-disclaimer {
 }
 body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 
-/* 모달 A — 매칭 유형 가이드 (2축 다이어그램 + 6라벨 표) */
+/* 모달 A — 매칭 유형 가이드 (6라벨 표). Plan-47: 2축 다이어그램 제거 */
 .sim-label-help-modal .modal-box { max-width: 720px; }
-.sim-axis-svg {
-    display: block;
-    margin: 8px auto 0;
-    max-width: 100%;
-    height: auto;
+/* 모달 A 인트로 — 다이어그램 대체 본 설명문이므로 모달 B 산식과 동일한 3px accent border */
+.sim-help-intro {
+    margin: 0 0 var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-small);
     color: var(--text-default);
+    line-height: 1.6;
+    background: var(--bg-card);
+    border-left: 3px solid var(--active-color);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.sim-help-intro strong { color: var(--active-color); font-weight: var(--font-weight-semibold); }
+/* Plan-47: 어휘·의미 컬럼은 단일 값 (높음/낮음/중간/매우 높음/거의 0/—) — 줄내림 금지
+ * 임계값 컬럼은 코드형 텍스트라 가끔 wrap 허용 (자연 줄바꿈) */
+.sim-label-help-modal .sim-help-bands th:nth-child(2),
+.sim-label-help-modal .sim-help-bands th:nth-child(3),
+.sim-label-help-modal .sim-help-bands td:nth-child(2),
+.sim-label-help-modal .sim-help-bands td:nth-child(3) {
+    white-space: nowrap;
+    min-width: 64px;
+    text-align: center;
 }
 .sim-help-label-cell {
     display: inline-block;
