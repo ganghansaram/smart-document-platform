@@ -7,11 +7,13 @@
 | Phase | 상태 | 커밋 | 비고 |
 |-------|------|------|------|
 | 계획서 작성 | ✅ 완료 | `7ffc90a` | 현 상태 진단 + 업계 표준 분석 |
-| **Phase 1** — Critical 정상화 + 위치 정확도 | ✅ **완료 (2026-04-25)** | `263abec` | 단위 21/21 · code-reviewer Critical 0 · 사용자 Playwright 검증 후속 |
-| Phase 2 — L2 호버 툴팁 | ⏸ 대기 | — | Phase 1 사용자 검증 후 진행 |
-| Phase 3 — diff·sim 코드 통합 | ⏸ 보류 | — | 선택적, ROI 낮음 |
+| **Phase 1** — Critical 정상화 + 위치 정확도 | ✅ **완료 (2026-04-25)** | `263abec` | 단위 21/21 · code-reviewer Critical 0 |
+| **Phase 2** — L2 호버 툴팁 | ✅ **완료 (2026-04-25)** | (이 커밋) | code-reviewer Critical 2 + Warning 2 + design-reviewer Warning 1 즉시 반영 |
+| Phase 3 — diff·sim 코드 통합 | ⏸ 보류 | — | 선택적, ROI 낮음. 사용자 만족 시 미진행 |
 
-피드백 보고서: `workbench/reports/plan-48-phase1-feedback-2026-04-25.md`
+피드백 보고서:
+- Phase 1 — `workbench/reports/plan-48-phase1-feedback-2026-04-25.md`
+- Phase 2 — `workbench/reports/plan-48-phase2-feedback-2026-04-25.md`
 
 ## 배경 / 사용자 인식 문제
 
@@ -337,7 +339,7 @@ function simRecalcMinimapAfterLayoutSettle() {
 - 200ms delay (PyCharm 기본값)
 - viewport 경계 보정 — 잘리면 반대 방향으로 표시
 - 다크모드: `--popover-bg`, `--popover-bg-hover`
-- z-index: 1000 (모달 2000 미만)
+- z-index: 1500 (모달 2000 미만, 토스트 5000 미만 — 구현 시 1000→1500 상향, DR-W1)
 - ESC 또는 스크롤 시 자동 닫힘
 
 #### 구현 코드 (생략, Phase 2 진입 시 작성 — 사전 v1 계획서에 스케치 보존)
@@ -389,7 +391,7 @@ function simRecalcMinimapAfterLayoutSettle() {
 |--------|------|------|
 | diff 미니맵 회귀 (실수로 `.cp-minimap-mark` 규칙 변경) | 낮 | sim 코드는 `.sim-minimap-mark` 별도 클래스만 사용, diff 코드 손대지 않음 |
 | `simHighlightMinimapActive` 와 `simRenderMinimap` 사이 race (재계산 중 active 마커 사라짐) | 중 | `simRenderMinimap` 끝에서 `simActiveIdx` 기준 active 재부여 (Step 1.2 마지막 블록) |
-| 툴팁 z-index 모달 위로 뜸 | 낮 | `z-index: 1000` 명시 (모달 2000 미만) |
+| 툴팁 z-index 모달 위로 뜸 | 낮 | `z-index: 1500` 명시 (모달 2000 미만 — 구현 시 1000→1500 상향) |
 | 다크모드 `text-muted` (low_similarity) 가시성 부족 | 중 | tokens.css 다크값 `#9ca3af` 검증, 필요 시 `opacity` 보강 |
 | 짧은 마커(3px)에서 hover 트리거 어려움 | 낮 | `:hover { transform: scaleX(1.3) }` 이미 적용 |
 | `document.fonts.ready` 미지원 브라우저 | 낮 | 옵셔널 체이닝 — 미지원 시 ResizeObserver 가 폴백 |

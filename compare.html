@@ -1029,6 +1029,8 @@
             function setMode(mode) {
                 if (mode === currentMode) return;
                 currentMode = mode;
+                // Plan-48 Phase 2: 모드 전환 시 미니맵 툴팁 등 즉시 닫힘 트리거
+                document.dispatchEvent(new CustomEvent('compare:mode-changed', { detail: { mode: mode } }));
 
                 var body = document.getElementById('compare-body');
                 body.className = 'compare-body mode-' + mode;
@@ -4262,6 +4264,121 @@
                     }
                 });
             });
+
+            // Plan-48 Phase 2: 미니맵 마커 호버 툴팁 (PyCharm L2 패턴)
+            // 200ms delay 후 카테고리·점수·스니펫 60자 표시. 사이드바 카드를
+            // 열지 않고도 분포 인지 + 미리보기. ESC·스크롤·모드전환 시 자동 닫힘.
+            (function setupSimMinimapTooltip() {
+                var tooltipEl = document.createElement('div');
+                tooltipEl.className = 'sim-minimap-tooltip';
+                tooltipEl.setAttribute('aria-hidden', 'true');
+                document.body.appendChild(tooltipEl);
+
+                var hoverTimer = null;
+                var SHOW_DELAY = 200;
+
+                function buildTooltipContent(idx) {
+                    if (!simLastResult || !simLastResult.matches || !simLastResult.matches[idx]) return '';
+                    var m = simLastResult.matches[idx];
+                    var cat = resolveCategory(m, simLoadCheckSettings());
+
+                    // SSOT 라벨 (similarity-help.json 우회 금지 — Plan-45 §8.2 R1)
+                    var label = cat;
+                    if (simHelp && simHelp.categories && simHelp.categories[cat]) {
+                        label = simHelp.categories[cat].ko;
+                    } else if (simHelp && simHelp.exclusions) {
+                        if (cat === 'excluded_auto'   && simHelp.exclusions.auto)   label = simHelp.exclusions.auto.ko;
+                        if (cat === 'excluded_manual' && simHelp.exclusions.manual) label = simHelp.exclusions.manual.ko;
+                    } else {
+                        // simHelp 미로드 시 폴백 (catLabel 함수와 동일 매핑)
+                        label = ({ identical: '동일', near_copy: '거의 동일', paraphrased: '의역',
+                                   low_similarity: '약한 유사', excluded_auto: '자동 제외',
+                                   excluded_manual: '수동 제외' })[cat] || cat;
+                    }
+
+                    var pct = (typeof m.similarity === 'number')
+                        ? (m.similarity * 100).toFixed(1) + '%'
+                        : '—';
+                    var snippet = (m.target_text || '').substring(0, 60);
+                    if ((m.target_text || '').length > 60) snippet += '…';
+                    var total = simLastResult.matches.length;
+
+                    return '<div class="sim-minimap-tooltip-header">'
+                        +     '<span class="sim-minimap-tooltip-dot sim-mark-cat-' + cat + '"></span>'
+                        +     '<span>' + escapeHTML(label) + ' · ' + escapeHTML(pct) + '</span>'
+                        + '</div>'
+                        + '<div class="sim-minimap-tooltip-snippet">' + escapeHTML(snippet) + '</div>'
+                        + '<div class="sim-minimap-tooltip-meta">#' + (idx + 1) + ' / ' + total + '</div>';
+                }
+
+                function showTooltip(mark) {
+                    // 200ms delay 사이 stale 마커 방어 (CR-W1) + 모드 전환 방어
+                    if (!mark.isConnected || currentMode !== 'similarity') return;
+                    var idx = parseInt(mark.dataset.simIdx);
+                    if (isNaN(idx)) return;
+                    var content = buildTooltipContent(idx);
+                    if (!content) return;
+                    tooltipEl.innerHTML = content;
+
+                    // 위치 계산 — 마커가 우측 끝에 있으므로 좌측 표시 우선, viewport 경계 보정
+                    var rect = mark.getBoundingClientRect();
+                    // 측정 시 FOUC 방지 (CR-Critical 2): inline opacity:0 을 dataset.visible=true 보다
+                    // specificity 높게 두어, 측정 동안 사용자는 못 보지만 offsetWidth/Height 는 산출됨.
+                    tooltipEl.style.opacity = '0';
+                    tooltipEl.dataset.visible = 'true';
+                    var ttW = tooltipEl.offsetWidth;
+                    var ttH = tooltipEl.offsetHeight;
+
+                    // 좌측 표시 우선
+                    var left = rect.left - ttW - 8;
+                    if (left < 8) left = rect.right + 8;          // 좌측 잘림 → 우측
+                    if (left + ttW > window.innerWidth - 8) {
+                        left = window.innerWidth - ttW - 8;       // 우측도 잘림 → 강제 inset
+                    }
+
+                    // 마커 중앙 기준 세로 정렬, viewport 경계 보정
+                    var top = rect.top + rect.height / 2 - ttH / 2;
+                    if (top < 8) top = 8;
+                    if (top + ttH > window.innerHeight - 8) top = window.innerHeight - ttH - 8;
+
+                    tooltipEl.style.left = left + 'px';
+                    tooltipEl.style.top = top + 'px';
+                    tooltipEl.style.opacity = '';                 // inline 제거 → CSS transition 정상 발화
+                }
+
+                function hideTooltip() {
+                    clearTimeout(hoverTimer);
+                    hoverTimer = null;
+                    tooltipEl.dataset.visible = 'false';
+                }
+
+                [document.getElementById('cp-minimap-a'),
+                 document.getElementById('cp-minimap-b')].forEach(function(mm) {
+                    if (!mm) return;
+                    mm.addEventListener('mouseover', function(e) {
+                        if (currentMode !== 'similarity') return;
+                        var mark = e.target.closest('.sim-minimap-mark');
+                        if (!mark) return;
+                        clearTimeout(hoverTimer);
+                        hoverTimer = setTimeout(function() { showTooltip(mark); }, SHOW_DELAY);
+                    });
+                    mm.addEventListener('mouseout', function(e) {
+                        // CR-Critical 1: 마커 → 컨테이너 빈 영역 이동 시에도 닫힘 (mark null 시 hide)
+                        hideTooltip();
+                    });
+                });
+
+                // ESC / 패널 스크롤 시 자동 닫힘
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && currentMode === 'similarity') hideTooltip();
+                });
+                [panelBodyA, panelBodyB].forEach(function(p) {
+                    if (p) p.addEventListener('scroll', hideTooltip, { passive: true });
+                });
+
+                // 모드 전환 시 즉시 닫기 (DR §확인필요 3)
+                document.addEventListener('compare:mode-changed', hideTooltip);
+            })();
 
             // ══════════════════════════════════════════
             // Phase 4: 수락/거절 + 내보내기

@@ -188,6 +188,63 @@ body[data-theme="dark"] .sim-minimap-mark.active {
 .sim-minimap-mark.sim-mark-cat-excluded_auto   { background: var(--border-color); opacity: 0.5; }
 .sim-minimap-mark.sim-mark-cat-excluded_manual { background: var(--text-muted); opacity: 0.5; }
 
+/* Plan-48 Phase 2: 미니맵 마커 호버 툴팁 (PyCharm L2 패턴 — 카테고리·점수·스니펫) */
+.sim-minimap-tooltip {
+    position: fixed;
+    z-index: 1500;                       /* 모달(2000) 미만, 일반 콘텐츠 위 */
+    background: var(--popover-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-sm) var(--space-md);
+    max-width: 320px;
+    min-width: 180px;
+    color: var(--text-primary);
+    pointer-events: none;                /* 툴팁 자체는 마우스 통과 */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast);
+}
+.sim-minimap-tooltip[data-visible="true"] {
+    opacity: 1;
+    visibility: visible;
+}
+.sim-minimap-tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-small);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+.sim-minimap-tooltip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+/* 툴팁 dot 색상 — 마커와 동일 카테고리 매핑 (시각 일관성) */
+.sim-minimap-tooltip-dot.sim-mark-cat-identical       { background: var(--color-error); }
+.sim-minimap-tooltip-dot.sim-mark-cat-near_copy       { background: var(--color-warning); }
+.sim-minimap-tooltip-dot.sim-mark-cat-paraphrased     { background: var(--color-info); }
+.sim-minimap-tooltip-dot.sim-mark-cat-low_similarity  { background: var(--text-muted); }
+.sim-minimap-tooltip-dot.sim-mark-cat-excluded_auto   { background: var(--border-color); }
+.sim-minimap-tooltip-dot.sim-mark-cat-excluded_manual { background: var(--text-muted); }
+.sim-minimap-tooltip-snippet {
+    color: var(--text-secondary);
+    font-size: var(--font-caption);
+    line-height: var(--line-height-body);
+    word-break: keep-all;
+}
+.sim-minimap-tooltip-meta {
+    /* DR-W4: text-muted 라이트값 #94a3b8 위 흰 popover-bg = 3.7:1 (AA 미달).
+       text-secondary(#7f8c8d, 4.6:1)로 격상해 작은 글자(10.5px) AA 통과. */
+    color: var(--text-secondary);
+    font-size: var(--font-tiny);
+    margin-top: 6px;
+}
+
 /* ── 패널 라벨 (Notebook .panel-title 패턴) ── */
 .cp-panel-label {
     display: inline-flex;
