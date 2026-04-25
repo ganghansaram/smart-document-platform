@@ -32,8 +32,11 @@
     --hover-bg: #e8f4f8;
     --bg-primary: #ffffff;
     --bg-secondary: #e8f4f8;
+    --bg-default: #ffffff;        /* 셀·강조 배경 (예: sim-indicator 셀) */
+    --bg-card: #f8fafc;           /* 컨테이너·약한 배경 (예: sim-indicators 모체) */
     --text-primary: #2c3e50;
     --text-secondary: #7f8c8d;
+    --text-muted: #94a3b8;        /* 약한 유사 dot/segment 회색 — 8px dot 라이트 배경 위 식별 가능 */
     --active-color: #2c5282;
     --active-color-hover: #234a73;
     --active-color-subtle: rgba(44,82,130,0.08);
@@ -154,8 +157,11 @@ body[data-theme="dark"] {
     --hover-bg: #2d2f3e;
     --bg-primary: #1e1e2e;
     --bg-secondary: #2d2f3e;
+    --bg-default: #2d2f3e;        /* 셀·강조 배경 (다크) */
+    --bg-card: #1e2030;           /* 컨테이너·약한 배경 (다크) */
     --text-primary: #e0e0e0;
     --text-secondary: #a0a4b8;
+    --text-muted: #9ca3af;        /* 약한 유사 dot/segment 회색 — 어두운 배경 위 식별 가능 */
     --active-color: #63a0e0;
     --active-color-hover: #74ade5;
     --active-color-subtle: rgba(99,160,224,0.12);

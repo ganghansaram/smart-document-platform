@@ -1044,6 +1044,24 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
     border-radius: var(--radius-sm);
     line-height: 1.6;
 }
+/* Phase 3.6: 산식 근거·검증 캡션 — 산식 박스와 시각 종속 관계 명시 (좌측 accent + 연한 배경) */
+.sim-help-formula-basis {
+    margin-top: 4px;
+    padding: 6px 10px;
+    font-size: var(--font-small);
+    color: var(--text-light);
+    line-height: 1.5;
+    background: var(--bg-default);
+    border-left: 2px solid var(--active-color);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.sim-help-formula-basis div + div {
+    margin-top: 3px;
+}
+.sim-help-formula-basis strong {
+    color: var(--text-default);
+    font-weight: var(--font-weight-semibold);
+}
 .sim-help-bands {
     width: 100%;
     border-collapse: collapse;
@@ -1071,6 +1089,7 @@ body[data-theme="dark"] .sim-help-bands td {
     display: inline-block;
     padding: 1px 8px;
     border-radius: var(--radius-md);
+    white-space: nowrap;
     font-size: var(--font-caption);
     font-weight: var(--font-weight-semibold);
     color: white;
@@ -1322,12 +1341,17 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     color: var(--active-color);
 }
 
-/* 4 카테고리 누적바 (Copyleaks 색상) */
+/* 4 카테고리 누적바 (Copyleaks 색상) — Phase 3.6: 누적바 + ⓘ 를 한 row 로 통합 */
+.sim-category-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
 .sim-category-bar {
     display: flex;
-    width: 100%;
+    flex: 1;
     height: 8px;
-    margin-top: 8px;
     border-radius: var(--radius-sm);
     background: var(--border-color);
     overflow: hidden;
@@ -1344,10 +1368,10 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 .sim-cat-seg.sc-clean          { background: transparent; }
 
 .sim-category-info {
-    margin-top: 4px;
-    float: right;
     font-size: var(--font-caption);
     padding: 1px 4px;
+    flex-shrink: 0;
+    vertical-align: middle; /* .sim-score-info 의 super 상속 차단 — flex row 컨텍스트 안전 마진 */
 }
 
 /* 결과 필터 바 (👁 아이콘 + 카테고리 체크박스 4개) */
@@ -1368,13 +1392,14 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 .sim-filter-header svg {
     color: var(--text-muted);
 }
+/* Phase 3.6: 4 카테고리 칩 2×2 그리드 — 텍스트 길이 무관 폭 통일 */
 .sim-filter-chips {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 6px;
 }
 .sim-filter-chip {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 4px;
     padding: 4px 8px;
@@ -1386,6 +1411,7 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     cursor: pointer;
     user-select: none;
     transition: background var(--transition-fast), border-color var(--transition-fast);
+    min-width: 0;
 }
 .sim-filter-chip:hover {
     background: var(--hover-bg);
@@ -1409,6 +1435,10 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 .sim-filter-chip-low_similarity .sim-filter-dot { background: var(--text-muted); }
 .sim-filter-label {
     font-weight: var(--font-weight-medium);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .sim-filter-count {
     color: var(--text-light);
@@ -1419,6 +1449,8 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     text-align: center;
     background: var(--bg-default);
     border-radius: var(--radius-sm);
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
 /* 필터 모두 OFF 시 빈 상태 */
@@ -1428,7 +1460,8 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     color: var(--text-muted);
 }
 
-/* Plan-45 Phase 3.5: 카테고리별 섹션 헤더 (sticky, 좌측 색바 + 라벨 + 카운트) */
+/* Plan-45 Phase 3.6: 카테고리별 섹션 헤더 (좌측 색바 + 라벨 + 카운트)
+ * sticky 제거 — 다중 섹션 헤더가 top:0 에 쌓이는 중첩 버그 해소. 좌측 4px 색바가 섹션 식별 제공. */
 .sim-cat-section-header {
     display: flex;
     align-items: center;
@@ -1440,9 +1473,6 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     font-size: var(--font-caption);
     font-weight: var(--font-weight-semibold);
     color: var(--text-default);
-    position: sticky;
-    top: 0;
-    z-index: 1;
 }
 .sim-cat-section-bar {
     display: inline-block;

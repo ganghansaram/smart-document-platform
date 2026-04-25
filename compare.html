@@ -1283,6 +1283,9 @@
                 // Plan-45 v3 (Phase 6): SSOT 정상 시 자동 갱신, fallback도 v3 공식 (Copyleaks aggregatedScore)
                 var formula = (help.score_formula && help.score_formula.equation) ||
                     '유사율 = (동일 + 거의 동일 + 의역) / (전체 문장 - 제외 문장) × 100';
+                // Phase 3.6: 산식 근거(rationale) + 검증 샘플(reference) — SSOT score_formula 에 기 존재
+                var formulaRationale = (help.score_formula && help.score_formula.rationale) || '';
+                var formulaReference = (help.score_formula && help.score_formula.reference) || '';
                 var vars = (help.score_formula && help.score_formula.variables) || {
                     '동일': 'identical 매칭 문장 수',
                     '거의 동일': 'near_copy 매칭 문장 수',
@@ -1327,6 +1330,12 @@
                     +   '<div class="sim-help-section">'
                     +     '<h4>산식</h4>'
                     +     '<div class="sim-help-formula">' + escapeHTML(formula) + '</div>'
+                    +     ((formulaRationale || formulaReference)
+                           ? ('<div class="sim-help-formula-basis">'
+                               + (formulaRationale ? ('<div><strong>근거</strong> · ' + escapeHTML(formulaRationale) + '</div>') : '')
+                               + (formulaReference ? ('<div><strong>검증</strong> · ' + escapeHTML(formulaReference) + '</div>') : '')
+                               + '</div>')
+                           : '')
                     +   '</div>'
                     +   '<div class="sim-help-section">'
                     +     '<h4>변수 의미</h4>'
@@ -2479,9 +2488,11 @@
                 html += '</div>';
 
                 // 4 카테고리 누적바 (Copyleaks 색상: 빨강/연빨강/보라/회색)
+                // Phase 3.6: 누적바 + ⓘ(매칭 유형 가이드) 를 한 row 로 통합 — ⓘ 가 누적바 우측에 수직 중앙 정렬
                 if (totalSents > 0) {
                     var pct = function(n) { return totalSents > 0 ? (n / totalSents * 100) : 0; };
                     var cleanN = Math.max(0, totalSents - initialCounts.identical - initialCounts.near_copy - initialCounts.paraphrased - initialCounts.low_similarity - initialExcluded);
+                    html += '<div class="sim-category-bar-row">';
                     html += '<div class="sim-category-bar" title="카테고리별 매칭 분포">';
                     if (initialCounts.identical > 0)      html += '<div class="sim-cat-seg sc-identical"      style="width:' + pct(initialCounts.identical)      + '%" title="동일 ' + initialCounts.identical + '문장"></div>';
                     if (initialCounts.near_copy > 0)      html += '<div class="sim-cat-seg sc-near_copy"      style="width:' + pct(initialCounts.near_copy)      + '%" title="거의 동일 ' + initialCounts.near_copy + '문장"></div>';
@@ -2490,8 +2501,8 @@
                     if (initialExcluded > 0)              html += '<div class="sim-cat-seg sc-excluded"       style="width:' + pct(initialExcluded)              + '%" title="제외 ' + initialExcluded + '문장"></div>';
                     if (cleanN > 0)                       html += '<div class="sim-cat-seg sc-clean"          style="width:' + pct(cleanN)                       + '%" title="매칭 없음 ' + cleanN + '문장"></div>';
                     html += '</div>';
-                    // 모달 A (매칭 유형 가이드) ⓘ 버튼은 우측 상단에 단독 배치
                     html += '<button type="button" class="sim-score-info sim-category-info" data-action="show-label-help" title="매칭 유형 가이드" aria-label="매칭 유형 가이드 보기">ⓘ</button>';
+                    html += '</div>';
                 }
                 html += '</div>';
 
@@ -4957,6 +4968,9 @@
                 ];
                 var labels = help.labels || {};
                 var formula = (help.score_formula && help.score_formula.equation) || '유사율 = (동일 + 거의 동일 + 의역) / (전체 문장 - 제외 문장) × 100';
+                // Phase 3.6: 산식 근거·검증 — SSOT score_formula 에 기 존재, 별첨 B 에 함께 출력
+                var formulaRationale = (help.score_formula && help.score_formula.rationale) || '';
+                var formulaReference = (help.score_formula && help.score_formula.reference) || '';
                 var disclaimer = help.disclaimer || { main: '유사도 ≠ 표절 — 검토자의 판단이 최종', long: '본 점수는 텍스트 유사도를 측정한 것일 뿐, 표절 여부를 자동 판정하지 않습니다.' };
                 var algoRefs = (help.algorithm && help.algorithm.references) || [];
                 var bandColorMap = { blue:'#3b82f6', green:'#22c55e', yellow:'#eab308', orange:'#f97316', red:'#ef4444' };
@@ -5015,6 +5029,9 @@
                     + '.criteria-summary-bands { display: flex; gap: 4px; flex-wrap: wrap; }'
                     + '.criteria-summary-bands .mini-band { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; color: white; }'
                     + '.formula { font-family: "Consolas", "Courier New", monospace; padding: 8px 12px; background: #f8fafc; border: 1px solid #e0e0e0; border-radius: 4px; margin: 6px 0; font-size: 11px; line-height: 1.5; }'
+                    + '.formula-basis { margin: 2px 0 10px; padding: 6px 10px; font-size: 10.5px; color: #555; line-height: 1.5; background: #f8fafc; border-left: 2px solid #2c5282; border-radius: 0 4px 4px 0; }'
+                    + '.formula-basis div + div { margin-top: 3px; }'
+                    + '.formula-basis strong { color: #1a1a1a; font-weight: 600; }'
                     + '.disclaimer { font-size: 11px; color: #555; padding: 8px 12px; background: #fffbeb; border-left: 3px solid #f59e0b; margin: 8px 0 0; line-height: 1.5; }'
                     + '.disclaimer-compact { font-size: 10.5px; padding: 5px 10px; margin: 4px 0 0; line-height: 1.4; }'
                     + '.disclaimer strong { color: #92400e; }'
@@ -5250,6 +5267,13 @@
                     html += '<h2>검사 기준 상세</h2>';
 
                     html += '<h3>산식</h3><div class="formula">' + escapeHTML(formula) + '</div>';
+                    // Phase 3.6: 산식 근거·검증
+                    if (formulaRationale || formulaReference) {
+                        html += '<div class="formula-basis">';
+                        if (formulaRationale) html += '<div><strong>근거</strong> · ' + escapeHTML(formulaRationale) + '</div>';
+                        if (formulaReference) html += '<div><strong>검증</strong> · ' + escapeHTML(formulaReference) + '</div>';
+                        html += '</div>';
+                    }
 
                     html += '<h3>5단계 신호등</h3>'
                         + '<table class="data"><thead><tr><th>색상</th><th>구간</th><th>판정</th><th>의미</th></tr></thead><tbody>';
