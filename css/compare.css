@@ -155,6 +155,39 @@ body[data-theme="dark"] .cp-minimap-mark.active {
     box-shadow: 0 0 0 1px var(--white), var(--shadow-sm);
 }
 
+/* Plan-48 Phase 1: 유사도 미니맵 마커 — diff 마커와 동일 인터랙션 패턴.
+   부모 .cp-minimap 의 pointer-events:none 을 자식에서 auto 로 무력화. */
+.sim-minimap-mark {
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    border-radius: 2px;
+    pointer-events: auto;
+    cursor: pointer;
+    opacity: 0.85;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+.sim-minimap-mark:hover {
+    opacity: 1;
+    transform: scaleX(1.3);
+    transform-origin: right center;
+}
+.sim-minimap-mark.active {
+    opacity: 1;
+    box-shadow: 0 0 0 1px var(--white), var(--shadow-sm);
+}
+body[data-theme="dark"] .sim-minimap-mark.active {
+    box-shadow: 0 0 0 1px var(--white), var(--shadow-sm);
+}
+
+/* 카테고리별 색상 (resolveCategory 출력 → 클래스 매핑, 다크모드 자동 전환) */
+.sim-minimap-mark.sim-mark-cat-identical       { background: var(--color-error); }
+.sim-minimap-mark.sim-mark-cat-near_copy       { background: var(--color-warning); }
+.sim-minimap-mark.sim-mark-cat-paraphrased     { background: var(--color-info); }
+.sim-minimap-mark.sim-mark-cat-low_similarity  { background: var(--text-muted); }
+.sim-minimap-mark.sim-mark-cat-excluded_auto   { background: var(--border-color); opacity: 0.5; }
+.sim-minimap-mark.sim-mark-cat-excluded_manual { background: var(--text-muted); opacity: 0.5; }
+
 /* ── 패널 라벨 (Notebook .panel-title 패턴) ── */
 .cp-panel-label {
     display: inline-flex;

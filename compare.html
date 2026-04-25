@@ -2715,6 +2715,9 @@
                         }
                     }
                 }
+
+                // Plan-48 Phase 1: 이미지·폰트 로드 후 미니맵 자동 재계산 (Cause C)
+                simRecalcMinimapAfterLayoutSettle();
             }
 
             // ── 유사도 클릭 네비게이션 + ⓘ 도움말 (Plan-38 §5.4) ──
@@ -2957,6 +2960,9 @@
                     hlsB[i].classList.add('sim-active');
                     if (i === 0) simScrollToElement(hlsB[i]);
                 }
+
+                // Plan-48 Phase 1: 미니맵 active 마커 동기화 (V1 불변: 3경로 동기 → 4경로)
+                simHighlightMinimapActive(idx);
             }
 
             function simScrollToElement(el) {
@@ -3080,7 +3086,10 @@
                 simRenderMinimap();
             }
 
-            // ── 유사도 미니맵 ──
+            // ── 유사도 미니맵 (Plan-48 Phase 1: multi-sentence 마커 + 위치 정확도) ──
+            // 매칭이 5문장(target_idx 10~14)을 덮으면 마커도 첫·마지막 문장의
+            // offsetTop ~ offsetTop+offsetHeight 까지 한 막대로 그려, 본문
+            // 하이라이트 영역과 1:1 매칭한다 (PyCharm/VSCode 표준 패턴).
             function simRenderMinimap() {
                 var minimapA = document.getElementById('cp-minimap-a');
                 var minimapB = document.getElementById('cp-minimap-b');
@@ -3101,15 +3110,6 @@
                 var trackHB = minimapB.clientHeight - ARROW_H * 2;
                 if (trackHA <= 0 || trackHB <= 0) return;
 
-                // Plan-45 v3: 카테고리 기반 색상 매핑 (resolveCategory 단일 경로, S1 불변)
-                var CATEGORY_COLOR = {
-                    identical:       'var(--color-error)',
-                    near_copy:       'var(--color-warning)',
-                    paraphrased:     'var(--color-info)',
-                    low_similarity:  'var(--text-muted)',
-                    excluded_auto:   'var(--border-color)',
-                    excluded_manual: 'var(--text-muted)'
-                };
                 var matches = simLastResult.matches || [];
                 var minimapSettings = simLoadCheckSettings();
                 for (var i = 0; i < matches.length; i++) {
@@ -3119,45 +3119,70 @@
                     if (card && card.style.display === 'none') continue;
 
                     var cat = resolveCategory(m, minimapSettings);
-                    var colorVar = CATEGORY_COLOR[cat] || 'var(--text-muted)';
+                    var colorClass = 'sim-mark-cat-' + cat;
 
-                    // A 패널 마커
-                    var elA = panelA.querySelector('[data-sim-idx="' + i + '"]');
-                    if (elA && panelA.scrollHeight > 0) {
-                        var ratioA = elA.offsetTop / panelA.scrollHeight;
-                        var markA = document.createElement('div');
-                        markA.className = 'sim-minimap-mark';
-                        markA.style.cssText = 'position:absolute;left:1px;right:1px;height:4px;border-radius:2px;cursor:pointer;'
-                            + 'top:' + (ARROW_H + ratioA * trackHA) + 'px;background:' + colorVar;
-                        markA.setAttribute('data-sim-idx', i);
-                        minimapA.appendChild(markA);
-                    }
-
-                    // B 패널 마커
-                    var elB = panelB.querySelector('[data-sim-idx="' + i + '"]');
-                    if (elB && panelB.scrollHeight > 0) {
-                        var ratioB = elB.offsetTop / panelB.scrollHeight;
-                        var markB = document.createElement('div');
-                        markB.className = 'sim-minimap-mark';
-                        markB.style.cssText = 'position:absolute;left:1px;right:1px;height:4px;border-radius:2px;cursor:pointer;'
-                            + 'top:' + (ARROW_H + ratioB * trackHB) + 'px;background:' + colorVar;
-                        markB.setAttribute('data-sim-idx', i);
-                        minimapB.appendChild(markB);
-                    }
+                    simAppendSpanMark(panelA, minimapA, i, ARROW_H, trackHA, colorClass);
+                    simAppendSpanMark(panelB, minimapB, i, ARROW_H, trackHB, colorClass);
                 }
 
-                // 미니맵 마커 클릭
-                [minimapA, minimapB].forEach(function(mm) {
-                    mm.addEventListener('click', function(e) {
-                        var mark = e.target.closest('.sim-minimap-mark');
-                        if (!mark) return;
-                        var idx = parseInt(mark.getAttribute('data-sim-idx'));
-                        if (!isNaN(idx)) {
-                            simNavigateToMatch(idx);
-                            simUpdateNavIndicator();
+                // 활성 매칭 동기화 (재렌더 후에도 active 유지 — Step 1.5)
+                if (simActiveIdx >= 0) {
+                    document.querySelectorAll(
+                        '.sim-minimap-mark[data-sim-idx="' + simActiveIdx + '"]'
+                    ).forEach(function(mk) { mk.classList.add('active'); });
+                }
+            }
+
+            // 매칭 idx 의 첫·마지막 sentence span 으로 비례 높이 마커 1개 생성.
+            // 표준 PyCharm 패턴 (querySelectorAll → 첫 element top + 마지막 element bottom).
+            function simAppendSpanMark(panel, minimap, idx, arrowH, trackH, colorClass) {
+                var els = panel.querySelectorAll('[data-sim-idx="' + idx + '"]');
+                if (els.length === 0 || panel.scrollHeight <= 0) return;
+                var first = els[0], last = els[els.length - 1];
+                var topRatio = first.offsetTop / panel.scrollHeight;
+                var bottomRatio = (last.offsetTop + last.offsetHeight) / panel.scrollHeight;
+                // 첫·마지막 sentence 가 동일 element 일 때 (1문장 매칭) ratio 보정
+                if (bottomRatio <= topRatio) bottomRatio = topRatio + 0.005;
+                var mark = document.createElement('div');
+                mark.className = 'sim-minimap-mark ' + colorClass;
+                mark.style.top = (arrowH + topRatio * trackH) + 'px';
+                mark.style.height = Math.max(3, (bottomRatio - topRatio) * trackH) + 'px';
+                mark.dataset.simIdx = idx;
+                minimap.appendChild(mark);
+            }
+
+            // simNavigateToMatch 후 미니맵 active 동기화 (Step 1.5)
+            function simHighlightMinimapActive(idx) {
+                document.querySelectorAll('.sim-minimap-mark.active').forEach(function(m) {
+                    m.classList.remove('active');
+                });
+                if (idx < 0) return;
+                document.querySelectorAll(
+                    '.sim-minimap-mark[data-sim-idx="' + idx + '"]'
+                ).forEach(function(m) { m.classList.add('active'); });
+            }
+
+            // 이미지·웹폰트 로드로 패널 scrollHeight 가 변하면 마커 위치가 어긋남.
+            // load 이벤트와 fonts.ready 로 후속 재계산 (Step 1.6, Cause C 해소).
+            function simRecalcMinimapAfterLayoutSettle() {
+                var panels = [
+                    document.getElementById('panel-body-a'),
+                    document.getElementById('panel-body-b')
+                ];
+                panels.forEach(function(panel) {
+                    if (!panel) return;
+                    panel.querySelectorAll('img').forEach(function(img) {
+                        if (!img.complete) {
+                            img.addEventListener('load', simRenderMinimap, { once: true });
+                            img.addEventListener('error', simRenderMinimap, { once: true });
                         }
                     });
                 });
+                if (document.fonts && document.fonts.ready) {
+                    document.fonts.ready.then(function() {
+                        if (currentMode === 'similarity' && simLastResult) simRenderMinimap();
+                    });
+                }
             }
 
             // 유사도 모드에서 파일 업로드/붙여넣기 인터셉트
@@ -4209,6 +4234,34 @@
                 clearTimeout(minimapResizeTimer);
                 minimapResizeTimer = setTimeout(updateMinimapMarkers, 100);
             }).observe(panelBodyA);
+
+            // Plan-48 Phase 1: 유사도 모드 미니맵도 동일 패턴 — 사이드바 리사이즈·창
+            // 리사이즈 시 마커 위치 자동 보정. 좌우 동시 리사이즈라 A 1개 관찰로 충분.
+            var simMinimapResizeTimer = null;
+            new ResizeObserver(function() {
+                clearTimeout(simMinimapResizeTimer);
+                simMinimapResizeTimer = setTimeout(function() {
+                    if (currentMode === 'similarity' && simLastResult) simRenderMinimap();
+                }, 100);
+            }).observe(panelBodyA);
+
+            // Plan-48 Phase 1: 클릭 위임 1회 등록 (이전엔 simRenderMinimap 호출마다
+            // addEventListener 누적 → 다중 점프 잠재 버그였음). pointer-events:auto 는
+            // .sim-minimap-mark 클래스 규칙으로 처리되어 마커가 실제로 클릭 받음.
+            [document.getElementById('cp-minimap-a'),
+             document.getElementById('cp-minimap-b')].forEach(function(mm) {
+                if (!mm) return;
+                mm.addEventListener('click', function(e) {
+                    if (currentMode !== 'similarity') return;  // 모드 격리 (CR-W3)
+                    var mark = e.target.closest('.sim-minimap-mark');
+                    if (!mark) return;
+                    var idx = parseInt(mark.dataset.simIdx);
+                    if (!isNaN(idx)) {
+                        simNavigateToMatch(idx);
+                        simUpdateNavIndicator();
+                    }
+                });
+            });
 
             // ══════════════════════════════════════════
             // Phase 4: 수락/거절 + 내보내기
