@@ -129,12 +129,15 @@
     --sim-identical-border: #ef4444;
     --sim-near-copy: rgba(245,158,11,0.15);
     --sim-near-copy-border: #f59e0b;
-    --sim-paraphrase: rgba(124,58,237,0.15);
-    --sim-paraphrase-border: #7c3aed;
-    --sim-low: rgba(59,130,246,0.1);
-    --sim-low-border: #3b82f6;
-    --sim-boilerplate: rgba(128,128,128,0.08);
-    --sim-boilerplate-border: #9ca3af;
+    /* Plan-48 hotfix3: 본문 hl 색상을 시맨틱 토큰값과 정렬 (Plan-45 v3 의도).
+       이전엔 본문만 보라(paraphrase)·파랑(low)·중간회색(boilerplate)이라 사이드바·
+       필터·카드·도움말과 outlier. 이제 모든 UI 가 같은 색으로 통일. */
+    --sim-paraphrase: rgba(59,130,246,0.15);   /* 보라 → 파랑 (= --color-info 베이스) */
+    --sim-paraphrase-border: #3b82f6;           /* = --color-info */
+    --sim-low: rgba(148,163,184,0.10);          /* 파랑 → 회색 (= --text-muted 베이스) */
+    --sim-low-border: #94a3b8;                  /* = --text-muted */
+    --sim-boilerplate: rgba(128,128,128,0.08);  /* 그대로 (이미 회색 베이스) */
+    --sim-boilerplate-border: #dde4e8;          /* 중간회색 → 옅은회색 (= --border-color) */
 }
 
 /* 다크 테마 변수 오버라이드 */
@@ -217,12 +220,13 @@ body[data-theme="dark"] {
     --sim-identical-border: #f87171;
     --sim-near-copy: rgba(251,191,36,0.2);
     --sim-near-copy-border: #fbbf24;
-    --sim-paraphrase: rgba(167,139,250,0.2);
-    --sim-paraphrase-border: #a78bfa;
-    --sim-low: rgba(96,165,250,0.12);
-    --sim-low-border: #60a5fa;
-    --sim-boilerplate: rgba(156,163,175,0.1);
-    --sim-boilerplate-border: #6b7280;
+    /* Plan-48 hotfix3: 라이트 블록과 동일 정렬 — 의역=파랑 / 약한유사=회색 / 자동제외=옅은회색 */
+    --sim-paraphrase: rgba(96,165,250,0.20);    /* 보라 → 파랑 (= --color-info 다크 베이스) */
+    --sim-paraphrase-border: #60a5fa;            /* = --color-info 다크 */
+    --sim-low: rgba(156,163,175,0.12);           /* 파랑 → 회색 (= --text-muted 다크 베이스) */
+    --sim-low-border: #9ca3af;                   /* = --text-muted 다크 */
+    --sim-boilerplate: rgba(156,163,175,0.10);   /* 그대로 (이미 회색 베이스) */
+    --sim-boilerplate-border: #3d3f50;           /* 중간회색 → 옅은회색 (= --border-color 다크) */
 }
 
 /* 글로벌 키보드 포커스 링 */

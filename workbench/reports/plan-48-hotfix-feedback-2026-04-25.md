@@ -145,6 +145,78 @@ Phase 1 작성 시 미니맵을 시맨틱 토큰(`--color-error/warning/info`)�
 - 본문 하이라이트(.sim-hl-*) · 사이드바 카드 · 필터 칩 · 도움말 모달 모두 무관
 - 회귀 위험 0
 
+## 추가 hotfix3 — 본문 outlier 정정 (전 UI 색상 통일)
+
+사용자 후속 지적 — "약한 유사가 회색인데, 체크 ON 해보니까 본문에 파란색으로 표현되네."
+
+### 진단 (전수 매트릭스)
+3 카테고리에서 본문(`.sim-hl-*`) 가 사이드바·필터·카드·도움말과 다른 색 사용 (Plan-45 v3 통합 시 본문만 옛 `--sim-*-*` 토큰 잔존):
+
+| 카테고리 | 본문 (이전) | 그 외 모든 UI | 정합성 |
+|---------|------------|---------------|--------|
+| 의역 | 보라 #7c3aed | 파랑 `--color-info` | ❌ |
+| 약한 유사 | 파랑 #3b82f6 | 회색 `--text-muted` | ❌ |
+| 자동 제외 | 중간 회색 #9ca3af | 옅은 회색 `--border-color` | ❌ (미세) |
+
+hotfix2 가 미니맵을 본문과 일치시키며 outlier 그룹이 미니맵·툴팁까지 확장됨.
+
+### 수정 — tokens.css 5개 토큰 정렬 + 인쇄 리포트 1라인
+
+**css/tokens.css** (라이트 + 다크):
+```css
+/* 라이트 */
+--sim-paraphrase: rgba(124,58,237,0.15) → rgba(59,130,246,0.15)   /* 보라→파랑 */
+--sim-paraphrase-border: #7c3aed → #3b82f6                         /* 보라→파랑 */
+--sim-low: rgba(59,130,246,0.1) → rgba(148,163,184,0.10)            /* 파랑→회색 */
+--sim-low-border: #3b82f6 → #94a3b8                                /* 파랑→회색 */
+--sim-boilerplate-border: #9ca3af → #dde4e8                        /* 중간→옅은 회색 */
+
+/* 다크 동일 패턴 (다크 시맨틱 토큰값으로 정렬) */
+--sim-paraphrase: rgba(167,139,250,0.2) → rgba(96,165,250,0.20)
+--sim-paraphrase-border: #a78bfa → #60a5fa
+--sim-low: rgba(96,165,250,0.12) → rgba(156,163,175,0.12)
+--sim-low-border: #60a5fa → #9ca3af
+--sim-boilerplate-border: #6b7280 → #3d3f50
+```
+
+**compare.html L5149** (인쇄 리포트):
+```css
+.mb-translation { background: #7c3aed; } → #2563eb  /* paraphrase 와 일치 (의역 통합) */
+```
+
+### 영향 범위 (정밀 grep 결과)
+| 위치 | 자동 정렬 |
+|------|----------|
+| 본문 hl (`.sim-hl-paraphrase`, `.sim-hl-low_sim`, `.sim-hl-boilerplate`) | ✅ tokens.css 변경으로 자동 |
+| 미니맵 마커 | ✅ 자동 (`.sim-mark-cat-*` 가 `--sim-*-border` 참조) |
+| 호버 툴팁 dot | ✅ 자동 (동일 토큰 참조) |
+| `.sim-tier-seg-derived` | ✅ 자동 (`--sim-paraphrase-border` 참조) |
+| `.sim-tier-seg-boilerplate` | ✅ 자동 |
+| 인쇄 리포트 `.mb-translation` | ✅ 직접 정정 |
+
+다른 모드 (diff `.cp-*`, verify `.vd-*`) 무관 — 별 토큰 사용.
+
+### 검증
+- 단위 21/21 PASS · sim_label_consistency PASS · vm.Script errors 0
+- **Playwright 토큰 직접 read 라이트**: paraphrase=#3b82f6 (= color-info) / low=#94a3b8 (= text-muted) / boilerplate=#dde4e8 (= border-color) ✅
+- **Playwright 토큰 직접 read 다크**: paraphrase=#60a5fa / low=#9ca3af / boilerplate=#3d3f50 ✅
+- **Playwright 가상 `.sim-hl-*` 노드 cascade 실측 (라이트+다크)** — 본문 background 와 border-left 모두 의도한 색상으로 정렬:
+  - 의역: bg rgba(59,130,246,0.15) / border rgb(59,130,246) ✅
+  - 약한유사: bg rgba(148,163,184,0.10) / border rgb(148,163,184) ✅
+  - 자동제외: border rgb(221,228,232) (옅은회색) ✅
+
+### 최종 매트릭스 (모든 9 위치 일관)
+
+| 카테고리 | 라이트 색상 | 모든 위치 일치 |
+|---------|------------|---------------|
+| 동일 | #ef4444 빨강 | ✅ |
+| 거의 동일 | #f59e0b 주황 | ✅ |
+| **의역** | **#3b82f6 파랑** | **✅ (보라→파랑 정정)** |
+| **약한 유사** | **#94a3b8 회색** | **✅ (파랑→회색 정정)** |
+| **자동 제외** | **#dde4e8 옅은회색** | **✅ (중간→옅은 정정)** |
+
+사용자 멘탈 모델 회복 — 사이드바·필터·미니맵·본문 모두 동일 색.
+
 ## 잔여·후속 (이번 범위 외)
 
 - [ ] **Phase 3 — diff·sim 코드 통합** — 잠재 부채 정리 (사용자 만족 시 미진행)
