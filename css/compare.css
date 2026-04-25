@@ -1260,6 +1260,10 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 .sim-verdict-good { color: var(--color-success-btn); }
 .sim-verdict-moderate { color: var(--color-warning); }
 .sim-verdict-warning { color: var(--color-error); }
+/* Plan-45 v3: 5단계 신호등 — SSOT verdict_bands 색상 매핑 */
+.sim-verdict-blue   { color: var(--color-info); }
+.sim-verdict-yellow { color: var(--color-warning); }
+.sim-verdict-orange { color: #f97316; }   /* tokens.css 미정의 — 인라인 (orange band 전용) */
 
 /* ══════════════════════════════════════════════════════════════════
    Plan-45 v3 — 4 카테고리 체계 (Copyleaks 모방)
@@ -1322,7 +1326,7 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 .sim-category-bar {
     display: flex;
     width: 100%;
-    height: 6px;
+    height: 8px;
     margin-top: 8px;
     border-radius: var(--radius-sm);
     background: var(--border-color);
@@ -1422,6 +1426,58 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     text-align: center;
     padding: 32px 16px;
     color: var(--text-muted);
+}
+
+/* Plan-45 Phase 3.5: 카테고리별 섹션 헤더 (sticky, 좌측 색바 + 라벨 + 카운트) */
+.sim-cat-section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    margin-top: 8px;
+    background: var(--bg-default);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-default);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.sim-cat-section-bar {
+    display: inline-block;
+    width: 4px;
+    height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.sim-cat-section-header[data-cat-section="identical"]      .sim-cat-section-bar { background: var(--color-error); }
+.sim-cat-section-header[data-cat-section="near_copy"]      .sim-cat-section-bar { background: var(--color-warning); }
+.sim-cat-section-header[data-cat-section="paraphrased"]    .sim-cat-section-bar { background: var(--color-info); }
+.sim-cat-section-header[data-cat-section="low_similarity"] .sim-cat-section-bar { background: var(--text-muted); }
+.sim-cat-section-header[data-cat-section="excluded_auto"]  .sim-cat-section-bar,
+.sim-cat-section-header[data-cat-section="excluded_manual"] .sim-cat-section-bar { background: var(--border-color); }
+.sim-cat-section-label { flex: 1; }
+.sim-cat-section-count {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-light);
+    background: var(--bg-card);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    min-width: 24px;
+    text-align: center;
+}
+
+/* 매칭 카드 본문 텍스트 — 다크모드 대비비 강화 (WCAG AA 4.5:1) */
+.sim-match-text-a,
+.sim-match-text-b {
+    font-size: var(--font-caption);
+    color: var(--text-default);
+    line-height: 1.45;
+    margin-top: 4px;
+}
+.sim-match-text-b {
+    color: var(--text-light);
 }
 
 /* ── 내보내기 포맷 선택 모달 ── */

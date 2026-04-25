@@ -1563,11 +1563,11 @@
                 var labels = help.labels || {};
                 // 폴백 라벨 (simHelp 미로드 시)
                 var fallback = {
-                    identical:   { ko_long: '일치 (직접 차용)',     lex: '매우 높음', sem: '—',   short: '단어까지 거의 그대로',         threshold: 'fp ≥ 85%' },
+                    identical:   { ko_long: '동일 (직접 차용)',     lex: '매우 높음', sem: '—',   short: '단어까지 거의 그대로',         threshold: 'fp ≥ 85%' },
                     near_copy:   { ko_long: '거의 동일 (단어 변형)', lex: '높음',     sem: '높음', short: '단어 일부만 바꿈',           threshold: 'fp 40~85% + sem ≥ 0.85' },
                     paraphrase:  { ko_long: '의역 (재서술)',        lex: '낮음',     sem: '높음', short: '단어 다른데 같은 말',         threshold: 'fp < 40% + sem ≥ 0.75' },
-                    translation: { ko_long: '번역 (다른 언어)',     lex: '거의 0',   sem: '높음', short: '한↔영 등 언어 차이',          threshold: 'fp < 10% + sem ≥ 0.75 + 다른 스크립트' },
-                    low_sim:     { ko_long: '약한 유사 (참고 가능)', lex: '낮음',     sem: '중간', short: '단정 어려운 약한 관련성',     threshold: 'sem 0.65~0.75' },
+                    translation: { ko_long: '의역 (다른 언어 번역 포함)', lex: '거의 0',   sem: '높음', short: '한↔영 등 언어 차이 — 의역 통합', threshold: 'fp < 10% + sem ≥ 0.75 + 다른 스크립트' },
+                    low_sim:     { ko_long: '약한 유사 (참고용)',    lex: '낮음',     sem: '중간', short: '단정 어려운 약한 관련성',     threshold: 'sem 0.65~0.75' },
                     boilerplate: { ko_long: '공통 정형구문 (제외)',  lex: '—',       sem: '—',   short: '업계 표준 문구',             threshold: 'phrase coverage ≥ 50%' }
                 };
                 var typeOrder = ['identical', 'near_copy', 'paraphrase', 'translation', 'low_sim', 'boilerplate'];
@@ -1691,9 +1691,9 @@
 
                 var steps = [
                     {
-                        title: '결과는 4그룹으로 분류됩니다',
-                        body: '<p style="margin:0 0 8px"><strong>표절 의심</strong> · <strong>참고 가능</strong> · <strong>제외 영역</strong> · <strong>일반</strong> 네 그룹으로 한눈에 파악할 수 있습니다.</p>'
-                            + '<p style="margin:0;color:var(--text-light);font-size:var(--font-small)">필요시 6개 세부 라벨(일치/거의 동일/의역/번역/약한 유사/공통 정형구문)로도 확인 가능합니다.</p>'
+                        title: '결과는 4 카테고리로 분류됩니다',
+                        body: '<p style="margin:0 0 8px"><strong>동일</strong> · <strong>거의 동일</strong> · <strong>의역</strong> · <strong>약한 유사</strong> 네 카테고리로 한눈에 파악할 수 있습니다.</p>'
+                            + '<p style="margin:0;color:var(--text-light);font-size:var(--font-small)">정형구문·목차·캡션 등은 자동 제외되며, 사용자가 ⓧ로 직접 제외할 수도 있습니다.</p>'
                     },
                     {
                         title: 'ⓘ를 누르면 기준을 볼 수 있습니다',
@@ -2330,10 +2330,10 @@
             // Plan-38 §8.1 Layer 2 — 6세부 라벨 (SSOT similarity-help.json과 일관)
             // simHelp 로드 후 _syncSimTypeMapFromHelp()로 SSOT 값 덮어쓰기
             var SIM_TYPE_MAP = {
-                identical:  { label: '일치',        tooltip: '단어까지 거의 그대로 일치한 구간',      badge: 'badge-error',   color: 'var(--color-error)',   group: 'suspect' },
+                identical:  { label: '동일',        tooltip: '단어까지 거의 그대로 일치한 구간',      badge: 'badge-error',   color: 'var(--color-error)',   group: 'suspect' },
                 near_copy:  { label: '거의 동일',   tooltip: '단어 일부만 바꾼 구간',                badge: 'badge-warning', color: 'var(--color-warning)', group: 'suspect' },
                 paraphrase: { label: '의역',        tooltip: '단어는 다르지만 같은 말을 다시 쓴 구간', badge: 'badge-info',    color: 'var(--color-info)',    group: 'suspect' },
-                translation:{ label: '번역',        tooltip: '다른 언어로 번역된 구간 (예: 한↔영)',   badge: 'badge-info',    color: 'var(--color-info)',    group: 'suspect' },
+                translation:{ label: '의역',        tooltip: '다른 언어로 번역된 구간 (예: 한↔영) — 의역 카테고리에 통합', badge: 'badge-info', color: 'var(--color-info)',    group: 'suspect', _sub_type: 'translation' },
                 low_sim:    { label: '약한 유사',   tooltip: '부분 의미가 겹치나 차용 단정이 어려운 구간', badge: 'badge-info', color: 'var(--text-muted)',   group: 'review' },
                 boilerplate:{ label: '공통 정형구문', tooltip: '업계 표준 문구 (점수 제외)',           badge: '',              color: 'var(--text-muted)',    group: 'excluded' }
             };
@@ -2450,11 +2450,20 @@
                     + ' title="점수 산출 기준 보기" aria-label="점수 산출 기준">ⓘ</button>'
                     + '</div>';
                 // 판정 라벨 (5단계 신호등은 simRecomputeFromSettings 에서 최종 갱신되나 초기값도 v3 점수 기반)
-                var verdictLabel, verdictClass;
-                var verdictTip;
-                if (scoreVal >= verdictBoundHigh) { verdictLabel = '주의'; verdictClass = 'sim-verdict-warning'; verdictTip = '유사도 ' + verdictBoundHigh + '% 이상'; }
-                else if (scoreVal >= verdictBoundLow) { verdictLabel = '보통'; verdictClass = 'sim-verdict-moderate'; verdictTip = '유사도 ' + verdictBoundLow + '~' + verdictBoundHigh + '% 구간'; }
-                else { verdictLabel = '양호'; verdictClass = 'sim-verdict-good'; verdictTip = '유사도 ' + verdictBoundLow + '% 미만'; }
+                // Plan-45 v3: 5단계 신호등 — SSOT verdict_bands 경유 (없으면 3단계 폴백)
+                var verdictLabel, verdictClass, verdictTip;
+                var bands = (simHelp && Array.isArray(simHelp.verdict_bands)) ? simHelp.verdict_bands : null;
+                if (bands) {
+                    var match = bands.find(function(b) { return scoreVal >= b.range_min && scoreVal <= b.range_max; }) || bands[bands.length - 1];
+                    verdictLabel = match.label;
+                    verdictTip = '유사율 ' + match.range_min + (match.range_min === match.range_max ? '%' : '~' + match.range_max + '%') + ' — ' + (match.meaning || '');
+                    var classMap = { blue: 'sim-verdict-blue', green: 'sim-verdict-good', yellow: 'sim-verdict-yellow', orange: 'sim-verdict-orange', red: 'sim-verdict-warning' };
+                    verdictClass = classMap[match.color] || 'sim-verdict-moderate';
+                } else {
+                    if (scoreVal >= verdictBoundHigh) { verdictLabel = '주의'; verdictClass = 'sim-verdict-warning'; verdictTip = '유사율 ' + verdictBoundHigh + '% 이상'; }
+                    else if (scoreVal >= verdictBoundLow) { verdictLabel = '보통'; verdictClass = 'sim-verdict-moderate'; verdictTip = '유사율 ' + verdictBoundLow + '~' + verdictBoundHigh + '% 구간'; }
+                    else { verdictLabel = '양호'; verdictClass = 'sim-verdict-good'; verdictTip = '유사율 ' + verdictBoundLow + '% 미만'; }
+                }
                 html += '<div class="sim-verdict ' + verdictClass + '">' + verdictLabel + ' <span class="tooltip-icon" data-tooltip="' + verdictTip + '">?</span></div>';
 
                 // 7지표 표지 카드 (Copyleaks 샘플 리포트 양식)
@@ -2562,19 +2571,50 @@
                         + '<div style="font-weight:var(--font-weight-semibold);margin-bottom:4px">표시 필터가 모두 꺼져 있습니다</div>'
                         + '<div style="font-size:var(--font-caption);color:var(--text-muted);line-height:1.5">상단 <strong>결과 필터</strong>에서 카테고리를 하나 이상 켜세요.</div>'
                         + '</div>';
+                    // Plan-45 v3 Phase 3.5: 카드를 카테고리별로 그룹핑 + 섹션 헤더 삽입
+                    // 카테고리 순서 고정: 동일 → 거의 동일 → 의역 → 약한 유사 → (제외 항목은 Phase 4 패널로 분리 예정)
+                    var catOrder = ['identical', 'near_copy', 'paraphrased', 'low_similarity', 'excluded_auto', 'excluded_manual'];
+                    var grouped = {};
+                    catOrder.forEach(function(c) { grouped[c] = []; });
                     for (var i = 0; i < matches.length; i++) {
                         var m = matches[i];
-                        var typeKey = m.type || 'low_sim';
-                        var typeInfo = SIM_TYPE_MAP[typeKey] || SIM_TYPE_MAP.low_sim;
-                        var simPct = m.similarity ? (m.similarity * 100).toFixed(1) : '—';
                         var matchCat = resolveCategory(m, initialSettings);
+                        if (!grouped[matchCat]) grouped[matchCat] = [];
+                        grouped[matchCat].push({ idx: i, match: m });
+                    }
 
-                        var itemCls = 'sim-match-item' + (m.user_excluded ? ' sim-user-excluded' : '');
-                        html += '<div class="' + itemCls + '" data-idx="' + i + '" data-sim-cat="' + matchCat + '">';
+                    var catLabel = function(catKey) {
+                        if (simHelp && simHelp.categories && simHelp.categories[catKey]) return simHelp.categories[catKey].ko;
+                        return { identical: '동일', near_copy: '거의 동일', paraphrased: '의역', low_similarity: '약한 유사', excluded_auto: '자동 제외', excluded_manual: '수동 제외' }[catKey] || catKey;
+                    };
+
+                    catOrder.forEach(function(catKey) {
+                        var bucket = grouped[catKey];
+                        if (!bucket || bucket.length === 0) return;
+                        // 섹션 헤더 (sticky, 좌측 카테고리 색바)
+                        html += '<div class="sim-cat-section-header" data-cat-section="' + catKey + '">'
+                            +   '<span class="sim-cat-section-bar"></span>'
+                            +   '<span class="sim-cat-section-label">' + escapeHTML(catLabel(catKey)) + '</span>'
+                            +   '<span class="sim-cat-section-count">' + bucket.length + '</span>'
+                            + '</div>';
+                        bucket.forEach(function(entry) {
+                            var i = entry.idx;
+                            var m = entry.match;
+                            var typeKey = m.type || 'low_sim';
+                            var typeInfo = SIM_TYPE_MAP[typeKey] || SIM_TYPE_MAP.low_sim;
+                            var simPct = m.similarity ? (m.similarity * 100).toFixed(1) : '—';
+
+                            var itemCls = 'sim-match-item' + (m.user_excluded ? ' sim-user-excluded' : '');
+                            html += '<div class="' + itemCls + '" data-idx="' + i + '" data-sim-cat="' + catKey + '">';
                         html += '<div class="sim-match-header">';
                         html += '<span class="badge ' + typeInfo.badge + ' sim-match-badge">' + simPct + '%</span>';
-                        html += '<span class="sim-match-level" title="' + escapeHTML(typeInfo.tooltip || '') + '">' + typeInfo.label + '</span>';
-                        if (m.detection_layer) html += '<span class="sim-match-method">' + (DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer) + '</span>';
+                            // Plan-45 §13: DETECTION_LAYER 는 카드에 노출하지 않고 hover 툴팁에만 표기 (visual noise 감소)
+                            var levelTitle = typeInfo.tooltip || '';
+                            if (m.detection_layer) {
+                                var _layer = DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer;
+                                levelTitle += (levelTitle ? ' · ' : '') + '탐지: ' + _layer;
+                            }
+                            html += '<span class="sim-match-level" title="' + escapeHTML(levelTitle) + '">' + typeInfo.label + '</span>';
                         // 제외/복원 버튼 (카드 우측)
                         if (m.user_excluded) {
                             html += '<button type="button" class="sim-match-action-btn sim-match-restore-btn" data-sim-action="restore" title="제외 취소 (복원)" aria-label="제외 취소">'
@@ -2593,8 +2633,9 @@
                             var noteHtml = m.user_exclude_note ? ' · ' + escapeHTML(m.user_exclude_note) : '';
                             html += '<div class="sim-match-exclude-note">수동 제외 · ' + escapeHTML(reasonLabel) + noteHtml + '</div>';
                         }
-                        html += '</div>';
-                    }
+                            html += '</div>';
+                        });
+                    });
                 }
                 html += '</div>';
                 sidebarBody.innerHTML = html;
@@ -3027,6 +3068,21 @@
                         hls[j].style.display = show ? '' : 'none';
                     }
                 }
+
+                // Plan-45 v3 Phase 3.5: 카테고리 섹션 헤더 동기 토글 + 카운트 갱신 (수동 제외 후 stale 방지)
+                var sectionCounts = {};
+                document.querySelectorAll('.sim-match-item').forEach(function(card) {
+                    if (card.style.display === 'none') return;
+                    var cat = card.getAttribute('data-sim-cat');
+                    sectionCounts[cat] = (sectionCounts[cat] || 0) + 1;
+                });
+                document.querySelectorAll('.sim-cat-section-header').forEach(function(hdr) {
+                    var cat = hdr.getAttribute('data-cat-section');
+                    var visible = (cat === 'excluded_auto' || cat === 'excluded_manual') ? false : (filters[cat] === true);
+                    hdr.style.display = visible ? '' : 'none';
+                    var countEl = hdr.querySelector('.sim-cat-section-count');
+                    if (countEl) countEl.textContent = sectionCounts[cat] || 0;
+                });
 
                 // 필터 모두 OFF 시 전용 빈 상태 안내 (V5 불변)
                 var emptyEl = document.getElementById('sim-filter-empty');
@@ -5029,6 +5085,8 @@
                 html += '</div></div>';
 
                 // ③ 카테고리 breakdown
+                // TODO(Plan-45/P5): 레거시 하드코딩 — Phase 5 HTML 리포트 재구성 시 SSOT (simHelp.categories) 경유로 전환.
+                // 현재는 Phase 5 대상이라 수정 보류. 본문 사이드바 라벨과 일시 불일치 가능 (Phase 5 에서 해소).
                 var bd = p.breakdown || {};
                 var typeMeta = [
                     { key: 'identical',   group: '표절 의심',  label: '일치' },

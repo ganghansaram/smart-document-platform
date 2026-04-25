@@ -388,9 +388,21 @@ function computeScore(matches, totalSentences, activeSettings) {
   - 매칭 카드 카테고리별 섹션 헤더 미구현 (계획서 원안 항목)
   - 수동 제외 toast [복원] 링크 (Phase 4 제외 패널과 병행 처리)
 
-### Phase 3.5 — UI 완성도 보정 (0.7일)
+### Phase 3.5 — UI 완성도 보정 (0.7일) ✅ **완료 (2026-04-25)**
 
-**착수 근거**: Phase 3이 기능 구현은 완료했으나 (a) 용어 불일치, (b) 실측 검증 누락, (c) 디자인 전문가 리뷰 부재로 완성도가 불충분. Plan-45 불변 원칙 중 E4(용어 일관성) 위반 상태.
+**완료 결과**:
+- E4 불변 회복: SSOT `labels.identical.ko` "일치"→"동일", `labels.translation.ko` "번역"→"의역" (UI 4 라벨 완전 통일)
+- 5단계 신호등 SSOT verdict_bands 경유 (이전 "주의" → "위험" 정확 표시)
+- 카드 카테고리별 sticky 섹션 헤더 (좌측 색바 + 라벨 + 동적 카운트)
+- 누적바 6→8px, 다크모드 대비비 명시 (WCAG AA)
+- 온보딩 1단계 텍스트 4 카테고리 안내로 갱신
+- 단위 테스트 21/21 PASS · 구문 파싱 PASS · E4 grep PASS
+- Playwright 실측 (라이트/다크 5종 스크린샷): "위험" + "의역 1" 섹션 헤더 + 콘솔 에러 0
+- design-reviewer Critical 3건 → 0건 (전건 수정)
+- code-reviewer Critical 0건, Warning 2건 즉시 수정 (섹션 카운트 stale + 온보딩 잔존)
+- 보고서: `workbench/reports/plan-45-phase3.5-feedback-2026-04-25.md`
+
+**착수 근거 (이력)**: Phase 3이 기능 구현은 완료했으나 (a) 용어 불일치, (b) 실측 검증 누락, (c) 디자인 전문가 리뷰 부재로 완성도가 불충분. Plan-45 불변 원칙 중 E4(용어 일관성) 위반 상태.
 
 #### Step 1 — 용어 통일 (SSOT 수정)
 - `data/help/similarity-help.json` `labels.identical.ko` "일치" → **"동일"**
@@ -446,6 +458,10 @@ function computeScore(matches, totalSentences, activeSettings) {
 - 복원 toast (5초, 중첩 시 최근 1건)
 - `sim-user-excluded` 반투명·줄무늬 CSS 제거 (V2)
 - `simActiveIdx` 무효화 방지
+- **(추가 — Phase 3.5 후속) UI/UX 일관성**:
+  - 카드 badge 색상을 type 기반 (`badge-info` 등) → 카테고리 기반 (`sc-identical/near_copy/...`)으로 통일
+  - 메인 카드 vs 제외 패널 카드 시각 차별화 정의 (제외 패널 카드는 콤팩트 모드)
+  - 카드 라벨 visual weight 정리 (배지·level·아이콘 비중 균형)
 
 ### Phase 5 — HTML 리포트 재구성 (0.8일)
 - `doExportHtml` 전면 재작성: 표지(7지표 카드) + 카테고리별 섹션 + 제외 목록 + 부록 (§4.1)
@@ -454,11 +470,15 @@ function computeScore(matches, totalSentences, activeSettings) {
 - Excel 경로·TXT 경로 UI 버튼 제거 (내보내기 메뉴 정리)
 
 ### Phase 6 — 가이드·모달·온보딩 갱신 (0.4일)
-- `verify-guide.html` 유사도 챕터 재작성
-- 모달 A (2축 다이어그램) 캡션 업데이트
+- `verify-guide.html` 유사도 챕터 재작성 (4 카테고리 라벨 기준)
+- 모달 A (2축 다이어그램) 캡션 업데이트 — "동일/거의 동일/의역/약한 유사" 동기
 - **모달 B (점수 산식) — v3 공식으로 갱신** ← 필수
 - 모달 C (검사 설정) 텍스트 검토
-- 온보딩 3-step 텍스트 교체
+- 온보딩 3-step 텍스트 교체 (1단계는 Phase 3.5에서 이미 갱신, 나머지 점검)
+- **(추가 — Phase 3.5 후속) 도움말 아이콘 통일**:
+  - ⓘ/? 아이콘 4종 정책 통일: 점수 ⓘ(Modal B) / 누적바 ⓘ(Modal A) / 검사 설정 ⓘ(Modal C) / 판정 ?(툴팁)
+  - 결정: 모달 트리거는 ⓘ, hover 툴팁은 ? — 또는 단일 ⓘ로 통합 후 hover/click 동작 규약화
+  - 검사 설정 ⓘ 와 결과 필터 ⓘ 부재의 일관성 검토 (필터에도 ⓘ 추가 또는 검사 설정 ⓘ 제거)
 
 ### Phase 7 — 드리프트 방지 + 회귀 (0.4일)
 - `tests/sim_label_consistency.sh` 작성 (§8.1)
@@ -587,7 +607,7 @@ pre-commit hook 또는 CI에 연결. 드리프트가 코드에 들어가기 전 
 - 필터 칩 6 유형 중 5 하드코딩 — **4 카테고리 필터**
 - `SIM_TYPE_MAP.group` 필드 — **삭제**, `resolveCategory`로 대체
 - `sim-user-excluded` 반투명·줄무늬 CSS — **제거**, 제외 패널로 이동
-- DETECTION_LAYER 카드 노출 — **기본 숨김**, hover 툴팁만
+- DETECTION_LAYER 카드 노출 — **기본 숨김**, hover 툴팁만 ✅ **완료 (2026-04-25, Phase 3.5 후속)** — `sim-match-method` span 카드 렌더 제거, `sim-match-level` title 속성에 "탐지: ..." 추가
 - `tiers.substantive/derived` hint 문구 — **폐기**, 단순 "유사율 N%"
 - 카드 라벨의 "일치"·"번역" — **폐기** (Phase 3.5): 카테고리 라벨과 완전 통일 ("동일"·"의역"으로 표시)
 
