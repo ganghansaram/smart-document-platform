@@ -97,5 +97,32 @@ python -m http.server 8080            # http://localhost:8080
 3. **과도한 엔지니어링 금지** — 요청된 범위만 구현
 4. **커밋은 요청 시에만** — 자동 커밋 금지, 규칙은 `.claude/skills/commit` 참조
 
+## 유사도 분류 체계 (Plan-45 v3, Copyleaks 모방)
+
+### 카테고리 (4) — 사용자 UI에 노출되는 분류 단위
+- **동일** (identical) · **거의 동일** (near_copy) · **의역** (paraphrased, translation 통합) · **약한 유사** (low_similarity, 점수 제외 참고용)
+- 추가 제외 영역: **자동 제외** (boilerplate + 활성 exclusion_reason) · **수동 제외** (사용자 ⓧ 판정)
+
+### 알고리즘 유형 (6) — 백엔드 분류 키
+- `identical` / `near_copy` / `paraphrase` / `translation` / `low_sim` / `boilerplate`
+- 카드에는 SSOT `labels.*.ko` 라벨로 노출 (translation 도 "의역"으로 표시)
+
+### 점수 공식 (가중치 없음)
+```
+유사율 = (동일 + 거의 동일 + 의역) / (전체 문장 - 제외 문장) × 100
+```
+
+### 규칙
+1. 라벨은 `data/help/similarity-help.json` (SSOT) 경유만 허용 — 하드코딩 금지
+2. 축약 금지 — 유사도 카드 라벨로 "일치"·"번역" 사용 불가 (v3 어휘: 동일·의역)
+3. Plan-38 옛 그룹 어휘 (표절 의심·참고 가능·제외 영역·4그룹) 사용 금지
+4. 카테고리 판정은 `compare.html` 의 `resolveCategory(match, settings)` 단일 함수만 사용
+5. 필터 = 가시성 (점수 무영향) · 설정 = 점수 재계산 · 수동 제외 = 가시성 + 점수 재계산
+6. 자동/수동 제외 카드는 메인 리스트에 노출 금지 — `<details class="sim-exclusion-panel">` 만 사용
+
+### 자동 검증
+- `bash tests/sim_label_consistency.sh` — grep 기반 SSOT 우회·옛 어휘·옛 공식 검사
+- pre-commit hook 또는 CI 등록 권장
+
 ## 테스트 계정
 - ID: `testbot` / PW: `test1234`

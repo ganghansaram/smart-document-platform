@@ -2935,45 +2935,8 @@
                 }, 5000);
             }
 
-            // 매칭 카드 한 개만 다시 그림 (전체 리렌더 회피)
-            function simUpdateMatchCard(idx) {
-                var card = document.querySelector('.sim-match-item[data-idx="' + idx + '"]');
-                if (!card || !simLastResult) return;
-                var m = simLastResult.matches[idx];
-                card.classList.toggle('sim-user-excluded', !!m.user_excluded);
-                // Plan-45 v3: 카테고리 data attribute 도 갱신 (Phase 4 제외 패널 필터 대비)
-                card.setAttribute('data-sim-cat', resolveCategory(m, simLoadCheckSettings()));
-
-                // 기존 action 버튼 교체
-                var oldBtn = card.querySelector('.sim-match-action-btn');
-                if (oldBtn) oldBtn.remove();
-                var header = card.querySelector('.sim-match-header');
-                if (header) {
-                    if (m.user_excluded) {
-                        header.insertAdjacentHTML('beforeend',
-                            '<button type="button" class="sim-match-action-btn sim-match-restore-btn" data-sim-action="restore" title="제외 취소 (복원)" aria-label="제외 취소">'
-                            + '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>'
-                            + '</button>');
-                    } else {
-                        header.insertAdjacentHTML('beforeend',
-                            '<button type="button" class="sim-match-action-btn sim-match-exclude-btn" data-sim-action="exclude" title="이 매칭 항목 제외" aria-label="제외">'
-                            + '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-                            + '</button>');
-                    }
-                }
-
-                // 사유 배지 갱신
-                var oldNote = card.querySelector('.sim-match-exclude-note');
-                if (oldNote) oldNote.remove();
-                if (m.user_excluded) {
-                    var reasonLabel = simFindReasonLabel(m.user_exclude_reason);
-                    var noteText = m.user_exclude_note ? ' · ' + m.user_exclude_note : '';
-                    var badge = document.createElement('div');
-                    badge.className = 'sim-match-exclude-note';
-                    badge.textContent = '수동 제외 · ' + reasonLabel + noteText;
-                    card.appendChild(badge);
-                }
-            }
+            // Plan-45 Phase 7: simUpdateMatchCard 함수 폐기 — Phase 4에서 simShowResults
+            // 전체 재렌더로 대체됨 (메인 ↔ 제외 패널 카드 DOM 이동 보장 위함)
 
             // 사이드바 상단 "원점수 → 조정점수" 배너 업데이트
             function simUpdateExclusionBanner() {
@@ -4562,8 +4525,8 @@
             // ── 내보내기 분기 ──
             function runExport(fmt) {
                 if (fmt === 'txt') {
+                    // Plan-45 Phase 5/7: 유사도 모드는 TXT 폐기 (PDF·HTML만)
                     if (currentMode === 'compare') doExportCompareTxt();
-                    else if (currentMode === 'similarity') doExportSimilarityTxt();
                     else if (currentMode === 'verify') doExportVerifyTxt();
                 } else if (fmt === 'xlsx') {
                     doExportExcel();
@@ -4690,58 +4653,9 @@
                 downloadBlob(new Blob([text], { type: 'text/plain;charset=utf-8' }), getExportFilename('txt'));
             }
 
-            // ── 유사도 모드 TXT 내보내기 ──
-            function doExportSimilarityTxt() {
-                if (!simLastResult) return;
-                var summary = simLastResult.summary;
-                var matches = simLastResult.matches;
-                var tiers = summary.tiers || {};
-                var bd = summary.breakdown || {};
-                var lines = [];
-
-                lines.push('=== 유사도 검사 리포트 ===');
-                lines.push('검사 대상: ' + (simState.a.filename || '(없음)'));
-                lines.push('참조 원문: ' + (simState.b.filename || '(없음)'));
-                lines.push('검토일: ' + new Date().toISOString().slice(0, 10));
-                lines.push('');
-
-                var scoreVal = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
-                var verdictLabel = scoreVal >= verdictBoundHigh ? '주의' : (scoreVal >= verdictBoundLow ? '보통' : '양호');
-                lines.push('── 요약 ─────────────────────────────────────────');
-                lines.push('유사율: ' + scoreVal + '% (' + verdictLabel + ')');
-                lines.push('전체 문장: ' + summary.total_sentences + '문장');
-                if (tiers.substantive !== undefined) {
-                    lines.push('실질 유사: ' + tiers.substantive + '% · 의역: ' + tiers.derived + '% · 공통: ' + tiers.boilerplate + '%');
-                }
-                var types = ['identical', 'near_copy', 'paraphrase', 'low_sim', 'boilerplate'];
-                var typeParts = [];
-                for (var ti = 0; ti < types.length; ti++) {
-                    var t = types[ti];
-                    if (bd[t] && bd[t].count > 0) {
-                        var info = SIM_TYPE_MAP[t] || {};
-                        typeParts.push((info.label || t) + ' ' + bd[t].count + '건');
-                    }
-                }
-                if (typeParts.length > 0) lines.push('유형별: ' + typeParts.join(' · '));
-                lines.push('');
-
-                lines.push('── 매칭 목록 (' + matches.length + '건) ────────────────────────');
-                for (var i = 0; i < matches.length; i++) {
-                    var m = matches[i];
-                    var typeKey = m.type || 'low_sim';
-                    var typeInfo = SIM_TYPE_MAP[typeKey] || {};
-                    var simPct = m.similarity ? (m.similarity * 100).toFixed(1) + '%' : '—';
-                    var layer = DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer || '';
-                    var num = ' #' + (i + 1);
-                    while (num.length < 5) num = ' ' + num;
-                    lines.push(num + '  [' + (typeInfo.label || typeKey) + ' ' + simPct + '] ' + layer);
-                    lines.push('      대상: ' + m.target_text.substring(0, 120) + (m.target_text.length > 120 ? '…' : ''));
-                    lines.push('      참조: ' + m.ref_text.substring(0, 120) + (m.ref_text.length > 120 ? '…' : ''));
-                }
-                lines.push('');
-
-                downloadBlob(new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' }), getExportFilename('txt'));
-            }
+            // Plan-45 Phase 7: doExportSimilarityTxt 폐기
+            // (Phase 5에서 유사도 모드 export 모달의 TXT 버튼이 제거되어 호출 경로 없음.
+            //  PDF·HTML 보고서가 정식 출력 채널로 충분.)
 
             // ── 규칙 검증 모드 TXT 내보내기 ──
             function doExportVerifyTxt() {
@@ -5086,7 +5000,7 @@
                     + '.match-text-label { display: inline-block; min-width: 50px; font-weight: 600; color: #555; }'
                     + '.match-text-content { color: #1a1a1a; }'
                     + '.match-excluded { opacity: 0.6; }'
-                    + '.match-excluded::after { content: " (제외 영역)"; font-size: 10px; color: #888; }'
+                    + '.match-excluded::after { content: " (자동 제외)"; font-size: 10px; color: #888; }'
                     + '.match-user-excluded { background: #fffbeb; border-color: #f59e0b; }'
                     + '.match-user-excluded .match-header::after { content: " · 수동 제외"; color: #92400e; font-weight: 600; font-size: 10px; }'
                     + '.user-excl-summary { margin: 4px 0 10px; padding: 6px 10px; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 3px; font-size: 10.5px; color: #92400e; }'

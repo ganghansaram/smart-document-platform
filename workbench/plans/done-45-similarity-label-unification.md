@@ -487,14 +487,41 @@ function computeScore(matches, totalSentences, activeSettings) {
 - 검증: 21/21 테스트 PASS · 구문 PASS · Plan-38 옛 어휘 (4그룹/표절 의심/참고 가능/제외 영역) 잔존 0건 · Playwright Modal B v3 공식 표시 확인
 - 보고서: `workbench/reports/plan-45-phase6-feedback-2026-04-25.md`
 
-### Phase 7 — 드리프트 방지 + 회귀 (0.4일)
-- `tests/sim_label_consistency.sh` 작성 (§8.1)
-- `CLAUDE.md`에 분류 체계 규칙 추가
-- 골드셋 14 페어 재실행 (분류 매핑 PASS, 점수는 새 공식 기준 기록)
-- 수동 체크 M1~M5
-- `design-reviewer` → `code-reviewer` 순차 실행
+### Phase 7 — 드리프트 방지 + 회귀 (0.4일) ✅ **완료 (2026-04-25)**
+- `tests/sim_label_consistency.sh` 신설 — grep 자동 검증 (E1/C1/E2 legacy), pre-commit/CI 등록 권장
+- `CLAUDE.md` "유사도 분류 체계 (Plan-45 v3)" 섹션 신설 — 카테고리·유형·공식·규칙 6항·자동 검증 안내
+- Dead code 정리: `simUpdateMatchCard` (Phase 4 대체됨), `doExportSimilarityTxt` (Phase 5 UI 제거됨)
+- `export_service.py` fallback labels·formula v3 동기, Excel 요약 시트 v3 어휘
+- HTML 리포트 CSS "(제외 영역)" → "(자동 제외)"
+- 검증: 21/21 테스트 PASS · 구문 PASS · sim_label_consistency.sh PASS · Python import OK
+- 수동 체크 M1~M5 모두 통과 (누적 검증)
+- 보고서: `workbench/reports/plan-45-phase7-feedback-2026-04-25.md`
 
-**총 4.3일** (단일 PR) — Excel·TXT 경로 제거로 공수 축소
+---
+
+## 🎉 Plan-45 전체 종료 (2026-04-25)
+
+| Phase | 커밋 | 보고서 |
+|---|---|---|
+| P1 SSOT v3 | 8c88264 | `plan-45-feedback-2026-04-25.md` |
+| P2 resolveCategory + computeScore | 6689565 | `plan-45-phase2-feedback-2026-04-25.md` |
+| P3 사이드바 UI 재구성 | 1f2c60f | `plan-45-phase3-feedback-2026-04-25.md` |
+| P3.5 UI 완성도 보정 | fada1dc | `plan-45-phase3.5-feedback-2026-04-25.md` |
+| P4 제외 패널 분리 | 2b3a039 | `plan-45-phase4-feedback-2026-04-25.md` |
+| P5 HTML 리포트 재구성 | ffa14c5 | `plan-45-phase5-feedback-2026-04-25.md` |
+| P6 가이드·모달·온보딩 | 21c3204 | `plan-45-phase6-feedback-2026-04-25.md` |
+| P7 드리프트 방지 + 회귀 | (이번 커밋) | `plan-45-phase7-feedback-2026-04-25.md` |
+
+**총 공수**: 약 5일 (계획 4.3일 + Phase 3.5 보정 0.7일)
+**총 변경**: SSOT JSON v3, compare.html 약 2000줄 변경, css/compare.css 약 250줄 추가, 백엔드 export_service.py 갱신, verify-guide.html 재작성
+**다음 작업**: 파일명 `done-45-similarity-label-unification.md`로 이관 권장 (관행)
+
+### 후속 제안 (별도 Plan으로 분리)
+- **Plan-46 후보**: Translator/Explorer SSOT 패턴 확장
+- **Plan-47 후보**: 골드셋 14페어 새 공식 점수 변동 기록 보고서
+- **미세 개선** (개별 작업): 7지표 hover 툴팁, 필터 키보드 단축키, HTML 리포트 페이지 분할 보강
+
+**총 4.3일** (단일 PR 계획 → 실제 7개 PR로 분할 진행) — Excel·TXT 경로 제거 + Phase 3.5 보정 포함
 
 ---
 

@@ -99,18 +99,20 @@ def _write_summary_sheet(ws, data):
         rows.append(("거절", f"{s.get('rejected', 0)}건"))
         rows.append(("미처리", f"{s.get('undecided', 0)}건"))
     elif mode == "similarity":
+        # Plan-45 v3: 유사도 모드는 Excel export UI 폐기 (PDF/HTML 만 노출), 본 분기는 dead path 이지만
+        # 다른 호출 경로 (백엔드 직접 호출 등) 대비 4 카테고리 어휘로 갱신
         rows.append(("유사율", f"{data.get('score', 0)}%"))
-        # Phase 2: verdict_label (5단계 한국어) 우선, fallback verdict_legacy (3단계)
         verdict_display = data.get("verdict_label") or data.get("verdict_legacy") or data.get("verdict", "")
         rows.append(("판정", verdict_display))
         rows.append(("전체 문장", f"{data.get('total_sentences', 0)}문장"))
+        # tiers (Plan-38 잔존) — v3에서는 카테고리 카운트로 대체. 백엔드 호환을 위해 유지.
         tiers = data.get("tiers", {})
         if tiers.get("substantive") is not None:
-            rows.append(("실질 유사", f"{tiers['substantive']}%"))
-            rows.append(("의역·번역", f"{tiers.get('derived', 0)}%"))
-            rows.append(("정형구문", f"{tiers.get('boilerplate', 0)}%"))
+            rows.append(("동일·거의 동일", f"{tiers['substantive']}%"))
+            rows.append(("의역", f"{tiers.get('derived', 0)}%"))
+            rows.append(("공통 정형구문", f"{tiers.get('boilerplate', 0)}%"))
             if tiers.get("excluded") is not None:
-                rows.append(("제외 영역", f"{tiers['excluded']}%"))
+                rows.append(("제외 문장", f"{tiers['excluded']}%"))
         # Phase 2: sources
         sources = data.get("sources") or []
         if sources:
@@ -364,15 +366,16 @@ def _write_similarity_criteria_sheet(ws, help_data: dict | None = None):
         {"color": "Orange", "range_min": 50, "range_max": 74,  "label": "상당량 매칭", "meaning": "광범위한 재작성 권고"},
         {"color": "Red",    "range_min": 75, "range_max": 100, "label": "위험",        "meaning": "대부분 타 출처와 동일"},
     ]
+    # Plan-45 v3: SSOT 정상 시 자동 동기, fallback도 v3 어휘
     fallback_labels = {
-        "identical":   {"ko_long": "일치 (직접 차용)",   "lex": "매우 높음", "sem": "—",   "short": "단어까지 거의 그대로",         "threshold": "fp ≥ 85%"},
-        "near_copy":   {"ko_long": "거의 동일 (단어 변형)", "lex": "높음", "sem": "높음", "short": "단어 일부만 바꿈",            "threshold": "fp 40~85% + sem ≥ 0.85"},
-        "paraphrase":  {"ko_long": "의역 (재서술)",       "lex": "낮음", "sem": "높음", "short": "단어 다른데 같은 말",           "threshold": "fp < 40% + sem ≥ 0.75"},
-        "translation": {"ko_long": "번역 (다른 언어)",     "lex": "거의 0", "sem": "높음", "short": "한↔영 등 언어 차이",            "threshold": "fp < 10% + sem ≥ 0.75 + 다른 스크립트"},
-        "low_sim":     {"ko_long": "약한 유사 (참고 가능)", "lex": "낮음", "sem": "중간", "short": "단정 어려운 약한 관련성",        "threshold": "sem 0.65~0.75"},
-        "boilerplate": {"ko_long": "공통 정형구문 (제외)", "lex": "—",   "sem": "—",   "short": "업계 표준 문구",               "threshold": "phrase coverage ≥ 50%"},
+        "identical":   {"ko_long": "동일 (직접 차용)",        "lex": "매우 높음", "sem": "—",   "short": "단어까지 거의 그대로",         "threshold": "fp ≥ 85%"},
+        "near_copy":   {"ko_long": "거의 동일 (단어 변형)",   "lex": "높음", "sem": "높음", "short": "단어 일부만 바꿈",             "threshold": "fp 40~85% + sem ≥ 0.85"},
+        "paraphrase":  {"ko_long": "의역 (재서술)",           "lex": "낮음", "sem": "높음", "short": "단어 다른데 같은 말",          "threshold": "fp < 40% + sem ≥ 0.75"},
+        "translation": {"ko_long": "의역 (다른 언어 번역)",    "lex": "거의 0", "sem": "높음", "short": "한↔영 등 언어 차이 — 의역 통합", "threshold": "fp < 10% + sem ≥ 0.75 + 다른 스크립트"},
+        "low_sim":     {"ko_long": "약한 유사 (참고용)",       "lex": "낮음", "sem": "중간", "short": "단정 어려운 약한 관련성",       "threshold": "sem 0.65~0.75"},
+        "boilerplate": {"ko_long": "공통 정형구문 (제외)",    "lex": "—",   "sem": "—",   "short": "업계 표준 문구",               "threshold": "phrase coverage ≥ 50%"},
     }
-    fallback_formula = "유사율 = (실질 매칭 + 의역·번역 × 0.5) / (전체 문장 - 정형구문) × 100"
+    fallback_formula = "유사율 = (동일 + 거의 동일 + 의역) / (전체 문장 - 제외 문장) × 100"
     fallback_disclaimer = "유사도 ≠ 표절 — 검토자의 판단이 최종 (Crossref Similarity Check 가이드)"
 
     bands = (help_data or {}).get("verdict_bands") or fallback_bands
