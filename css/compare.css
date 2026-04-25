@@ -1155,19 +1155,32 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     min-width: 64px;
     text-align: center;
 }
+/* Plan-47b: 모달 A 표 유형 컬럼 — 결과 패널 (sim-indicator/sim-filter-chip) dot 패턴과 통일
+ * 색칠 칩 → 좌측 dot + 텍스트. 카테고리 색상 변수는 sim-cat-seg / sim-ind-* 와 동일 */
 .sim-help-label-cell {
-    display: inline-block;
-    padding: 1px 6px;
-    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: var(--font-caption);
-    color: white;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-default);
+    background: transparent;
+    padding: 0;
 }
-.sim-help-label-identical   { background: #dc2626; }
-.sim-help-label-near_copy   { background: #ea580c; }
-.sim-help-label-paraphrase  { background: #2563eb; }
-.sim-help-label-translation { background: #7c3aed; }
-.sim-help-label-low_sim     { background: #6b7280; }
-.sim-help-label-boilerplate { background: #9ca3af; }
+.sim-help-label-cell::before {
+    content: '';
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.sim-help-label-identical::before   { background: var(--color-error); }
+.sim-help-label-near_copy::before   { background: var(--color-warning); }
+.sim-help-label-paraphrase::before  { background: var(--color-info); }
+.sim-help-label-translation::before { background: var(--color-info); }
+.sim-help-label-low_sim::before     { background: var(--text-muted); }
+.sim-help-label-boilerplate::before { background: var(--border-color); }
 .sim-help-bands code {
     font-family: "Consolas", "Courier New", monospace;
     font-size: 0.85em;
