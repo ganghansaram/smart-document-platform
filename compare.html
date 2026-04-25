@@ -4451,6 +4451,17 @@
                         + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="10" y1="13" x2="10" y2="18"/><line x1="14" y1="13" x2="14" y2="18"/><line x1="8" y1="13" x2="16" y2="13"/></svg>'
                         + ' PDF (인쇄·배포용) <span class="export-fmt-tag">권장</span></button>'
                     : '';
+                // Plan-45 Phase 5: 유사도 모드는 PDF/HTML만 노출, Excel·TXT 버튼 제거
+                var xlsxBtn = isSimilarity ? ''
+                    : '<button class="btn btn-secondary export-fmt-btn" data-fmt="xlsx">'
+                        + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18M3 15h18"/></svg>'
+                        + ' Excel (.xlsx)</button>';
+                var txtBtn = isSimilarity ? ''
+                    : '<button class="btn btn-secondary export-fmt-btn" data-fmt="txt">'
+                        + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
+                        + ' 텍스트 (.txt)</button>';
+                // 유사도 모드는 PDF 우선이므로 HTML 버튼은 보조 옵션 (다른 모드는 기본 옵션)
+                var htmlBtnLabel = isSimilarity ? 'HTML (웹뷰 — 인쇄 외 용도)' : 'HTML (웹뷰)';
                 overlay.innerHTML = '<div class="modal-box" style="max-width:380px">'
                     + '<div class="modal-header"><h3>리포트 내보내기</h3>'
                     + '<button class="modal-close" id="export-fmt-close">&times;</button></div>'
@@ -4459,15 +4470,11 @@
                     + '<p style="font-size:var(--font-body);color:var(--text-secondary);margin:0 0 var(--space-md)">내보내기 형식을 선택하세요.</p>'
                     + '<div class="export-format-list">'
                     + pdfBtnHtml
-                    + '<button class="btn btn-secondary export-fmt-btn" data-fmt="xlsx">'
-                    + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18M3 15h18"/></svg>'
-                    + ' Excel (.xlsx)</button>'
+                    + xlsxBtn
                     + '<button class="btn btn-secondary export-fmt-btn" data-fmt="html">'
                     + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'
-                    + ' HTML (웹뷰)</button>'
-                    + '<button class="btn btn-secondary export-fmt-btn" data-fmt="txt">'
-                    + '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
-                    + ' 텍스트 (.txt)</button>'
+                    + ' ' + htmlBtnLabel + '</button>'
+                    + txtBtn
                     + '</div>'
                     + '</div></div>';
                 document.body.appendChild(overlay);
@@ -5127,18 +5134,13 @@
                     + '<div class="meta-row"><div class="meta-label">문서 ID</div><div class="meta-value">SIM-' + escapeHTML(docId) + '</div></div>'
                     + '</div>';
 
-                // ② 점수 카드
+                // ② 점수 카드 (Plan-45 v3: tiers 메타라인 폐기, 카테고리 카운트 7지표 사용)
                 html += '<h2>② 점수 및 판정</h2>';
                 html += '<div class="score-card score-band-' + verdict + '">'
                     + '<div class="score-num">' + p.score + '%</div>'
                     + '<div>'
                     + '<div class="score-meta-label">' + escapeHTML(p.verdict_label || p.verdict_legacy || '—') + '</div>'
                     + '<div class="score-meta-line">전체 ' + p.total_sentences + '문장</div>';
-                if (p.tiers && p.tiers.substantive !== undefined) {
-                    html += '<div class="score-meta-line">실질 ' + p.tiers.substantive + '% · 의역·번역 ' + p.tiers.derived + '% · 정형구문 ' + (p.tiers.boilerplate || 0) + '%';
-                    if (p.tiers.excluded !== undefined) html += ' · 제외 ' + p.tiers.excluded + '%';
-                    html += '</div>';
-                }
                 // 수동 제외 반영 표시 (투명성)
                 var uex = p.user_exclusions || { count: 0 };
                 if (uex.count > 0 && p.score_original !== undefined && p.score_original !== p.score) {
@@ -5146,33 +5148,65 @@
                 }
                 html += '</div></div>';
 
-                // ③ 카테고리 breakdown
-                // TODO(Plan-45/P5): 레거시 하드코딩 — Phase 5 HTML 리포트 재구성 시 SSOT (simHelp.categories) 경유로 전환.
-                // 현재는 Phase 5 대상이라 수정 보류. 본문 사이드바 라벨과 일시 불일치 가능 (Phase 5 에서 해소).
-                var bd = p.breakdown || {};
-                var typeMeta = [
-                    { key: 'identical',   group: '표절 의심',  label: '일치' },
-                    { key: 'near_copy',   group: '표절 의심',  label: '거의 동일' },
-                    { key: 'paraphrase',  group: '표절 의심',  label: '의역' },
-                    { key: 'translation', group: '표절 의심',  label: '번역' },
-                    { key: 'low_sim',     group: '참고 가능',  label: '약한 유사' },
-                    { key: 'boilerplate', group: '제외 영역',  label: '정형구문' }
-                ];
-                html += '<h2>③ 매칭 분류 분포</h2>'
-                    + '<table class="data"><thead><tr><th>그룹</th><th>유형</th><th>건수</th><th>비율</th></tr></thead><tbody>';
-                var maxPct = 0;
-                for (var i = 0; i < typeMeta.length; i++) {
-                    var info = bd[typeMeta[i].key] || { count: 0, percentage: 0 };
-                    if (info.percentage > maxPct) maxPct = info.percentage;
+                // Plan-45 Phase 5: 매칭을 카테고리로 집계 (SSOT 경유)
+                // type → category 매핑 (백엔드 6 유형 → SSOT 4 카테고리)
+                var TYPE_TO_CAT_REPORT = {
+                    identical: 'identical',
+                    near_copy: 'near_copy',
+                    paraphrase: 'paraphrased',
+                    translation: 'paraphrased',
+                    low_sim: 'low_similarity',
+                    boilerplate: '__excluded_auto__'
+                };
+                var catCounts = { identical: 0, near_copy: 0, paraphrased: 0, low_similarity: 0 };
+                var exclAutoCount = 0, exclManualCount = 0;
+                for (var i = 0; i < p.matches.length; i++) {
+                    var mm = p.matches[i];
+                    if (mm.user_excluded) { exclManualCount++; continue; }
+                    if (mm.exclusion_reason) { exclAutoCount++; continue; }
+                    var cat = TYPE_TO_CAT_REPORT[mm.type_key];
+                    if (cat === '__excluded_auto__') exclAutoCount++;
+                    else if (catCounts[cat] !== undefined) catCounts[cat]++;
                 }
-                for (var i = 0; i < typeMeta.length; i++) {
-                    var tm = typeMeta[i];
-                    var info = bd[tm.key] || { count: 0, percentage: 0 };
-                    var barW = maxPct > 0 ? Math.round(info.percentage / maxPct * 200) : 0;
-                    var barColor = tm.group === '표절 의심' ? '#dc2626' : (tm.group === '참고 가능' ? '#eab308' : '#9ca3af');
-                    html += '<tr><td>' + tm.group + '</td><td>' + tm.label + '</td><td>' + info.count + '</td>'
-                        + '<td>' + info.percentage + '%'
-                        + ' <span class="bd-bar" style="width:' + barW + 'px;background:' + barColor + '"></span></td></tr>';
+
+                // SSOT categories 라벨 (fallback 포함)
+                var catReportMeta = [
+                    { key: 'identical',      ko: (help.categories && help.categories.identical && help.categories.identical.ko) || '동일',      color: '#dc2626' },
+                    { key: 'near_copy',      ko: (help.categories && help.categories.near_copy && help.categories.near_copy.ko) || '거의 동일',  color: '#ea580c' },
+                    { key: 'paraphrased',    ko: (help.categories && help.categories.paraphrased && help.categories.paraphrased.ko) || '의역',    color: '#2563eb' },
+                    { key: 'low_similarity', ko: (help.categories && help.categories.low_similarity && help.categories.low_similarity.ko) || '약한 유사', color: '#6b7280' }
+                ];
+
+                // ③ 매칭 카테고리 분포 (SSOT 경유, 4 카테고리 + 제외 행)
+                html += '<h2>③ 매칭 카테고리 분포</h2>'
+                    + '<table class="data"><thead><tr><th>카테고리</th><th>건수</th><th>비율</th><th>점수 영향</th></tr></thead><tbody>';
+                var totalMatches = p.matches.length || 1;
+                var maxCount = Math.max.apply(null, catReportMeta.map(function(cm) { return catCounts[cm.key]; }).concat([exclAutoCount, exclManualCount]));
+                if (maxCount === 0) maxCount = 1;
+                catReportMeta.forEach(function(cm) {
+                    var count = catCounts[cm.key];
+                    var pct = ((count / totalMatches) * 100).toFixed(1);
+                    var barW = Math.round(count / maxCount * 200);
+                    var inScore = (cm.key === 'low_similarity') ? '제외' : '포함';
+                    html += '<tr><td><span class="match-badge" style="background:' + cm.color + '">' + escapeHTML(cm.ko) + '</span></td>'
+                        + '<td>' + count + '</td>'
+                        + '<td>' + pct + '%'
+                        + ' <span class="bd-bar" style="width:' + barW + 'px;background:' + cm.color + '"></span></td>'
+                        + '<td>' + inScore + '</td></tr>';
+                });
+                if (exclAutoCount > 0) {
+                    html += '<tr><td><span class="match-badge" style="background:#9ca3af">자동 제외</span></td>'
+                        + '<td>' + exclAutoCount + '</td>'
+                        + '<td>' + ((exclAutoCount / totalMatches) * 100).toFixed(1) + '%'
+                        + ' <span class="bd-bar" style="width:' + Math.round(exclAutoCount / maxCount * 200) + 'px;background:#9ca3af"></span></td>'
+                        + '<td>제외</td></tr>';
+                }
+                if (exclManualCount > 0) {
+                    html += '<tr><td><span class="match-badge" style="background:#92400e">수동 제외</span></td>'
+                        + '<td>' + exclManualCount + '</td>'
+                        + '<td>' + ((exclManualCount / totalMatches) * 100).toFixed(1) + '%'
+                        + ' <span class="bd-bar" style="width:' + Math.round(exclManualCount / maxCount * 200) + 'px;background:#92400e"></span></td>'
+                        + '<td>제외</td></tr>';
                 }
                 html += '</tbody></table>';
 
@@ -5239,27 +5273,56 @@
                     if (p.matches.length === 0) {
                         html += '<p style="color:#888;font-size:12px">매칭된 구간이 없습니다.</p>';
                     } else {
-                        for (var i = 0; i < p.matches.length; i++) {
-                            var m = p.matches[i];
-                            var excl = m.exclusion_reason ? ' match-excluded' : '';
-                            if (m.user_excluded) excl += ' match-user-excluded';
-                            html += '<div class="match-detail' + excl + '">'
-                                + '<div class="match-header">'
-                                + '<span>#' + m.index + '</span>'
-                                + '<span class="match-badge mb-' + m.type_key + '">' + escapeHTML(m.type) + '</span>'
-                                + '<span>유사도 ' + escapeHTML(m.similarity) + '</span>'
-                                + (m.method ? '<span>· ' + escapeHTML(m.method) + '</span>' : '')
-                                + '</div>'
-                                + '<div class="match-text"><span class="match-text-label">대상:</span> <span class="match-text-content">' + escapeHTML(m.target_text.substring(0, 280)) + (m.target_text.length > 280 ? '…' : '') + '</span></div>';
-                            if (m.ref_text) {
-                                html += '<div class="match-text"><span class="match-text-label">참조:</span> <span class="match-text-content">' + escapeHTML(m.ref_text.substring(0, 280)) + (m.ref_text.length > 280 ? '…' : '') + '</span></div>';
-                            }
-                            if (m.user_excluded) {
-                                var uexNote = m.user_exclude_note ? ' · ' + m.user_exclude_note : '';
-                                html += '<div class="match-text" style="color:#92400e;font-size:10.5px"><span class="match-text-label">제외 사유:</span> ' + escapeHTML((m.user_exclude_reason_label || '') + uexNote) + '</div>';
-                            }
-                            html += '</div>';
-                        }
+                        // Plan-45 Phase 5: 카테고리별 그룹핑 (사이드바와 일관)
+                        var catReportOrder = ['identical', 'near_copy', 'paraphrased', 'low_similarity', 'excluded_auto', 'excluded_manual'];
+                        var catReportLabel = {
+                            identical:       (help.categories && help.categories.identical && help.categories.identical.ko)      || '동일',
+                            near_copy:       (help.categories && help.categories.near_copy && help.categories.near_copy.ko)      || '거의 동일',
+                            paraphrased:     (help.categories && help.categories.paraphrased && help.categories.paraphrased.ko)  || '의역',
+                            low_similarity:  (help.categories && help.categories.low_similarity && help.categories.low_similarity.ko) || '약한 유사',
+                            excluded_auto:   (help.exclusions && help.exclusions.auto && help.exclusions.auto.ko)                || '자동 제외',
+                            excluded_manual: (help.exclusions && help.exclusions.manual && help.exclusions.manual.ko)            || '수동 제외'
+                        };
+                        var catReportColor = {
+                            identical: '#dc2626', near_copy: '#ea580c', paraphrased: '#2563eb', low_similarity: '#6b7280',
+                            excluded_auto: '#9ca3af', excluded_manual: '#92400e'
+                        };
+                        // 매칭을 카테고리별 버킷으로 분류
+                        var matchBuckets = {};
+                        catReportOrder.forEach(function(c) { matchBuckets[c] = []; });
+                        p.matches.forEach(function(m) {
+                            var cat;
+                            if (m.user_excluded) cat = 'excluded_manual';
+                            else if (m.exclusion_reason || m.type_key === 'boilerplate') cat = 'excluded_auto';
+                            else cat = TYPE_TO_CAT_REPORT[m.type_key] || 'low_similarity';
+                            matchBuckets[cat].push(m);
+                        });
+                        catReportOrder.forEach(function(catKey) {
+                            var bucket = matchBuckets[catKey];
+                            if (bucket.length === 0) return;
+                            html += '<h3 style="margin-top:14px;border-left:4px solid ' + catReportColor[catKey] + ';padding-left:8px">'
+                                + escapeHTML(catReportLabel[catKey]) + ' <span style="color:#888;font-weight:normal;font-size:11px">(' + bucket.length + '건)</span></h3>';
+                            bucket.forEach(function(m) {
+                                var excl = m.exclusion_reason ? ' match-excluded' : '';
+                                if (m.user_excluded) excl += ' match-user-excluded';
+                                html += '<div class="match-detail' + excl + '">'
+                                    + '<div class="match-header">'
+                                    + '<span>#' + m.index + '</span>'
+                                    + '<span class="match-badge" style="background:' + catReportColor[catKey] + '">' + escapeHTML(m.type) + '</span>'
+                                    + '<span>유사도 ' + escapeHTML(m.similarity) + '</span>'
+                                    + (m.method ? '<span style="color:#999;font-size:10px">· ' + escapeHTML(m.method) + '</span>' : '')
+                                    + '</div>'
+                                    + '<div class="match-text"><span class="match-text-label">대상:</span> <span class="match-text-content">' + escapeHTML(m.target_text.substring(0, 280)) + (m.target_text.length > 280 ? '…' : '') + '</span></div>';
+                                if (m.ref_text) {
+                                    html += '<div class="match-text"><span class="match-text-label">참조:</span> <span class="match-text-content">' + escapeHTML(m.ref_text.substring(0, 280)) + (m.ref_text.length > 280 ? '…' : '') + '</span></div>';
+                                }
+                                if (m.user_excluded) {
+                                    var uexNote = m.user_exclude_note ? ' · ' + m.user_exclude_note : '';
+                                    html += '<div class="match-text" style="color:#92400e;font-size:10.5px"><span class="match-text-label">제외 사유:</span> ' + escapeHTML((m.user_exclude_reason_label || '') + uexNote) + '</div>';
+                                }
+                                html += '</div>';
+                            });
+                        });
                     }
                     html += '</section>';
                 }

@@ -464,11 +464,18 @@ function computeScore(matches, totalSentences, activeSettings) {
 - 보고서: `workbench/reports/plan-45-phase4-feedback-2026-04-25.md`
 - **잔여 (Phase 7)**: toast click race 재현 점검, simApplyFilter 카운트 갱신 분리, simUpdateMatchCard dead code 정리
 
-### Phase 5 — HTML 리포트 재구성 (0.8일)
-- `doExportHtml` 전면 재작성: 표지(7지표 카드) + 카테고리별 섹션 + 제외 목록 + 부록 (§4.1)
-- `@media print`: A4 페이지 나눔(`page-break-before`), 색상 유지(`print-color-adjust: exact`), 필터·설정 UI 숨김
-- "PDF로 저장" 버튼 → `window.print()` 트리거 + 간단 안내 팝오버
-- Excel 경로·TXT 경로 UI 버튼 제거 (내보내기 메뉴 정리)
+### Phase 5 — HTML 리포트 재구성 (0.8일) ✅ **완료 (2026-04-25)**
+- 유사도 모드 export 모달: Excel·TXT 버튼 **제거** → PDF·HTML 2종만 노출 (PDF 권장)
+- 다른 모드 (compare/verify) export: **4종 유지** (회귀 방지)
+- `buildSimilarityReportHtml` ③ 매칭 분류 분포 — 6세부+그룹 표 → **4 카테고리 + 제외 행** SSOT 경유, "점수 영향" 컬럼 신설
+- 점수 카드 `tiers.substantive/derived` 메타라인 **폐기** (Plan-45 v3)
+- 별첨 A 매칭 상세 — 카테고리별 H3 그룹핑 (사이드바와 일관, 좌측 색바)
+- Phase 3.5 TODO 청산 완료 (typeMeta SSOT 경유)
+- PDF 변환은 백엔드 WeasyPrint(`/api/compare/html-to-pdf`) 유지 — `window.print()` 대신 더 정밀한 결과
+- @page A4 + page-break + print-color-adjust 이미 구현 (Plan-38 §9 자산 계승)
+- 검증: 21/21 테스트 PASS · 구문 PASS · grep 청산 확인 · Playwright 모달 PDF/HTML 2종 확인
+- 보고서: `workbench/reports/plan-45-phase5-feedback-2026-04-25.md`
+- **잔여 (Phase 6/7)**: Modal B fallback formula 갱신, TXT export dead code 정리, 별첨 A 페이지 분할 보강
 
 ### Phase 6 — 가이드·모달·온보딩 갱신 (0.4일)
 - `verify-guide.html` 유사도 챕터 재작성 (4 카테고리 라벨 기준)
