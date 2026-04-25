@@ -26,7 +26,7 @@
 <p>
     Verify는 세 가지 독립된 검증 모드를 제공합니다.
     모드별로 문서를 업로드하거나 텍스트를 붙여넣어 검증을 실행하며,
-    결과는 XLSX, HTML, TXT 형식으로 내보낼 수 있습니다.
+    결과는 PDF·HTML 보고서로 내보낼 수 있습니다.
 </p>
 
 <div class="po-screenshot">
@@ -40,84 +40,339 @@
      ======================================== -->
 <h2 class="po-section-title" id="유사도-검사">유사도 검사</h2>
 
-<div class="po-system-card">
-    <div class="po-system-card-header">
-        <div>
-            <div class="po-system-name">Similarity Check</div>
+<p>
+    유사도 검사는 <strong>지금 작성 중인 문서</strong>가 사내 기존 문서나
+    외부 공개된 타 기관·타사 문서와 얼마나 겹치는지 문장 단위로 비교하는 도구입니다.
+    작성 단계에서 의도치 않은 중복 구간을 미리 발견하고, 외부에 공개·배포하기 전에는
+    우연 일치로 인한 저작권·인용 출처 누락 리스크를 차단하기 위해 사용합니다.
+</p>
+
+<div class="po-callout po-warn">
+    <span class="po-callout-label">주의</span>
+    <strong>유사도 ≠ 표절.</strong>
+    이 점수는 텍스트가 얼마나 겹치는지를 수치로 보여줄 뿐, 표절 여부를 자동 판정하지 않습니다.
+    합법적 인용·정형구문·약어·규격 번호도 매칭으로 잡힙니다. 최종 판단은 검토자가 매칭 카드를
+    하나씩 확인한 뒤 내립니다. (출처: Crossref Similarity Check 가이드라인)
+</div>
+
+
+<!-- ── 5분 시작하기 ── -->
+<div class="po-quickstart">
+    <div class="po-quickstart-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        5분 안에 첫 검사 돌리기
+    </div>
+    <p class="po-quickstart-sub">
+        검사 대상 1건 + 비교 원본 1건만 있으면 검사·결과 해석·보고서 산출까지 5분이면 됩니다.
+        세부 옵션은 결과를 본 다음에 조정해도 점수가 즉시 재계산되므로 처음에는 기본값으로 시작합니다.
+    </p>
+    <div class="po-quickstart-steps">
+        <div class="po-quickstart-step">
+            <div class="po-quickstart-step-title">검증 페이지 진입</div>
+            <div class="po-quickstart-step-body">상단 메뉴에서 <strong>Verify</strong> 진입 후 허브 화면에서 <strong>유사도 검사</strong> 카드 선택</div>
+        </div>
+        <div class="po-quickstart-step">
+            <div class="po-quickstart-step-title">문서 2건 업로드</div>
+            <div class="po-quickstart-step-body">좌측 <strong>검사문서</strong>(작성 중 초안), 우측 <strong>비교문서</strong>(사내 기존·외부 공개 문서). 드래그앤드롭 또는 텍스트 붙여넣기 모두 가능</div>
+        </div>
+        <div class="po-quickstart-step">
+            <div class="po-quickstart-step-title">검사 실행</div>
+            <div class="po-quickstart-step-body">상단 또는 우측 사이드바 <strong>유사도 검사</strong> 버튼 클릭. 페이지당 수 초 ~ 수십 초</div>
+        </div>
+        <div class="po-quickstart-step">
+            <div class="po-quickstart-step-title">결과 해석</div>
+            <div class="po-quickstart-step-body">유사율 % + 5단계 신호등(Blue/Green/Yellow/Orange/Red) 확인 → 매칭 카드 클릭으로 본문 위치 점프</div>
+        </div>
+        <div class="po-quickstart-step">
+            <div class="po-quickstart-step-title">보고서 산출</div>
+            <div class="po-quickstart-step-body">사이드바 상단 <strong>내보내기</strong> → PDF 권장 (결과지 1p + 매칭 상세 + 검사 기준 자동 분리)</div>
         </div>
     </div>
-    <p class="po-system-desc">
-        두 문서 간 텍스트 유사도를 측정합니다.
-        Winnowing 핑거프린트로 표면적 복사를 감지하고,
-        bge-m3 벡터 임베딩으로 의미적 유사성까지 포착합니다.
-    </p>
-    <ul class="po-feat-list" style="grid-template-columns: 1fr;">
-        <li>하이브리드 유사도 분석 (Winnowing + bge-m3 임베딩)</li>
-        <li>유사 구간 하이라이트 표시</li>
-        <li>유사도 수치 제공 — 텍스트, 의미, 종합 백분율</li>
-        <li>세션별 비교 이력 관리</li>
-    </ul>
-    <div class="po-screenshot">
-        <img src="images/verify-similarity.png" alt="유사도 검사 결과">
+</div>
+
+
+<!-- ── 화면 구성 (핫스팟 스크린샷) ── -->
+<h3 id="유사도-화면-구성">결과 화면 구성</h3>
+<p>
+    유사도 검사를 실행하면 좌·우 패널에 본문 하이라이트가, 우측 사이드바에 점수와 매칭 카드가 표시됩니다.
+    아래 번호에 마우스를 올리면 각 영역 설명을 확인할 수 있습니다.
+</p>
+
+<div class="po-hotspot-image">
+    <img src="images/verify-similarity.png" alt="유사도 검사 결과 화면">
+    <span class="po-hotspot" style="top:18%; left:80%">1
+        <span class="po-hotspot-tip"><strong>유사율 점수</strong>전체 문장 중 매칭이 차지하는 비율(%). 옆 ⓘ 클릭 시 산식과 5단계 신호등 기준 표시</span>
+    </span>
+    <span class="po-hotspot" style="top:26%; left:88%">2
+        <span class="po-hotspot-tip"><strong>5단계 신호등 판정</strong>Blue(0%) · Green(1~24%) · Yellow(25~49%) · Orange(50~74%) · Red(75~100%) — Turnitin 표준</span>
+    </span>
+    <span class="po-hotspot" style="top:36%; left:80%">3
+        <span class="po-hotspot-tip"><strong>카테고리 지표 + 누적바</strong>동일·거의 동일·의역·약한 유사·제외 문장 수 카운트와 분포 시각화. 우측 ⓘ 로 매칭 유형 가이드 모달</span>
+    </span>
+    <span class="po-hotspot" style="top:48%; left:80%">4
+        <span class="po-hotspot-tip"><strong>검사 설정 (5 옵션)</strong>정형구문·짧은 매칭·목차·캡션·인용 토글. 변경 즉시 점수 재계산 (재검사 불필요)</span>
+    </span>
+    <span class="po-hotspot" style="top:65%; left:80%">5
+        <span class="po-hotspot-tip"><strong>매칭 카드 + ⓧ 제외</strong>카드 클릭 시 본문 해당 위치로 스크롤. ⓧ 클릭 → 사유 선택 → 수동 제외 (점수 즉시 차감, 5초 내 복원 가능)</span>
+    </span>
+    <span class="po-hotspot" style="top:55%; left:48%">6
+        <span class="po-hotspot-tip"><strong>미니맵</strong>우측 패널 스크롤바 좌측에 매칭 위치를 색상 마커로 표시. 클릭 시 본문 해당 구간으로 즉시 이동 (Plan-48)</span>
+    </span>
+    <div class="po-hotspot-legend">
+        <span class="po-hotspot-legend-item"><span class="po-hotspot-legend-num">1</span>유사율 점수</span>
+        <span class="po-hotspot-legend-item"><span class="po-hotspot-legend-num">2</span>신호등 판정</span>
+        <span class="po-hotspot-legend-item"><span class="po-hotspot-legend-num">3</span>카테고리 누적바</span>
+        <span class="po-hotspot-legend-item"><span class="po-hotspot-legend-num">4</span>검사 설정</span>
+        <span class="po-hotspot-legend-item"><span class="po-hotspot-legend-num">5</span>매칭 카드 + 제외</span>
+        <span class="po-hotspot-legend-item"><span class="po-hotspot-legend-num">6</span>미니맵</span>
     </div>
-    <p class="po-screenshot-caption">유사도 검사 결과 — 유사 구간 하이라이트 및 수치 표시</p>
 </div>
 
-<h3 id="유사도-면책">유사도 ≠ 표절</h3>
-<div class="po-callout">
-    <p>본 시스템이 산출한 유사도 점수는 <strong>텍스트 유사도</strong>를 측정한 것일 뿐,
-       표절 여부를 자동 판정하지 않습니다.</p>
-    <p>합법적 인용, 정형구문, 약어, 규격 번호 등도 매칭될 수 있으므로
-       반드시 검토자가 매칭 항목을 직접 검토해야 합니다.
-       (Crossref Similarity Check 공식 가이드라인)</p>
+
+<!-- ── 시나리오 3개 ── -->
+<h3 id="유사도-시나리오">시나리오별 사용법</h3>
+<p>
+    실제 문서 작성 흐름에서 유사도 검사를 어떻게 쓰는지 세 가지 대표 시나리오로 정리했습니다.
+    아래 시나리오는 사내 문서 작성·검토·외부 공개 단계를 그대로 따라갑니다.
+</p>
+
+<!-- 시나리오 ① -->
+<div class="po-scenario-card">
+    <div class="po-scenario-header">
+        <span class="po-scenario-tag">시나리오 1</span>
+        <div>
+            <h4 class="po-scenario-title">신규 문서 작성 중 — 사내 기존 문서와의 중복 회피</h4>
+            <p class="po-scenario-context">
+                과거 문서를 일부 차용·재활용하는 경우가 많은 만큼,
+                초안 작성 단계에서 사내 기존 문서와 의도치 않게 중복된 구간을 조기에 발견합니다.
+            </p>
+        </div>
+    </div>
+    <ol class="po-scenario-steps">
+        <li class="po-scenario-step">
+            허브에서 <strong>유사도 검사</strong> 카드 진입 후, 좌측 <strong>검사문서</strong>에 <strong>작성 중인 초안</strong>을 업로드합니다.
+            (`.docx` / `.pdf` / `.doc` 또는 텍스트 붙여넣기)
+        </li>
+        <li class="po-scenario-step">
+            우측 <strong>비교문서</strong>에 비교할 <strong>사내 기존 문서 1건</strong>을 업로드합니다.
+            (여러 건과 비교하려면 한 건씩 반복 — 검사 결과는 사이드바 하단 <strong>최근 작업</strong>에 자동 누적)
+        </li>
+        <li class="po-scenario-step">
+            <strong>유사도 검사</strong> 실행 후 점수와 5단계 신호등을 먼저 확인합니다.
+            Yellow(25~49%) 이상이면 사이드바 <strong>동일</strong> · <strong>거의 동일</strong> 카테고리 카드부터 우선 검토합니다.
+        </li>
+        <li class="po-scenario-step">
+            매칭 카드를 클릭하면 본문 좌·우 패널이 해당 문장으로 동시 스크롤합니다.
+            의도된 재활용이면 그대로 두고, 의도치 않은 중복이면 초안을 즉시 수정합니다.
+        </li>
+        <li class="po-scenario-step">
+            수정 후 <strong>유사도 검사</strong>를 다시 실행하여 점수가 충분히 떨어졌는지 확인합니다.
+            (보통 Yellow → Green 진입을 1차 목표로 둡니다.)
+        </li>
+    </ol>
+    <div class="po-scenario-tip">
+        <strong>💡 팁.</strong> 정형구문·목차·캡션은 기본으로 자동 제외되므로, 점수가 Green 이어도 "양호"가 보장되지는 않습니다.
+        <strong>동일</strong> 카테고리가 1건이라도 잡히면 그 구간은 반드시 직접 봅니다.
+    </div>
 </div>
 
-<h3 id="분류-체계">분류 체계 — 4 카테고리 (Copyleaks 모방)</h3>
-<p>결과는 매칭 강도에 따라 <strong>4 카테고리</strong>로 분류되어 사이드바와 보고서에 일관 표시됩니다.
-   추가로 자동/수동 제외된 매칭은 <strong>제외 패널</strong>에서 별도 확인할 수 있습니다.</p>
+<!-- 시나리오 ② -->
+<div class="po-scenario-card">
+    <div class="po-scenario-header">
+        <span class="po-scenario-tag">시나리오 2</span>
+        <div>
+            <h4 class="po-scenario-title">공개·배포 전 최종 점검 — 외부 문서와의 우연 일치 차단</h4>
+            <p class="po-scenario-context">
+                외부에 공개된 타 기관·타사 문서와 우연히 유사해진 구간이 있는지 공개·배포 전 마지막으로 확인합니다.
+                저작권 이슈와 출처 누락을 사전에 차단하기 위한 점검입니다.
+            </p>
+        </div>
+    </div>
+    <ol class="po-scenario-steps">
+        <li class="po-scenario-step">
+            검사문서에 <strong>공개 전 최종본</strong>을, 비교문서에 <strong>외부 공개 타 기관·타사 문서</strong>를 업로드합니다.
+            (PDF 형식이 흔하므로 그대로 업로드 가능 — 텍스트 추출은 자동)
+        </li>
+        <li class="po-scenario-step">
+            <strong>인용·출처 표시 제외</strong> 옵션은 OFF로 두고 검사합니다.
+            (인용 표기를 했더라도 우연 일치는 검출 대상)
+        </li>
+        <li class="po-scenario-step">
+            결과에서 <strong>거의 동일</strong>·<strong>의역</strong> 카테고리를 우선 봅니다.
+            <strong>동일</strong> 매칭은 자사 표준·정형구문일 가능성이 크지만, <strong>의역</strong>은 우연 일치로 보기 어려운 신호입니다.
+        </li>
+        <li class="po-scenario-step">
+            의역 매칭 카드를 모두 검토 후, 우연 일치로 판단되는 구간만 <code>ⓧ</code> → <strong>수동 제외</strong> (사유: "우연 일치 — 검토 완료") 처리합니다.
+            점수는 즉시 재계산되며, 직후 5초간 [↺ 복원] 토스트가 노출됩니다.
+        </li>
+        <li class="po-scenario-step">
+            모든 검토 완료 후 시나리오 ③ 으로 이동하여 회람용 PDF 보고서를 산출합니다.
+        </li>
+    </ol>
+    <div class="po-scenario-tip">
+        <strong>💡 팁.</strong> 한국어로 작성된 자사 문서와 영문 외부 문서를 비교할 때는
+        <strong>의역</strong> 카테고리에 한↔영 번역 매칭이 통합되어 표시됩니다.
+        다국어 매칭이 약한 유사로 떨어지는 경우는 진단 트리 §3 을 참고합니다.
+    </div>
+</div>
 
-<table class="po-spec-table">
-    <thead>
-        <tr><th style="width:22%">카테고리</th><th style="width:18%">색상</th><th style="width:35%">설명</th><th style="width:25%">점수 영향</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>동일</td><td>🔴 빨강</td><td>단어까지 거의 그대로 일치</td><td>점수에 포함</td></tr>
-        <tr><td>거의 동일</td><td>🟧 연빨강</td><td>단어 일부만 바꾼 구간</td><td>점수에 포함</td></tr>
-        <tr><td>의역</td><td>🟪 보라</td><td>표현은 다르나 같은 의미 (다른 언어 번역 포함)</td><td>점수에 포함</td></tr>
-        <tr><td>약한 유사</td><td>⚪ 회색</td><td>부분 의미 겹침, 차용 단정 어려움 — 검토자 판단 영역</td><td>점수 제외 (참고용)</td></tr>
-    </tbody>
-</table>
+<!-- 시나리오 ③ -->
+<div class="po-scenario-card">
+    <div class="po-scenario-header">
+        <span class="po-scenario-tag">시나리오 3</span>
+        <div>
+            <h4 class="po-scenario-title">회람·승인용 PDF 보고서 만들기</h4>
+            <p class="po-scenario-context">
+                검사 결과를 검토 회람·승인 라인이 한 페이지로 즉시 이해하도록 PDF로 산출합니다.
+                결과지 + 매칭 상세 + 검사 기준이 자동 분리됩니다.
+            </p>
+        </div>
+    </div>
+    <ol class="po-scenario-steps">
+        <li class="po-scenario-step">
+            검사 결과 화면에서 <strong>수동 제외</strong>·<strong>검사 설정</strong>이 최종 의도대로 맞춰져 있는지 확인합니다.
+            (보고서는 현재 점수를 그대로 캡처합니다.)
+        </li>
+        <li class="po-scenario-step">
+            우측 사이드바 헤더의 <strong>내보내기</strong> 버튼 클릭 → <strong>PDF (권장)</strong> 선택.
+            HTML 은 인쇄가 필요 없는 웹 회람 용도에만 사용합니다.
+        </li>
+        <li class="po-scenario-step">
+            보고서는 자동으로 <strong>3 페이지</strong>로 구성됩니다 — ① 결과지 (A4 1장, 점수·누적바·메타·검사 기준 요약)
+            + ② 별첨 A 매칭 상세 (카테고리별 그룹 + 자동/수동 제외 영역) + ③ 별첨 B 검사 기준 (산식·임계값·SSOT)
+        </li>
+        <li class="po-scenario-step">
+            검토 회람 시에는 <strong>결과지(1p)만 첨부</strong>하고, 검토 부서·기록 보관용에는 전체 3페이지를 보관합니다.
+        </li>
+        <li class="po-scenario-step">
+            보고서를 흑백 프린터로 인쇄할 때는 브라우저 인쇄 대화상자에서
+            <strong>"배경 그래픽" 옵션</strong>을 반드시 켭니다. (카테고리 색상이 보존되어 흑백 인쇄에서도 매칭 강도 식별 가능)
+        </li>
+    </ol>
+</div>
 
-<p>각 카테고리는 <strong>어휘 일치도</strong>(Winnowing fingerprint)와 <strong>의미 유사도</strong>
-   (bge-m3 embedding) 두 축의 조합으로 자동 결정됩니다. 단순 % 임계값 한 가지로 분류되지 않습니다.</p>
 
-<table class="po-spec-table">
-    <thead>
-        <tr><th style="width:22%">카테고리</th><th style="width:18%">어휘 유사</th><th style="width:18%">의미 유사</th><th style="width:42%">기술 임계값</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>동일</td><td>매우 높음</td><td>—</td><td>fp ≥ 85%</td></tr>
-        <tr><td>거의 동일</td><td>높음</td><td>높음</td><td>fp 40~85% + sem ≥ 0.85</td></tr>
-        <tr><td>의역</td><td>낮음</td><td>높음</td><td>fp &lt; 40% + sem ≥ 0.75 (다른 언어 번역 포함)</td></tr>
-        <tr><td>약한 유사</td><td>낮음</td><td>중간</td><td>sem 0.65~0.75</td></tr>
-    </tbody>
-</table>
+<!-- ── 글로서리 비교 카드 ── -->
+<h3 id="유사도-카테고리">카테고리 — 매칭 강도 4단계</h3>
+<p>
+    유사도 검사는 매칭을 강도에 따라 <strong>4 카테고리</strong>로 자동 분류합니다.
+    동일 베이스 문장이 4단계로 어떻게 변형되는지 실제 기술 문서 예시로 비교합니다.
+    (분류 체계는 Copyleaks Identical / Minor Changes / Paraphrased 를 모방하고, 사내 검토용 1 카테고리 "약한 유사" 를 추가한 4 카테고리입니다.)
+</p>
 
-<p>점수 카드 옆 <code>ⓘ</code> 클릭 시 산식·5단계 신호등을, 누적바 우측 <code>ⓘ</code> 클릭 시
-   2축 다이어그램과 카테고리 정의를 볼 수 있습니다.</p>
+<div class="po-glossary-legend">
+    <span><strong>마킹 읽는 법:</strong></span>
+    <span class="po-glossary-legend-item"><mark class="po-gloss-mark-identical">전체 매칭</mark> 동일 구간</span>
+    <span class="po-glossary-legend-item"><mark class="po-gloss-mark-near-common">공통 단어</mark> 그대로 일치</span>
+    <span class="po-glossary-legend-item"><mark class="po-gloss-mark-near-diff">바뀐 단어</mark> 동의어 치환</span>
+    <span class="po-glossary-legend-item"><mark class="po-gloss-mark-paraphrased">의미 키워드</mark> 의역 대응 쌍</span>
+    <span class="po-glossary-legend-item"><mark class="po-gloss-mark-low">약한 매칭</mark> 부분 겹침</span>
+</div>
 
-<h3 id="점수-산출법">점수 산출법 (Copyleaks 공식)</h3>
-<p>유사율은 다음 산식으로 계산됩니다 (가중치 없음 — Copyleaks aggregatedScore 모방).</p>
-<pre style="background:var(--bg-card);padding:12px;border-radius:6px;font-family:Consolas,monospace;font-size:12px;overflow-x:auto">
-유사율 = (동일 + 거의 동일 + 의역) / (전체 문장 - 제외 문장) × 100
-</pre>
+<div class="po-glossary-row">
+    <div class="po-glossary-cell po-gloss-identical">
+        <div class="po-glossary-head">
+            <span class="po-glossary-dot"></span>
+            <span class="po-glossary-name">동일</span>
+        </div>
+        <div class="po-glossary-thresh">fp ≥ 85%</div>
+        <div class="po-glossary-example">
+            <span class="po-glossary-example-label">검사문서</span>
+            <mark class="po-gloss-mark-identical">The contractor shall provide all test equipment required for environmental qualification testing.</mark>
+        </div>
+        <div class="po-glossary-example">
+            <span class="po-glossary-example-label">비교문서</span>
+            <mark class="po-gloss-mark-identical">The contractor shall provide all test equipment required for environmental qualification testing.</mark>
+        </div>
+        <div class="po-glossary-note">단어까지 거의 그대로 일치 — 전체 문장이 매칭. 점수 산출에 포함.</div>
+    </div>
+    <div class="po-glossary-cell po-gloss-near_copy">
+        <div class="po-glossary-head">
+            <span class="po-glossary-dot"></span>
+            <span class="po-glossary-name">거의 동일</span>
+        </div>
+        <div class="po-glossary-thresh">fp 40~85% + sem ≥ 0.85</div>
+        <div class="po-glossary-example">
+            <span class="po-glossary-example-label">검사문서</span>
+            The <mark class="po-gloss-mark-near-diff" title="동의어 치환">contractor</mark> <mark class="po-gloss-mark-near-common">shall</mark> <mark class="po-gloss-mark-near-diff" title="동의어 치환">provide</mark> <mark class="po-gloss-mark-near-common">all test equipment</mark> <mark class="po-gloss-mark-near-diff" title="동의어 치환">required</mark> <mark class="po-gloss-mark-near-common">for environmental qualification testing</mark>.
+        </div>
+        <div class="po-glossary-example">
+            <span class="po-glossary-example-label">비교문서</span>
+            The <mark class="po-gloss-mark-near-diff" title="동의어 치환">supplier</mark> <mark class="po-gloss-mark-near-common">shall</mark> <mark class="po-gloss-mark-near-diff" title="동의어 치환">furnish</mark> <mark class="po-gloss-mark-near-common">all test equipment</mark> <mark class="po-gloss-mark-near-diff" title="동의어 치환">necessary</mark> <mark class="po-gloss-mark-near-common">for environmental qualification testing</mark>.
+        </div>
+        <div class="po-glossary-note">공통 단어는 그대로, 일부만 동의어로 치환 (contractor↔supplier, provide↔furnish, required↔necessary). 점수 산출에 포함.</div>
+    </div>
+    <div class="po-glossary-cell po-gloss-paraphrased">
+        <div class="po-glossary-head">
+            <span class="po-glossary-dot"></span>
+            <span class="po-glossary-name">의역</span>
+        </div>
+        <div class="po-glossary-thresh">fp &lt; 40% + sem ≥ 0.75</div>
+        <div class="po-glossary-example">
+            <span class="po-glossary-example-label">검사문서</span>
+            The <mark class="po-gloss-mark-paraphrased" title="계약자에 대응">contractor</mark> shall <mark class="po-gloss-mark-paraphrased" title="공급에 대응">provide</mark> all <mark class="po-gloss-mark-paraphrased" title="시험 장비에 대응">test equipment</mark> required for <mark class="po-gloss-mark-paraphrased" title="환경시험에 대응">environmental qualification testing</mark>.
+        </div>
+        <div class="po-glossary-example">
+            <span class="po-glossary-example-label">비교문서</span>
+            <mark class="po-gloss-mark-paraphrased" title="environmental qualification testing 에 대응">환경시험</mark> 수행에 필요한 모든 <mark class="po-gloss-mark-paraphrased" title="test equipment 에 대응">시험 장비</mark>는 <mark class="po-gloss-mark-paraphrased" title="contractor 에 대응">계약자</mark>가 <mark class="po-gloss-mark-paraphrased" title="provide 에 대응">공급한다</mark>.
+        </div>
+        <div class="po-glossary-note">표현은 다르나 핵심 키워드가 의미적으로 대응. 한↔영 번역 매칭도 이 카테고리. 점수 산출에 포함.</div>
+    </div>
+    <div class="po-glossary-cell po-gloss-low_sim">
+        <div class="po-glossary-head">
+            <span class="po-glossary-dot"></span>
+            <span class="po-glossary-name">약한 유사</span>
+        </div>
+        <div class="po-glossary-thresh">sem 0.65~0.75</div>
+        <div class="po-glossary-example">
+            <span class="po-glossary-example-label">검사문서</span>
+            The contractor shall provide all <mark class="po-gloss-mark-low">test equipment</mark> required for environmental <mark class="po-gloss-mark-low">qualification</mark> testing.
+        </div>
+        <div class="po-glossary-example">
+            <span class="po-glossary-example-label">비교문서</span>
+            <mark class="po-gloss-mark-low">Test equipment</mark> for <mark class="po-gloss-mark-low">qualification</mark> activities is the responsibility of the program.
+        </div>
+        <div class="po-glossary-note">키워드 1~2개만 부분 겹침, 차용 단정 어려움. <strong>점수에서 제외</strong> (참고용 — 검토자 판단 영역).</div>
+    </div>
+</div>
+
+<details class="po-decision-tree">
+    <summary>기술 임계값과 분류 로직 자세히 보기</summary>
+    <div class="po-decision-body">
+        <p>각 카테고리는 <strong>어휘 일치도</strong>(Winnowing fingerprint, 약어 <code>fp</code>)와 <strong>의미 유사도</strong>(bge-m3 multilingual embedding, 약어 <code>sem</code>) 두 축의 조합으로 자동 결정됩니다. 단순 % 임계값 한 가지로 분류되지 않습니다.</p>
+        <table class="po-spec-table">
+            <thead>
+                <tr><th style="width:22%">카테고리</th><th style="width:18%">어휘 (fp)</th><th style="width:18%">의미 (sem)</th><th style="width:42%">기술 임계값</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>동일</td><td>매우 높음</td><td>—</td><td>fp ≥ 85%</td></tr>
+                <tr><td>거의 동일</td><td>높음</td><td>높음</td><td>fp 40~85% + sem ≥ 0.85</td></tr>
+                <tr><td>의역</td><td>낮음</td><td>높음</td><td>fp &lt; 40% + sem ≥ 0.75 (한↔영 번역 포함)</td></tr>
+                <tr><td>약한 유사</td><td>낮음</td><td>중간</td><td>sem 0.65~0.75</td></tr>
+            </tbody>
+        </table>
+        <p>점수 카드 옆 <code>ⓘ</code> 클릭 시 산식·5단계 신호등 모달이, 누적바 우측 <code>ⓘ</code> 클릭 시 2축 다이어그램이 열립니다.</p>
+        <p><strong>알고리즘 출처.</strong>
+            L1 Winnowing fingerprint — character k-gram (k=25) + sliding window (w=4) Rabin-Karp 해시. Schleimer/Wilkerson/Aiken (SIGMOD 2003).
+            L3 bge-m3 multilingual embedding — 1024차원 cosine similarity. BAAI (2024).
+            분류 임계값과 보고서 양식은 Turnitin Similarity / iThenticate v2 / Crossref Similarity Check 가이드라인 참고.</p>
+    </div>
+</details>
+
+
+<!-- ── 점수 산식과 신호등 ── -->
+<h3 id="유사도-점수">점수 산식과 5단계 신호등</h3>
+<p>유사율은 다음 산식으로 계산됩니다 — Copyleaks aggregatedScore 모방, 가중치 없음.</p>
+
+<pre style="background:var(--bg-card);padding:12px 16px;border-radius:var(--radius-sm);border-left:3px solid var(--active-color);font-family:Consolas,monospace;font-size:var(--font-small);overflow-x:auto;line-height:1.5">유사율 = (동일 + 거의 동일 + 의역) / (전체 문장 - 제외 문장) × 100</pre>
+
 <ul class="po-feat-list" style="grid-template-columns: 1fr;">
-    <li><strong>동일 / 거의 동일 / 의역</strong> — 점수에 동등 가중치(1)로 합산. 약한 유사는 참고용으로 점수에서 제외</li>
-    <li><strong>제외 문장</strong> — 자동 제외 (정형구문·목차·캡션·참고문헌·규격번호) + 수동 제외 (사용자 ⓧ 판정)</li>
-    <li><strong>검증</strong> — Copyleaks 샘플 리포트와 동일 결과: (76+50+89)/(597-105) = 43.7%</li>
+    <li><strong>동일 / 거의 동일 / 의역</strong> — 동등 가중치(1)로 합산. 약한 유사는 점수에서 제외 (참고용).</li>
+    <li><strong>제외 문장</strong> — 자동 제외(정형구문·목차·캡션·참고문헌·규격번호) + 수동 제외(검토자 ⓧ 판정).</li>
+    <li><strong>검증 사례</strong> — Copyleaks 샘플 리포트와 동일 결과: (76 + 50 + 89) / (597 - 105) = <strong>43.7%</strong>.</li>
 </ul>
 
-<p>결과 점수는 Turnitin 산업 표준 <strong>5단계 신호등</strong>으로 표시됩니다.</p>
+<p>산출된 점수는 Turnitin 산업 표준 <strong>5단계 신호등</strong>으로 표시됩니다.</p>
 <table class="po-spec-table">
     <thead>
         <tr><th style="width:18%">색상</th><th style="width:22%">구간</th><th style="width:60%">의미</th></tr>
@@ -131,47 +386,117 @@
     </tbody>
 </table>
 
-<h3 id="검사-설정">검사 설정 옵션</h3>
-<p>사이드바 <strong>검사 설정</strong> 패널에서 5가지 옵션을 토글할 수 있습니다.
-   변경 시 점수가 즉시 재계산됩니다 (재검사 불필요).</p>
+
+<!-- ── 검사 설정 옵션 ── -->
+<h3 id="유사도-검사-설정">검사 설정 5 옵션</h3>
+<p>
+    사이드바 <strong>검사 설정</strong> 패널에서 5 가지 옵션을 토글합니다.
+    변경 시 점수가 즉시 재계산되며 재검사가 필요 없습니다.
+    아래 기본값은 Turnitin·Copyleaks 기본 정책을 따릅니다.
+</p>
 
 <table class="po-spec-table">
     <thead>
-        <tr><th style="width:32%">옵션</th><th style="width:18%">기본값</th><th style="width:50%">설명</th></tr>
+        <tr><th style="width:32%">옵션</th><th style="width:14%">기본값</th><th style="width:54%">설명</th></tr>
     </thead>
     <tbody>
-        <tr><td>정형구문 제외</td><td>ON</td><td>"the contractor shall" 등 표준 문구</td></tr>
-        <tr><td>짧은 매칭 제외 (8단어 미만)</td><td>ON</td><td>Turnitin 표준 — 의미 있는 매칭으로 간주 X</td></tr>
+        <tr><td>정형구문 제외</td><td>ON</td><td>"the contractor shall", "in accordance with" 등 표준 문구</td></tr>
+        <tr><td>짧은 매칭 제외 (8단어 미만)</td><td>ON</td><td>Turnitin 표준 — 단어 수 적은 매칭은 의미 있는 표절로 간주 X</td></tr>
         <tr><td>목차/장절 헤딩 제외</td><td>ON</td><td>"1.1 SCOPE" 같은 헤딩 라인</td></tr>
-        <tr><td>표/그림 캡션 제외</td><td>ON</td><td>"Figure 5-1", "표 1" 등</td></tr>
-        <tr><td>인용·출처 표시 제외</td><td>OFF</td><td>큰따옴표 인용·각주·내주 — 필요 시 사용자가 켬</td></tr>
+        <tr><td>표/그림 캡션 제외</td><td>ON</td><td>"Figure 5-1", "Table 3-2", "표 1" 등</td></tr>
+        <tr><td>인용·출처 표시 제외</td><td>OFF</td><td>큰따옴표 인용·각주·내주 — 시나리오 ② 처럼 우연 일치 점검 시 OFF 유지 권장</td></tr>
     </tbody>
 </table>
 
-<p>다음 2건은 <strong>항상 자동 제외</strong>됩니다 (사용자 토글 없음):</p>
+<p>다음 2 건은 <strong>사용자 토글 없이 항상 자동 제외</strong>됩니다.</p>
 <ul class="po-feat-list" style="grid-template-columns: 1fr;">
     <li><strong>참고문헌 섹션</strong> — References / 참고문헌 / Bibliography 헤더 이후 영역</li>
     <li><strong>규격 번호 단독 매칭</strong> — MIL-STD-XXX 등 규격 번호만 일치하는 짧은 매칭</li>
 </ul>
 
-<h3 id="알고리즘-근거">도구·알고리즘 근거</h3>
-<p>본 시스템의 분류 로직은 두 계층으로 구성됩니다.</p>
-<ul class="po-feat-list" style="grid-template-columns: 1fr;">
-    <li><strong>L1: Winnowing fingerprint</strong> — character k-gram (k=25) + sliding window (w=4) Rabin-Karp 해시.
-        Schleimer, Wilkerson, Aiken (SIGMOD 2003)</li>
-    <li><strong>L3: bge-m3 multilingual embedding</strong> — 1024차원 cosine similarity.
-        BAAI (2024) — 다국어 의미 유사도</li>
-</ul>
-<p>분류 체계는 <strong>Copyleaks</strong>의 detection levels (Identical / Minor Changes / Paraphrased)를
-   기반으로 우리 도메인 특화 1 카테고리(약한 유사)를 추가한 4 카테고리입니다.
-   분류 임계값과 보고서 양식은 <strong>Turnitin Similarity</strong>, <strong>iThenticate v2</strong>,
-   <strong>Crossref Similarity Check</strong>의 공식 가이드라인을 참고하여 설정되었습니다.</p>
 
-<h3 id="보고서-출력">보고서 출력 활용법</h3>
-<p>사이드바 상단 <strong>내보내기</strong> 버튼으로 PDF·HTML 두 형식의 보고서를 생성할 수 있습니다.</p>
+<!-- ── 진단 트리 (FAQ 대체) ── -->
+<h3 id="유사도-진단">상황별 진단 — 결과가 예상과 다를 때</h3>
+<p>실제 사용 중 자주 마주치는 4 가지 상황을 진단 트리 형태로 정리했습니다. 항목을 펼쳐 단계별로 따라가면 원인과 대응을 확인할 수 있습니다.</p>
+
+<details class="po-decision-tree">
+    <summary><svg class="po-decision-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>점수가 예상보다 낮게 나옵니다</summary>
+    <div class="po-decision-body">
+        <p class="po-decision-question">검사 설정에서 자동 제외 옵션이 모두 ON 인지 확인하셨나요?</p>
+        <div class="po-decision-branch po-decision-branch-yes">
+            <span class="po-decision-branch-label">예</span>
+            <div class="po-decision-branch-body">정형구문·목차·캡션이 자동 제외되면 점수가 의도보다 낮아 보일 수 있습니다. 사이드바 하단 <strong>제외된 N건 보기</strong> 패널을 펼쳐 어떤 매칭이 제외됐는지 직접 확인합니다. 일부 옵션을 OFF 로 두면 해당 매칭이 점수에 다시 포함됩니다 (재계산은 즉시).</div>
+        </div>
+        <div class="po-decision-branch po-decision-branch-no">
+            <span class="po-decision-branch-label">아니오</span>
+            <div class="po-decision-branch-body">설정 패널을 펼쳐 5 옵션 상태를 먼저 점검합니다. 인용·출처 표시 제외(기본 OFF) 가 ON 으로 변경됐다면 인용 구간 전체가 점수에서 빠집니다.</div>
+        </div>
+        <p class="po-decision-question">매칭이 정말 적은 것인지 시각 확인했나요?</p>
+        <p>본문 패널 우측 <strong>미니맵</strong>에 색상 마커가 거의 없다면, 검사 대상 자체가 비교 원본과 충분히 독창적입니다. 추가 비교 원본을 시도하거나, 약한 유사 카테고리를 켜서 회색 매칭까지 확인합니다.</p>
+    </div>
+</details>
+
+<details class="po-decision-tree">
+    <summary><svg class="po-decision-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>점수가 노랑·주황 구간입니다 — 어떻게 대응할까</summary>
+    <div class="po-decision-body">
+        <p>5 단계 신호등의 Yellow(25~49%) 또는 Orange(50~74%) 구간입니다. 점수보다 <strong>어느 카테고리가 점수를 끌어올렸는지</strong>가 중요합니다.</p>
+        <p class="po-decision-question">사이드바에서 <strong>동일</strong> 카테고리 카운트가 0 이 아닌가요?</p>
+        <div class="po-decision-branch po-decision-branch-yes">
+            <span class="po-decision-branch-label">예</span>
+            <div class="po-decision-branch-body">동일 매칭은 단어까지 같은 직접 차용입니다. 카드를 모두 클릭하여 본문 위치를 확인하고, 의도된 인용/표준 문구가 아니면 즉시 재서술합니다.</div>
+        </div>
+        <div class="po-decision-branch po-decision-branch-no">
+            <span class="po-decision-branch-label">아니오</span>
+            <div class="po-decision-branch-body"><strong>거의 동일</strong>·<strong>의역</strong> 위주라면 표현은 다르나 의미가 같은 구간이 누적되어 점수가 올라간 상태입니다. 의역 매칭부터 검토하여 우연 일치/표준 표현이 아닌 구간만 재작성합니다.</div>
+        </div>
+        <p class="po-decision-question">검토 후에도 점수가 떨어지지 않으면?</p>
+        <p>의도된 재활용·표준 문구라면 ⓧ <strong>수동 제외</strong>로 점수에서 제거합니다 (사유: "표준 문구 — 재활용 의도", "정상 인용 — 출처 표기 완료" 등). 보고서에 사유가 기록되어 검토자가 판단 근거를 즉시 확인할 수 있습니다.</p>
+    </div>
+</details>
+
+<details class="po-decision-tree">
+    <summary><svg class="po-decision-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>다른 언어 매칭이 잘 안 잡힙니다 (한↔영)</summary>
+    <div class="po-decision-body">
+        <p>bge-m3 다국어 임베딩은 monolingual(같은 언어) 비교 대비 cross-lingual(다른 언어) 점수 분포가 전반적으로 낮습니다. 의역 카테고리에 한↔영 번역이 통합되도록 설계되어 있으나, 임계값(sem ≥ 0.75)을 넘지 못한 매칭은 <strong>약한 유사</strong>로 떨어집니다.</p>
+        <p class="po-decision-question">약한 유사 카테고리 필터가 켜져 있나요?</p>
+        <div class="po-decision-branch po-decision-branch-no">
+            <span class="po-decision-branch-label">아니오 (기본값)</span>
+            <div class="po-decision-branch-body">사이드바 <strong>결과 필터</strong>에서 <strong>약한 유사</strong> 칩을 켭니다. 회색 매칭 카드가 추가로 노출됩니다 (점수에는 영향 없음 — 표시만).</div>
+        </div>
+        <p class="po-decision-question">그래도 의심 구간이 안 보이면?</p>
+        <p>사람이 직접 짧은 영문 인용/번역 의심 구간을 발췌하여 비교 원본의 해당 영문 단락만 잘라 텍스트 붙여넣기로 재검사합니다. 짧은 구간만 비교하면 cross-lingual 임계값을 넘기 쉽습니다.</p>
+    </div>
+</details>
+
+<details class="po-decision-tree">
+    <summary><svg class="po-decision-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>일부 매칭만 제외하고 다시 점수 계산하기</summary>
+    <div class="po-decision-body">
+        <p>검토 결과 "이 매칭은 표절이 아니라 의도된 재활용/정상 인용/표준 문구" 라고 판정한 카드는 <strong>수동 제외</strong>합니다.</p>
+        <p class="po-decision-question">매칭 카드 우측 <code>ⓧ</code> 버튼이 보이나요?</p>
+        <div class="po-decision-branch po-decision-branch-yes">
+            <span class="po-decision-branch-label">예</span>
+            <div class="po-decision-branch-body"><code>ⓧ</code> 클릭 → 사유 선택 모달에서 사유를 고르거나 "기타" 입력 → <strong>제외</strong>. 점수가 즉시 차감되며, 직후 5초간 토스트 [↺ 복원]이 노출됩니다.</div>
+        </div>
+        <div class="po-decision-branch po-decision-branch-no">
+            <span class="po-decision-branch-label">아니오</span>
+            <div class="po-decision-branch-body">자동 제외된 매칭(예: 정형구문·캡션) 카드는 사이드바 메인 리스트에 노출되지 않습니다. 사이드바 하단 <strong>제외된 N건 보기</strong> 패널을 펼쳐서 확인할 수 있습니다.</div>
+        </div>
+        <p class="po-decision-question">잘못 제외해서 되돌리고 싶다면?</p>
+        <p>5초 안이라면 토스트 [↺ 복원]을 클릭합니다. 그 후에는 <strong>제외된 N건 보기</strong> 패널을 펼쳐 해당 카드의 [↺ 복원] 버튼으로 점수에 다시 포함시킵니다. (수동 제외는 세션 동안만 유지되며, 보고서 산출 시점의 상태가 보존됩니다.)</p>
+    </div>
+</details>
+
+
+<!-- ── 보고서 양식 ── -->
+<h3 id="유사도-보고서">보고서 양식</h3>
+<p>
+    사이드바 상단 <strong>내보내기</strong> 버튼으로 PDF·HTML 두 형식의 보고서를 산출합니다.
+    회람·승인용은 PDF, 웹 회람용은 HTML 을 사용합니다.
+</p>
+
 <table class="po-spec-table">
     <thead>
-        <tr><th style="width:20%">형식</th><th style="width:25%">용도</th><th style="width:55%">특징</th></tr>
+        <tr><th style="width:18%">형식</th><th style="width:24%">용도</th><th style="width:58%">특징</th></tr>
     </thead>
     <tbody>
         <tr><td>PDF (권장)</td><td>인쇄·배포·회람용</td><td>A4 자동 분할, 색상 보존, 백엔드 정밀 변환 (WeasyPrint)</td></tr>
@@ -179,43 +504,11 @@
     </tbody>
 </table>
 
-<p>보고서 양식은 <strong>결과지(A4 1장)</strong> + <strong>별첨 A 매칭 상세</strong> +
-   <strong>별첨 B 검사 기준</strong> 3 페이지 구조입니다. 결과지는 메타데이터·점수 카드·매칭 카테고리 분포·
-   출처·검사 기준 요약을 한 페이지에 담고, 별첨 A는 카테고리별 매칭 카드(동일/거의 동일/의역/약한 유사 +
-   자동/수동 제외)를 그룹핑하여 표시합니다.</p>
-
-<h3 id="유사도-faq">자주 묻는 질문</h3>
-
-<p><strong>Q. 점수가 의외로 낮게 나왔습니다. 시스템이 잘못된 것 아닌가요?</strong></p>
-<p>A. 정형구문·목차·캡션 등이 자동 제외된 결과일 수 있습니다. 검사 설정 패널에서
-       옵션을 끄거나, 하이라이트된 매칭 카드를 직접 확인해 주세요.</p>
-
-<p><strong>Q. 한국어 문서와 영문 표준서를 비교했는데 다른 언어 매칭이 잘 안 나옵니다.</strong></p>
-<p>A. bge-m3 cross-lingual 점수 분포가 monolingual 대비 낮으므로, 일부 다른 언어 매칭은 "약한 유사"로
-   분류될 수 있습니다. 의역 카테고리에 다른 언어 번역도 통합되어 있으나 점수 임계값을 넘지 못한 매칭은
-   약한 유사로 떨어집니다. 매칭 카드를 직접 확인하여 차용 가능성을 검토해 주세요.</p>
-
-<p><strong>Q. 같은 문서를 다시 검사했는데 점수가 약간 다릅니다.</strong></p>
-<p>A. 검사 설정의 사용자 토글이 변경되었거나 임계값이 조정된 경우 점수가 재계산됩니다.
-   동일 조건이라면 동일 결과가 나옵니다.</p>
-
-<p><strong>Q. "거의 동일"과 "의역"의 차이가 모호합니다.</strong></p>
-<p>A. 어휘 일치도 차이입니다. 단어 일부만 바꾼 경우는 "거의 동일",
-   문장을 재구성하여 표현이 달라진 경우는 "의역"입니다. 누적바 우측 <code>ⓘ</code>의
-   2축 다이어그램에서 시각적으로 확인할 수 있습니다.</p>
-
-<p><strong>Q. 자동 제외 카드는 무엇인가요?</strong></p>
-<p>A. 정형구문(예: "the contractor shall"), 목차 헤딩, 표/그림 캡션, 참고문헌 섹션, 규격 번호 단독 매칭 등이
-   자동으로 제외됩니다. 검사 설정 패널에서 옵션을 토글하면 일부 자동 제외 항목을 점수에 다시 포함할 수 있습니다.
-   자동 제외된 매칭은 메인 리스트가 아닌 사이드바 하단 "제외된 N건 보기" 패널에서 확인합니다.</p>
-
-<p><strong>Q. 수동 제외와 복원은 어떻게 하나요?</strong></p>
-<p>A. 매칭 카드 우측 <code>ⓧ</code> 클릭 → 사유 선택 → 점수에서 즉시 차감됩니다.
-   직후 5초간 토스트 [↺ 복원]이 노출되어 즉시 되돌릴 수 있고, 그 후에도 제외 패널에서 [↺ 복원] 버튼으로 복귀 가능합니다.</p>
-
-<p><strong>Q. 보고서를 인쇄했는데 색상이 없어요.</strong></p>
-<p>A. 브라우저 인쇄 대화상자에서 "배경 그래픽" 옵션을 켜주세요.
-   카테고리 색상이 보존되어 흑백 인쇄 시에도 매칭 강도를 식별할 수 있습니다.</p>
+<p>
+    보고서 양식은 <strong>결과지(A4 1장) + 별첨 A 매칭 상세 + 별첨 B 검사 기준</strong> 3 페이지 구조입니다.
+    결과지는 메타데이터·점수 카드·매칭 카테고리 분포·출처·검사 기준 요약을 한 페이지에 담고,
+    별첨 A 는 카테고리별 매칭 카드(동일/거의 동일/의역/약한 유사 + 자동/수동 제외)를 그룹핑하여 표시합니다.
+</p>
 
 
 <!-- ========================================
