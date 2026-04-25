@@ -451,17 +451,18 @@ function computeScore(matches, totalSentences, activeSettings) {
 
 **보고서**: `workbench/reports/plan-45-phase3.5-feedback-{YYYY-MM-DD}.md`
 
-### Phase 4 — 제외 패널 분리 (0.7일)
-- 메인 리스트에서 자동·수동 제외 카드 제거
-- 접이식 `<details>` "제외된 N건 보기"
-- 내부에 자동·수동 섹션 + 수동 제외의 [↺ 복원]
-- 복원 toast (5초, 중첩 시 최근 1건)
-- `sim-user-excluded` 반투명·줄무늬 CSS 제거 (V2)
-- `simActiveIdx` 무효화 방지
-- **(추가 — Phase 3.5 후속) UI/UX 일관성**:
-  - 카드 badge 색상을 type 기반 (`badge-info` 등) → 카테고리 기반 (`sc-identical/near_copy/...`)으로 통일
-  - 메인 카드 vs 제외 패널 카드 시각 차별화 정의 (제외 패널 카드는 콤팩트 모드)
-  - 카드 라벨 visual weight 정리 (배지·level·아이콘 비중 균형)
+### Phase 4 — 제외 패널 분리 (0.7일) ✅ **완료 (2026-04-25)**
+- 메인 리스트에서 자동·수동 제외 카드 분리 → `<details class="sim-exclusion-panel">` 접이식 패널로 이전
+- 패널 내부 자동·수동 섹션 헤더 + 콤팩트 카드 (`sim-match-item-compact`)
+- 수동 제외 카드 [↺ 복원] 버튼 (패널 내) + 토스트 [복원] (5초, 중첩 시 최근 1건)
+- `simApplyUserExclusion` 전체 재렌더로 전환 (메인↔패널 DOM 이동 보장)
+- `simActiveIdx` 무효화 방지 (next visible로 자동 이동)
+- `sim-user-excluded` 반투명·줄무늬 CSS **폐기** (V2 불변 회복)
+- 본문 하이라이트 `line-through` 보강 (수동 제외 시각 단서)
+- **(Phase 3.5 후속) UI/UX 일관성**: 카드 badge 색상 카테고리 기반 통일 (`sim-cat-badge-*`), 메인/콤팩트 카드 차별화, label visual weight 정리
+- 검증: 21/21 테스트 PASS · 구문 PASS · Playwright 실측 메인↔패널 이동·복원·점수 재계산 정상
+- 보고서: `workbench/reports/plan-45-phase4-feedback-2026-04-25.md`
+- **잔여 (Phase 7)**: toast click race 재현 점검, simApplyFilter 카운트 갱신 분리, simUpdateMatchCard dead code 정리
 
 ### Phase 5 — HTML 리포트 재구성 (0.8일)
 - `doExportHtml` 전면 재작성: 표지(7지표 카드) + 카테고리별 섹션 + 제외 목록 + 부록 (§4.1)

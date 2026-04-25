@@ -1480,6 +1480,145 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     color: var(--text-light);
 }
 
+/* Plan-45 Phase 4: 카드 badge 색상을 카테고리 기반으로 통일 */
+.sim-match-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
+    color: white;
+    font-variant-numeric: tabular-nums;
+}
+.sim-match-badge.sim-cat-badge-identical      { background: var(--color-error); }
+.sim-match-badge.sim-cat-badge-near_copy      { background: var(--color-warning); }
+.sim-match-badge.sim-cat-badge-paraphrased    { background: var(--color-info); }
+.sim-match-badge.sim-cat-badge-low_similarity { background: var(--text-muted); }
+.sim-match-badge.sim-cat-badge-excluded_auto,
+.sim-match-badge.sim-cat-badge-excluded_manual { background: var(--border-color); color: var(--text-default); }
+
+/* Plan-45 Phase 4: 제외 패널 (접이식) */
+.sim-exclusion-panel {
+    margin-top: 12px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 8px;
+}
+.sim-exclusion-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-light);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
+}
+.sim-exclusion-summary::-webkit-details-marker { display: none; }
+.sim-exclusion-summary::marker { content: ''; }
+.sim-exclusion-summary:hover { background: var(--hover-bg); }
+.sim-exclusion-summary svg { color: var(--text-muted); flex-shrink: 0; }
+.sim-exclusion-summary-label { flex: 1; }
+.sim-exclusion-summary-detail {
+    font-weight: var(--font-weight-normal);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+.sim-exclusion-summary::after {
+    content: '▾';
+    color: var(--text-muted);
+    transition: transform var(--transition-fast);
+}
+.sim-exclusion-panel[open] .sim-exclusion-summary::after { transform: rotate(180deg); }
+
+.sim-excl-section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    margin-top: 6px;
+    font-size: var(--font-caption);
+    color: var(--text-muted);
+    font-weight: var(--font-weight-medium);
+}
+.sim-excl-section-label { flex: 1; }
+.sim-excl-section-count {
+    font-variant-numeric: tabular-nums;
+}
+
+/* 제외 패널 내부 카드 — 콤팩트 모드 */
+.sim-match-item-compact {
+    padding: 6px 8px;
+    margin-top: 4px;
+    background: var(--bg-card);
+    border-bottom: none;
+    border-radius: var(--radius-sm);
+}
+.sim-match-item-compact .sim-match-text-b {
+    display: none;  /* 콤팩트 모드 — 참조 문장은 hover 또는 펼침 시에만 (현재는 생략) */
+}
+.sim-match-item-compact .sim-match-text-a {
+    font-size: 10.5px;
+    line-height: 1.3;
+}
+
+/* Plan-45 Phase 4 (V2 불변): sim-user-excluded 반투명·줄무늬 제거 — 제외 패널 분리로 시각 차별화 충분 */
+.sim-match-item.sim-user-excluded {
+    /* opacity 1, 배경 그라데이션 제거 — 패널 내부 일반 표시 */
+    background: var(--bg-card);
+}
+.sim-match-item.sim-user-excluded:hover {
+    background: var(--hover-bg);
+}
+.sim-hl-user-excluded {
+    /* 수동 제외 본문 하이라이트 — 시각 약화는 유지하되 panel 분리로 보조 단서 */
+    opacity: 0.65;
+    text-decoration: line-through;
+    text-decoration-color: var(--text-muted);
+    text-decoration-thickness: 1px;
+}
+
+/* 복원 toast (Plan-45 Phase 4) */
+.sim-restore-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--text-dark);
+    color: white;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    font-size: var(--font-small);
+    z-index: 5000;
+    animation: simRestoreToastIn 0.25s ease;
+}
+.sim-restore-toast-action {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
+    transition: background var(--transition-fast);
+}
+.sim-restore-toast-action:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+@keyframes simRestoreToastIn {
+    from { opacity: 0; transform: translate(-50%, 20px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
 /* ── 내보내기 포맷 선택 모달 ── */
 .export-format-list {
     display: flex;
@@ -1622,20 +1761,9 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     color: white;
 }
 
-/* ── 수동 제외 — 카드 상태 ── */
-.sim-match-item.sim-user-excluded {
-    opacity: 0.55;
-    background: repeating-linear-gradient(
-        -45deg,
-        transparent,
-        transparent 6px,
-        var(--hover-bg) 6px,
-        var(--hover-bg) 7px
-    );
-}
-.sim-match-item.sim-user-excluded:hover {
-    opacity: 0.8;
-}
+/* Plan-45 Phase 4 (V2 불변): sim-user-excluded 반투명·줄무늬 폐기.
+   수동 제외 카드는 sim-exclusion-panel 내부에 노출되므로 시각 차별화 불필요.
+   상위 .sim-match-item.sim-user-excluded { background: var(--bg-card) } 로 일반 표시 (L1570). */
 .sim-match-exclude-note {
     margin-top: 6px;
     padding: 3px 8px;

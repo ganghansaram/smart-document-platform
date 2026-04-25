@@ -2571,11 +2571,11 @@
                         + '<div style="font-weight:var(--font-weight-semibold);margin-bottom:4px">표시 필터가 모두 꺼져 있습니다</div>'
                         + '<div style="font-size:var(--font-caption);color:var(--text-muted);line-height:1.5">상단 <strong>결과 필터</strong>에서 카테고리를 하나 이상 켜세요.</div>'
                         + '</div>';
-                    // Plan-45 v3 Phase 3.5: 카드를 카테고리별로 그룹핑 + 섹션 헤더 삽입
-                    // 카테고리 순서 고정: 동일 → 거의 동일 → 의역 → 약한 유사 → (제외 항목은 Phase 4 패널로 분리 예정)
-                    var catOrder = ['identical', 'near_copy', 'paraphrased', 'low_similarity', 'excluded_auto', 'excluded_manual'];
+                    // Plan-45 v3 Phase 4: 메인 카테고리 4종 + 제외 패널 2종 분리
+                    var mainCatOrder = ['identical', 'near_copy', 'paraphrased', 'low_similarity'];
+                    var exclCatOrder = ['excluded_auto', 'excluded_manual'];
                     var grouped = {};
-                    catOrder.forEach(function(c) { grouped[c] = []; });
+                    mainCatOrder.concat(exclCatOrder).forEach(function(c) { grouped[c] = []; });
                     for (var i = 0; i < matches.length; i++) {
                         var m = matches[i];
                         var matchCat = resolveCategory(m, initialSettings);
@@ -2585,57 +2585,88 @@
 
                     var catLabel = function(catKey) {
                         if (simHelp && simHelp.categories && simHelp.categories[catKey]) return simHelp.categories[catKey].ko;
+                        if (simHelp && simHelp.exclusions) {
+                            if (catKey === 'excluded_auto'   && simHelp.exclusions.auto)   return simHelp.exclusions.auto.ko;
+                            if (catKey === 'excluded_manual' && simHelp.exclusions.manual) return simHelp.exclusions.manual.ko;
+                        }
                         return { identical: '동일', near_copy: '거의 동일', paraphrased: '의역', low_similarity: '약한 유사', excluded_auto: '자동 제외', excluded_manual: '수동 제외' }[catKey] || catKey;
                     };
 
-                    catOrder.forEach(function(catKey) {
+                    // 카드 한 건 렌더 (메인/제외 패널 공용)
+                    var renderCard = function(entry, isCompact) {
+                        var i = entry.idx;
+                        var m = entry.match;
+                        var typeKey = m.type || 'low_sim';
+                        var typeInfo = SIM_TYPE_MAP[typeKey] || SIM_TYPE_MAP.low_sim;
+                        var simPct = m.similarity ? (m.similarity * 100).toFixed(1) : '—';
+                        var matchCat = resolveCategory(m, initialSettings);
+                        // Plan-45 Phase 3.5/P4: 카드 badge 색상은 카테고리 기반 (sc-* 클래스)
+                        var badgeCatCls = 'sim-cat-badge-' + matchCat;
+                        var itemCls = 'sim-match-item' + (m.user_excluded ? ' sim-user-excluded' : '') + (isCompact ? ' sim-match-item-compact' : '');
+                        var cardHtml = '<div class="' + itemCls + '" data-idx="' + i + '" data-sim-cat="' + matchCat + '">';
+                        cardHtml += '<div class="sim-match-header">';
+                        cardHtml += '<span class="sim-match-badge ' + badgeCatCls + '">' + simPct + '%</span>';
+                        // Plan-45 §13: DETECTION_LAYER 는 카드에 노출하지 않고 hover 툴팁에만 표기
+                        var levelTitle = typeInfo.tooltip || '';
+                        if (m.detection_layer) {
+                            var _layer = DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer;
+                            levelTitle += (levelTitle ? ' · ' : '') + '탐지: ' + _layer;
+                        }
+                        cardHtml += '<span class="sim-match-level" title="' + escapeHTML(levelTitle) + '">' + typeInfo.label + '</span>';
+                        if (m.user_excluded) {
+                            cardHtml += '<button type="button" class="sim-match-action-btn sim-match-restore-btn" data-sim-action="restore" title="제외 취소 (복원)" aria-label="제외 취소">'
+                                + '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>'
+                                + '</button>';
+                        } else if (matchCat !== 'excluded_auto') {
+                            cardHtml += '<button type="button" class="sim-match-action-btn sim-match-exclude-btn" data-sim-action="exclude" title="이 매칭 항목 제외" aria-label="제외">'
+                                + '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                                + '</button>';
+                        }
+                        cardHtml += '</div>';
+                        cardHtml += '<div class="sim-match-text-a">' + escapeHTML(m.target_text.substring(0, 100)) + (m.target_text.length > 100 ? '...' : '') + '</div>';
+                        cardHtml += '<div class="sim-match-text-b">' + escapeHTML(m.ref_text.substring(0, 100)) + (m.ref_text.length > 100 ? '...' : '') + '</div>';
+                        if (m.user_excluded) {
+                            var reasonLabel = simFindReasonLabel(m.user_exclude_reason);
+                            var noteHtml = m.user_exclude_note ? ' · ' + escapeHTML(m.user_exclude_note) : '';
+                            cardHtml += '<div class="sim-match-exclude-note">수동 제외 · ' + escapeHTML(reasonLabel) + noteHtml + '</div>';
+                        }
+                        cardHtml += '</div>';
+                        return cardHtml;
+                    };
+
+                    // 메인 영역 — 4 카테고리 sticky 섹션
+                    mainCatOrder.forEach(function(catKey) {
                         var bucket = grouped[catKey];
                         if (!bucket || bucket.length === 0) return;
-                        // 섹션 헤더 (sticky, 좌측 카테고리 색바)
                         html += '<div class="sim-cat-section-header" data-cat-section="' + catKey + '">'
                             +   '<span class="sim-cat-section-bar"></span>'
                             +   '<span class="sim-cat-section-label">' + escapeHTML(catLabel(catKey)) + '</span>'
                             +   '<span class="sim-cat-section-count">' + bucket.length + '</span>'
                             + '</div>';
-                        bucket.forEach(function(entry) {
-                            var i = entry.idx;
-                            var m = entry.match;
-                            var typeKey = m.type || 'low_sim';
-                            var typeInfo = SIM_TYPE_MAP[typeKey] || SIM_TYPE_MAP.low_sim;
-                            var simPct = m.similarity ? (m.similarity * 100).toFixed(1) : '—';
-
-                            var itemCls = 'sim-match-item' + (m.user_excluded ? ' sim-user-excluded' : '');
-                            html += '<div class="' + itemCls + '" data-idx="' + i + '" data-sim-cat="' + catKey + '">';
-                        html += '<div class="sim-match-header">';
-                        html += '<span class="badge ' + typeInfo.badge + ' sim-match-badge">' + simPct + '%</span>';
-                            // Plan-45 §13: DETECTION_LAYER 는 카드에 노출하지 않고 hover 툴팁에만 표기 (visual noise 감소)
-                            var levelTitle = typeInfo.tooltip || '';
-                            if (m.detection_layer) {
-                                var _layer = DETECTION_LAYER_MAP[m.detection_layer] || m.detection_layer;
-                                levelTitle += (levelTitle ? ' · ' : '') + '탐지: ' + _layer;
-                            }
-                            html += '<span class="sim-match-level" title="' + escapeHTML(levelTitle) + '">' + typeInfo.label + '</span>';
-                        // 제외/복원 버튼 (카드 우측)
-                        if (m.user_excluded) {
-                            html += '<button type="button" class="sim-match-action-btn sim-match-restore-btn" data-sim-action="restore" title="제외 취소 (복원)" aria-label="제외 취소">'
-                                + '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>'
-                                + '</button>';
-                        } else {
-                            html += '<button type="button" class="sim-match-action-btn sim-match-exclude-btn" data-sim-action="exclude" title="이 매칭 항목 제외" aria-label="제외">'
-                                + '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-                                + '</button>';
-                        }
-                        html += '</div>';
-                        html += '<div class="sim-match-text-a">' + escapeHTML(m.target_text.substring(0, 100)) + (m.target_text.length > 100 ? '...' : '') + '</div>';
-                        html += '<div class="sim-match-text-b">' + escapeHTML(m.ref_text.substring(0, 100)) + (m.ref_text.length > 100 ? '...' : '') + '</div>';
-                        if (m.user_excluded) {
-                            var reasonLabel = simFindReasonLabel(m.user_exclude_reason);
-                            var noteHtml = m.user_exclude_note ? ' · ' + escapeHTML(m.user_exclude_note) : '';
-                            html += '<div class="sim-match-exclude-note">수동 제외 · ' + escapeHTML(reasonLabel) + noteHtml + '</div>';
-                        }
-                            html += '</div>';
-                        });
+                        bucket.forEach(function(entry) { html += renderCard(entry, false); });
                     });
+
+                    // 제외 패널 — 자동 + 수동 (접이식, 메인 영역 아래)
+                    var exclTotal = (grouped.excluded_auto || []).length + (grouped.excluded_manual || []).length;
+                    if (exclTotal > 0) {
+                        html += '<details class="sim-exclusion-panel" id="sim-exclusion-panel">';
+                        html += '<summary class="sim-exclusion-summary">'
+                            +   '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                            +   '<span class="sim-exclusion-summary-label">제외된 ' + exclTotal + '건 보기</span>'
+                            +   '<span class="sim-exclusion-summary-detail">자동 ' + (grouped.excluded_auto || []).length + ' · 수동 ' + (grouped.excluded_manual || []).length + '</span>'
+                            + '</summary>';
+                        exclCatOrder.forEach(function(catKey) {
+                            var bucket = grouped[catKey];
+                            if (!bucket || bucket.length === 0) return;
+                            html += '<div class="sim-excl-section-header" data-cat-section="' + catKey + '">'
+                                +   '<span class="sim-excl-section-label">' + escapeHTML(catLabel(catKey)) + '</span>'
+                                +   '<span class="sim-excl-section-count">' + bucket.length + '</span>'
+                                + '</div>';
+                            bucket.forEach(function(entry) { html += renderCard(entry, true); });
+                        });
+                        html += '</details>';
+                    }
+
                 }
                 html += '</div>';
                 sidebarBody.innerHTML = html;
@@ -2850,6 +2881,7 @@
             }
 
             // ── 수동 제외 상태 적용 + 점수·UI 재계산 ──
+            // Plan-45 Phase 4: 메인 ↔ 제외 패널 카드 DOM 이동, toast [복원] 노출, simActiveIdx 리셋
             function simApplyUserExclusion(matchIdx, excluded, reasonKey, note) {
                 if (!simLastResult || !simLastResult.matches[matchIdx]) return;
                 var m = simLastResult.matches[matchIdx];
@@ -2857,16 +2889,48 @@
                 m.user_exclude_reason = excluded ? (reasonKey || 'other') : null;
                 m.user_exclude_note = excluded ? (note || '') : '';
 
-                // 매칭 카드 DOM 갱신 (렌더 재사용 — simShowResults 재호출은 과함 → 부분 갱신)
-                simUpdateMatchCard(matchIdx);
-                simUpdateExclusionBanner();
-                simRecomputeFromSettings();
-                // 하이라이트도 시각적 구분 갱신
+                // Phase 4: 카드 DOM 이동을 위해 전체 사이드바 재렌더 (메인↔제외 패널 구조 변화)
+                simShowResults(simLastResult, { skipOnboarding: true, skipHistory: true });
+
+                // 본문 하이라이트 시각 구분 (sim-hl-user-excluded 클래스는 유지하되 css에서 디스플레이는 제어 안 함)
                 var highlightEls = document.querySelectorAll('[data-sim-idx="' + matchIdx + '"]');
                 for (var hi = 0; hi < highlightEls.length; hi++) {
                     highlightEls[hi].classList.toggle('sim-hl-user-excluded', !!excluded);
                 }
                 updateExportBtn();
+
+                // simActiveIdx 무효화 방지 — 제외 후 active 카드가 메인에서 사라지면 다음 visible로 이동
+                if (excluded && simActiveIdx === matchIdx) {
+                    var visible = simGetVisibleMatches();
+                    if (visible.length > 0 && visible[0] !== matchIdx) simNavigateToMatch(visible[0]);
+                    else simActiveIdx = -1;
+                }
+
+                // toast — 제외 직후 5초간 [복원] 액션 (중첩 시 최근 1건만)
+                if (excluded) showSimRestoreToast(matchIdx);
+            }
+
+            // 복원 toast — Plan-45 Phase 4
+            var _simRestoreToastTimer = null;
+            function showSimRestoreToast(matchIdx) {
+                var prev = document.getElementById('sim-restore-toast');
+                if (prev) prev.remove();
+                if (_simRestoreToastTimer) { clearTimeout(_simRestoreToastTimer); _simRestoreToastTimer = null; }
+                var t = document.createElement('div');
+                t.id = 'sim-restore-toast';
+                t.className = 'toast sim-restore-toast';
+                t.innerHTML = '<span class="sim-restore-toast-msg">매칭 제외됨</span>'
+                    + '<button type="button" class="sim-restore-toast-action" aria-label="제외 취소">↺ 복원</button>';
+                t.querySelector('.sim-restore-toast-action').addEventListener('click', function() {
+                    simApplyUserExclusion(matchIdx, false);
+                    if (t.parentNode) t.parentNode.removeChild(t);
+                    if (_simRestoreToastTimer) { clearTimeout(_simRestoreToastTimer); _simRestoreToastTimer = null; }
+                });
+                document.body.appendChild(t);
+                _simRestoreToastTimer = setTimeout(function() {
+                    if (t.parentNode) t.parentNode.removeChild(t);
+                    _simRestoreToastTimer = null;
+                }, 5000);
             }
 
             // 매칭 카드 한 개만 다시 그림 (전체 리렌더 회피)
@@ -3049,23 +3113,21 @@
                 for (var i = 0; i < matches.length; i++) {
                     var m = matches[i];
                     var cat = resolveCategory(m, settings);
-                    // Plan-45 Phase 3 임시: 제외 항목(자동/수동)은 필터 체크박스가 없으므로 무조건 숨김.
-                    // Phase 4 에서 접이식 "제외된 N건 보기" 패널로 이동 예정 — 그 전까지는 사용자가 제외 후 확인 불가.
-                    // simApplyUserExclusion 의 toast "[복원]" 링크로 즉시 복원만 가능 (Phase 4 완전 해결).
-                    var filterKey = (cat === 'excluded_auto' || cat === 'excluded_manual')
-                        ? null   // TODO(Plan-45/P4): 제외 패널 분리 시 이 null 분기 제거
-                        : cat;
-                    var show = filterKey && filters[filterKey] === true;
-                    if (show) visibleCount++;
+                    // Plan-45 Phase 4: 제외 카테고리는 별도 패널(<details>)에 노출되므로 메인 필터 영향 외.
+                    // 카드는 항상 DOM에 존재하되, 패널 접힘 상태에 따라 노출 결정.
+                    var isExcluded = (cat === 'excluded_auto' || cat === 'excluded_manual');
+                    var show = isExcluded ? true : (filters[cat] === true);
+                    if (show && !isExcluded) visibleCount++;
 
-                    // 사이드바 카드
+                    // 사이드바 카드 (제외 카드는 항상 표시 — <details>가 접힘/펼침 제어)
                     var card = document.querySelector('.sim-match-item[data-idx="' + i + '"]');
                     if (card) card.style.display = show ? '' : 'none';
 
-                    // 패널 하이라이트
+                    // 패널 하이라이트 (제외 매칭은 본문 하이라이트 숨김 유지 — 메인 카드 없으므로)
                     var hls = document.querySelectorAll('[data-sim-idx="' + i + '"]');
+                    var hlShow = isExcluded ? false : show;
                     for (var j = 0; j < hls.length; j++) {
-                        hls[j].style.display = show ? '' : 'none';
+                        hls[j].style.display = hlShow ? '' : 'none';
                     }
                 }
 
