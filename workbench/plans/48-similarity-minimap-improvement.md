@@ -8,7 +8,7 @@
 |-------|------|------|------|
 | 계획서 작성 | ✅ 완료 | `7ffc90a` | 현 상태 진단 + 업계 표준 분석 |
 | **Phase 1** — Critical 정상화 + 위치 정확도 | ✅ **완료 (2026-04-25)** | `263abec` | 단위 21/21 · code-reviewer Critical 0 |
-| **Phase 2** — L2 호버 툴팁 | ✅ **완료 (2026-04-25)** | (이 커밋) | code-reviewer Critical 2 + Warning 2 + design-reviewer Warning 1 즉시 반영 |
+| **Phase 2** — L2 호버 툴팁 | ✅ **완료 (2026-04-25)** | `2775990` | code-reviewer Critical 2 + Warning 2 + design-reviewer Warning 1 즉시 반영 |
 | Phase 3 — diff·sim 코드 통합 | ⏸ 보류 | — | 선택적, ROI 낮음. 사용자 만족 시 미진행 |
 
 피드백 보고서:
