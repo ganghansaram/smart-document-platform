@@ -109,6 +109,42 @@ Phase 1·2 코드 리뷰·단위 테스트는 모두 통과했으나, 사용자 
 
 → **교훈**: 미니맵류 positioning 코드는 반드시 실제 콘텐츠로 longitudinal 검증 필요. 이미 `memory/feedback_*` 후보로 기록 가치 있음.
 
+## 추가 hotfix2 — 색상 본문/미니맵 일치 (사용자 지적)
+
+사용자 후속 지적 — "미니맵 색상이 일치되는 것 같아?"
+
+### 발견 (Playwright 색상 실측)
+| 카테고리 | 본문 hl border | 미니맵 마커 (이전) | 일치? |
+|---------|----------------|-------------------|------|
+| 동일 | rgb(248,113,113) `--sim-identical-border` | rgb(248,113,113) `--color-error` | ✅ 우연 |
+| 거의 동일 | rgb(251,191,36) `--sim-near-copy-border` | rgb(251,191,36) `--color-warning` | ✅ 우연 |
+| **의역** | **rgb(167,139,250) 보라 `--sim-paraphrase-border`** | **rgb(96,165,250) 파랑 `--color-info`** | **❌** |
+| **약한 유사** | **rgb(96,165,250) 파랑 `--sim-low-border`** | **회색 `--text-muted`** | **❌** |
+
+### 원인
+Phase 1 작성 시 미니맵을 시맨틱 토큰(`--color-error/warning/info`)으로 매핑했으나 본문 하이라이트는 Plan-45 v3 디자인의 `--sim-*-border` 전용 토큰 사용. 두 매핑 체계 불일치.
+
+### 수정 (12 라인 — `css/compare.css` L184~189 + L228~233)
+미니맵 마커·툴팁 dot 모두 `--sim-*-border` 토큰으로 통일:
+```
+--color-error    → --sim-identical-border
+--color-warning  → --sim-near-copy-border
+--color-info     → --sim-paraphrase-border  (보라로 정정)
+--text-muted     → --sim-low-border          (파랑으로 정정)
+--border-color   → --sim-boilerplate-border
+```
+
+### 검증
+- 단위 21/21 PASS · sim_label_consistency PASS · vm.Script errors 0
+- 토큰 직접 read: sim-identical=#ef4444 / near_copy=#f59e0b / paraphrase=#7c3aed / low=#3b82f6 / boilerplate=#9ca3af
+- 다크 모드 자동 전환 (tokens.css `body[data-theme="dark"]` 오버라이드 사용)
+- 본문 `.sim-hl-*` border-color 와 100% 동일 토큰 → 완전 일치
+
+### 영향 범위
+- `.sim-mark-cat-*` 클래스는 미니맵 마커 + 툴팁 dot 만 사용 (grep 검증)
+- 본문 하이라이트(.sim-hl-*) · 사이드바 카드 · 필터 칩 · 도움말 모달 모두 무관
+- 회귀 위험 0
+
 ## 잔여·후속 (이번 범위 외)
 
 - [ ] **Phase 3 — diff·sim 코드 통합** — 잠재 부채 정리 (사용자 만족 시 미진행)
