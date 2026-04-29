@@ -381,6 +381,9 @@
             };
             var simLastResult = null;  // 유사도 결과 캐시 (하이라이트/네비게이션용)
             var simActiveIdx = -1;     // 현재 활성 매칭 인덱스
+            // Plan-50 Phase 2: 수동 제외 전 v3 baseline (보고서 감사 추적용).
+            // simShowResults 가 첫 렌더 시점에 한 번만 갱신, 수동 제외 후엔 보존.
+            var simBaselineScore = null;
 
             // ── DOM 참조 ──
             var compareMain = document.getElementById('compare-main');
@@ -618,8 +621,11 @@
             var aiFilterSection = document.getElementById('cp-ai-filter-section');
             var showParagraphNumbers = false;
             var compareAiEnabled = false; // /api/settings/public에서 로드
-            var verdictBoundLow = 30;    // [호환] 3단계 양호/보통 경계 (관리자 설정에서 오버라이드)
-            var verdictBoundHigh = 60;   // [호환] 3단계 보통/주의 경계
+            // Plan-50 Phase 3: 옛 3단계 임계값 변수 → v3 5단계 첫/마지막 임계와 정합.
+            // simHelp.verdict_bands 미로드 시에만 fallback 으로 사용됨 (실제로는 거의 미사용).
+            // 25 = Yellow 시작 (v3 5단계 두 번째 임계), 74 = Red 시작 직전 (Orange 끝).
+            var verdictBoundLow = 25;
+            var verdictBoundHigh = 74;
             var verdictBands5 = [0, 25, 50, 75];  // Phase 2 — 5단계 신호등 [green/yellow/orange/red 시작]
 
             // ── 문서 로드 완료 처리 ──
@@ -2401,6 +2407,16 @@
                 var totalSents = summary.total_sentences || 0;
                 var initialSettings = simLoadCheckSettings();
                 var initialResult = computeScore(matches || [], totalSents, initialSettings);
+
+                // Plan-50 Phase 2: 수동 제외 전 v3 baseline 보관 — 첫 렌더에서만 갱신.
+                // 사용자가 수동 제외 후 simShowResults 가 재호출되어도 baseline 은 그대로.
+                if (!opts.skipHistory) {
+                    var hasUserExcluded = false;
+                    for (var _bi = 0; _bi < (matches || []).length; _bi++) {
+                        if (matches[_bi].user_excluded) { hasUserExcluded = true; break; }
+                    }
+                    if (!hasUserExcluded) simBaselineScore = initialResult.score;
+                }
                 var initialCounts = initialResult.counts;
                 var initialExcluded = initialResult.excluded;
                 var scoreVal = initialResult.score;
@@ -2423,8 +2439,9 @@
                     var classMap = { blue: 'sim-verdict-blue', green: 'sim-verdict-good', yellow: 'sim-verdict-yellow', orange: 'sim-verdict-orange', red: 'sim-verdict-warning' };
                     verdictClass = classMap[match.color] || 'sim-verdict-moderate';
                 } else {
-                    if (scoreVal >= verdictBoundHigh) { verdictLabel = '주의'; verdictClass = 'sim-verdict-warning'; verdictTip = '유사율 ' + verdictBoundHigh + '% 이상'; }
-                    else if (scoreVal >= verdictBoundLow) { verdictLabel = '보통'; verdictClass = 'sim-verdict-moderate'; verdictTip = '유사율 ' + verdictBoundLow + '~' + verdictBoundHigh + '% 구간'; }
+                    // Plan-50 Phase 3: simHelp 미로드 fallback — v3 5단계 임계와 정합 (25/74).
+                    if (scoreVal >= verdictBoundHigh) { verdictLabel = '위험'; verdictClass = 'sim-verdict-warning'; verdictTip = '유사율 ' + verdictBoundHigh + '% 이상'; }
+                    else if (scoreVal >= verdictBoundLow) { verdictLabel = '검토 필요'; verdictClass = 'sim-verdict-moderate'; verdictTip = '유사율 ' + verdictBoundLow + '~' + verdictBoundHigh + '% 구간'; }
                     else { verdictLabel = '양호'; verdictClass = 'sim-verdict-good'; verdictTip = '유사율 ' + verdictBoundLow + '% 미만'; }
                 }
                 html += '<div class="sim-verdict ' + verdictClass + '">' + verdictLabel + ' <span class="tooltip-icon" data-tooltip="' + verdictTip + '">?</span></div>';
@@ -2661,8 +2678,16 @@
 
                 // 이력 저장
                 if (!opts.skipHistory) {
-                    var simScoreColor = summary.similarity_score >= 70 ? 'var(--color-error)' :
-                                        summary.similarity_score >= 40 ? 'var(--color-warning)' : 'var(--color-success-btn)';
+                    // Plan-50 Phase 3: 점수 색상은 v3 5단계 verdict_band 기반 (옛 3단계 40/70 임계 폐기).
+                    // 백엔드 verdict 가 Phase 1 적용 후 v3 점수 기반이므로 자동 정합.
+                    var bandColorMap = {
+                        blue:   'var(--color-info)',
+                        green:  'var(--color-success-btn)',
+                        yellow: 'var(--color-warning)',
+                        orange: 'var(--color-warning)',
+                        red:    'var(--color-error)'
+                    };
+                    var simScoreColor = bandColorMap[summary.verdict] || 'var(--text-default)';
                     addHistory({
                         timestamp: new Date().toISOString(),
                         mode: 'similarity',
@@ -3016,7 +3041,9 @@
             // Plan-45 Phase 7: simUpdateMatchCard 함수 폐기 — Phase 4에서 simShowResults
             // 전체 재렌더로 대체됨 (메인 ↔ 제외 패널 카드 DOM 이동 보장 위함)
 
-            // 사이드바 상단 "원점수 → 조정점수" 배너 업데이트
+            // Plan-50 Phase 2: 수동 제외 반영 배너 — 단일 점수, "원점수" 라벨 제거.
+            // 점수 카드는 항상 현재 v3 점수만 표시. 배너는 부가 정보 (제외 N건 반영) 만.
+            // baseline 비교가 필요한 경우 보고서 (감사 추적) 에서만 두 점수 표기.
             function simUpdateExclusionBanner() {
                 if (!simLastResult) return;
                 var banner = document.getElementById('sim-excl-banner');
@@ -3029,13 +3056,6 @@
                     if (banner) banner.remove();
                     return;
                 }
-                var summary = simLastResult.summary || {};
-                var tiers = summary.tiers || {};
-                var origScore = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
-                // 조정점수는 sim-score 요소에서 실제 재계산된 값 읽기
-                var curScoreEl = document.querySelector('.sim-score');
-                var curScoreNum = curScoreEl ? parseFloat(curScoreEl.textContent) : origScore;
-
                 if (!banner) {
                     banner = document.createElement('div');
                     banner.id = 'sim-excl-banner';
@@ -3043,8 +3063,7 @@
                     var scoreCard = document.querySelector('.sim-summary');
                     if (scoreCard && scoreCard.parentNode) scoreCard.parentNode.insertBefore(banner, scoreCard.nextSibling);
                 }
-                banner.innerHTML = '<span class="sim-excl-banner-label">수동 제외 ' + excludedCount + '건 반영</span>'
-                    + '<span class="sim-excl-banner-scores">원점수 <strong>' + origScore + '%</strong> → 조정 <strong>' + curScoreNum + '%</strong></span>';
+                banner.innerHTML = '<span class="sim-excl-banner-label">수동 제외 ' + excludedCount + '건 반영</span>';
             }
 
             function simNavigateToMatch(idx) {
@@ -5117,14 +5136,18 @@
                     payload.summary = { total: diffState.changes.length, accepted: acc, rejected: rej, undecided: und };
                 } else if (currentMode === 'similarity') {
                     var summary = simLastResult.summary;
-                    var tiers = summary.tiers || {};
                     payload.files = { a: simState.a.filename || '', b: simState.b.filename || '' };
-                    var origScore = tiers.adjusted !== undefined ? tiers.adjusted : summary.similarity_score;
-                    // 현재 DOM의 sim-score 값이 실제 조정된 점수 (수동 제외 반영)
+                    // Plan-50 Phase 2: baseline = 수동 제외 전 v3 점수 (감사 추적용).
+                    // simBaselineScore 는 simShowResults 첫 렌더에서 보관됨.
+                    // 현재 DOM의 sim-score 값이 조정된 v3 점수 (수동 제외 반영).
                     var domScoreEl = document.querySelector('.sim-score');
-                    var domScore = domScoreEl ? parseFloat(domScoreEl.textContent) : origScore;
-                    payload.score = isNaN(domScore) ? origScore : domScore;
-                    payload.score_original = origScore;
+                    var domScore = domScoreEl ? parseFloat(domScoreEl.textContent) : null;
+                    var baseline = (simBaselineScore !== null && !isNaN(simBaselineScore))
+                        ? simBaselineScore
+                        : (isNaN(domScore) ? 0 : domScore);
+                    payload.score = isNaN(domScore) ? baseline : domScore;
+                    payload.score_original = baseline;        // 호환 유지 (의미: 수동 제외 전 v3 baseline)
+                    payload.score_baseline = baseline;        // 신규 명시적 키
                     // 수동 제외 집계
                     var userExclCount = 0;
                     var userExclBreakdown = {};
@@ -5144,7 +5167,10 @@
                     payload.verdict = summary.verdict || '';            // "blue"|"green"|... (Phase 2)
                     payload.verdict_label = summary.verdict_label || ''; // 한국어 라벨 (Phase 2)
                     // 호환: 기존 3단계 verdict (보고서 외 코드용)
-                    payload.verdict_legacy = payload.score >= verdictBoundHigh ? '주의' : (payload.score >= verdictBoundLow ? '보통' : '양호');
+                    // Plan-50 Phase 3: verdict_legacy 는 v3 verdict_label 의 안전망 fallback 으로만 사용.
+                    // 백엔드 verdict_label (v3 기반) 이 항상 채워지므로 보고서에서 실사용 빈도 0 에 가까움.
+                    payload.verdict_legacy = payload.score >= verdictBoundHigh ? '위험'
+                        : (payload.score >= verdictBoundLow ? '검토 필요' : '양호');
                     payload.tiers = tiers;
                     payload.breakdown = summary.breakdown || {};
                     payload.exclusion_breakdown = summary.exclusion_breakdown || {};
@@ -5329,7 +5355,8 @@
                 // 수동 제외 반영 표시 (투명성)
                 var uex = p.user_exclusions || { count: 0 };
                 if (uex.count > 0 && p.score_original !== undefined && p.score_original !== p.score) {
-                    html += '<div class="score-original-note">원점수 ' + p.score_original + '% · 수동 제외 ' + uex.count + '건 반영</div>';
+                    // Plan-50 Phase 2: "원점수" → "수동 제외 전" (의미 명확화)
+                    html += '<div class="score-original-note">수동 제외 전 ' + p.score_original + '% · 수동 제외 ' + uex.count + '건 반영</div>';
                 }
                 html += '</div></div>';
 
