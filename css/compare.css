@@ -1623,6 +1623,34 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     text-align: center;
 }
 
+/* 그룹 헤더 일괄 제외 버튼 — 영-영 의역 다발 시나리오 가속용 */
+.sim-cat-section-bulk-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-light);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-caption);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.sim-cat-section-bulk-btn:hover {
+    background: var(--color-error);
+    color: white;
+    border-color: var(--color-error);
+}
+.sim-cat-section-bulk-btn:focus-visible {
+    outline: 2px solid var(--active-color);
+    outline-offset: 1px;
+}
+.sim-cat-section-bulk-btn svg {
+    flex-shrink: 0;
+}
+
 /* 매칭 카드 본문 텍스트 — 다크모드 대비비 강화 (WCAG AA 4.5:1) */
 .sim-match-text-a,
 .sim-match-text-b {

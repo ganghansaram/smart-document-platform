@@ -2607,6 +2607,10 @@
                             +   '<span class="sim-cat-section-bar"></span>'
                             +   '<span class="sim-cat-section-label">' + escapeHTML(catLabel(catKey)) + '</span>'
                             +   '<span class="sim-cat-section-count">' + bucket.length + '</span>'
+                            +   '<button type="button" class="sim-cat-section-bulk-btn" data-sim-bulk-cat="' + catKey + '" title="이 그룹 ' + bucket.length + '건 일괄 제외" aria-label="그룹 일괄 제외">'
+                            +     '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                            +     '<span>일괄 제외</span>'
+                            +   '</button>'
                             + '</div>';
                         bucket.forEach(function(entry) { html += renderCard(entry, false); });
                     });
@@ -2748,6 +2752,15 @@
                         showSimCheckHelpModal();
                         return;
                     }
+                    // 그룹 헤더 일괄 제외 버튼 (단건 actionBtn 보다 위)
+                    var bulkBtn = e.target.closest('[data-sim-bulk-cat]');
+                    if (bulkBtn && simLastResult) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        var bulkCatKey = bulkBtn.getAttribute('data-sim-bulk-cat');
+                        showSimExcludeReasonModal(null, { groupCatKey: bulkCatKey });
+                        return;
+                    }
                     // 수동 제외 / 복원 버튼 (카드 클릭보다 우선)
                     var actionBtn = e.target.closest('[data-sim-action]');
                     if (actionBtn && simLastResult) {
@@ -2785,12 +2798,47 @@
                 });
             })();
 
-            // ── 수동 제외 사유 모달 ──
-            function showSimExcludeReasonModal(matchIdx) {
-                if (!simLastResult || !simLastResult.matches[matchIdx]) return;
-                var m = simLastResult.matches[matchIdx];
-                var preview = (m.target_text || '').substring(0, 80);
-                if ((m.target_text || '').length > 80) preview += '…';
+            // ── 수동 제외 사유 모달 (단건 + 그룹 일괄) ──
+            // matchIdx: 단건 모드의 카드 인덱스 (그룹 모드일 때 null)
+            // opts: { groupCatKey } — 그룹 모드. 미지정 시 단건 모드 (하위호환).
+            function showSimExcludeReasonModal(matchIdx, opts) {
+                opts = opts || {};
+                var isGroup = !!opts.groupCatKey;
+
+                var groupIdxArray = [];
+                var groupLabel = '';
+                if (isGroup) {
+                    if (!simLastResult) return;
+                    var settings = simLoadCheckSettings();
+                    var matches = simLastResult.matches || [];
+                    for (var gi = 0; gi < matches.length; gi++) {
+                        var gm = matches[gi];
+                        if (gm.user_excluded) continue;
+                        if (resolveCategory(gm, settings) === opts.groupCatKey) groupIdxArray.push(gi);
+                    }
+                    if (groupIdxArray.length === 0) return;
+                    if (simHelp && simHelp.categories && simHelp.categories[opts.groupCatKey]) {
+                        groupLabel = simHelp.categories[opts.groupCatKey].ko;
+                    } else {
+                        groupLabel = ({ identical: '동일', near_copy: '거의 동일', paraphrased: '의역', low_similarity: '약한 유사' }[opts.groupCatKey]) || opts.groupCatKey;
+                    }
+                } else {
+                    if (!simLastResult || !simLastResult.matches[matchIdx]) return;
+                }
+
+                var modalTitle, previewBody, primaryLabel;
+                if (isGroup) {
+                    modalTitle = '그룹 일괄 제외';
+                    previewBody = '<div class="sim-excl-preview"><strong>대상:</strong> ' + escapeHTML(groupLabel) + ' ' + groupIdxArray.length + '건 일괄 처리</div>';
+                    primaryLabel = groupIdxArray.length + '건 제외';
+                } else {
+                    var m = simLastResult.matches[matchIdx];
+                    var preview = (m.target_text || '').substring(0, 80);
+                    if ((m.target_text || '').length > 80) preview += '…';
+                    modalTitle = '매칭 항목 제외';
+                    previewBody = '<div class="sim-excl-preview"><strong>대상:</strong> ' + escapeHTML(preview) + '</div>';
+                    primaryLabel = '제외';
+                }
 
                 var reasonOptions = SIM_USER_EXCLUDE_REASONS.map(function(r, i) {
                     return '<label class="sim-excl-option">'
@@ -2805,10 +2853,10 @@
                 var overlay = document.createElement('div');
                 overlay.className = 'modal-overlay blur';
                 overlay.innerHTML = '<div class="modal-box" style="max-width:460px">'
-                    + '<div class="modal-header"><h3>매칭 항목 제외</h3>'
+                    + '<div class="modal-header"><h3>' + escapeHTML(modalTitle) + '</h3>'
                     + '<button class="modal-close" id="sim-excl-close">&times;</button></div>'
                     + '<div class="modal-body">'
-                    + '<div class="sim-excl-preview"><strong>대상:</strong> ' + escapeHTML(preview) + '</div>'
+                    + previewBody
                     + '<p style="font-size:var(--font-body);color:var(--text-secondary);margin:0 0 var(--space-sm)">제외 사유를 선택하세요 (점수에서 감산됩니다).</p>'
                     + '<div class="sim-excl-options">' + reasonOptions + '</div>'
                     + '<div class="sim-excl-note-wrap" style="display:none">'
@@ -2819,7 +2867,7 @@
                     + '</div>'
                     + '<div style="display:flex;justify-content:flex-end;gap:var(--space-sm);margin-top:var(--space-lg)">'
                     +   '<button class="btn btn-secondary" id="sim-excl-cancel">취소</button>'
-                    +   '<button class="btn btn-primary" id="sim-excl-ok">제외</button>'
+                    +   '<button class="btn btn-primary" id="sim-excl-ok">' + escapeHTML(primaryLabel) + '</button>'
                     + '</div>'
                     + '</div></div>';
                 document.body.appendChild(overlay);
@@ -2844,7 +2892,11 @@
                     var noteEl = overlay.querySelector('#sim-excl-note');
                     var note = (reasonKey === 'other' && noteEl) ? (noteEl.value || '').trim() : '';
                     close();
-                    simApplyUserExclusion(matchIdx, true, reasonKey, note);
+                    if (isGroup) {
+                        simApplyUserExclusionBatch(groupIdxArray, true, reasonKey, note);
+                    } else {
+                        simApplyUserExclusion(matchIdx, true, reasonKey, note);
+                    }
                 });
             }
 
@@ -2878,6 +2930,42 @@
                 if (excluded) showSimRestoreToast(matchIdx);
             }
 
+            // ── 그룹 일괄 제외/복원 — 1회 재렌더 ──
+            // 단건 simApplyUserExclusion 의 batch 변형. N건 처리 시 simShowResults 1회만 호출.
+            function simApplyUserExclusionBatch(idxArray, excluded, reasonKey, note) {
+                if (!simLastResult || !idxArray || idxArray.length === 0) return;
+                var bMatches = simLastResult.matches || [];
+                var validIdx = [];
+                for (var bi = 0; bi < idxArray.length; bi++) {
+                    var bIdx = idxArray[bi];
+                    var bm = bMatches[bIdx];
+                    if (!bm) continue;
+                    bm.user_excluded = !!excluded;
+                    bm.user_exclude_reason = excluded ? (reasonKey || 'other') : null;
+                    bm.user_exclude_note = excluded ? (note || '') : '';
+                    validIdx.push(bIdx);
+                }
+                if (validIdx.length === 0) return;
+
+                simShowResults(simLastResult, { skipOnboarding: true, skipHistory: true });
+
+                for (var bj = 0; bj < validIdx.length; bj++) {
+                    var hlEls = document.querySelectorAll('[data-sim-idx="' + validIdx[bj] + '"]');
+                    for (var bh = 0; bh < hlEls.length; bh++) {
+                        hlEls[bh].classList.toggle('sim-hl-user-excluded', !!excluded);
+                    }
+                }
+                updateExportBtn();
+
+                if (excluded && validIdx.indexOf(simActiveIdx) !== -1) {
+                    var visible = simGetVisibleMatches();
+                    if (visible.length > 0) simNavigateToMatch(visible[0]);
+                    else simActiveIdx = -1;
+                }
+
+                if (excluded) showSimBatchRestoreToast(validIdx);
+            }
+
             // 복원 toast — Plan-45 Phase 4
             var _simRestoreToastTimer = null;
             function showSimRestoreToast(matchIdx) {
@@ -2898,6 +2986,30 @@
                 _simRestoreToastTimer = setTimeout(function() {
                     if (t.parentNode) t.parentNode.removeChild(t);
                     _simRestoreToastTimer = null;
+                }, 5000);
+            }
+
+            // 그룹 일괄 복원 toast — 단건 패턴과 동일, [↺ 전체 복원] 라벨
+            var _simBatchRestoreToastTimer = null;
+            function showSimBatchRestoreToast(idxArray) {
+                var prev = document.getElementById('sim-restore-toast');
+                if (prev) prev.remove();
+                if (_simRestoreToastTimer) { clearTimeout(_simRestoreToastTimer); _simRestoreToastTimer = null; }
+                if (_simBatchRestoreToastTimer) { clearTimeout(_simBatchRestoreToastTimer); _simBatchRestoreToastTimer = null; }
+                var t = document.createElement('div');
+                t.id = 'sim-restore-toast';
+                t.className = 'toast sim-restore-toast';
+                t.innerHTML = '<span class="sim-restore-toast-msg">' + idxArray.length + '건 일괄 제외됨</span>'
+                    + '<button type="button" class="sim-restore-toast-action" aria-label="전체 제외 취소">↺ 전체 복원</button>';
+                t.querySelector('.sim-restore-toast-action').addEventListener('click', function() {
+                    simApplyUserExclusionBatch(idxArray, false);
+                    if (t.parentNode) t.parentNode.removeChild(t);
+                    if (_simBatchRestoreToastTimer) { clearTimeout(_simBatchRestoreToastTimer); _simBatchRestoreToastTimer = null; }
+                });
+                document.body.appendChild(t);
+                _simBatchRestoreToastTimer = setTimeout(function() {
+                    if (t.parentNode) t.parentNode.removeChild(t);
+                    _simBatchRestoreToastTimer = null;
                 }, 5000);
             }
 
