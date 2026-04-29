@@ -138,6 +138,62 @@ for p in "${old_label_patterns[@]}"; do
     fi
 done
 
+# ─────────────────────────────────────────────────────────────
+# C2-legacy — Plan-50: 백엔드 옛 가중치 공식 (× 0.5) 잔존 검사
+# adjusted_pct = (substantive + derived * 0.5) / effective_total 같은 패턴.
+# Plan-45 v3 통일 후 의역 가중치 0.5 는 백엔드에서도 사용 금지.
+# ─────────────────────────────────────────────────────────────
+echo "[C2-legacy] 백엔드 옛 가중치 공식 잔존 검사..."
+backend_old_patterns=(
+    "derived * 0.5"
+    "+ derived * 0.5"
+    "substantive + derived * 0.5"
+    "(substantive + derived * 0.5)"
+)
+for p in "${backend_old_patterns[@]}"; do
+    cnt=0
+    for tp in "${TARGET_PATHS[@]}"; do
+        if [ -e "$tp" ]; then
+            c=$(grep -rn --include="*.py" \
+                $EXCLUDE_GREP \
+                -F "$p" "$tp" 2>/dev/null | wc -l || true)
+            cnt=$((cnt + c))
+        fi
+    done
+    if [ "$cnt" -gt 0 ]; then
+        echo "  FAIL C2-legacy: \"$p\" ${cnt}건 발견 (Plan-45 v3: 가중치 없음, 의역도 1.0)"
+        FAIL=1
+    fi
+done
+
+# ─────────────────────────────────────────────────────────────
+# T1-legacy — Plan-50: 옛 3단계 임계값 (30/60, 40/70) 잔존 검사
+# Plan-45 v3 5단계 신호등 (25/49/74) 으로 통일됨.
+# verdictBoundLow/High (compare.html), 이력 색상 임계 (40/70) 등이 대상.
+# ─────────────────────────────────────────────────────────────
+echo "[T1-legacy] 옛 3단계 임계값 잔존 검사..."
+threshold_patterns=(
+    "verdictBoundLow = 30"
+    "verdictBoundHigh = 60"
+    "similarity_score >= 70"
+    "similarity_score >= 40"
+)
+for p in "${threshold_patterns[@]}"; do
+    cnt=0
+    for tp in "${TARGET_PATHS[@]}"; do
+        if [ -e "$tp" ]; then
+            c=$(grep -rn --include="*.html" --include="*.js" --include="*.py" \
+                $EXCLUDE_GREP \
+                -F "$p" "$tp" 2>/dev/null | wc -l || true)
+            cnt=$((cnt + c))
+        fi
+    done
+    if [ "$cnt" -gt 0 ]; then
+        echo "  FAIL T1-legacy: \"$p\" ${cnt}건 발견 (Plan-45 v3 5단계: 25/49/74)"
+        FAIL=1
+    fi
+done
+
 echo ""
 if [ "$FAIL" -eq 0 ]; then
     echo "================================="
