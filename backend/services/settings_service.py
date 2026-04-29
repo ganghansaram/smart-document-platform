@@ -137,7 +137,7 @@ DEFAULT_SETTINGS: dict = {
         "upload_auto_vector_index": False,
         "upload_max_file_size_mb": 500,
         "display_table_style": "bordered",
-        "display_site_title": "WebBook",
+        "display_site_title": "Knowledge Explorer",
         "login_required": True,
     },
 }

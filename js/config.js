@@ -105,7 +105,7 @@ const DISPLAY_CONFIG = {
     platformName: "AHS's WebBook",
 
     // 사이트 타이틀 (헤더·로그인·document.title — 관리자 설정에서 변경 가능)
-    siteTitle: 'WebBook',
+    siteTitle: 'Knowledge Explorer',
 
     // 앱 버전 (푸터에 표시)
     version: 'v5.5',
