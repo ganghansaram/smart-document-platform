@@ -894,7 +894,9 @@ def _compute_summary(matches: list, bp_matches: list, target_sents: list,
     substantive_pct = round(substantive / effective_total * 100, 1)
     derived_pct = round(derived / effective_total * 100, 1)
     bp_pct = round(bp_count / max(total, 1) * 100, 1)
-    adjusted_pct = round((substantive + derived * 0.5) / effective_total * 100, 1)
+    # Plan-50 Phase 1: v3 공식 통일 — 의역 가중치 0.5 → 1.0 (Copyleaks 표준).
+    # 분자 = substantive(동일+거의동일) + derived(의역+번역). 약한 유사는 미반영.
+    adjusted_pct = round((substantive + derived) / effective_total * 100, 1)
     # 안전장치: 100% 초과 방지 (가능성 낮지만 _match_sentence_count 오버랩 시)
     adjusted_pct = min(adjusted_pct, 100.0)
     excluded_pct = round(excluded_total / max(total, 1) * 100, 1)
