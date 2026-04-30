@@ -791,7 +791,7 @@ def _merge_adjacent(matches: list) -> list:
         if (m["type"] == prev["type"]
                 and m["target_idx"] - prev.get("target_idx_end", prev["target_idx"]) <= 2
                 and m["ref_idx"] >= 0 and prev["ref_idx"] >= 0
-                and m["ref_idx"] - prev.get("ref_idx_end", prev["ref_idx"]) <= 2):
+                and 0 <= m["ref_idx"] - prev.get("ref_idx_end", prev["ref_idx"]) <= 2):
             prev["target_text"] += " " + m["target_text"]
             prev["ref_text"] += " " + m["ref_text"]
             prev["target_idx_end"] = m["target_idx"]

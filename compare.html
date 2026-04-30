@@ -2770,7 +2770,8 @@
                     var startT = m.target_idx;
                     var endT = m.target_idx_end !== undefined ? m.target_idx_end : startT;
                     var startR = m.ref_idx;
-                    var endR = m.ref_idx_end !== undefined ? m.ref_idx_end : startR;
+                    // Plan-51: 백엔드 회귀 시에도 silent 페인 방지 — ri_end < startR 이면 startR 한 점만 마킹
+                    var endR = (m.ref_idx_end !== undefined && m.ref_idx_end >= startR) ? m.ref_idx_end : startR;
 
                     // 대상 패널 (A)
                     for (var si = startT; si <= endT; si++) {
