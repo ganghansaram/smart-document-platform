@@ -19,7 +19,8 @@
 | **Phase 4** | 분모 계산 정합 (sentence index set) | ✅ 완료 (2026-04-30) | (예정) | computeScore 우선순위 (excluded > identical > near_copy > paraphrased > low_sim) 적용 |
 | **Phase 5** | 사이드바·그룹 헤더 단위 표기 통일 | ✅ 완료 (2026-04-30) | (예정) | 그룹 헤더·sectionCounts 모두 sentence span 합산으로 통일 |
 | **Phase 6** | 약한 유사 ⓧ 버튼 제거 (점수 상승 역설 해소) | ✅ 완료 (2026-04-30) | (예정) | 카드 + 그룹 헤더 일괄 버튼 모두 약한 유사 카테고리에서 미노출 |
-| **Phase 7** | 마감 (NaN 방어 + 단위 표기 + 디버그 로그) | ✅ 완료 (2026-04-30) | (예정) | target_idx NaN 방어, 100% 초과 console.warn, 배너·모달 "N건 (M문장)" 병기 |
+| **Phase 7** | 마감 (NaN 방어 + 단위 표기 + 디버그 로그) | ✅ 완료 (2026-04-30) | `3f36acf` | target_idx NaN 방어, 100% 초과 console.warn, 배너·모달 "N건 (M문장)" 병기 |
+| **hotfix1** | 다운로드 회귀 + verdict stale + baseline reset (C-1·W-1·W-2·W-3·W-5) | ✅ 완료 (2026-04-30) | (예정) | Phase 2 var tiers 정리 누락 → 다운로드 ReferenceError 복구 + 보고서 verdict 라벨 v3 score 기반 재계산 |
 
 **상태 범례**: ⏸ 대기 / 🟡 진행 중 / ✅ 완료 / ⏹ 보류
 **Plan-50 전체 완료** (2026-04-30) — 유사도 점수 공식·단위·UX 정합 부채 해소 완성. 업계 표준 (Turnitin·Copyleaks) 산식·UX 패턴에 정렬.
