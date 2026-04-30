@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <!-- 시안 5: 3노드 연결 — 지식 네트워크 -->
-  <line x1="36" y1="96" x2="64" y2="28" stroke="#222" stroke-width="8" stroke-linecap="round"/>
-  <line x1="64" y1="28" x2="92" y2="96" stroke="#222" stroke-width="8" stroke-linecap="round"/>
-  <line x1="36" y1="96" x2="92" y2="96" stroke="#222" stroke-width="8" stroke-linecap="round"/>
-  <circle cx="64" cy="28" r="14" fill="#222"/>
-  <circle cx="36" cy="96" r="14" fill="#222"/>
-  <circle cx="92" cy="96" r="14" fill="#222"/>
-</svg>

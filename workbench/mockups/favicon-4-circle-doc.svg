@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <!-- 시안 4: 겹친 마름모 — 문서 연결 -->
-  <path d="M44,64 L64,20 L84,64 L64,108 Z" fill="#222"/>
-  <path d="M64,64 L84,20 L104,64 L84,108 Z" fill="#222"/>
-</svg>

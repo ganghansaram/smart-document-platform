@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <!-- 시안 1: 문서 스택 — 3장 겹침 -->
-  <rect x="36" y="8" width="64" height="80" rx="4" fill="#222"/>
-  <rect x="28" y="20" width="64" height="80" rx="4" fill="#222" stroke="#fff" stroke-width="4"/>
-  <rect x="20" y="32" width="64" height="80" rx="4" fill="#222" stroke="#fff" stroke-width="4"/>
-</svg>
