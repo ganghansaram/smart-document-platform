@@ -581,6 +581,7 @@
                 // 유사도 모드 상태도 리셋 (이전 검사 결과는 해당 문서와 무관해져 stale)
                 if (simState[side]) simClearSide(side);
                 simLastResult = null;
+                simBaselineScore = null;  // Plan-50 hotfix1 (W-2): 모드 전환·문서 교체 시 stale baseline 방지
                 label.textContent = getDefaultLabel(side);
                 label.title = '';
                 removeBtn.classList.remove('visible');
@@ -2424,7 +2425,7 @@
                 var summary = data.summary;
                 var matches = data.matches;
                 var bd = summary.breakdown || {};
-                var tiers = summary.tiers || {};
+                // Plan-50 hotfix1 (W-1): tiers 변수는 사용처가 없어 제거 (Plan-50 Phase 2 정리 일관성).
                 var hint = document.getElementById('toolbar-hint');
 
                 // Plan-45 v3: hint 는 simRecomputeFromSettings() 가 Copyleaks 공식으로 최종 갱신.
@@ -5136,16 +5137,23 @@
             }
 
             // ── HTML 리포트 내보내기 (프론트엔드 생성) ──
+            // Plan-50 hotfix1 (W-3): buildHtmlReport throw 시 silent fail 방지 — try/catch 로 감쌈.
             function doExportHtml(opts) {
-                var html = buildHtmlReport(opts);
-                downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), getExportFilename('html'));
+                try {
+                    var html = buildHtmlReport(opts);
+                    downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), getExportFilename('html'));
+                } catch (e) {
+                    console.error('HTML 내보내기 실패', e);
+                    showToast('HTML 생성 실패: ' + (e.message || '알 수 없는 오류'), 'error');
+                }
             }
 
             // ── PDF 리포트 내보내기 (백엔드 WeasyPrint 변환) ──
             async function doExportPdf(opts) {
-                var html = buildHtmlReport(opts);
+                // Plan-50 hotfix1 (W-3): buildHtmlReport 호출도 try 안으로 — buildExportPayload throw 시 catch 가능.
                 var filename = getExportFilename('pdf');
                 try {
+                    var html = buildHtmlReport(opts);
                     showToast('PDF 생성 중…', 'info');
                     var res = await fetch('/api/compare/html-to-pdf', {
                         method: 'POST',
@@ -5239,15 +5247,31 @@
                         count: userExclCount,
                         breakdown: userExclBreakdown
                     };
-                    // 5단계 신호등 (백엔드 Phase 2) — 백엔드 verdict 우선, fallback으로 3단계
-                    payload.verdict = summary.verdict || '';            // "blue"|"green"|... (Phase 2)
-                    payload.verdict_label = summary.verdict_label || ''; // 한국어 라벨 (Phase 2)
+                    // Plan-50 hotfix1 (W-5): verdict 도 payload.score (v3, 수동 제외 반영) 기반 재계산.
+                    // 백엔드 summary.verdict 는 검사 시점의 점수 기준이라 수동 제외 후 stale.
+                    // simHelp.verdict_bands SSOT 우선, 없으면 백엔드 응답 fallback.
+                    var simV3Bands = (typeof simHelp !== 'undefined' && simHelp && Array.isArray(simHelp.verdict_bands)) ? simHelp.verdict_bands : null;
+                    if (simV3Bands) {
+                        var matchBand = null;
+                        for (var _bi = 0; _bi < simV3Bands.length; _bi++) {
+                            var _b = simV3Bands[_bi];
+                            if (payload.score >= _b.range_min && payload.score <= _b.range_max) { matchBand = _b; break; }
+                        }
+                        if (!matchBand) matchBand = simV3Bands[simV3Bands.length - 1];
+                        payload.verdict = matchBand.color || '';
+                        payload.verdict_label = matchBand.label || '';
+                    } else {
+                        payload.verdict = summary.verdict || '';
+                        payload.verdict_label = summary.verdict_label || '';
+                    }
                     // 호환: 기존 3단계 verdict (보고서 외 코드용)
                     // Plan-50 Phase 3: verdict_legacy 는 v3 verdict_label 의 안전망 fallback 으로만 사용.
                     // 백엔드 verdict_label (v3 기반) 이 항상 채워지므로 보고서에서 실사용 빈도 0 에 가까움.
                     payload.verdict_legacy = payload.score >= verdictBoundHigh ? '위험'
                         : (payload.score >= verdictBoundLow ? '검토 필요' : '양호');
-                    payload.tiers = tiers;
+                    // Plan-50 hotfix1 (C-1): Phase 2 에서 var tiers 삭제 시 본 라인 정리 누락 → ReferenceError.
+                    // summary.tiers 직접 참조로 복구 (Phase 1 적용 후 백엔드 tiers 가 v3 점수 기반).
+                    payload.tiers = summary.tiers || {};
                     payload.breakdown = summary.breakdown || {};
                     payload.exclusion_breakdown = summary.exclusion_breakdown || {};
                     payload.total_sentences = summary.total_sentences;
