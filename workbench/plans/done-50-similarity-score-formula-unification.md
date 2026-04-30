@@ -20,7 +20,9 @@
 | **Phase 5** | 사이드바·그룹 헤더 단위 표기 통일 | ✅ 완료 (2026-04-30) | (예정) | 그룹 헤더·sectionCounts 모두 sentence span 합산으로 통일 |
 | **Phase 6** | 약한 유사 ⓧ 버튼 제거 (점수 상승 역설 해소) | ✅ 완료 (2026-04-30) | (예정) | 카드 + 그룹 헤더 일괄 버튼 모두 약한 유사 카테고리에서 미노출 |
 | **Phase 7** | 마감 (NaN 방어 + 단위 표기 + 디버그 로그) | ✅ 완료 (2026-04-30) | `3f36acf` | target_idx NaN 방어, 100% 초과 console.warn, 배너·모달 "N건 (M문장)" 병기 |
-| **hotfix1** | 다운로드 회귀 + verdict stale + baseline reset (C-1·W-1·W-2·W-3·W-5) | ✅ 완료 (2026-04-30) | (예정) | Phase 2 var tiers 정리 누락 → 다운로드 ReferenceError 복구 + 보고서 verdict 라벨 v3 score 기반 재계산 |
+| **hotfix1** | 다운로드 회귀 + verdict stale + baseline reset (C-1·W-1·W-2·W-3·W-5) | ✅ 완료 (2026-04-30) | `a680f87` | Phase 2 var tiers 정리 누락 → 다운로드 ReferenceError 복구 + 보고서 verdict 라벨 v3 score 기반 재계산 |
+| **hotfix2** | 가이드 모달 타이포그래피 정합 (3 모달 폰트 매핑 + 모달 폭 + code 절대값 고정) | ✅ 완료 (2026-04-30) | (예정) | 산식 11→13, 표 12→13, code 0.85em(10.2px)→caption 11px 고정. 모달 폭 580→640, 매칭 유형 720 분기 |
+| **hotfix3** | 가이드 모달 디자인 마감 (max-height·컬럼 폭·정렬·닫기 secondary·ul 분리) | ✅ 완료 (2026-04-30) | (예정) | RED 행 잘림 해소, 매칭 유형 컬럼 정보량 비례, vertical-align top, 닫기 secondary, 변수 ul 실선·라벨 min-width |
 
 **상태 범례**: ⏸ 대기 / 🟡 진행 중 / ✅ 완료 / ⏹ 보류
 **Plan-50 전체 완료** (2026-04-30) — 유사도 점수 공식·단위·UX 정합 부채 해소 완성. 업계 표준 (Turnitin·Copyleaks) 산식·UX 패턴에 정렬.
