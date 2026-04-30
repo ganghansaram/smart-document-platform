@@ -1113,9 +1113,15 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 }
 
 /* 모달 B 콘텐츠 */
-.sim-help-modal .modal-box { max-width: 580px; }
+/* Plan-50 hotfix2: 모달 타이포그래피 정합 — 본문 텍스트 한 단계씩 상향
+ * (caption 11 → small 12 → body 13). 토큰 자체는 유지, 매핑만 변경.
+ * 매칭 유형 가이드(5컬럼)는 별도 720px max-width 로 분기. */
+.sim-help-modal .modal-box { max-width: 640px; }
+.sim-label-help-modal .modal-box { max-width: 720px; }
+/* Plan-50 hotfix3: max-height 220 → 180 (RED 행 잘림 해소).
+ * 폰트 ↑ + padding ↑ 로 컨텐츠 키 증가 → 5단계 표 마지막 행 (RED) 가려짐 보정. */
 .sim-help-modal .modal-body {
-    max-height: calc(100vh - 220px);
+    max-height: calc(100vh - 180px);
     overflow-y: auto;
     padding-right: var(--space-md);
 }
@@ -1127,10 +1133,17 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
     color: var(--active-color);
     margin: 0 0 var(--space-xs);
 }
+/* Plan-50 hotfix2: 섹션 보조 안내문 (옛 inline font-size:var(--font-small) 대체) */
+.sim-help-section-note {
+    font-size: var(--font-body);
+    color: var(--text-light);
+    margin: 0 0 var(--space-sm);
+}
 /* Plan-47: 산식 박스 시각 무게 강화 — 좌측 3px accent + 본 산식임을 강조 */
+/* Plan-50 hotfix2: caption 11px → body 13px (모달 핵심 정보 가독성) */
 .sim-help-formula {
     font-family: "Consolas", "Courier New", monospace;
-    font-size: var(--font-caption);
+    font-size: var(--font-body);
     font-weight: var(--font-weight-semibold);
     padding: var(--space-sm) var(--space-md);
     background: var(--bg-card);
@@ -1140,12 +1153,13 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
     line-height: 1.6;
     color: var(--text-default);
 }
-/* Plan-47: 산식 근거·검증 캡션 — font-tiny(10.5px)로 산식보다 작게 (위계 정상화)
- * 시각 종속 관계는 산식 박스 좌측 accent 와 동일 색상 보더로 연결 */
+/* Plan-47: 산식 근거·검증 캡션 — 산식보다 작게 (위계 정상화)
+ * 시각 종속 관계는 산식 박스 좌측 accent 와 동일 색상 보더로 연결.
+ * Plan-50 hotfix2: tiny 10.5px → caption 11px (1단계 상향, 가독성 ↑) */
 .sim-help-formula-basis {
     margin-top: 4px;
     padding: 6px 10px;
-    font-size: var(--font-tiny);
+    font-size: var(--font-caption);
     color: var(--text-light);
     line-height: 1.5;
     background: var(--bg-default);
@@ -1159,22 +1173,25 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
     color: var(--text-default);
     font-weight: var(--font-weight-semibold);
 }
+/* Plan-50 hotfix2: 표 base small 12px → body 13px, padding 6/10 → 8/12 (폰트 ↑ 동반) */
 .sim-help-bands {
     width: 100%;
     border-collapse: collapse;
-    font-size: var(--font-small);
+    font-size: var(--font-body);
     border: 1px solid var(--border-color);
 }
+/* Plan-50 hotfix3: vertical-align middle → top (wrap 행에서 1줄/2줄 시각 들쭉날쭉 완화) */
 .sim-help-bands th, .sim-help-bands td {
     border: 1px solid var(--border-color);
-    padding: 6px 10px;
+    padding: 8px 12px;
     text-align: left;
-    vertical-align: middle;
+    vertical-align: top;
 }
+/* Plan-50 hotfix2: 표 헤더 caption 11px → small 12px (데이터와 위계 유지하면서 가독성 ↑) */
 .sim-help-bands th {
     background: var(--bg-card);
     font-weight: var(--font-weight-semibold);
-    font-size: var(--font-caption);
+    font-size: var(--font-small);
     color: var(--text-light);
 }
 body[data-theme="dark"] .sim-help-bands,
@@ -1196,19 +1213,30 @@ body[data-theme="dark"] .sim-help-bands td {
 .sim-help-band-yellow { background: #eab308; }
 .sim-help-band-orange { background: #f97316; }
 .sim-help-band-red    { background: #ef4444; }
+/* Plan-50 hotfix2: 변수 의미 small 12px → body 13px (본문 등급)
+ * Plan-50 hotfix3: 점선 → 옅은 실선 (분리감 ↑), 라벨 inline-block min-width (라벨/설명 정렬축 일치) */
 .sim-help-vars {
     list-style: none;
     padding-left: 0;
     margin: 0;
-    font-size: var(--font-small);
+    font-size: var(--font-body);
 }
 .sim-help-vars li {
-    padding: 4px 0;
-    border-bottom: 1px dashed var(--border-color);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-color);
 }
-.sim-help-vars strong { color: var(--text-default); margin-right: 6px; }
+.sim-help-vars li:last-child {
+    border-bottom: none;
+}
+.sim-help-vars strong {
+    color: var(--text-default);
+    margin-right: 6px;
+    display: inline-block;
+    min-width: 70px;
+}
+/* Plan-50 hotfix2: 면책 박스 caption 11px → small 12px (신뢰 강조 정보의 가독성 보장) */
 .sim-help-disclaimer {
-    font-size: var(--font-caption);
+    font-size: var(--font-small);
     color: var(--text-muted);
     padding: var(--space-sm) var(--space-md);
     background: #fffbeb;
@@ -1226,10 +1254,11 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 /* 모달 A — 매칭 유형 가이드 (6라벨 표). Plan-47: 2축 다이어그램 제거 */
 .sim-label-help-modal .modal-box { max-width: 720px; }
 /* 모달 A 인트로 — 다이어그램 대체 본 설명문이므로 모달 B 산식과 동일한 3px accent border */
+/* Plan-50 hotfix2: 인트로 small 12px → body 13px (본문 등급) */
 .sim-help-intro {
     margin: 0 0 var(--space-sm);
     padding: var(--space-sm) var(--space-md);
-    font-size: var(--font-small);
+    font-size: var(--font-body);
     color: var(--text-default);
     line-height: 1.6;
     background: var(--bg-card);
@@ -1237,23 +1266,39 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 .sim-help-intro strong { color: var(--active-color); font-weight: var(--font-weight-semibold); }
-/* Plan-47: 어휘·의미 컬럼은 단일 값 (높음/낮음/중간/매우 높음/거의 0/—) — 줄내림 금지
- * 임계값 컬럼은 코드형 텍스트라 가끔 wrap 허용 (자연 줄바꿈) */
+/* Plan-50 hotfix3: 매칭 유형 가이드 5컬럼 폭 비례 재배치 + 헤더 정렬.
+ * - 어휘·의미: 단일 값 (낮음/높음/—) → 폭 56px 고정 (이전 64), 헤더도 가운데 정렬
+ * - 1번 (유형 라벨): nowrap, 자연 폭
+ * - 4번 (설명): min-width 200px (이전 160) — 정보량 많은 컬럼 우대
+ * - 5번 (임계값 code): max-width 200px 유지, 자연 줄바꿈 */
 .sim-label-help-modal .sim-help-bands th:nth-child(2),
 .sim-label-help-modal .sim-help-bands th:nth-child(3),
 .sim-label-help-modal .sim-help-bands td:nth-child(2),
 .sim-label-help-modal .sim-help-bands td:nth-child(3) {
     white-space: nowrap;
-    min-width: 64px;
+    width: 56px;
+    min-width: 56px;
     text-align: center;
+}
+.sim-label-help-modal .sim-help-bands td:nth-child(1) {
+    white-space: nowrap;
+}
+.sim-label-help-modal .sim-help-bands td:nth-child(4) {
+    min-width: 200px;
+    line-height: 1.5;
+}
+.sim-label-help-modal .sim-help-bands td:nth-child(5) {
+    max-width: 200px;
+    line-height: 1.5;
 }
 /* Plan-47b: 모달 A 표 유형 컬럼 — 결과 패널 (sim-indicator/sim-filter-chip) dot 패턴과 통일
  * 색칠 칩 → 좌측 dot + 텍스트. 카테고리 색상 변수는 sim-cat-seg / sim-ind-* 와 동일 */
+/* Plan-50 hotfix2: 매칭 유형 라벨 caption 11px → small 12px (6 카테고리 식별성) */
 .sim-help-label-cell {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: var(--font-caption);
+    font-size: var(--font-small);
     font-weight: var(--font-weight-semibold);
     color: var(--text-default);
     background: transparent;
@@ -1273,13 +1318,20 @@ body[data-theme="dark"] .sim-help-disclaimer strong { color: #fbbf24; }
 .sim-help-label-translation::before { background: var(--color-info); }
 .sim-help-label-low_sim::before     { background: var(--text-muted); }
 .sim-help-label-boilerplate::before { background: var(--border-color); }
+/* Plan-50 hotfix2: code 폰트를 비율 곱셈 (0.85em → 10.2px) 에서 절대값 토큰으로 전환.
+ * 부모 td 사이즈 변경 시 자식이 따라 작아지는 종속성 끊음.
+ * white-space: normal — 긴 임계값 (예: "fp < 10% + sem ≥ 0.75 + 다른 스크립트") 가
+ * 모달 폭을 넘기지 않도록 자연 줄바꿈 허용. 짧은 임계값은 한 줄 유지됨. */
 .sim-help-bands code {
     font-family: "Consolas", "Courier New", monospace;
-    font-size: 0.85em;
+    font-size: var(--font-caption);
     color: var(--text-light);
     background: var(--bg-card);
-    padding: 1px 4px;
+    padding: 2px 5px;
     border-radius: var(--radius-sm);
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: break-word;
 }
 
 /* 그룹 영역 ⓘ — 4그룹 라벨 줄 끝에 작게 */
