@@ -27,6 +27,10 @@ from services.similarity_engine import (  # noqa: E402
     _compute_summary,
     _sentence_split,
     _parse_table_cells,
+    _build_tagged_html,
+    _TOC_HEADING_RE,
+    _REFERENCES_HEADER_RE,
+    _CAPTION_RE,
     TYPE_PARAPHRASE,
     TYPE_IDENTICAL,
 )
@@ -222,6 +226,93 @@ def case_parse_table_cells_normal():
 
 
 CASES.append(("K. 일반 셀 분리 회귀 방지", case_parse_table_cells_normal))
+
+
+# ─────────────────────────────────────────────────────────────
+# Plan-56 — 자동 제외 정규식 markdown prefix 인식 + 헤딩 분기
+# ─────────────────────────────────────────────────────────────
+
+# Case L ★ — references_section markdown prefix 인식
+def case_references_with_md_prefix():
+    assert _REFERENCES_HEADER_RE.match('## References'), "Case L 실패: ## References 미매칭"
+    assert _REFERENCES_HEADER_RE.match('### 참고문헌'), "Case L 실패: ### 참고문헌 미매칭"
+
+
+CASES.append(("L. ★ references_section markdown prefix 인식", case_references_with_md_prefix))
+
+
+# Case M — references_section 기존 패턴 회귀 방지
+def case_references_no_prefix():
+    assert _REFERENCES_HEADER_RE.match('References'), "Case M 실패: References 미매칭 (회귀)"
+    assert _REFERENCES_HEADER_RE.match('참고문헌'), "Case M 실패: 참고문헌 미매칭 (회귀)"
+
+
+CASES.append(("M. references_section 기존 패턴 회귀 방지", case_references_no_prefix))
+
+
+# Case N ★ — toc_heading markdown prefix 인식
+def case_toc_with_md_prefix():
+    assert _TOC_HEADING_RE.match('## 1.1 SCOPE'), "Case N 실패: ## 1.1 SCOPE 미매칭"
+    assert _TOC_HEADING_RE.match('### 2.3.1 검증'), "Case N 실패: ### 2.3.1 검증 미매칭"
+
+
+CASES.append(("N. ★ toc_heading markdown prefix 인식", case_toc_with_md_prefix))
+
+
+# Case O — toc_heading 기존 패턴 회귀 방지
+def case_toc_no_prefix():
+    assert _TOC_HEADING_RE.match('1.1 SCOPE'), "Case O 실패: 1.1 SCOPE 미매칭 (회귀)"
+    assert _TOC_HEADING_RE.match('2.3.1 검증'), "Case O 실패: 2.3.1 검증 미매칭 (회귀)"
+
+
+CASES.append(("O. toc_heading 기존 패턴 회귀 방지", case_toc_no_prefix))
+
+
+# Case P ★ — caption markdown prefix 인식
+def case_caption_with_md_prefix():
+    assert _CAPTION_RE.match('## Figure 1'), "Case P 실패: ## Figure 1 미매칭"
+    assert _CAPTION_RE.match('### 표 3'), "Case P 실패: ### 표 3 미매칭"
+
+
+CASES.append(("P. ★ caption markdown prefix 인식", case_caption_with_md_prefix))
+
+
+# Case Q — caption 기존 패턴 회귀 방지
+def case_caption_no_prefix():
+    assert _CAPTION_RE.match('Figure 1: Architecture'), "Case Q 실패: Figure 1: Architecture 미매칭 (회귀)"
+    assert _CAPTION_RE.match('표 3'), "Case Q 실패: 표 3 미매칭 (회귀)"
+
+
+CASES.append(("Q. caption 기존 패턴 회귀 방지", case_caption_no_prefix))
+
+
+# Case R ★ — _build_tagged_html 헤딩 출력
+def case_build_tagged_html_heading():
+    sentences = ['## 1.1 SCOPE', '본문 단락이다 일반 텍스트.']
+    html = _build_tagged_html(sentences)
+    assert '<h2 data-sent-idx="0" class="sim-sent">1.1 SCOPE</h2>' in html, (
+        f"Case R 실패: <h2> 태그 출력 안 됨. html={html}"
+    )
+    assert '<p data-sent-idx="1" class="sim-sent">본문 단락이다 일반 텍스트.</p>' in html, (
+        f"Case R 실패: <p> 태그 출력 안 됨. html={html}"
+    )
+    # ## prefix 가 raw 로 남아있지 않아야
+    assert '## ' not in html, f"Case R 실패: ## prefix 가 raw 노출됨. html={html}"
+
+
+CASES.append(("R. ★ _build_tagged_html 헤딩 출력 + paragraph 보존", case_build_tagged_html_heading))
+
+
+# Case S — _build_tagged_html h1, h2, h3 다단계 처리
+def case_build_tagged_html_multi_level_heading():
+    sentences = ['# 서론', '## 배경', '### 상세']
+    html = _build_tagged_html(sentences)
+    assert '<h1 data-sent-idx="0"' in html and '서론</h1>' in html, f"h1 출력 실패: {html}"
+    assert '<h2 data-sent-idx="1"' in html and '배경</h2>' in html, f"h2 출력 실패: {html}"
+    assert '<h3 data-sent-idx="2"' in html and '상세</h3>' in html, f"h3 출력 실패: {html}"
+
+
+CASES.append(("S. _build_tagged_html h1/h2/h3 다단계", case_build_tagged_html_multi_level_heading))
 
 
 def main() -> int:

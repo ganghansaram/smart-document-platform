@@ -444,13 +444,15 @@ def _detect_boilerplate(sentences: list) -> set:
 # ══════════════════════════════════════════
 
 # 정규식: 한 번 컴파일
-_TOC_HEADING_RE = re.compile(r'^\s*\d+(\.\d+)*\s+[A-Z가-힣]')
+# Plan-56: markdown 헤딩 prefix (## ) 가 있어도 자동 제외 인식 (CommonMark 표준)
+# 기존 매칭 (1.1 SCOPE, References, Figure 1) 100% 보존, ## 1.1 SCOPE 같은 패턴 추가 매칭
+_TOC_HEADING_RE = re.compile(r'^\s*(?:#{1,6}\s+)?\d+(\.\d+)*\s+[A-Z가-힣]')
 _REFERENCES_HEADER_RE = re.compile(
-    r'^\s*(References|Bibliography|참고\s*문헌|인용\s*문헌)\b',
+    r'^\s*(?:#{1,6}\s+)?(References|Bibliography|참고\s*문헌|인용\s*문헌)\b',
     re.IGNORECASE
 )
 _CAPTION_RE = re.compile(
-    r'^\s*(Figure|Fig\.?|Table|Tbl\.?|그림|표)\s+\d+',
+    r'^\s*(?:#{1,6}\s+)?(Figure|Fig\.?|Table|Tbl\.?|그림|표)\s+\d+',
     re.IGNORECASE
 )
 _CITED_QUOTE_PATTERNS = [
@@ -1062,6 +1064,9 @@ def _compute_summary(matches: list, bp_matches: list, target_sents: list,
     }
 
 
+_HEADING_RE = re.compile(r'^(#{1,6})\s+(.+)$')
+
+
 def _build_tagged_html(sentences: list, page_breaks: dict = None) -> str:
     """문장 배열을 data-sent-idx 태깅된 HTML로 변환한다.
 
@@ -1070,6 +1075,7 @@ def _build_tagged_html(sentences: list, page_breaks: dict = None) -> str:
 
     Plan-52: 연속 GFM 테이블 행은 <table> 로 그룹화하여 시각 보존.
     각 행은 <tr data-sent-idx="i" class="sim-sent"> 로 태깅됨.
+    Plan-56: CommonMark 헤딩 prefix (## ) 는 <h{1..6}> 로 변환하여 시각 위계 보존.
     """
     import html as html_mod
     parts = []
@@ -1081,6 +1087,19 @@ def _build_tagged_html(sentences: list, page_breaks: dict = None) -> str:
             parts.append(f'<div class="cp-page-break"><span>Page {page_breaks[i]}</span></div>')
 
         sent = sentences[i]
+
+        # Plan-56: CommonMark 헤딩 prefix → <h{1..6}> (표/paragraph 보다 우선 검사)
+        h_match = _HEADING_RE.match(sent.strip())
+        if h_match:
+            level = len(h_match.group(1))
+            text = h_match.group(2).strip()
+            parts.append(
+                f'<h{level} data-sent-idx="{i}" class="sim-sent">'
+                f'{html_mod.escape(text)}</h{level}>'
+            )
+            i += 1
+            continue
+
         if _is_table_row(sent):
             # 연속 테이블 블록 수집 — 페이지 경계가 가르면 분리
             j = i + 1
