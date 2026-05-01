@@ -501,13 +501,20 @@ def _is_table_row(sent: str) -> bool:
 
 
 def _parse_table_cells(row: str) -> list:
-    """GFM 테이블 행 → 셀 텍스트 배열 (양쪽 공백 제거)."""
+    """GFM 테이블 행 → 셀 텍스트 배열 (양쪽 공백 제거).
+
+    Plan-55: 셀 안 escape 된 파이프 (\\|) 가 셀 구분으로 잘못 인식되지 않도록
+    임시 placeholder 로 치환 후 split, 다시 복원.
+    """
     s = row.strip()
     if s.startswith('|'):
         s = s[1:]
     if s.endswith('|'):
         s = s[:-1]
-    return [c.strip() for c in s.split('|')]
+    # \| → 임시 placeholder (제어 문자) → split → 복원
+    placeholder = '\x01'
+    s = s.replace('\\|', placeholder)
+    return [c.strip().replace(placeholder, '|') for c in s.split('|')]
 
 
 def _is_short_cell_row(sent: str) -> bool:
@@ -822,6 +829,11 @@ def split_sentences(text: str, extract_pages: bool = False) -> tuple:
 
 def _sentence_split(text: str) -> list:
     """문장 경계 감지 (정규식 기반)"""
+    s = text.strip()
+    # Plan-55: GFM 테이블 행은 분리 안 함 — 셀 안 마침표가 sentence 경계로 잘못 해석되어
+    # 표가 분해되는 결함 방지. 표 무결성은 _is_table_row / _build_tagged_html 가 의존.
+    if s.startswith('|') and s.endswith('|') and s.count('|') >= 3:
+        return [s]
     pattern = r'(?<=[.!?])\s+(?=[A-Z가-힣\"\'])'
     parts = re.split(pattern, text)
     return [p.strip() for p in parts if p.strip()]

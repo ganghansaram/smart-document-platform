@@ -25,6 +25,8 @@ from services.similarity_engine import (  # noqa: E402
     _detect_table_structural,
     _detect_exclusions,
     _compute_summary,
+    _sentence_split,
+    _parse_table_cells,
     TYPE_PARAPHRASE,
     TYPE_IDENTICAL,
 )
@@ -152,6 +154,74 @@ def case_table_structural_excluded_from_score():
 
 
 CASES.append(("F. 헤더 매칭 점수에서 제외 + breakdown 카운트", case_table_structural_excluded_from_score))
+
+
+# ─────────────────────────────────────────────────────────────
+# Plan-55 — 표 행 sentence 분리 가드 + escape pipe
+# ─────────────────────────────────────────────────────────────
+
+# Case G ★ — 표 행 안 마침표 + 한글 시작 → 분리 안 됨 (핵심 결함 회귀 방지)
+def case_sentence_split_table_row_with_period():
+    row = "| 항목 | 값. 자세한 설명 |"
+    parts = _sentence_split(row)
+    assert parts == [row], (
+        f"Case G 실패: 표 행 분리됨 (수정 전 결함). "
+        f"기대 1개, 실제 {len(parts)}개: {parts}"
+    )
+    # 분리 안 된 1개 sentence 가 _is_table_row True 인지도 검증
+    assert _is_table_row(parts[0]), (
+        f"Case G 실패: 분리 안 됐어도 _is_table_row 가 False 면 표 인식 못함"
+    )
+
+
+CASES.append(("G. ★ 표 행 안 마침표 분리 가드 (수정 전 FAIL 예상)", case_sentence_split_table_row_with_period))
+
+
+# Case H — 일반 paragraph 의 sentence 분리 동작 회귀 방지
+def case_sentence_split_normal_paragraph():
+    para = "Hello world. This is the second sentence."
+    parts = _sentence_split(para)
+    assert len(parts) == 2, (
+        f"Case H 실패: 일반 paragraph 분리 동작 깨짐. 기대 2개, 실제 {len(parts)}개: {parts}"
+    )
+    assert parts[0].endswith("world."), f"Case H 실패: 첫 sentence 끝 'world.' 아님 ({parts[0]!r})"
+
+
+CASES.append(("H. 일반 paragraph 분리 회귀 방지 (Hello world. This is...)", case_sentence_split_normal_paragraph))
+
+
+# Case I — 한글 paragraph 분리 회귀 방지
+def case_sentence_split_korean_paragraph():
+    para = "안녕하세요. 두 번째 문장입니다."
+    parts = _sentence_split(para)
+    assert len(parts) == 2, (
+        f"Case I 실패: 한글 paragraph 분리 동작 깨짐. 기대 2개, 실제 {len(parts)}개: {parts}"
+    )
+
+
+CASES.append(("I. 한글 paragraph 분리 회귀 방지", case_sentence_split_korean_paragraph))
+
+
+# Case J — escape pipe (\|) 셀 안 보존
+def case_parse_table_cells_escape_pipe():
+    cells = _parse_table_cells('| A\\|B | C |')
+    assert cells == ['A|B', 'C'], (
+        f"Case J 실패: escape pipe 복원 안 됨. 기대 ['A|B', 'C'], 실제 {cells}"
+    )
+
+
+CASES.append(("J. ★ 셀 안 escape pipe (\\|) 복원", case_parse_table_cells_escape_pipe))
+
+
+# Case K — escape 없는 일반 셀 회귀 방지
+def case_parse_table_cells_normal():
+    cells = _parse_table_cells('| 항목 | 값 | 비고 |')
+    assert cells == ['항목', '값', '비고'], (
+        f"Case K 실패: 일반 셀 분리 깨짐. 실제 {cells}"
+    )
+
+
+CASES.append(("K. 일반 셀 분리 회귀 방지", case_parse_table_cells_normal))
 
 
 def main() -> int:
