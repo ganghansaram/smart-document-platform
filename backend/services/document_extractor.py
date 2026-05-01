@@ -83,34 +83,38 @@ def _from_docx(file_bytes: bytes) -> dict:
     """DOCX → 듀얼 포맷 (lastRenderedPageBreak 기반 페이지 구분)"""
     from docx import Document
     from docx.oxml.ns import qn
+    from docx.text.paragraph import Paragraph
+    from docx.table import Table
+    from .docx_utils import iter_block_items
     doc = Document(io.BytesIO(file_bytes))
 
     md_parts = []
     current_page = 1
     has_page_breaks = False
-    for para in doc.paragraphs:
-        # Word가 저장한 페이지 경계 마커 감지
-        if para._element.findall('.//' + qn('w:lastRenderedPageBreak')):
-            current_page += 1
-            has_page_breaks = True
-            md_parts.append(f"\n<!-- Page {current_page} -->\n\n---\n")
-        text = para.text.strip()
-        if not text:
-            continue
-        # 스타일 기반 헤딩 감지
-        style = (para.style.name or "").lower()
-        if "heading 1" in style:
-            md_parts.append(f"# {text}")
-        elif "heading 2" in style:
-            md_parts.append(f"## {text}")
-        elif "heading 3" in style:
-            md_parts.append(f"### {text}")
-        else:
-            md_parts.append(text)
-
-    # 테이블 추출
-    for table in doc.tables:
-        md_parts.append(_docx_table_to_md(table))
+    # Plan-53: doc.paragraphs / doc.tables 분리 순회는 원본 순서를 잃음.
+    # iter_block_items 가 doc.element.body 직접 순회로 paragraph + table 원본 순서 yield.
+    for block in iter_block_items(doc):
+        if isinstance(block, Paragraph):
+            # Word가 저장한 페이지 경계 마커 감지
+            if block._element.findall('.//' + qn('w:lastRenderedPageBreak')):
+                current_page += 1
+                has_page_breaks = True
+                md_parts.append(f"\n<!-- Page {current_page} -->\n\n---\n")
+            text = block.text.strip()
+            if not text:
+                continue
+            # 스타일 기반 헤딩 감지
+            style = (block.style.name or "").lower()
+            if "heading 1" in style:
+                md_parts.append(f"# {text}")
+            elif "heading 2" in style:
+                md_parts.append(f"## {text}")
+            elif "heading 3" in style:
+                md_parts.append(f"### {text}")
+            else:
+                md_parts.append(text)
+        elif isinstance(block, Table):
+            md_parts.append(_docx_table_to_md(block))
 
     md = "\n\n".join(md_parts)
     plain = _md_to_plain(md)
@@ -227,21 +231,26 @@ def _extract_text_pages_batch(file_bytes: bytes, page_indices: list, doc) -> dic
 
 
 def _extract_text_page_fallback(page) -> str:
-    """PyMuPDF4LLM 실패 시 기본 PyMuPDF로 추출"""
-    parts = []
+    """PyMuPDF4LLM 실패 시 기본 PyMuPDF로 추출.
 
-    # 테이블 영역 수집 (텍스트 블록에서 제외하기 위해)
+    Plan-53: 본문/표 위치 (y0, x0) 기반 정렬로 원본 순서 보존.
+    이전 결함: 본문 추출 후 표를 끝에 일괄 추가 → 표가 페이지 끝으로 모임.
+    """
+    # (y0, x0, content) 튜플로 통합 후 위치 정렬
+    items: list = []
+
+    # 1. 테이블 영역 수집
     table_rects = []
-    tables_md = []
     try:
         tables = page.find_tables()
         for table in tables.tables:
-            table_rects.append(fitz.Rect(table.bbox))
-            tables_md.append(_fitz_table_to_md(table))
+            rect = fitz.Rect(table.bbox)
+            table_rects.append(rect)
+            items.append((rect.y0, rect.x0, _fitz_table_to_md(table)))
     except Exception:
         pass
 
-    # 텍스트 블록 추출 (테이블 영역 제외)
+    # 2. 텍스트 블록 추출 (테이블 영역 제외)
     blocks = page.get_text("blocks")
     for b in blocks:
         if b[6] != 0:  # 이미지 블록 스킵
@@ -253,10 +262,11 @@ def _extract_text_page_fallback(page) -> str:
             continue
         text = b[4].strip()
         if text:
-            parts.append(text)
+            items.append((block_rect.y0, block_rect.x0, text))
 
-    # 테이블을 텍스트 뒤에 추가
-    parts.extend(tables_md)
+    # 3. 위치 순 정렬 — 위→아래, 같은 y 면 왼→오
+    items.sort(key=lambda x: (x[0], x[1]))
+    parts = [content for _, _, content in items]
 
     return "\n\n".join(parts)
 

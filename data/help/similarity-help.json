@@ -189,6 +189,11 @@
       "label": "인용·출처 표시 제외",
       "default": false,
       "description": "큰따옴표 인용·각주·내주가 포함된 문장 제외 (필요 시 사용자가 켬)"
+    },
+    "exclude_table_structural": {
+      "label": "표 헤더·구조 행 제외",
+      "default": true,
+      "description": "표의 헤더 행과 짧은 셀 위주 행을 점수에서 제외 — 문서 간 동일한 표 양식이 100% 일치로 잡히는 오탐 해소"
     }
   },
 

@@ -176,6 +176,27 @@ def case_forward_chain_merge():
 CASES.append(("G. Forward 3건 연쇄 병합 [ti:5-7, ri:10-12]", case_forward_chain_merge))
 
 
+# ─────────────────────────────────────────────────────────────
+# Case H — Plan-52: exclusion_reason 다른 매칭은 병합 차단
+# 일반 문장 (reason=None) + 헤더 (reason=table_structural) → 미병합
+# 분자 inflation 방지
+# ─────────────────────────────────────────────────────────────
+def case_different_exclusion_reason_no_merge():
+    m1 = _make_match(5, 10, TYPE_PARAPHRASE)
+    m2 = _make_match(6, 11, TYPE_PARAPHRASE)
+    m2["exclusion_reason"] = "table_structural"
+    matches = [m1, m2]
+    merged = _merge_adjacent(matches)
+    assert len(merged) == 2, (
+        f"Case H 실패: exclusion_reason 다른데 병합됨 (merged={len(merged)}건). "
+        f"prev.reason={merged[0].get('exclusion_reason')}, m.reason="
+        f"{merged[1].get('exclusion_reason') if len(merged)>1 else 'N/A'}"
+    )
+
+
+CASES.append(("H. exclusion_reason 다른 매칭 미병합 (None vs table_structural)", case_different_exclusion_reason_no_merge))
+
+
 def main() -> int:
     print("Plan-51 Phase 1 — _merge_adjacent ri 방향 검증\n")
     fail = 0

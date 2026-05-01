@@ -166,11 +166,12 @@ VERIFY_SIMILARITY_VERDICT_BANDS = [0, 25, 50, 75]  # Blue/Green/Yellow/Orange/Re
 # 검사 설정 기본값 — 사용자 토글 5옵션 (Phase 1.4)
 # True면 점수 계산에서 제외, False면 포함. 프론트가 옵션으로 오버라이드 가능.
 VERIFY_SIMILARITY_DEFAULTS = {
-    "exclude_boilerplate": True,    # 정형구문
-    "exclude_short_match": True,    # 짧은 매칭 (8단어 미만)
-    "exclude_toc": True,            # 목차/장절 헤딩
-    "exclude_caption": True,        # 표/그림 캡션
-    "exclude_cited_quote": False,   # 인용·출처 표시 (사용자 선택)
+    "exclude_boilerplate": True,        # 정형구문
+    "exclude_short_match": True,        # 짧은 매칭 (8단어 미만)
+    "exclude_toc": True,                # 목차/장절 헤딩
+    "exclude_caption": True,            # 표/그림 캡션
+    "exclude_cited_quote": False,       # 인용·출처 표시 (사용자 선택)
+    "exclude_table_structural": True,   # Plan-52: 표 헤더·구조 행
 }
 # 백엔드 자동 처리 (사용자 토글 없음, 항상 ON):
 #   - references_section: 참고문헌 섹션 이후

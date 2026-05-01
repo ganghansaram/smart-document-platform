@@ -1,0 +1,184 @@
+"""Plan-52 — 테이블 구조 행 검출 + 점수 영향 검증.
+
+backend/services/similarity_engine.py 의 신규 함수
+(_is_table_row, _is_short_cell_row, _detect_table_structural) +
+_detect_exclusions 통합 + _compute_summary 분자 영향을 검증한다.
+
+실행: python tests/sim_table_structural_test.py
+"""
+from __future__ import annotations
+
+import io
+import sys
+from pathlib import Path
+
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "backend"))
+
+from services.similarity_engine import (  # noqa: E402
+    _is_table_row,
+    _is_short_cell_row,
+    _detect_table_structural,
+    _detect_exclusions,
+    _compute_summary,
+    TYPE_PARAPHRASE,
+    TYPE_IDENTICAL,
+)
+
+
+def _make_match(idx: int, mtype: str, sim: float = 0.85) -> dict:
+    return {
+        "target_idx": idx,
+        "ref_idx": idx,
+        "target_text": f"text_{idx}",
+        "ref_text": f"ref_{idx}",
+        "type": mtype,
+        "similarity": sim,
+        "scores": {"fingerprint": 0.5, "semantic": 0.8},
+    }
+
+
+CASES = []
+
+
+# ─────────────────────────────────────────────────────────────
+# Case A — _is_table_row 기본 동작
+# ─────────────────────────────────────────────────────────────
+def case_is_table_row():
+    assert _is_table_row("| 항목 | 값 |") is True, "GFM 테이블 행 감지 실패"
+    assert _is_table_row("| 한 셀만 |") is False, "셀 1개는 테이블 아님"
+    assert _is_table_row("일반 문장") is False, "비테이블 문장 오감지"
+    assert _is_table_row("") is False, "빈 문자열 오감지"
+
+
+CASES.append(("A. _is_table_row 기본 동작", case_is_table_row))
+
+
+# ─────────────────────────────────────────────────────────────
+# Case B — _is_short_cell_row: 모든 셀 ≤ 3 단어 (구조성)
+# ─────────────────────────────────────────────────────────────
+def case_short_cell_row_detection():
+    assert _is_short_cell_row("| 이름 | 직책 | 부서 |") is True
+    assert _is_short_cell_row("| 1 | 2 | 3 | 4 |") is True
+    # 한 셀이 4단어 이상이면 비구조성
+    long_row = "| 짧은 셀 | 긴 셀 데이터 분석 결과 텍스트 입니다 |"
+    assert _is_short_cell_row(long_row) is False, "긴 셀 포함인데 구조성으로 판정"
+
+
+CASES.append(("B. _is_short_cell_row 구조성 판정", case_short_cell_row_detection))
+
+
+# ─────────────────────────────────────────────────────────────
+# Case C — _detect_table_structural: 첫 행 = 헤더 (구조성)
+# 첫 행에 긴 셀이 있어도 헤더로 간주됨
+# ─────────────────────────────────────────────────────────────
+def case_first_row_is_structural():
+    sentences = [
+        "일반 문장입니다.",
+        "| 데이터 분석 결과 컬럼 | 매우 긴 설명 텍스트 컬럼 |",  # 첫 행 (헤더)
+        "| 값1 | 매우 길고 의미 있는 데이터 본문 텍스트 |",  # 데이터 행 (긴 셀이라 비구조성)
+    ]
+    structural = _detect_table_structural(sentences)
+    assert 1 in structural, "첫 행이 헤더로 감지되지 않음"
+    assert 2 not in structural, "긴 셀 데이터 행이 구조성으로 잘못 판정됨"
+
+
+CASES.append(("C. 첫 행 헤더 + 긴 셀 데이터 행 구분", case_first_row_is_structural))
+
+
+# ─────────────────────────────────────────────────────────────
+# Case D — _detect_table_structural: 짧은 셀 데이터 행도 구조성
+# ─────────────────────────────────────────────────────────────
+def case_short_data_rows_also_structural():
+    sentences = [
+        "| 이름 | 직책 |",      # 첫 행
+        "| 홍길동 | 부장 |",    # 짧은 셀 데이터 (구조성)
+        "| 김철수 | 과장 |",    # 짧은 셀 데이터 (구조성)
+    ]
+    structural = _detect_table_structural(sentences)
+    assert 0 in structural and 1 in structural and 2 in structural, \
+        f"짧은 셀 행 모두 구조성이어야 함 (실제: {structural})"
+
+
+CASES.append(("D. 짧은 셀 데이터 행도 구조성", case_short_data_rows_also_structural))
+
+
+# ─────────────────────────────────────────────────────────────
+# Case E — _detect_exclusions 통합: table_structural 사유 부여
+# ─────────────────────────────────────────────────────────────
+def case_detect_exclusions_integration():
+    sentences = [
+        "이것은 일반 문장입니다 데이터 처리 시스템에 대한 설명.",
+        "| 항목 | 값 | 비고 |",  # 헤더
+        "| 처리량 | 1000 | TPS |",  # 짧은 셀 (구조성)
+    ]
+    exclusions = _detect_exclusions(sentences)
+    assert exclusions.get(1) == "table_structural", \
+        f"헤더 행에 table_structural 미부여 (실제: {exclusions.get(1)})"
+    assert exclusions.get(2) == "table_structural", \
+        f"짧은 데이터 행에 table_structural 미부여 (실제: {exclusions.get(2)})"
+    assert exclusions.get(0) is None, \
+        f"일반 문장에 잘못 부여됨 (실제: {exclusions.get(0)})"
+
+
+CASES.append(("E. _detect_exclusions 통합 — table_structural 부여", case_detect_exclusions_integration))
+
+
+# ─────────────────────────────────────────────────────────────
+# Case F — 점수 영향: 테이블 헤더 매칭이 분자에서 빠지는지
+# 의역 4건 + 헤더 매칭 1건 (table_structural) 중 의역만 점수 반영
+# total=10, scored = 4 (의역만), score = 4/9 ≈ 44.4%
+# 분모: 10 - 1 (table_structural 활성 제외 인덱스) = 9
+# ─────────────────────────────────────────────────────────────
+def case_table_structural_excluded_from_score():
+    matches = [_make_match(i, TYPE_PARAPHRASE) for i in range(4)]
+    # 헤더 매칭 (table_structural 사유 부여)
+    header_match = _make_match(4, TYPE_IDENTICAL)
+    header_match["exclusion_reason"] = "table_structural"
+    matches.append(header_match)
+    target_sents = [f"sent {i}" for i in range(10)]
+    exclusion_map = {4: "table_structural"}
+    summary = _compute_summary(matches, [], target_sents, exclusion_map)
+    score = summary["similarity_score"]
+    # 4 / (10 - 1) = 4/9 = 44.4
+    assert abs(score - 44.4) < 0.2, \
+        f"테이블 구조 매칭이 점수에서 빠지지 않음 (점수={score}, 기대≈44.4)"
+    assert summary["exclusion_breakdown"]["table_structural"] == 1, \
+        f"exclusion_breakdown.table_structural 카운트 누락"
+
+
+CASES.append(("F. 헤더 매칭 점수에서 제외 + breakdown 카운트", case_table_structural_excluded_from_score))
+
+
+def main() -> int:
+    print("Plan-52 — 테이블 구조 행 검출 검증\n")
+    fail = 0
+    for name, fn in CASES:
+        try:
+            fn()
+            print(f"  PASS  {name}")
+        except AssertionError as e:
+            print(f"  FAIL  {name}\n        {e}")
+            fail += 1
+        except Exception as e:  # noqa: BLE001
+            print(f"  ERROR {name}\n        {type(e).__name__}: {e}")
+            fail += 1
+
+    print()
+    if fail == 0:
+        print("=" * 60)
+        print(f"PASS: {len(CASES)} 케이스 모두 통과")
+        print("=" * 60)
+        return 0
+    print("=" * 60)
+    print(f"FAIL: {fail}/{len(CASES)} 건 실패")
+    print("=" * 60)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

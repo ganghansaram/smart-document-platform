@@ -1385,13 +1385,15 @@
                 document.addEventListener('keydown', escHandler);
             }
 
-            // ── Plan-38 §6.4 — 검사 설정 5옵션 (사용자 토글, 즉시 재계산) ──
+            // ── Plan-38 §6.4 — 검사 설정 옵션 (사용자 토글, 즉시 재계산) ──
+            // Plan-52: exclude_table_structural 추가 (6번째 토글)
             var SIM_CHECK_DEFAULTS = {
-                exclude_boilerplate:  true,
-                exclude_short_match:  true,
-                exclude_toc:          true,
-                exclude_caption:      true,
-                exclude_cited_quote:  false   // 사용자 선택 (기본 OFF)
+                exclude_boilerplate:        true,
+                exclude_short_match:        true,
+                exclude_toc:                true,
+                exclude_caption:            true,
+                exclude_cited_quote:        false,  // 사용자 선택 (기본 OFF)
+                exclude_table_structural:   true    // Plan-52: 표 헤더·구조 행
             };
             var SIM_CHECK_KEY = 'sim-check-settings';
 
@@ -1414,7 +1416,8 @@
                 short_match:         'exclude_short_match',
                 toc_heading:         'exclude_toc',
                 caption:             'exclude_caption',
-                cited_quote:         'exclude_cited_quote'
+                cited_quote:         'exclude_cited_quote',
+                table_structural:    'exclude_table_structural'  // Plan-52
                 // references_section, spec_number_only는 ALWAYS_SKIP — 토글 없음
             };
             // 백엔드 자동 제외 (항상 active, 토글 없음)
@@ -1495,6 +1498,21 @@
                     }
                 }
 
+                // Plan-54: 본문 패널 마킹도 동일 갱신 (사이드바 카드와 일관) — 토글 ON/OFF 시 즉시 반영
+                var hlEls = document.querySelectorAll(
+                    '#panel-body-a [data-sim-idx], #panel-body-b [data-sim-idx]'
+                );
+                for (var hi = 0; hi < hlEls.length; hi++) {
+                    var hlEl = hlEls[hi];
+                    var hlIdx = parseInt(hlEl.getAttribute('data-sim-idx'));
+                    var hlMatch = matches[hlIdx];
+                    if (hlMatch && resolveCategory(hlMatch, settings) === 'excluded_auto') {
+                        hlEl.classList.add('sim-hl-excluded');
+                    } else {
+                        hlEl.classList.remove('sim-hl-excluded');
+                    }
+                }
+
                 // 사용자 제외 배너는 재계산 후 실제 점수 반영 값으로 다시 갱신
                 if (typeof simUpdateExclusionBanner === 'function') simUpdateExclusionBanner();
             }
@@ -1515,7 +1533,7 @@
                 };
 
                 var rowsHtml = '';
-                var keys = ['exclude_boilerplate','exclude_short_match','exclude_toc','exclude_caption','exclude_cited_quote'];
+                var keys = ['exclude_boilerplate','exclude_short_match','exclude_toc','exclude_caption','exclude_cited_quote','exclude_table_structural'];
                 for (var i = 0; i < keys.length; i++) {
                     var k = keys[i];
                     var v = cs[k] || {};
@@ -1545,7 +1563,7 @@
                     + '</div>'
                     + '<div class="modal-body">'
                     +   '<div class="sim-help-section">'
-                    +     '<h4>사용자 토글 5옵션</h4>'
+                    +     '<h4>사용자 토글 6옵션</h4>'
                     +     '<p class="sim-help-section-note">옵션 변경 시 점수가 즉시 재계산됩니다 (재검사 불필요).</p>'
                     +     '<table class="sim-help-bands"><thead><tr><th>옵션</th><th>기본값</th><th>설명</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>'
                     +   '</div>'
@@ -2518,11 +2536,12 @@
                     + '</summary>';
                 html += '<div class="sim-check-options">';
                 var settingDefs = [
-                    { key: 'exclude_boilerplate',  label: '정형구문 제외',           hint: '"the contractor shall" 등' },
-                    { key: 'exclude_short_match',  label: '짧은 매칭 제외 (8단어 미만)', hint: 'Turnitin 표준' },
-                    { key: 'exclude_toc',          label: '목차/장절 헤딩 제외',      hint: '"1.1 SCOPE" 등' },
-                    { key: 'exclude_caption',      label: '표/그림 캡션 제외',         hint: '"Figure 5-1", "표 1" 등' },
-                    { key: 'exclude_cited_quote',  label: '인용·출처 표시 제외',       hint: '"…" / [N] / (Author, 2020)' }
+                    { key: 'exclude_boilerplate',       label: '정형구문 제외',           hint: '"the contractor shall" 등' },
+                    { key: 'exclude_short_match',       label: '짧은 매칭 제외 (8단어 미만)', hint: 'Turnitin 표준' },
+                    { key: 'exclude_toc',               label: '목차/장절 헤딩 제외',      hint: '"1.1 SCOPE" 등' },
+                    { key: 'exclude_caption',           label: '표/그림 캡션 제외',         hint: '"Figure 5-1", "표 1" 등' },
+                    { key: 'exclude_cited_quote',       label: '인용·출처 표시 제외',       hint: '"…" / [N] / (Author, 2020)' },
+                    { key: 'exclude_table_structural',  label: '표 헤더·구조 행 제외',      hint: 'Plan-52: | 항목 | 값 | 같은 짧은 셀 행' }
                 ];
                 for (var ci = 0; ci < settingDefs.length; ci++) {
                     var sd = settingDefs[ci];
@@ -2764,6 +2783,8 @@
 
                 // 매칭 결과 → data-sent-idx로 직접 조회 → 하이라이트
                 var matches = data.matches || [];
+                // Plan-54: 자동 제외 카테고리 시각 구분을 위해 settings 기준 카테고리 결정
+                var settings = simLoadCheckSettings();
                 for (var i = 0; i < matches.length; i++) {
                     var m = matches[i];
                     var type = m.type || 'low_sim';
@@ -2772,12 +2793,15 @@
                     var startR = m.ref_idx;
                     // Plan-51: 백엔드 회귀 시에도 silent 페인 방지 — ri_end < startR 이면 startR 한 점만 마킹
                     var endR = (m.ref_idx_end !== undefined && m.ref_idx_end >= startR) ? m.ref_idx_end : startR;
+                    // Plan-54: 자동 제외 매칭이면 sim-hl-excluded 추가 (본문 시각 신호 — Copyleaks/Turnitin 표준)
+                    var isExcluded = resolveCategory(m, settings) === 'excluded_auto';
 
                     // 대상 패널 (A)
                     for (var si = startT; si <= endT; si++) {
                         var els = panelA.querySelectorAll('[data-sent-idx="' + si + '"]');
                         for (var ei = 0; ei < els.length; ei++) {
                             els[ei].classList.add('sim-hl', 'sim-hl-' + type);
+                            if (isExcluded) els[ei].classList.add('sim-hl-excluded');
                             els[ei].setAttribute('data-sim-idx', String(i));
                         }
                     }
@@ -2788,6 +2812,7 @@
                             var els = panelB.querySelectorAll('[data-sent-idx="' + si + '"]');
                             for (var ei = 0; ei < els.length; ei++) {
                                 els[ei].classList.add('sim-hl', 'sim-hl-' + type);
+                                if (isExcluded) els[ei].classList.add('sim-hl-excluded');
                                 els[ei].setAttribute('data-sim-idx', String(i));
                             }
                         }
@@ -3253,9 +3278,10 @@
                     var card = document.querySelector('.sim-match-item[data-idx="' + i + '"]');
                     if (card) card.style.display = show ? '' : 'none';
 
-                    // 패널 하이라이트 (제외 매칭은 본문 하이라이트 숨김 유지 — 메인 카드 없으므로)
+                    // 패널 하이라이트 — Plan-54: 자동 제외도 본문 표시 (sim-hl-excluded 시각 구분 — Copyleaks/Turnitin 표준).
+                    // 이전엔 자동 제외 hl 을 display:none 으로 숨겼으나 사용자가 "이 매칭이 점수 안 들어간다" 인지 못하는 페인.
                     var hls = document.querySelectorAll('[data-sim-idx="' + i + '"]');
-                    var hlShow = isExcluded ? false : show;
+                    var hlShow = isExcluded ? true : show;
                     for (var j = 0; j < hls.length; j++) {
                         hls[j].style.display = hlShow ? '' : 'none';
                     }

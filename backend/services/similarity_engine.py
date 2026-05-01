@@ -98,6 +98,7 @@ def _exclusion_defaults():
         "exclude_toc": True,
         "exclude_caption": True,
         "exclude_cited_quote": False,
+        "exclude_table_structural": True,
     })
 
 # ── 정형 구문 허용 목록 + 패턴 (lazy load) ──
@@ -488,6 +489,65 @@ def _detect_spec_only(sent: str) -> bool:
     return spec_chars / max(len(sent_strip), 1) >= 0.40
 
 
+# ── Plan-52: GFM 테이블 행 검출 + 구조성 판정 ──
+def _is_table_row(sent: str) -> bool:
+    """문장이 GFM 테이블 행 형태인지 판정.
+
+    조건: '|' 로 시작/종료 + 최소 2개 셀 (파이프 ≥3).
+    예: '| 항목 | 값 |' → True, '일반 문장입니다.' → False.
+    """
+    s = sent.strip()
+    return s.startswith('|') and s.endswith('|') and s.count('|') >= 3
+
+
+def _parse_table_cells(row: str) -> list:
+    """GFM 테이블 행 → 셀 텍스트 배열 (양쪽 공백 제거)."""
+    s = row.strip()
+    if s.startswith('|'):
+        s = s[1:]
+    if s.endswith('|'):
+        s = s[:-1]
+    return [c.strip() for c in s.split('|')]
+
+
+def _is_short_cell_row(sent: str) -> bool:
+    """모든 셀이 짧은 (≤3 단어) 테이블 행인지 — 구조성 강한 신호."""
+    if not _is_table_row(sent):
+        return False
+    cells = _parse_table_cells(sent)
+    if not cells:
+        return False
+    return all(len(c.split()) <= 3 for c in cells)
+
+
+def _detect_table_structural(sentences: list) -> set:
+    """문맥 기반 테이블 구조 행 인덱스 집합.
+
+    검출 규칙:
+      1. 연속 테이블 행 블록의 **첫 행** → 헤더 (구조성)
+      2. 모든 셀이 짧은 행 → 구조성 (위치 무관)
+      3. 비테이블 문장은 무시
+
+    반환: {sent_idx, ...}
+    """
+    structural: set = set()
+    n = len(sentences)
+    i = 0
+    while i < n:
+        if _is_table_row(sentences[i]):
+            # 테이블 블록 시작 — 첫 행은 헤더로 간주
+            structural.add(i)
+            j = i + 1
+            while j < n and _is_table_row(sentences[j]):
+                if _is_short_cell_row(sentences[j]):
+                    structural.add(j)
+                j += 1
+            i = j
+        else:
+            i += 1
+    return structural
+
+
 def _detect_exclusions(sentences: list) -> dict:
     """
     문장별 exclusion_reason 검출 (Plan §6.4).
@@ -552,6 +612,12 @@ def _detect_exclusions(sentences: list) -> dict:
             exclusions[i] = "cited_quote"
             continue
 
+    # 6. Plan-52: table_structural (테이블 헤더 + 짧은 셀 행)
+    table_struct_indices = _detect_table_structural(sentences)
+    for idx in table_struct_indices:
+        if idx not in exclusions:  # 다른 사유가 이미 있으면 보존
+            exclusions[idx] = "table_structural"
+
     if exclusions:
         from collections import Counter
         cnt = Counter(exclusions.values())
@@ -563,7 +629,7 @@ def _detect_exclusions(sentences: list) -> dict:
 ALWAYS_SKIP_REASONS = {"references_section", "spec_number_only", "boilerplate_pattern"}
 
 # 사용자 토글 가능 (기본 ON) — 매칭은 수행, exclusion_reason 부여
-TOGGLEABLE_EXCLUSIONS = {"toc_heading", "caption", "cited_quote"}
+TOGGLEABLE_EXCLUSIONS = {"toc_heading", "caption", "cited_quote", "table_structural"}
 
 
 # ══════════════════════════════════════════
@@ -713,6 +779,8 @@ def split_sentences(text: str, extract_pages: bool = False) -> tuple:
     current_page = None
     next_page = None
     _page_re = re.compile(r'<!--\s*Page\s+(\d+)\s*-->')
+    # Plan-52: GFM 테이블 구분선 (| --- | --- |) 은 의미 없는 표시용 → 항상 제외
+    _gfm_sep_re = re.compile(r'^\|[\s\-:|]+\|$')
 
     paragraphs = []
     for line in text.split("\n"):
@@ -728,6 +796,9 @@ def split_sentences(text: str, extract_pages: bool = False) -> tuple:
             # 수평선 (--- 등)은 페이지 마커 뒤에 오면 건너뜀
             if next_page is not None and re.match(r'^---+$', stripped):
                 continue
+        # Plan-52: GFM 테이블 구분선 제외 (문장 아님, 시각/매칭 모두 무관)
+        if _gfm_sep_re.match(stripped):
+            continue
         paragraphs.append(stripped)
         # 이 단락의 첫 문장이 새 페이지의 시작
         if next_page is not None:
@@ -791,7 +862,9 @@ def _merge_adjacent(matches: list) -> list:
         if (m["type"] == prev["type"]
                 and m["target_idx"] - prev.get("target_idx_end", prev["target_idx"]) <= 2
                 and m["ref_idx"] >= 0 and prev["ref_idx"] >= 0
-                and 0 <= m["ref_idx"] - prev.get("ref_idx_end", prev["ref_idx"]) <= 2):
+                and 0 <= m["ref_idx"] - prev.get("ref_idx_end", prev["ref_idx"]) <= 2
+                # Plan-52: exclusion_reason 다르면 병합 차단 (헤더+일반 문장 inflation 방지)
+                and m.get("exclusion_reason") == prev.get("exclusion_reason")):
             prev["target_text"] += " " + m["target_text"]
             prev["ref_text"] += " " + m["ref_text"]
             prev["target_idx_end"] = m["target_idx"]
@@ -845,6 +918,7 @@ def _compute_summary(matches: list, bp_matches: list, target_sents: list,
         "toc_heading": "exclude_toc",
         "caption": "exclude_caption",
         "cited_quote": "exclude_cited_quote",
+        "table_structural": "exclude_table_structural",  # Plan-52
     }
 
     def _is_active_exclusion(reason: str) -> bool:
@@ -919,6 +993,7 @@ def _compute_summary(matches: list, bp_matches: list, target_sents: list,
         "spec_number_only": excl_counter.get("spec_number_only", 0),
         "boilerplate_pattern": excl_counter.get("boilerplate_pattern", 0),
         "short_match": short_match_count,
+        "table_structural": excl_counter.get("table_structural", 0),  # Plan-52
     }
 
     # ── Phase 2: 5단계 신호등 verdict (Plan §7.1) ──
@@ -980,15 +1055,62 @@ def _build_tagged_html(sentences: list, page_breaks: dict = None) -> str:
 
     백엔드에서 확정적으로 태깅하므로 프론트에서 매핑 불필요.
     page_breaks가 있으면 해당 sent_idx 앞에 페이지 구분선을 삽입한다.
+
+    Plan-52: 연속 GFM 테이블 행은 <table> 로 그룹화하여 시각 보존.
+    각 행은 <tr data-sent-idx="i" class="sim-sent"> 로 태깅됨.
     """
     import html as html_mod
     parts = []
-    for i, sent in enumerate(sentences):
+    n = len(sentences)
+    i = 0
+    while i < n:
+        # 페이지 구분선 (블록 진입 직전)
         if page_breaks and i in page_breaks:
             parts.append(f'<div class="cp-page-break"><span>Page {page_breaks[i]}</span></div>')
-        escaped = html_mod.escape(sent)
-        parts.append(f'<p data-sent-idx="{i}" class="sim-sent">{escaped}</p>')
+
+        sent = sentences[i]
+        if _is_table_row(sent):
+            # 연속 테이블 블록 수집 — 페이지 경계가 가르면 분리
+            j = i + 1
+            while j < n and _is_table_row(sentences[j]):
+                if page_breaks and j in page_breaks:
+                    break
+                j += 1
+            parts.append(_render_table_block(sentences, i, j, html_mod))
+            i = j
+        else:
+            escaped = html_mod.escape(sent)
+            parts.append(f'<p data-sent-idx="{i}" class="sim-sent">{escaped}</p>')
+            i += 1
     return "\n".join(parts)
+
+
+def _render_table_block(sentences: list, start: int, end: int, html_mod) -> str:
+    """[start, end) 범위 sentence 들을 <table> HTML 로 변환.
+
+    각 행 = <tr data-sent-idx="i" class="sim-sent">.
+    첫 행은 thead/<th>, 나머지는 tbody/<td>.
+    """
+    rows_html = []
+    for i in range(start, end):
+        cells = _parse_table_cells(sentences[i])
+        cell_tag = 'th' if i == start else 'td'
+        cells_html = ''.join(
+            f'<{cell_tag}>{html_mod.escape(c)}</{cell_tag}>' for c in cells
+        )
+        rows_html.append(
+            f'<tr data-sent-idx="{i}" class="sim-sent">{cells_html}</tr>'
+        )
+    if not rows_html:
+        return ""
+    if len(rows_html) == 1:
+        return f'<table class="sim-md-table">{rows_html[0]}</table>'
+    return (
+        f'<table class="sim-md-table">'
+        f'<thead>{rows_html[0]}</thead>'
+        f'<tbody>{"".join(rows_html[1:])}</tbody>'
+        f'</table>'
+    )
 
 
 def _empty_result(target_sents, ref_sents, target_page_breaks=None, ref_page_breaks=None):
@@ -1006,7 +1128,8 @@ def _empty_result(target_sents, ref_sents, target_page_breaks=None, ref_page_bre
             "tiers": {"raw": 0.0, "adjusted": 0.0, "substantive": 0.0, "derived": 0.0, "boilerplate": 0.0, "excluded": 0.0},
             "exclusion_breakdown": {k: 0 for k in ("boilerplate", "toc_heading", "caption",
                                                     "references_section", "cited_quote",
-                                                    "spec_number_only", "boilerplate_pattern", "short_match")},
+                                                    "spec_number_only", "boilerplate_pattern", "short_match",
+                                                    "table_structural")},
             "verdict": "blue",
             "verdict_label": VERDICT_LABELS_KO["blue"],
             "sources": [],
