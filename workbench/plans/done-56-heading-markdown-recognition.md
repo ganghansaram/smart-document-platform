@@ -16,6 +16,7 @@
 | Phase 4 | API E2E + Playwright UI 시각 검증 | ✅ 완료 |
 | Phase 5 | 사용자 + 코드/UX 전문가 입장 피드백 | ✅ 완료 |
 | Phase 6 | 보고서 + 계획서 done- 처리 | ✅ 완료 |
+| **hotfix1** | **`.sim-hl-excluded` 셀렉터에 h1~h6 추가 (CSS 7줄)** | ✅ 완료 |
 
 ---
 
@@ -153,6 +154,39 @@ Mock DOCX (Heading 1/2 + 본문 + 표 + 참고문헌 섹션):
 
 ---
 
-## 8. 한 줄 결론
+## 8. hotfix1 — `.sim-hl-excluded` 셀렉터 h1~h6 보강 (2026-05-01)
 
-**PASS.** Plan-56 완료 — 헤딩 CommonMark 인식 + 자동 제외 정규식 prefix 정합. 사용자 페인 (`##` 기호 노출) + 참고문헌 점수 inflation 양쪽 해소. 단위 테스트 37/37 PASS. CommonMark/GFM 업계 표준 부합. 후속 hotfix (CSS `<h>` 셀렉터 보강) 권장.
+### 발견
+Plan-56 본체 적용 후 검증에서 식별 — 자동 제외된 헤딩에 `sim-hl-excluded` 클래스 부여까지 정상이지만 CSS 셀렉터가 `<p>` `<div>` 만 매칭 → 헤딩 시각 신호 미적용.
+
+### 수정 (`css/compare.css`)
+```css
+.sim-md-view p.sim-hl.sim-hl-excluded,
+.sim-md-view div.sim-hl.sim-hl-excluded,
+.sim-md-view h1.sim-hl.sim-hl-excluded,  /* 신규 */
+.sim-md-view h2.sim-hl.sim-hl-excluded,  /* 신규 */
+.sim-md-view h3.sim-hl.sim-hl-excluded,  /* 신규 */
+.sim-md-view h4.sim-hl.sim-hl-excluded,  /* 신규 */
+.sim-md-view h5.sim-hl.sim-hl-excluded,  /* 신규 */
+.sim-md-view h6.sim-hl.sim-hl-excluded { /* 신규 */
+    opacity: 0.55;
+    border-left-style: dashed !important;
+}
+```
+hover 룰도 동일 셀렉터 확장.
+
+### Playwright 검증 결과
+- H1 `1.` opacity 0.55 + dashed ✓
+- H2 `1.1 검증 범위` opacity 0.55 + dashed ✓
+- 일반 매칭 헤딩 영향 0
+- 단위 테스트 37/37 PASS 보존
+
+### 효과
+- Plan-54 (자동 제외 시각 신호) 와 정합 완성
+- 사용자 인지 명확 — 자동 제외된 헤딩이 본문에서 흐림 + 점선 시각 구분
+
+---
+
+## 9. 한 줄 결론
+
+**PASS.** Plan-56 본체 + hotfix1 완료 — 헤딩 CommonMark 인식 + 자동 제외 정규식 prefix 정합 + 자동 제외 헤딩 CSS 시각 신호 완성. 사용자 페인 (`##` 기호 노출) + 참고문헌 점수 inflation + 헤딩 시각 인지 모두 해소. 단위 테스트 37/37 PASS. CommonMark/GFM 업계 표준 부합.

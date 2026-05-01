@@ -1076,8 +1076,15 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 
 /* ── Plan-54: 자동 제외 매칭 본문 시각 신호 (업계 표준 — Copyleaks/Turnitin) ── */
 /* paragraph 매칭 한정 — opacity 를 <tr> 에 주면 thead 가 collapse 하는 브라우저 이슈 회피 */
+/* Plan-56 hotfix1: <h{1..6}> 도 셀렉터 추가 — 자동 제외 헤딩 (toc_heading, references_section 등) 시각 신호 완성 */
 .sim-md-view p.sim-hl.sim-hl-excluded,
-.sim-md-view div.sim-hl.sim-hl-excluded {
+.sim-md-view div.sim-hl.sim-hl-excluded,
+.sim-md-view h1.sim-hl.sim-hl-excluded,
+.sim-md-view h2.sim-hl.sim-hl-excluded,
+.sim-md-view h3.sim-hl.sim-hl-excluded,
+.sim-md-view h4.sim-hl.sim-hl-excluded,
+.sim-md-view h5.sim-hl.sim-hl-excluded,
+.sim-md-view h6.sim-hl.sim-hl-excluded {
     opacity: 0.55;
     border-left-style: dashed !important;
 }
@@ -1090,7 +1097,13 @@ body[data-theme="dark"] .verify-hub-history-mode.type-verify {
 }
 /* hover 상태에서도 자동 제외 시각 유지 */
 .sim-md-view p.sim-hl.sim-hl-excluded:hover,
-.sim-md-view div.sim-hl.sim-hl-excluded:hover { opacity: 0.7; }
+.sim-md-view div.sim-hl.sim-hl-excluded:hover,
+.sim-md-view h1.sim-hl.sim-hl-excluded:hover,
+.sim-md-view h2.sim-hl.sim-hl-excluded:hover,
+.sim-md-view h3.sim-hl.sim-hl-excluded:hover,
+.sim-md-view h4.sim-hl.sim-hl-excluded:hover,
+.sim-md-view h5.sim-hl.sim-hl-excluded:hover,
+.sim-md-view h6.sim-hl.sim-hl-excluded:hover { opacity: 0.7; }
 
 /* ── Plan-54: 표 셀 폰트 본문과 동일 (12 → 13px, 가독성 정합) ── */
 .sim-md-view table.sim-md-table { font-size: var(--font-body); }
