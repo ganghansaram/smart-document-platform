@@ -1,8 +1,8 @@
-# Plan-57 — Verify 시스템 뷰 통일 (비교/검증 모드를 유사도 모드 기준으로) — v3.1
+# Plan-57 — Verify 시스템 뷰 통일 (비교/검증 모드를 유사도 모드 기준으로) — v3.3
 
-> 작성일: 2026-05-02 (v1) / 2026-05-02 갱신 (v2 — 1차 design-review 반영) / 2026-05-02 갱신 (v3 — 2차 design-review 반영) / 2026-05-02 갱신 (v3.1 — 3차 design-review 반영, 미세 패치)
+> 작성일: 2026-05-02 (v1) / 2026-05-02 갱신 (v2 — 1차 design-review 반영) / 2026-05-02 갱신 (v3 — 2차 design-review 반영) / 2026-05-02 갱신 (v3.1 — 3차 design-review 반영, 미세 패치) / 2026-05-08 갱신 (v3.2 — 자동번호 보존: NumberingResolver 통합 명시) / 2026-05-09 갱신 (v3.3 — 4차 design-review 반영: Critical 3건 + Warning 정책 결정)
 > 대상 시스템: Verify (`compare.html` + `backend/api/compare.py`)
-> 변경 범위: 백엔드 추출기 통합 + Block AST 모델 + 프론트 패널 렌더링 교체 + 단위/통합 테스트
+> 변경 범위: 백엔드 추출기 통합 + Block AST 모델 + **heading-only 자동번호 polyfill (Plan-37 자산 재사용)** + **`similarity_engine._sentence_split` 숫자 가드** + 프론트 패널 렌더링 교체 + 단위/통합 테스트
 > 상태: 계획 단계 (사용자 승인 후 진행)
 
 ---
@@ -11,21 +11,62 @@
 
 | Phase | 내용 | 예상 공수 | 상태 |
 |-------|------|---------|------|
-| Phase 0 | Baseline 캡처 + fail-then-pass 단위 테스트 7건 골격 작성 | 0.5일 | ⬜ 대기 |
-| Phase 1 | 백엔드 통합 — `markdown_to_blocks` + Block AST (`block_types`/`heading_levels`/`table_ids`) + `extract_document` 확장 + `extract_text` shim | 2.5일 | ⬜ 대기 |
+| Phase 0 | Baseline 캡처 + fail-then-pass 단위 테스트 12건 골격 작성 (Case L1~L5 + sentence_split case 추가) | 0.75일 | ⬜ 대기 |
+| Phase 1 | 백엔드 통합 — `markdown_to_blocks` + Block AST (`block_types`/`heading_levels`/`table_ids`) + **heading-only NumberingResolver 통합 (Plan-37 Phase 4a 자산 재사용)** + **`similarity_engine._sentence_split` 숫자 가드** + `extract_document` 확장 + `extract_text` shim | 3.5일 | ⬜ 대기 |
 | Phase 1b | paste 경로 `extract_document(text=...)` 통합 (입력 방식 일관성) | 0.5일 | ⬜ 대기 |
 | Phase 2 | 프론트 패널 렌더링 교체 — `renderParagraphs` 가 `display_html` 우선 사용 | 1.5일 | ⬜ 대기 |
 | Phase 3 | 비교 모드 diff 정합 — `[data-paragraph-idx]` 셀렉터 + 표 행 단위 처리 + Excel export 표 행 처리 | 2일 | ⬜ 대기 |
 | Phase 4 | 검증 모드 정합 — `_check_caption` `block_types` 가드 + `_analyze_structure` 메타 우선 + AI 분류 표 행 제외 + `rule_engine._split_sentences` 영향 검증 | 1.5일 | ⬜ 대기 |
-| Phase 5 | 비교/검증 단위 테스트 신규 작성 + Playwright 시각 (3 시나리오) + 자동 회귀 + 점수 변동 정량 기준 | 1.5일 | ⬜ 대기 |
+| Phase 5 | 비교/검증 단위 테스트 신규 작성 + Playwright 시각 (3 시나리오) + 자동 회귀 + 점수 변동 정량 기준 + **자동번호 보존 검증 + sentence_split 가드 검증** | 1.5일 | ⬜ 대기 |
 | Phase 6 | 행동 변화 안내 토스트 + history `schema_version` + 가이드 갱신 + 보고서 + done- 처리 | 0.5일 | ⬜ 대기 |
-| **합계** | — | **10.5일** | **0/8** |
+| **합계** | — | **11.75일** | **0/8** |
 
 > 상태 표기: ⬜ 대기 · 🟡 진행 중 · ✅ 완료 · ❌ 보류/롤백
 
 ---
 
 ## 변경 이력
+
+### v3.3 (2026-05-09) — 4차 design-review 반영 (Critical 3건 + Warning 정책 결정)
+
+v3.2 추가분에 대한 design-review 에서 NEEDS-PATCH 판정. v3.1 까지의 설계는 견고하나 v3.2 자동번호 통합 명세 3건이 코드 검증 부족. v3.3 으로 모두 해결.
+
+**Critical 3건 해결**:
+- **C-v3.2-1 — 정규식 불일치**: v3.2 의 `_HAS_NUMBER_PREFIX_RE = ^\d+(\.\d+)*\.?\s` 가 converter.py:737 의 운영 패턴 `^[\d]+(?:[\.\-][\d]+)*[\.\s]` 와 다름. 한국어("가."), letter("a."), 원숫자("①") 미커버 → 한국어 docx 에서 prefer_cached 보호선이 뚫려 *실제 이중 prefix* 발생 가능.
+  - **해결**: 정규식을 converter.py 패턴으로 정정 + 본문 list polyfill 비적용 결정 (heading-only 정책 — 아래 W1 결정 참조).
+- **C-v3.2-2 — 표 셀 polyfill 주장 모순**: v3.2 §2.8 "표 안 paragraph 도 `iter_block_items` 가 yield" 는 사실 아님. `docx_utils.iter_block_items` 는 표 객체만 yield, 셀 *내부* paragraph 는 yield 안 함. `_docx_table_to_md` 도 `cell.text` 만 사용.
+  - **해결**: §2.8 에 "표 셀 내부 paragraph 는 polyfill 미적용 (`iter_block_items` 한계)" 명시 + backlog *"Verify — 표 셀 자동번호 prefix 보존"* 항목 신설 (Phase 6 작성).
+- **C-v3.2-3 — `_sentence_split` 거짓 분리**: `similarity_engine.py:839` 의 `(?<=[.!?])\s+(?=[A-Z가-힣])` 패턴이 polyfill prefix "1.2 SCOPE" 의 점 뒤를 sentence 경계로 잘못 인식 → heading 이 "1." / "2 SCOPE" 로 쪼개져 fingerprint 정확도 저하. v3.2 의 *"유사도 모드 코드 무수정"* (§5.3) 보장이 깨짐.
+  - **해결**: `_sentence_split` 에 숫자 가드 추가 (rule_engine.py 패턴 차용). §5.3 격리 보장 갱신 — 유사도 모드 핵심 함수 4종 중 `_sentence_split` *최소 수정* 인정. ±2% 점수 추정 전제 복원.
+
+**Warning 정책 결정**:
+- **W1 — 본문 list polyfill 정책**: heading 만 polyfill 적용 (converter.py 와 일치) → 본문 list 자동번호는 backlog. 이유: ①converter.py 와 SSOT 유지 ②한국어/letter list 의 정규식 보호선 한계 회피 ③1차 사용자 페인 ("장절번호") 은 heading 한정.
+- **W2 — ±2% 추정 근거 강화**: Phase 0 baseline 에 자동번호 docx 1건 (회사 자료 또는 SWA_PMS) 으로 polyfill 전/후 score 실측 → 추정치 *대체*. 임계 ±2% 유지 또는 실측 기반 재산정.
+- **W3 — Case L 확장**: L1 decimal / L2 upperRoman / L3 한국어 lvlText / L4 numbering.xml 누락 폴백 / L5 본문 list polyfill 비적용 검증 (5 sub-cases). Plan-37 fixture 재사용 가능.
+- **W4 — 공수 +1.0일 재산정**: v3.2 의 +0.5일은 통합 코드만. 정규식 보강 + sentence_split 수정 + Case L 확장 포함 시 +1.0일 적정.
+- **W5 — paste 비대칭 보강**: Phase 6 토스트 문구에 paste 한계 1줄 추가 + frontend 별도 작업 0 (paste 텍스트는 사용자가 prefix 박은 채 붙여넣는 자연 시나리오 가정).
+
+**v3.3 영향**:
+- 코드: 정규식 정정 (converter 패턴) + heading-only 분기 + `_sentence_split` 숫자 가드 ~5줄 추가
+- 테스트: Case L 1건 → 5 sub-cases (L1~L5) + sentence_split 가드 case 1건 (Case M) — 총 12 케이스 (v3.1 11건 → v3.3 12건)
+- 공수: 11.0일 → 11.5일 (+0.5일)
+- 격리 보장: similarity_engine 핵심 함수 4종 중 `_sentence_split` 1개 *최소 수정* 인정 (~5줄 가드 추가)
+
+### v3.2 (2026-05-08) — 자동번호 보존 (NumberingResolver 통합 명시)
+- **배경**: 회사 VM 배포 검증 직전 (`platform-v2.8.tar`) 추출기 분석 중, 유사도 모드 `_from_docx` 가 `block.text` 만 사용 → `numbering.xml` 자동번호 prefix 손실 발견. v3.1 의 통합 (`extract_document` SSOT) 가 끝나도 "1.2 개요" → "개요" 손실은 그대로 잔존하는 결함.
+- **해결**: Plan-37 Phase 4a 의 `NumberingResolver` (이미 검증 끝, 폐쇄망 호환, 12/12 테스트 통과) 를 `document_extractor._from_docx` 에 통합. 별도 신규 코드 없이 **기존 자산 재사용**.
+- **모듈 경계**: 기존 `backend/api/upload.py:87-90` / `backend/main.py:119-120` 의 sys.path import 패턴 그대로 사용 (`tools/converter` 를 backend 가 import). 신규 모듈 이동·복제 없음 → 회귀 표면 0.
+- **기본 모드**: `prefer_cached` (Plan-37 기본값과 동일) — 본문에 이미 박힌 번호가 있으면 그대로, 자동번호로만 존재할 때만 polyfill. **무회귀 보장**.
+- **영향**:
+  - 자동번호 docx → "1.2 개요" 로 paragraphs[i] 진입 → `_HEADING_PATTERN` 매칭 (v3 의 `\.?` 완화로 점 유무 모두 OK) → `_analyze_structure` heading 트리 부활 + `_check_numbering` 연속성 검사 부활 (현재 무력)
+  - similarity 매칭 영향: heading 짧음 (보통 < 60 char fingerprint window 의 5~10%) → 점수 변동 추정 ±2% 이내, 양 문서 모두 polyfill 통일로 매칭 향상 가능
+  - 비자동번호 docx → 변화 0 (prefer_cached 가 polyfill 스킵)
+  - PDF / paste → 영향 없음 (numbering.xml 자체 부재)
+- **추가 산출물**:
+  - Phase 0 Case L (★) — 자동번호 docx fixture → paragraphs[i] 가 "1.2" prefix 포함
+  - Phase 5 자동 회귀에 NumberingResolver 단위 테스트 12건 자동 포함 (이미 통과 중, 통합 후 회귀 0 재확인만)
+  - Phase 5 점수 정량 기준에 *"자동번호 docx 의 점수 변동 ±2% 이내"* 추가
+- 공수 10.5일 → 11.0일 (+0.5일 for 통합 코드 ~30줄 + 단위 테스트 1건 + 점수 정량 검증)
 
 ### v3.1 (2026-05-02) — 3차 design-review 반영 (미세 패치)
 - **`_extract_terms` 동형 결함 해결**: `full_text = "\n".join(paragraphs)` 패턴이 `_check_caption` 외에 `_extract_terms` 에서도 동일하게 사용 (compare_service.py:378). 표 셀 안 단위 ("5kg", "100mm") 가 본문 단위로 잘못 카운트되어 인텔리전스 패널 *units* 통계 왜곡. `_check_caption` 과 동일 가드 추가.
@@ -79,6 +120,7 @@
 - **백엔드 분리**: `backend/services/compare_service.py:_extract_docx` 가 `for p in doc.paragraphs:` 만 사용 → `doc.tables` 미처리. `_extract_pdf` 도 표 추출 X.
 - **프론트 분리**: `renderParagraphs(panel, paragraphs, pageMap)` (line 517~545) 이 `<div class="cp-paragraph">{escapeHTML(text)}</div>` 평탄 렌더 → 표/헤딩 시각 정보 0.
 - **데이터 모델 분리**: 비교/검증 = `paragraphs: string[]` / 유사도 = `markdown + plain_text + display_html`. 같은 입력의 두 데이터 표현이 코드 경로에서 분리.
+- **자동번호 prefix 손실 (v3.2 추가)**: `document_extractor._from_docx` 가 `block.text` 만 추출 → Word `numbering.xml` 의 자동번호 ("1.2") 가 paragraph 본문에 들어가지 않음. 결과: 자동번호 docx 의 헤딩이 "1.2 개요" 가 아닌 "개요" 로만 paragraphs[i] 진입 → `_HEADING_PATTERN` 미매칭 → `_analyze_structure` heading 트리 인식 실패. v3.1 의 SSOT 통합만으로는 해결 안 됨 (입력 단계의 결함).
 
 ### 0.3 실사용 데이터 (Plan-57 작성 직전 측정)
 - admin/testbot 최근 history 20건: **100% 유사도 모드**
@@ -100,6 +142,7 @@
 - 3 모드 모두 동일 ALLOWED_EXTENSIONS (`.doc, .docx, .pdf` 업로드 + 텍스트 paste)
 - `extract_document` 모듈 주석에 *"향후 비교/검증 모드에서도 재사용 가능"* 명시 (의도된 미완 통합)
 - v2 의 Block AST 모델로 char_offset / heading 메타 / table 메타 모두 정합 보장 (§2.2)
+- **자동번호 polyfill 자산 기 보유 (v3.2)**: Plan-37 Phase 4a 의 `tools/converter/numbering_resolver.py` (241줄, pytest 12/12 PASS, `tools/converter/converter.py:155~158` 운영 검증) — 신규 코드 작성 0, **import 만 추가**하면 즉시 적용 가능. 폐쇄망 호환 (xml stdlib + python-docx).
 
 ---
 
@@ -112,6 +155,8 @@
 - paste 경로도 통합 (입력 방식 일관성)
 - Plan-52~56 의 모든 개선 효과 자동 적용
 - 비교/검증 모드 자체 단위 테스트 신규 작성 (회귀 안전망)
+- **자동번호 polyfill (v3.2 → v3.3 정정)** — `tools/converter/numbering_resolver.py` (Plan-37 자산) 를 `document_extractor._from_docx` 에 통합 → 자동번호 docx 의 **heading 번호 prefix 보존** (본문 list 와 표 셀 안 list 는 1차 미적용, backlog 이관). 3 모드 모두 자동 적용 (SSOT 효과).
+- **`similarity_engine._sentence_split` 숫자 가드 (v3.3 신규)** — polyfill prefix "1.2 SCOPE" 가 sentence 경계로 잘못 분리되는 결함 차단. rule_engine.py 와 동일 패턴.
 
 ### 1.2 Out of Scope
 - diff 표 셀 단위 비교 (Plan-52와 동일 ROI 판단으로 미채택)
@@ -168,9 +213,17 @@ class Block:
 
 | 블록 타입 | paragraphs[i] 값 | 예시 |
 |---------|-----------------|------|
-| paragraph | 본문 텍스트 그대로 | `"본 문서는 검증을 다룬다."` |
-| heading | `## ` prefix 제거 + 번호+점+공백 보존 | `"1.2. SCOPE"` (원본: `## 1.2. SCOPE`) 또는 `"1.2 SCOPE"` (원본 형식 유지) |
+| paragraph | 본문 텍스트 그대로 (**polyfill 미적용 — v3.3 정정**) | `"본 문서는 검증을 다룬다."` |
+| heading | `## ` prefix 제거 + 번호+점+공백 보존 (**heading-only 자동번호 prefix polyfill 적용 — v3.3**) | `"1.2. SCOPE"` (원본: `## 1.2. SCOPE`) 또는 `"1.2 SCOPE"` (원본 형식 유지) — **자동번호 docx 도 polyfill 후 동일 형식** |
 | table_row | `\t` (탭) 으로 셀 구분 | `"A100\t5\t검증 완료. 출하 가능."` |
+
+**자동번호 prefix 규칙 (v3.3 — heading-only 정책)**:
+- `NumberingResolver.format_number(num_id, ilvl)` 결과를 **heading 스타일 paragraph** text 앞에 prepend (본문 list 는 미적용)
+- prefix 형식: `lvlText` 템플릿 + 공백 1칸 (예: `"1.2." + " " + "SCOPE"` = `"1.2. SCOPE"`)
+- `prefer_cached` 모드 (기본): 본문 시작이 이미 converter.py 운영 패턴 `^[\d]+(?:[\.\-][\d]+)*[\.\s]` 매칭 시 polyfill 스킵 (이중 prefix 방지) — 단, counter 는 증가 (다음 형제 번호 정합)
+- **본문 list paragraph (heading 아닌 자동번호 list)**: 1차 미적용 (converter.py 와 동일 정책). 본문 list 자동번호 보존은 backlog 항목 *"Verify — 본문 list 자동번호 prefix 보존"* 으로 이관 (Phase 6 작성)
+- **표 셀 안 paragraph**: 미적용 (`iter_block_items` 한계). backlog 항목 *"Verify — 표 셀 자동번호 prefix 보존"* 으로 이관 (Phase 6 작성)
+- **한국어/letter/원숫자 numbering**: 1차 미커버 (`prefer_cached` 정규식이 `^\d+...` 형태만 인식). heading-only 정책으로 한정해 영향 최소화 — 본문 한국어 list 의 이중 prefix 위험은 정책상 회피
 
 **heading 형식 정책** (v3 — `_HEADING_PATTERN` 정합):
 - DOCX heading 스타일에서 derive 시 원본 텍스트 그대로 보존 (markdown prefix만 제거)
@@ -236,6 +289,157 @@ if (block_types[i] === 'table_row') {
 - **이관 위치**: `workbench/plans/backlog.md` 의 *"Verify — 표 단위 diff 합집합 UX"* 항목 신설 (Phase 6 에서 동시 작성).
 - **이유**: 1차는 정합성 확보가 목적, 표 단위 UX 는 실사용 데이터 (Step 2 관찰) 기반 결정 권장.
 
+### 2.8 NumberingResolver 통합 정책 (v3.2 — 신규)
+
+**목적**: Word `numbering.xml` 의 자동번호를 paragraphs[i] 에 prefix 로 합성 → 헤딩/목차 번호 보존.
+
+**모듈 경계 — 기존 sys.path 패턴 재사용** (신규 모듈 X):
+```python
+# document_extractor.py 상단 (기존 backend/api/upload.py:87-90 / backend/main.py:119-120 패턴)
+import sys
+from pathlib import Path
+_CONVERTER_DIR = Path(__file__).resolve().parents[2] / "tools" / "converter"
+if str(_CONVERTER_DIR) not in sys.path:
+    sys.path.insert(0, str(_CONVERTER_DIR))
+from numbering_resolver import NumberingResolver  # noqa: E402
+```
+- **이유**: backend 가 이미 동일 패턴으로 `converter` 를 import 함 (검증된 경로). 신규 모듈 위치 도입 시 standalone PyInstaller `.spec` 갱신 + Plan-37 회귀 위험 발생 → **import 만 추가가 최소 표면**.
+- Docker 빌드: 컨테이너에 `tools/` 가 이미 COPY 됨 (기존 검증).
+
+**`_from_docx` 통합 위치 (v3.3 — heading-only 정책)**:
+```python
+def _from_docx(file_bytes: bytes) -> dict:
+    doc = Document(io.BytesIO(file_bytes))
+    
+    # v3.2 — NumberingResolver 초기화 (실패 silent, 무회귀)
+    try:
+        numbering_resolver = NumberingResolver(doc)
+    except Exception as e:
+        logger.warning(f"NumberingResolver 초기화 실패 (자동번호 미적용): {e}")
+        numbering_resolver = None
+    
+    for block in iter_block_items(doc):
+        if isinstance(block, Paragraph):
+            text = block.text.strip()
+            if not text:
+                continue
+            
+            # v3.3 — heading-only polyfill (converter.py 와 일치)
+            style = (block.style.name or "").lower()
+            is_heading = any(f"heading {n}" in style for n in range(1, 7))
+            if is_heading:
+                text = _maybe_apply_numbering_prefix(block, text, numbering_resolver)
+            else:
+                # 본문 list paragraph — counter 만 증가 (다음 heading 번호 정합)
+                # numPr 가 있으면 counter 증가시킴 (resolver 가 yield 순서로 호출되어야)
+                _advance_numbering_counter(block, numbering_resolver)
+            
+            # 기존 heading 스타일 감지
+            if "heading 1" in style:
+                md_parts.append(f"# {text}")
+            elif "heading 2" in style:
+                md_parts.append(f"## {text}")
+            ...
+```
+
+**`_maybe_apply_numbering_prefix` 헬퍼** (신규, ~30줄, v3.3 정정):
+```python
+# v3.3 — converter.py:737 운영 패턴과 일치 (점·하이픈 모두 인정)
+_HAS_NUMBER_PREFIX_RE = re.compile(r'^[\d]+(?:[\.\-][\d]+)*[\.\s]')
+
+def _maybe_apply_numbering_prefix(block, text, resolver):
+    """heading paragraph 에 numbering.xml 자동번호 prefix 합성. v3.3 — heading-only."""
+    if resolver is None:
+        return text
+    num_info = _read_num_pr(block)
+    if num_info is None:
+        return text
+    num_id, ilvl = num_info
+    
+    # prefer_cached: 본문에 이미 번호가 있으면 polyfill 스킵 (counter 는 증가)
+    prefix = resolver.format_number(num_id, ilvl)
+    if not prefix:
+        return text
+    if _HAS_NUMBER_PREFIX_RE.match(text):
+        return text  # 이중 prefix 방지
+    return f"{prefix} {text}"
+
+
+def _advance_numbering_counter(block, resolver):
+    """본문 list paragraph 의 counter 증가 (heading 번호 정합 보장, prefix 합성 X)."""
+    if resolver is None:
+        return
+    num_info = _read_num_pr(block)
+    if num_info is None:
+        return
+    num_id, ilvl = num_info
+    resolver.format_number(num_id, ilvl)  # 반환값 무시, counter 만 증가
+
+
+def _read_num_pr(block):
+    """paragraph 의 numPr → (num_id, ilvl) 또는 None."""
+    pPr = block._element.find(qn('w:pPr'))
+    if pPr is None:
+        return None
+    numPr = pPr.find(qn('w:numPr'))
+    if numPr is None:
+        return None
+    numId_elem = numPr.find(qn('w:numId'))
+    ilvl_elem = numPr.find(qn('w:ilvl'))
+    if numId_elem is None:
+        return None
+    num_id = numId_elem.get(qn('w:val'))
+    ilvl = int(ilvl_elem.get(qn('w:val'), '0')) if ilvl_elem is not None else 0
+    return num_id, ilvl
+```
+
+**`similarity_engine._sentence_split` 숫자 가드 (v3.3 신규)**:
+```python
+# similarity_engine.py:832 부근
+def _sentence_split(text: str) -> list:
+    s = text.strip()
+    if s.startswith('|') and s.endswith('|') and s.count('|') >= 3:
+        return [s]  # GFM 표 행 — Plan-55
+    pattern = r'(?<=[.!?])\s+(?=[A-Z가-힣\"\'])'
+    parts = re.split(pattern, text)
+    # v3.3 — 숫자.숫자 패턴 (예: "1.2 SCOPE") 은 sentence 경계 아님 — rule_engine.py 패턴 차용
+    merged = []
+    for p in parts:
+        if merged and re.search(r'\d+\.$', merged[-1]):
+            merged[-1] = merged[-1] + ' ' + p
+        else:
+            merged.append(p)
+    return [m.strip() for m in merged if m.strip()]
+```
+- 적용 효과: polyfill 결과 "1.2 SCOPE" 가 단일 sentence 로 유지 → fingerprint 정확도 보존
+- 회귀 위험: 기존 `_sentence_split` 대상 텍스트 중 "ver. 1." / "p. 23 Section" 같은 케이스에서 약간의 분리 동작 변화 가능 — Phase 5 자동 회귀로 검증 (sim_block_order_test, sim_score_v3_unit_test 등)
+
+**호출 순서 보장**:
+- `iter_block_items` 가 본문 순서로 yield → `format_number` counter 자체 관리 (Plan-37 검증) → 번호 정합 보장
+- v3.3 — heading 만 prefix 합성, 본문 list 는 counter 만 증가 → heading 번호 자체는 본문 list 순서까지 누적해 정확
+
+**v3.3 미적용 영역 — backlog 이관 명시**:
+- **본문 list paragraph 의 prefix 합성**: heading-only 정책으로 1차 미적용. backlog 항목 *"Verify — 본문 list 자동번호 prefix 보존"* 신설 (Phase 6 작성). 한국어/letter/원숫자 정규식 보강 또는 구조적 매칭 (resolver prefix 와 본문 첫 글자 비교) 필요.
+- **표 셀 안 paragraph polyfill**: `iter_block_items` 가 표 *내부* paragraph 를 yield 안 함 (셀 텍스트만 `_docx_table_to_md` 에서 추출). backlog 항목 *"Verify — 표 셀 자동번호 prefix 보존"* 신설 (Phase 6 작성). `_docx_table_to_md` 시그니처 확장 + cell paragraph 별 numPr 검사 + counter 증가 + prefix 합성 필요.
+
+**동작 모드 (Plan-37 `numbering.resolver_mode` 와 동일)**:
+- `prefer_cached` (기본) — 위 코드. 회귀 0 보장
+- `always_polyfill` — `_HAS_NUMBER_PREFIX_RE` 검사 없이 항상 prefix 추가. 디버깅용
+- `off` — resolver 자체 미생성. 핫픽스 롤백용
+
+→ 현재는 `prefer_cached` 만 적용. `always_polyfill`/`off` 는 config 항목으로 잠재 보존 (코드 작성만, 기본 노출 X).
+
+**환경별 동작 매트릭스** (v3.3 정정):
+
+| 환경 | numbering.xml | 본문 prefix | heading polyfill | 본문 list polyfill | 표 셀 polyfill |
+|------|--------------|-----------|-------------|----------------|---------------|
+| 자동번호 heading docx | 있음 | 없음 | ✅ prepend | ⬜ counter 만 증가 | ⬜ 미적용 (backlog) |
+| 본문 박힌 docx (Word COM/LO 전처리 후) | 있음 (참조 안 됨) | 있음 | 스킵 (prefer_cached) | 미적용 (정책) | 미적용 (한계) |
+| 한국어/letter/원숫자 list docx | 있음 | 무관 | heading 만 적용 (heading 의 한국어 lvlText 는 격리됨) | 미적용 (정책) — 이중 prefix 위험 회피 | 미적용 (한계) |
+| numbering.xml 누락 / 손상 | 없음 | 무관 | resolver=None 폴백, 변화 0 | 변화 0 | 변화 0 |
+| PDF | N/A | N/A | resolver 미호출 (`_from_pdf` 분리) | N/A | N/A |
+| 텍스트 paste | N/A | N/A | 적용 불가 | 적용 불가 | 적용 불가 |
+
 ---
 
 ## 3. Phase 개요
@@ -265,7 +469,17 @@ if (block_types[i] === 'table_row') {
   | **F** ★ | heading 의 `## ` prefix 제거 + 번호 보존 + heading_levels[i] 정확 |
   | G | `extract_text` shim 이 `extract_document` 와 동일 결과 |
 
-**완료 기준**: 단위 테스트 7건 작성 (모두 FAIL 상태), before 스크린샷 3건 commit.
+**완료 기준**: 단위 테스트 12건 작성 (모두 FAIL 상태), before 스크린샷 3건 commit.
+
+**v3.3 추가 케이스 (Case L 확장 + Case M 신규)**:
+| Case | 검증 |
+|------|------|
+| **L1** ★ | decimal numbering docx (Plan-37 fixture 재사용 가능) → heading paragraphs[i] 가 "1.2 SCOPE" prefix 포함 |
+| **L2** | upperRoman numbering docx → heading paragraphs[i] 가 "II. SCOPE" prefix 포함 (Plan-37 fixture 재사용) |
+| **L3** | 한국어 lvlText (`"%1) "` 또는 `"제 %1 장 "`) → heading 만 polyfill 적용, 본문 list 는 미적용 (이중 prefix 회피 검증) |
+| **L4** | numbering.xml 누락 또는 비표준 numFmt docx → resolver=None 폴백, 변화 0 (회귀 검증) |
+| **L5** ★ | heading 스타일이 아닌 본문 list paragraph (예: 본문 "(1)" 자동번호) → polyfill 미적용, paragraphs[i] 변화 0 (heading-only 정책 강제 검증) |
+| **M** ★ (v3.3 신규) | `_sentence_split` 가 polyfill 결과 "1.2 SCOPE" 를 단일 sentence 로 유지 (`["1.2 SCOPE"]`, 분리 ❌). "ver. 1." 같은 일반 문장은 영향 받지 않음 검증 |
 
 ---
 
@@ -274,10 +488,12 @@ if (block_types[i] === 'table_row') {
 **목표**: `extract_document` 가 Block AST 기반으로 5개 메타 필드 동시 반환. `extract_text` 는 thin shim 으로 위임.
 
 **변경 파일**:
-- `backend/services/document_extractor.py` — `markdown_to_blocks` 신규 + `extract_document` 반환값 확장
+- `backend/services/document_extractor.py` — `markdown_to_blocks` 신규 + `extract_document` 반환값 확장 + **NumberingResolver import + `_maybe_apply_numbering_prefix`/`_advance_numbering_counter`/`_read_num_pr` 헬퍼 (v3.3 — heading-only)**
+- **`backend/services/similarity_engine.py` — `_sentence_split` 숫자 가드 ~5줄 추가 (v3.3 신규)**
 - `backend/services/compare_service.py` — `extract_text` 가 `extract_document` 위임 (`_extract_docx`/`_extract_pdf` 는 deprecated)
 - `backend/api/compare.py` — `/upload` 응답에 신규 5개 필드 추가 (기존 필드 보존)
-- `tests/sim_extract_unification_test.py` — Phase 0 의 7건 PASS
+- `tests/sim_extract_unification_test.py` — Phase 0 의 12건 PASS (Case L1~L5 + Case M sentence_split 가드, v3.3)
+- (참고: `tools/converter/numbering_resolver.py` **무수정** — Plan-37 자산 그대로 import 만 함)
 
 **핵심 함수 신규**:
 ```python
@@ -785,7 +1001,9 @@ function renderValidationHighlights(issues) {
 **점수 변동 정량 기준** (Warning W3 해결):
 - 검증 모드: 동일 DOCX 의 통합 전/후 score 차이 ≤ 5% (Phase 0 의 baseline 과 비교)
 - 유사도 모드: 동일 DOCX 페어의 통합 전/후 similarity_score 차이 ≤ 1% (사실상 0% 기대 — 유사도 모드 코드 무수정)
-- 단위 테스트 I 가 자동 검증
+- **v3.2 — 자동번호 docx 페어 (신규)**: similarity_score 차이 ≤ 2% (heading prefix 추가에 따른 fingerprint 변동 추정 보수치). 양 문서 모두 polyfill 통일되면 매칭 향상 가능 (긍정적 변동도 ≤ 2% 기대)
+- **v3.2 — 자동번호 docx 검증 모드**: heading 인식 회복으로 `_check_numbering` issue 신규 발생 가능 → score 하락 가능. 회귀가 아닌 *행동 변화* (현재 무력하던 검사가 작동) → 정당화 가능
+- 단위 테스트 I 가 자동 검증 (v3.2 — 자동번호 fixture 1건 추가)
 
 **API E2E**:
 - 표 + 헤딩 + 본문 + 페이지 마커 mock DOCX → `/api/compare/upload` 응답에 신규 5개 필드 정상
@@ -844,6 +1062,13 @@ function renderValidationHighlights(issues) {
 | Excel export 표 행 가독성 손실 | **해결** | Phase 3 의 `paragraphForExport` 헬퍼 |
 | AI 분류 토큰 폭증 | **해결** | Phase 4 의 표 행 자동 EDITORIAL (정확도 trade-off §7.3 명시) |
 | 표 셀 수치 변경 의미 분류 정확도 손실 | **trade-off 인정** | §7.3 (6) 결정, backlog 이관 |
+| ~~**자동번호 polyfill 이중 prefix (v3.2)**~~ | **해결 v3.3** | converter.py:737 운영 패턴 `^[\d]+(?:[\.\-][\d]+)*[\.\s]` 채택 + heading-only 정책으로 한국어/letter list 의 정규식 한계 회피 (본문 list 1차 미적용) |
+| ~~**자동번호 docx 의 매칭 점수 변동 (v3.2)**~~ | **해결 v3.3** | heading-only 정책 + `_sentence_split` 가드 → fingerprint 정확도 보존. Phase 0 baseline 실측으로 ±2% 임계 검증 |
+| **NumberingResolver 초기화 실패 (v3.2)** | **낮음** | try/except + logger.warning + resolver=None 폴백 → 자동번호 미적용 상태로 정상 진행 (현재 동작과 동일) |
+| **`numbering.xml` 손상 / 비표준 numFmt (v3.2)** | **낮음** | Plan-37 의 18 OMML 요소 + decimal 폴백으로 검증됨. 미지원 numFmt 는 logger 로 추적 |
+| **paste 경로 비대칭 (v3.2)** | **인정** | numbering.xml 부재로 paste 텍스트는 polyfill 불가 — 사용자가 paste 시 본문에 번호 박는 것이 자연스러운 시나리오. backlog 이관 + Phase 6 토스트 1줄 안내 |
+| ~~**`_sentence_split` 거짓 분리 (v3.3 발견)**~~ | **해결 v3.3** | `_sentence_split` 에 숫자 가드 ~5줄 추가 (rule_engine.py 패턴 차용). Case M 자동 회귀 |
+| **본문 list / 표 셀 자동번호 손실 (v3.3 인정)** | **인정 — backlog** | heading-only 정책 + `iter_block_items` 한계로 1차 미적용. 2개 backlog 항목 신설. 사용자 페인 ("장절번호") 은 heading 한정이라 1차 충분 |
 
 ### 5.2 행동 변화 (긍정적이나 사용자 안내)
 
@@ -854,14 +1079,25 @@ function renderValidationHighlights(issues) {
 | `paragraphs[]` 길이 증가 (표 N행 + heading 분리) | 사이드바 인덱스 변동 | 동일 |
 | 스캔 PDF 처음 지원 (OCR 폴백) | 신규 동작 | 가이드 |
 | 인텔리전스 패널 헤딩/표/그림 카운트 정확화 | 정확 향상 | 가이드 |
+| **자동번호 docx 의 헤딩 위계 부활 (v3.2)** | heading 트리·목차·`_check_numbering` 부활 | Phase 6 토스트 + 가이드 |
+| **자동번호 docx 의 유사도 점수 ±2% 변동 (v3.2)** | 양 문서 polyfill 통일 시 매칭 향상 | 정량 보장 |
 
 ### 5.3 격리 보장 (유사도 모드 무영향 재확인)
-- 매칭 알고리즘 (`similarity_engine` 본체) 무수정
+- 매칭 알고리즘 (`similarity_engine` 본체) 무수정 — winnowing/embedding 핵심 로직 변경 0
 - 검증 규칙 엔진 (`rule_engine`) 본체 무수정 — Phase 4 는 시그니처 확장만 (선택적 매개변수)
 - API 시그니처 무수정 (호환 필드 추가)
 - explorer/translator 시스템 무영향
 - 인증/권한 무영향
-- 유사도 모드 핵심 함수 4종 (`_build_tagged_html`, `split_sentences`, `_sentence_split`, `simApplyHighlights`) 변경 0줄
+- 유사도 모드 핵심 함수 4종 (`_build_tagged_html`, `split_sentences`, `_sentence_split`, `simApplyHighlights`) 중 **3종 무수정** — `_sentence_split` 만 v3.3 에서 ~5줄 가드 추가 (자세한 근거 아래)
+- **v3.2 — Plan-37 자산 무수정**: `tools/converter/numbering_resolver.py` 변경 0줄. `tools/converter/converter.py` 의 NumberingResolver 사용 패턴 (line 155~158) 변경 0줄 → Explorer DOCX→HTML 파이프라인 무영향. Standalone PyInstaller `.spec` 무수정.
+- **v3.2 — sys.path import 패턴 검증됨**: `backend/api/upload.py:87-90`, `backend/main.py:119-120` 가 동일 패턴으로 `tools/converter` import 중. 신규 표면 0.
+
+**v3.3 — `_sentence_split` 최소 수정 인정**:
+- 변경 위치: `similarity_engine.py:832~841` 의 `_sentence_split` 만
+- 변경 내용: `re.split` 결과 후처리에서 직전 토큰이 숫자.형태면 다음 토큰과 재합치는 ~5줄
+- 근거: polyfill prefix "1.2 SCOPE" 가 sentence 경계로 잘못 분리되는 결함 차단 (rule_engine.py:76 와 동일 패턴 차용)
+- 영향 범위: 숫자.숫자 패턴 텍스트만 (일반 문장 무영향). 회귀 검증은 Phase 5 자동 회귀 38건 (sim_block_order_test, sim_score_v3_unit_test, sim_table_structural_test, sim_merge_adjacent_unit_test 등) 으로 보장
+- v3.2 의 *"4종 무수정"* 보장에서 후퇴이나, polyfill 도입의 기술적 필요사항 (피할 수 없음). v3.3 으로 명시적 인정 + 단위 테스트 Case M 으로 회귀 봉쇄
 
 ### 5.4 롤백 시나리오
 - 단일 PR 권장 → git revert 1회로 즉시 복원
@@ -874,13 +1110,14 @@ function renderValidationHighlights(issues) {
 
 | 파일 | 변경 유형 | 설명 |
 |------|---------|------|
-| `backend/services/document_extractor.py` | 변경 | `markdown_to_blocks`, `build_block_tagged_html` 신규 + `extract_document` 5개 필드 확장 |
+| `backend/services/document_extractor.py` | 변경 | `markdown_to_blocks`, `build_block_tagged_html` 신규 + `extract_document` 5개 필드 확장 + **NumberingResolver import + `_maybe_apply_numbering_prefix`/`_advance_numbering_counter`/`_read_num_pr` 헬퍼 ~40줄 (v3.3 — heading-only)** |
+| `backend/services/similarity_engine.py` | 변경 | **`_sentence_split` 숫자 가드 ~5줄 추가 (v3.3)** — polyfill 결과 sentence 분리 결함 차단 |
 | `backend/services/compare_service.py` | 변경 | `extract_text` shim, `validate_paragraphs`/`_check_caption`/`_analyze_structure`/`classify_changes` block_types 매개변수 |
 | `backend/services/rule_engine.py` | 변경 | `_split_sentences` 표 행 가드, `run_rules` block_types 전파 |
 | `backend/api/compare.py` | 변경 | `/upload` 응답에 신규 5개 필드 추가 (호환) |
 | `compare.html` | 변경 | `renderParagraphs`, `onDocumentLoaded`, `docState`, `renderDiffHighlights`, `renderValidationHighlights`, paste 통합, Excel export, 토스트 |
 | `css/compare.css` | 변경 | `.sim-md-view` 스타일을 비교/검증 모드에서도 활성화 |
-| `tests/sim_extract_unification_test.py` | 신규 | 7 케이스 (Phase 0) |
+| `tests/sim_extract_unification_test.py` | 신규 | 12 케이스 (Phase 0, **Case L1~L5 자동번호 + Case M sentence_split 가드 — v3.3**) |
 | `tests/verify/compare_diff_unit_test.py` | 신규 | 5 케이스 (Phase 5) |
 | `tests/verify/verify_validation_unit_test.py` | 신규 | 5 케이스 (Phase 5) |
 | `workbench/screenshots/plan57-{before,after}-*.png` | 신규 | 시각 증거 |
@@ -929,6 +1166,26 @@ function renderValidationHighlights(issues) {
    - Phase 5 의 ±5% 정량 검사 실패 시 자동으로 회귀가 아닌 *행동 변화*: 단위 테스트 I 가 *원인 카테고리* 보고 (예: "표 셀에서 sentence_length 9건 신규 발견")
    - 행동 변화 정당화 가능 (표 셀 issue 합리적 검출) → Phase 6 토스트 강화로 안내
    - 행동 변화 부당 (예: heading 인식 실패로 점수 하락) → Phase 1/4 재작업 필요
+9. **NumberingResolver 모드 (v3.2 — 명시)**
+   - 1차: `prefer_cached` 만 적용 (Plan-37 운영 검증 모드와 동일). config 노출 X.
+   - `always_polyfill` / `off` 는 코드만 작성 (`_maybe_apply_numbering_prefix` 분기) 후 노출 X — 디버깅·핫픽스 필요 시 환경변수 1개 추가만으로 활성화 가능
+   - 노출 시점: 회사 VM 운영 데이터 누적 후 (이중 prefix 발생 빈도 0 확인 → 그대로, 발생 시 → `off` 핫픽스 옵션)
+10. **paste 경로 자동번호 (v3.2 — backlog 이관)**
+    - paste 텍스트는 numbering.xml 부재로 polyfill 불가
+    - 1차 미해결, backlog 항목 *"Verify — paste 경로 자동번호 휴리스틱 (frontend)"* 신설 (Phase 6 작성)
+    - 잠재 옵션: paste 시점에 frontend 가 줄별 들여쓰기 + bullet 패턴 → 가상 번호 합성 (정확도 낮음, 사용자 명시적 활성화 권장)
+11. **heading-only polyfill 정책 (v3.3 — 채택)**
+    - 본문 list paragraph 의 자동번호 prefix 합성은 1차 미적용
+    - 이유 3가지:
+      ① **converter.py 와 SSOT 유지**: Explorer 의 DOCX→HTML 파이프라인이 이미 heading 만 polyfill (line 626) — Verify 도 동일 정책 → 같은 docx 가 두 시스템에서 동일 paragraph text
+      ② **한국어/letter list 의 정규식 한계 회피**: prefer_cached 보호선이 `^[\d]+(?:[\.\-][\d]+)*[\.\s]` 만 인식. 본문 한국어 list ("가. 첫째") 의 lvlText 가 "%1." 형식이면 "1. 가. 첫째" 이중 prefix 발생 → heading-only 로 한정해 위험 회피
+      ③ **사용자 페인 한정**: 사용자가 명시한 결함은 "장절번호" (heading) — 본문 list 자동번호는 후순위 페인
+    - 본문 list 자동번호 보존: backlog 항목 *"Verify — 본문 list 자동번호 prefix 보존 (한국어/letter/원숫자 정규식 보강)"* 신설 (Phase 6 작성). 미래 개선 시 한국어/letter/원숫자까지 커버하는 prefer_cached 정규식 또는 구조적 매칭 (resolver prefix 와 본문 첫 글자 비교) 도입
+12. **`_sentence_split` 가드 정책 (v3.3 — 채택)**
+    - 변경: similarity_engine.py:832 의 `_sentence_split` 에 ~5줄 후처리 (직전 토큰이 `\d+\.$` 이면 다음 토큰과 재합치기)
+    - 패턴 출처: rule_engine.py:76 의 `is_numbered_section` 가드 동일 원리
+    - 격리 보장 후퇴 인정: v3.2 의 *"유사도 모드 핵심 함수 4종 무수정"* 에서 `_sentence_split` 1개만 *최소 수정*. 격리 표면 4 → 3 으로 후퇴이나 polyfill 도입의 기술적 필요사항 (sentence 거짓 분리는 polyfill 없이도 잠재 문제이며 polyfill 이 빈도를 증가시킴)
+    - 회귀 안전망: Phase 5 의 자동 회귀 38건 (sim_block_order_test, sim_score_v3_unit_test, sim_table_structural_test, sim_merge_adjacent_unit_test 등) 으로 봉쇄 + Case M 신규로 의도된 동작 + 일반 문장 무영향 동시 검증
 
 ---
 
@@ -938,7 +1195,7 @@ function renderValidationHighlights(issues) {
 |--------|------|------|
 | Explorer | 없음 | `tools/converter/converter.py` 자체 무수정 |
 | Translator | 없음 | `md_extractor.py` 무수정 |
-| 유사도 모드 (Verify 내) | 없음 | 핵심 함수 4종 무수정, API endpoint 무수정 |
+| 유사도 모드 (Verify 내) | **최소 수정 (v3.3)** | 핵심 함수 4종 중 `_sentence_split` 1개 가드 ~5줄 추가, 그 외 무수정 (`_build_tagged_html`, `split_sentences`, `simApplyHighlights` 무수정), API endpoint 무수정 |
 | 비교 모드 (Verify 내) | 변경 | 데이터 모델 + 렌더링 통일 |
 | 검증 모드 (Verify 내) | 변경 | 데이터 모델 + 렌더링 + 인텔리전스 정확화 |
 | Dashboard / Analytics | 없음 | event payload 무변경 |
@@ -947,6 +1204,6 @@ function renderValidationHighlights(issues) {
 
 ---
 
-## 9. 한 줄 결론 (v3.1)
+## 9. 한 줄 결론 (v3.3)
 
-**Plan-57 v3.1 = "Verify 시스템의 분리된 두 추출/렌더링 파이프라인을 Block AST + SSOT 로 통합한다."** v1 대비 Critical 7건 (v1 3건 + v2 3건 + v3.1 1건) + Warning 5건 + 추가 정합성 4건 (CSS 우선순위, 호출자 보장, mergePdfLineBreaks 처리, table_id 정책) 모두 해결. `block_types` 메타 1차 도입으로 산업 표준 (Pandoc/MDAST) 정합. 비교/검증 단위 테스트 11건 신규 (Case K 포함) + 회귀 안전망 정량화 (±5% 임계). AI 분류 정확도 trade-off 명시 + backlog 이관. 약 10.5일. **3차 design-review 통과, 출시 가능 수준.**
+**Plan-57 v3.3 = "Verify 시스템의 분리된 두 추출/렌더링 파이프라인을 Block AST + SSOT 로 통합 + Plan-37 자산 (NumberingResolver) 재사용으로 heading 자동번호 prefix 보존 + `_sentence_split` 숫자 가드로 fingerprint 정확도 보존을 동시 해결한다."** v3.2 대비 4차 design-review 의 Critical 3건 (정규식 불일치·표 셀 polyfill 모순·sentence_split 거짓 분리) + Warning 5건 (정책 결정·추정 근거·테스트 커버리지·공수 보정·paste 안내) 모두 해결. 신규 코드 ~45줄 (header-only 헬퍼 ~40줄 + sentence_split 가드 ~5줄), 테스트 6 sub-case (L1~L5 + M), 모듈 이동·복제·신규 의존성 0. v1 대비 Critical 11건 + Warning 10건 + 추가 정합성 6건 모두 해결. 본문 list / 표 셀 자동번호는 backlog 2건으로 명시적 이관 (사용자 페인은 heading 한정). 격리 보장: 유사도 모드 핵심 함수 4종 중 3종 무수정 + 1종 ~5줄 가드 (격리 표면 인정). 약 11.5일. **4차 design-review 반영 완료. 출시 가능 수준.**
