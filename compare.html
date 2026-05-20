@@ -1513,6 +1513,22 @@
                     }
                 }
 
+                // Plan-59 (F-58-2): verdict 라벨/색/툴팁도 새 점수 기준 재산출.
+                // compare.html:2481 주석이 약속한 동작 (구현 누락분 보완) — 수동 제외/설정 토글 후 stale 방지.
+                var verdictEl = document.querySelector('.sim-verdict');
+                if (verdictEl) {
+                    var v = resolveVerdict(score);
+                    var allClasses = ['sim-verdict-blue', 'sim-verdict-good', 'sim-verdict-yellow', 'sim-verdict-orange', 'sim-verdict-warning', 'sim-verdict-moderate'];
+                    for (var vc = 0; vc < allClasses.length; vc++) verdictEl.classList.remove(allClasses[vc]);
+                    verdictEl.classList.add(v.cls);
+                    var tipIcon = verdictEl.querySelector('.tooltip-icon');
+                    verdictEl.textContent = v.label + ' ';
+                    if (tipIcon) {
+                        tipIcon.setAttribute('data-tooltip', v.tip);
+                        verdictEl.appendChild(tipIcon);
+                    }
+                }
+
                 // 사용자 제외 배너는 재계산 후 실제 점수 반영 값으로 다시 갱신
                 if (typeof simUpdateExclusionBanner === 'function') simUpdateExclusionBanner();
             }
@@ -2427,6 +2443,25 @@
                 return bands[bands.length - 1];
             }
 
+            // Plan-59: verdict 라벨/색/툴팁 결정 — 첫 렌더(simShowResults) + 재계산(simRecomputeFromSettings) 공통.
+            // SSOT verdict_bands 가 있으면 matchVerdictBand 사용, 없으면 v3 정합 fallback (25/74).
+            // 반환: { label, cls, tip } — cls 는 .sim-verdict 요소에 부여할 색상 클래스.
+            function resolveVerdict(score) {
+                var bands = (simHelp && Array.isArray(simHelp.verdict_bands)) ? simHelp.verdict_bands : null;
+                var match = bands ? matchVerdictBand(score, bands) : null;
+                if (match) {
+                    var classMap = { blue: 'sim-verdict-blue', green: 'sim-verdict-good', yellow: 'sim-verdict-yellow', orange: 'sim-verdict-orange', red: 'sim-verdict-warning' };
+                    return {
+                        label: match.label,
+                        cls:   classMap[match.color] || 'sim-verdict-moderate',
+                        tip:   '유사율 ' + match.range_min + (match.range_min === match.range_max ? '%' : '~' + match.range_max + '%') + ' — ' + (match.meaning || '')
+                    };
+                }
+                if (score >= verdictBoundHigh) return { label: '위험',      cls: 'sim-verdict-warning',  tip: '유사율 ' + verdictBoundHigh + '% 이상' };
+                if (score >= verdictBoundLow)  return { label: '검토 필요', cls: 'sim-verdict-moderate', tip: '유사율 ' + verdictBoundLow + '~' + verdictBoundHigh + '% 구간' };
+                return                                { label: '양호',      cls: 'sim-verdict-good',     tip: '유사율 ' + verdictBoundLow + '% 미만' };
+            }
+
             // 수동 제외 사유 카테고리 (UI 라벨 + 내부 키)
             var SIM_USER_EXCLUDE_REASONS = [
                 { key: 'table_noise',       label: '테이블 추출 잡음', hint: '기호·단위·짧은 셀 파편 등' },
@@ -2491,24 +2526,10 @@
                     + ' <button type="button" class="sim-score-info" data-action="show-score-help"'
                     + ' title="점수 산출 기준 보기" aria-label="점수 산출 기준">ⓘ</button>'
                     + '</div>';
-                // 판정 라벨 (5단계 신호등은 simRecomputeFromSettings 에서 최종 갱신되나 초기값도 v3 점수 기반)
-                // Plan-45 v3: 5단계 신호등 — SSOT verdict_bands 경유 (없으면 3단계 폴백)
-                // Plan-58: matchVerdictBand() 헬퍼 사용 (사각지대 0 + 백엔드 _compute_verdict_band 와 정합)
-                var verdictLabel, verdictClass, verdictTip;
-                var bands = (simHelp && Array.isArray(simHelp.verdict_bands)) ? simHelp.verdict_bands : null;
-                var match = bands ? matchVerdictBand(scoreVal, bands) : null;
-                if (match) {
-                    verdictLabel = match.label;
-                    verdictTip = '유사율 ' + match.range_min + (match.range_min === match.range_max ? '%' : '~' + match.range_max + '%') + ' — ' + (match.meaning || '');
-                    var classMap = { blue: 'sim-verdict-blue', green: 'sim-verdict-good', yellow: 'sim-verdict-yellow', orange: 'sim-verdict-orange', red: 'sim-verdict-warning' };
-                    verdictClass = classMap[match.color] || 'sim-verdict-moderate';
-                } else {
-                    // Plan-50 Phase 3: simHelp 미로드 fallback — v3 5단계 임계와 정합 (25/74).
-                    if (scoreVal >= verdictBoundHigh) { verdictLabel = '위험'; verdictClass = 'sim-verdict-warning'; verdictTip = '유사율 ' + verdictBoundHigh + '% 이상'; }
-                    else if (scoreVal >= verdictBoundLow) { verdictLabel = '검토 필요'; verdictClass = 'sim-verdict-moderate'; verdictTip = '유사율 ' + verdictBoundLow + '~' + verdictBoundHigh + '% 구간'; }
-                    else { verdictLabel = '양호'; verdictClass = 'sim-verdict-good'; verdictTip = '유사율 ' + verdictBoundLow + '% 미만'; }
-                }
-                html += '<div class="sim-verdict ' + verdictClass + '">' + verdictLabel + ' <span class="tooltip-icon" data-tooltip="' + verdictTip + '">?</span></div>';
+                // 판정 라벨 — Plan-59: resolveVerdict() 헬퍼로 단일화 (첫 렌더 + simRecomputeFromSettings 공통).
+                // 재계산 시점에도 동일 로직으로 라벨/색/툴팁 재산출되므로 stale 가능성 0.
+                var v = resolveVerdict(scoreVal);
+                html += '<div class="sim-verdict ' + v.cls + '">' + v.label + ' <span class="tooltip-icon" data-tooltip="' + v.tip + '">?</span></div>';
 
                 // 7지표 표지 카드 (Copyleaks 샘플 리포트 양식)
                 html += '<div class="sim-indicators" role="list">';
@@ -5304,8 +5325,13 @@
                     // 호환: 기존 3단계 verdict (보고서 외 코드용)
                     // Plan-50 Phase 3: verdict_legacy 는 v3 verdict_label 의 안전망 fallback 으로만 사용.
                     // 백엔드 verdict_label (v3 기반) 이 항상 채워지므로 보고서에서 실사용 빈도 0 에 가까움.
-                    payload.verdict_legacy = payload.score >= verdictBoundHigh ? '위험'
-                        : (payload.score >= verdictBoundLow ? '검토 필요' : '양호');
+                    // Plan-59 (F-58-1): 5단계 → 3단계 결정론적 매핑. 옛 `>= verdictBoundHigh(74)` 가 백엔드 75 와 1 off.
+                    // blue/green → 양호, yellow/orange → 검토 필요, red → 위험. matchBand 미존재 시 옛 분기 fallback.
+                    var legacyMap = { blue: '양호', green: '양호', yellow: '검토 필요', orange: '검토 필요', red: '위험' };
+                    payload.verdict_legacy = matchBand
+                        ? (legacyMap[matchBand.color] || '양호')
+                        : (payload.score >= verdictBoundHigh ? '위험'
+                            : (payload.score >= verdictBoundLow ? '검토 필요' : '양호'));
                     // Plan-50 hotfix1 (C-1): Phase 2 에서 var tiers 삭제 시 본 라인 정리 누락 → ReferenceError.
                     // summary.tiers 직접 참조로 복구 (Phase 1 적용 후 백엔드 tiers 가 v3 점수 기반).
                     payload.tiers = summary.tiers || {};
