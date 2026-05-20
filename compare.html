@@ -2414,6 +2414,19 @@
                 return { score: score, counts: counts, excluded: excluded, totalSentences: totalSentences };
             }
 
+            // Plan-58: SSOT verdict_bands 매칭 — 표준 패턴 (하한 inclusive, 상한 = 다음 밴드 range_min, exclusive).
+            // 백엔드 similarity_engine._compute_verdict_band() 와 정합. 정수 경계의 소수점 점수 사각지대 없음.
+            // 기존 `find(s>=min && s<=max) || bands[last]` 패턴은 0.9·24.5·49.9·74.9 등이 red 폴백되는 결함.
+            function matchVerdictBand(score, bands) {
+                if (!Array.isArray(bands) || !bands.length) return null;
+                if (score <= bands[0].range_min) return bands[0];
+                for (var i = 1; i < bands.length; i++) {
+                    var next = bands[i + 1];
+                    if (!next || score < next.range_min) return bands[i];
+                }
+                return bands[bands.length - 1];
+            }
+
             // 수동 제외 사유 카테고리 (UI 라벨 + 내부 키)
             var SIM_USER_EXCLUDE_REASONS = [
                 { key: 'table_noise',       label: '테이블 추출 잡음', hint: '기호·단위·짧은 셀 파편 등' },
@@ -2480,10 +2493,11 @@
                     + '</div>';
                 // 판정 라벨 (5단계 신호등은 simRecomputeFromSettings 에서 최종 갱신되나 초기값도 v3 점수 기반)
                 // Plan-45 v3: 5단계 신호등 — SSOT verdict_bands 경유 (없으면 3단계 폴백)
+                // Plan-58: matchVerdictBand() 헬퍼 사용 (사각지대 0 + 백엔드 _compute_verdict_band 와 정합)
                 var verdictLabel, verdictClass, verdictTip;
                 var bands = (simHelp && Array.isArray(simHelp.verdict_bands)) ? simHelp.verdict_bands : null;
-                if (bands) {
-                    var match = bands.find(function(b) { return scoreVal >= b.range_min && scoreVal <= b.range_max; }) || bands[bands.length - 1];
+                var match = bands ? matchVerdictBand(scoreVal, bands) : null;
+                if (match) {
                     verdictLabel = match.label;
                     verdictTip = '유사율 ' + match.range_min + (match.range_min === match.range_max ? '%' : '~' + match.range_max + '%') + ' — ' + (match.meaning || '');
                     var classMap = { blue: 'sim-verdict-blue', green: 'sim-verdict-good', yellow: 'sim-verdict-yellow', orange: 'sim-verdict-orange', red: 'sim-verdict-warning' };
@@ -5277,14 +5291,10 @@
                     // Plan-50 hotfix1 (W-5): verdict 도 payload.score (v3, 수동 제외 반영) 기반 재계산.
                     // 백엔드 summary.verdict 는 검사 시점의 점수 기준이라 수동 제외 후 stale.
                     // simHelp.verdict_bands SSOT 우선, 없으면 백엔드 응답 fallback.
+                    // Plan-58: matchVerdictBand() 헬퍼 사용 (사각지대 0 + 백엔드 _compute_verdict_band 와 정합)
                     var simV3Bands = (typeof simHelp !== 'undefined' && simHelp && Array.isArray(simHelp.verdict_bands)) ? simHelp.verdict_bands : null;
-                    if (simV3Bands) {
-                        var matchBand = null;
-                        for (var _bi = 0; _bi < simV3Bands.length; _bi++) {
-                            var _b = simV3Bands[_bi];
-                            if (payload.score >= _b.range_min && payload.score <= _b.range_max) { matchBand = _b; break; }
-                        }
-                        if (!matchBand) matchBand = simV3Bands[simV3Bands.length - 1];
+                    var matchBand = simV3Bands ? matchVerdictBand(payload.score, simV3Bands) : null;
+                    if (matchBand) {
                         payload.verdict = matchBand.color || '';
                         payload.verdict_label = matchBand.label || '';
                     } else {

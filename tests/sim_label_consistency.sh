@@ -40,6 +40,7 @@ EXCLUDE_PATHS=(
     "workbench"
     "tests/sim_label_consistency.sh"
     "tests/sim_phase2_test.js"
+    "tests/sim_verdict_band_test.js"
     ".claude"
     "node_modules"
 )
@@ -190,6 +191,33 @@ for p in "${threshold_patterns[@]}"; do
     done
     if [ "$cnt" -gt 0 ]; then
         echo "  FAIL T1-legacy: \"$p\" ${cnt}건 발견 (Plan-45 v3 5단계: 25/49/74)"
+        FAIL=1
+    fi
+done
+
+# ─────────────────────────────────────────────────────────────
+# T2-band-deadzone — Plan-58: verdict_bands 양방향 비교 안티패턴 금지
+# 정수 경계 사이의 소수점 점수 (0.x / 24.x / 49.x / 74.x) 가 red 폴백되는
+# 결함이 발생. matchVerdictBand() 헬퍼 사용 필수 (compare.html:2417~).
+# ─────────────────────────────────────────────────────────────
+echo "[T2-band-deadzone] verdict_bands 양방향 비교 안티패턴 검사..."
+# rg-like grep — '>= b.range_min' 와 '<= b.range_max' 가 같은 줄에 공존하면 안티패턴
+band_antipatterns=(
+    ">= .*\.range_min.*<= .*\.range_max"
+    "bands\.find.*range_min.*range_max"
+)
+for p in "${band_antipatterns[@]}"; do
+    cnt=0
+    for tp in "${TARGET_PATHS[@]}"; do
+        if [ -e "$tp" ]; then
+            c=$(grep -rnE --include="*.html" --include="*.js" --include="*.py" \
+                $EXCLUDE_GREP \
+                "$p" "$tp" 2>/dev/null | wc -l || true)
+            cnt=$((cnt + c))
+        fi
+    done
+    if [ "$cnt" -gt 0 ]; then
+        echo "  FAIL T2-band-deadzone: \"$p\" ${cnt}건 발견 (Plan-58: matchVerdictBand() 헬퍼 사용)"
         FAIL=1
     fi
 done
