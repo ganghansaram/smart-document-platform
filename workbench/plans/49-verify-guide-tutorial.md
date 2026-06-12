@@ -310,7 +310,7 @@ Phase 1에서 만든 13종 (`po-quickstart`, `po-scenario-card`, `po-hotspot*`, 
 ### Step 6 — 사용자 시각 검증
 - 사용자 직접 가이드 페이지 열어 확인
 - 피드백 → hotfix 반영
-- 통과 후 `done-49-` 접두어로 전환
+- 통과 후 `done/49-…` 로 이동 (README 규약)
 
 ---
 
@@ -384,9 +384,9 @@ Phase 1에서 만든 13종 (`po-quickstart`, `po-scenario-card`, `po-hotspot*`, 
 - `css/content.css:1174~1500` — 기존 `.po-*` 컴포넌트
 - `data/help/similarity-help.json` — Plan-45 SSOT (라벨 출처)
 - `memory/theme-guide.md` — 디자인 시스템 기준
-- `workbench/plans/done-45-similarity-label-unification.md` — 4 카테고리 v3 어휘
-- `workbench/plans/done-47-modal-AB-refinement.md` — 모달 패턴 (글로서리 표 컬럼 폭 학습)
-- `workbench/plans/done-48-similarity-minimap-improvement.md` — 색상 토큰 통일
+- `workbench/plans/done/45-similarity-label-unification.md` — 4 카테고리 v3 어휘
+- `workbench/plans/done/47-modal-AB-refinement.md` — 모달 패턴 (글로서리 표 컬럼 폭 학습)
+- `workbench/plans/done/48-similarity-minimap-improvement.md` — 색상 토큰 통일
 
 ### 외부 (디자인 영감)
 - Stripe Docs: 좌 TOC + 우 본문 + 5분 시작
@@ -402,7 +402,7 @@ Phase 1에서 만든 13종 (`po-quickstart`, `po-scenario-card`, `po-hotspot*`, 
 
 1. ✅ **§6 결정 시트 확정 완료 (2026-04-26)** — 사용자 사용 목적(사내 문서 작성 시 사내·외부 문서 유사 회피, 공개·배포 전 점검) 기반으로 전문가 판단 확정
 2. ⏩ **Phase 1 즉시 착수** — Step 1 (CSS 13종) → Step 2 (HTML 재작성) → Step 3 (핫스팟 좌표) → Step 4 (reviewer) → Step 5 (Playwright 검증)
-3. 사용자 시각 검증 → hotfix → `done-49-` 전환
+3. 사용자 시각 검증 → hotfix → `done/49-…` 이동
 
 ### 진행 원칙
 - 본 시범의 성패 기준: **현업 1명이 가이드만 보고 첫 검사를 5분 내 완료 가능**

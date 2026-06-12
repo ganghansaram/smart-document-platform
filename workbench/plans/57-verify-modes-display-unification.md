@@ -1034,7 +1034,7 @@ function renderValidationHighlights(issues) {
 
 **보고서 + done- 처리**:
 - `workbench/reports/plan-57-feedback.md` — Critical 3건 + Warning 5건 모두 해결 확인
-- `workbench/plans/57-...md` → `done-57-...md` 리네임
+- `workbench/plans/57-...md` → `workbench/plans/done/57-...md` 이동
 
 **완료 기준**: 첫 모드 진입 시 토스트 노출 (Playwright), history 신규 entry 에 `schema_version: 2`, 가이드/문서 갱신 commit, 계획서 done- 처리.
 
@@ -1122,7 +1122,7 @@ function renderValidationHighlights(issues) {
 | `tests/verify/verify_validation_unit_test.py` | 신규 | 5 케이스 (Phase 5) |
 | `workbench/screenshots/plan57-{before,after}-*.png` | 신규 | 시각 증거 |
 | `workbench/reports/plan-57-feedback.md` | 신규 | 검증 보고서 (Critical 3건 + Warning 5건 해결 확인) |
-| `workbench/plans/done-57-...md` | 신규 (rename) | 본 계획서 완료 처리 |
+| `workbench/plans/done/57-...md` | 이동 (mv) | 본 계획서 완료 처리 |
 | `docs/11-VERIFY-SYSTEM.md` | 변경 | 통합 파이프라인 + Block AST 명시 |
 | `contents/guide/verify-guide.html` | 변경 | 시각 일관성 1문단 |
 

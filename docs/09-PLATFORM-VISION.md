@@ -343,7 +343,7 @@ Verify + Author 추가 시 (2026 Q2~Q3)
 - **Author 연계**: Author에서 생성한 초안을 Verify로 보내 원문 대비 유사도/규칙 검사.
 - **잔여 고도화**: TND 분석, 캘리브레이션, suppress 기능, 프리셋 확장 (backlog)
 
-상세: `workbench/plans/done-23-compare-enhancement.md`
+상세: `workbench/plans/done/23-compare-enhancement.md`
 
 ### 6.3 Translator + Notebook — PDF 번역 · 개인 지식 저장소
 
@@ -927,12 +927,12 @@ Plan-23 Phase 0~5 핵심 완료.
 
 | 문서 | 위치 | 내용 |
 |------|------|------|
-| Plan 23: Verify(Compare) 고도화 | `workbench/plans/done-23-compare-enhancement.md` | 5모드 허브, 유사도(Winnowing+bge-m3), 21종 규칙, 스코어링, 내보내기 |
+| Plan 23: Verify(Compare) 고도화 | `workbench/plans/done/23-compare-enhancement.md` | 5모드 허브, 유사도(Winnowing+bge-m3), 21종 규칙, 스코어링, 내보내기 |
 | Plan 24: Author 시스템 | `workbench/plans/24-author-system.md` | 구조화 문서 합성, 비교 매트릭스, 초안 생성 |
-| Plan 27: Docker 컨테이너화 | `workbench/plans/done-27-docker-migration.md` | Nginx 리버스 프록시, 폐쇄망 단일 포트 |
-| Plan 30: 관리자 설정 정비 | `workbench/plans/done-30-docker-settings-cleanup.md` | 업계 표준 콘솔, AI 모델 전역화 |
-| Plan 31: Docker Parity | `workbench/plans/done-31-docker-parity.md` | bind mount, parity 체크, config 동기화 |
-| Plan 37: Converter 통합 | `workbench/plans/done-37-converter-unification.md` | 엔진 SSOT + 전처리 어댑터 체인, NumberingResolver, STYLEREF+SEQ |
+| Plan 27: Docker 컨테이너화 | `workbench/plans/done/27-docker-migration.md` | Nginx 리버스 프록시, 폐쇄망 단일 포트 |
+| Plan 30: 관리자 설정 정비 | `workbench/plans/done/30-docker-settings-cleanup.md` | 업계 표준 콘솔, AI 모델 전역화 |
+| Plan 31: Docker Parity | `workbench/plans/done/31-docker-parity.md` | bind mount, parity 체크, config 동기화 |
+| Plan 37: Converter 통합 | `workbench/plans/done/37-converter-unification.md` | 엔진 SSOT + 전처리 어댑터 체인, NumberingResolver, STYLEREF+SEQ |
 | Verify 시스템 상세 | `docs/11-VERIFY-SYSTEM.md` | 비교·유사도·규칙 검증 통합 기술 문서 |
 | Converter 아키텍처 | `docs/13-CONVERTER-ARCHITECTURE.md` | DOCX→HTML 변환 엔진·전처리·Provenance |
 | 배포 가이드 | `docs/01-DEPLOYMENT-GUIDE.md` | 환경 3종(개발 PC · 회사 Linux · 회사 Windows) 통합 가이드 |

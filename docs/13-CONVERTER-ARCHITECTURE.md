@@ -373,7 +373,7 @@ find /tmp -name 'preprocessed_*.docx_1' -mtime +1 -delete
 
 ## 참고 문서
 
-- `workbench/plans/done-37-converter-unification.md` — 통합 작업 전체 이력
+- `workbench/plans/done/37-converter-unification.md` — 통합 작업 전체 이력
 - `workbench/plans/backlog.md` — 알려진 이슈·개선 백로그
 - `tools/docx2html-standalone/README.md` — 외부 업체용 EXE 사용법
 - `tools/docx2html-standalone/email-draft.md` — 배포 공지 템플릿

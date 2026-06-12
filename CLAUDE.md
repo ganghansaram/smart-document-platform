@@ -97,6 +97,16 @@ python -m http.server 8080            # http://localhost:8080
 3. **과도한 엔지니어링 금지** — 요청된 범위만 구현
 4. **커밋은 요청 시에만** — 자동 커밋 금지, 규칙은 `.claude/skills/commit` 참조
 
+## 계획서(Workbench) 관리
+- **인덱스 SSOT**: `workbench/plans/README.md` — 전 계획의 상태·위치 단일 출처. 계획 위치를 찾을 땐 여기부터.
+- **상태 = 폴더**: 활성 `plans/*.md` · 완료 `plans/done/` · 보류 `plans/icebox/` (옛 `done-` 접두어 폐기, 폴더로 대체)
+- **완료 처리 (계획 종료 시 항상 수행)**:
+  1. 헤더 `상태:` → `✅ 완료 (요약)` 갱신
+  2. `git mv NN-제목.md done/NN-제목.md`
+  3. `plans/README.md` 의 해당 행을 활성 → 완료 섹션으로 이동
+  4. 외부 문서(`docs/` 등)가 옛 경로 참조 시 `plans/done/NN-…` 로 정정
+- 보류 전환도 동일 (`git mv … icebox/` + README 이동). 상세는 README "디렉토리 규약" 참조.
+
 ## 유사도 분류 체계 (Plan-45 v3, Copyleaks 모방)
 
 ### 카테고리 (4) — 사용자 UI에 노출되는 분류 단위
