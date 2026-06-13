@@ -3,7 +3,7 @@
 > 작성일: 2026-05-20
 > 대상 시스템: Verify (`compare.html`)
 > 변경 범위: 프론트엔드 verdict 밴드 매칭 로직 2곳 + 공통 헬퍼 + JS 단위 테스트 + grep 가드
-> 상태: 계획 단계 (사용자 승인 후 진행)
+> 상태: ✅ 완료 (구현·테스트 반영 — `matchVerdictBand()` + `tests/sim_verdict_band_test.js`)
 
 ---
 

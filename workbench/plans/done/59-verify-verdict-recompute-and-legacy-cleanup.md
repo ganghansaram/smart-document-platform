@@ -3,7 +3,7 @@
 > 작성일: 2026-05-20
 > 대상 시스템: Verify (`compare.html`)
 > 변경 범위: 프론트엔드 `simRecomputeFromSettings()` 내 verdict 라벨 재갱신 + `payload.verdict_legacy` 임계 1 off 정정 + verdict 결정 로직 헬퍼 추출
-> 상태: 계획 단계 (사용자 승인 후 진행)
+> 상태: ✅ 완료 (구현·테스트 반영 — `resolveVerdict()` + `tests/sim_resolve_verdict_test.js`)
 > 선행: Plan-58 완료 (`matchVerdictBand()` 헬퍼 도입)
 
 ---
