@@ -5459,7 +5459,6 @@
                     + '.match-user-excluded .match-header::after { content: " · 수동 제외"; color: #92400e; font-weight: 600; font-size: 10px; }'
                     + '.user-excl-summary { margin: 4px 0 10px; padding: 6px 10px; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 3px; font-size: 10.5px; color: #92400e; }'
                     + '.user-excl-summary strong { color: #78350f; }'
-                    + '.score-original-note { font-size: 10.5px; color: #92400e; margin-top: 4px; }'
                     + '.sheet { break-after: page; page-break-after: always; }'
                     + '.sheet:last-of-type { break-after: auto; page-break-after: auto; }'
                     + '.sheet-label { display: inline-block; font-size: 10px; font-weight: 600; color: #666; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; padding: 2px 8px; background: #eef2f6; border-radius: 3px; }'
@@ -5515,12 +5514,9 @@
                     + '<div>'
                     + '<div class="score-meta-label">' + escapeHTML(p.verdict_label || p.verdict_legacy || '—') + '</div>'
                     + '<div class="score-meta-line">전체 ' + p.total_sentences + '문장</div>';
-                // 수동 제외 반영 표시 (투명성)
-                var uex = p.user_exclusions || { count: 0 };
-                if (uex.count > 0 && p.score_original !== undefined && p.score_original !== p.score) {
-                    // Plan-50 Phase 2: "원점수" → "수동 제외 전" (의미 명확화)
-                    html += '<div class="score-original-note">수동 제외 전 ' + p.score_original + '% · 수동 제외 ' + uex.count + '건 반영</div>';
-                }
+                // Plan-60: ② 점수 및 판정 란의 "수동 제외 전 …" 각주 비표시 (현업 요청).
+                //   계산(payload.score / score_original / user_exclusions)은 그대로 — 표기만 제거.
+                //   상세 수동 제외 내역은 매칭표·전용 요약(user-excl-summary)에서 계속 제공.
                 html += '</div></div>';
 
                 // Plan-45 Phase 5: 매칭을 카테고리로 집계 (SSOT 경유)
