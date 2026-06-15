@@ -29,7 +29,7 @@
 |---|------|------|------|
 | 49 | Verify 가이드 튜토리얼화 | 🟡 Phase 1 완료 / Phase 2 진행 | 유사도 모드 완료, 비교 모드 진행 중 |
 | 57 | Verify 비교/검증 모드 뷰 통일 | ⬜ 미착수 (대작 ~11.75일) | 4차 design-review 통과, 착수 결정 대기 |
-| 60 | Explorer WYSIWYG 편집기 (Toast UI · 방향 A) | 🟡 Phase 0 PoC ✅ / Phase 1 대기 | 선행 결정 전부 확정. 무빌드 폐쇄망 드롭인 검증 완료. soft lock 채택. 다음=베이스라인→Phase 1 |
+| 60 | Explorer WYSIWYG 편집기 (드롭인 MD · 방향 A) | 🟡 Phase 0 PoC ✅ / Phase 1 대기 | TipTap 재검토→불채택(실시간·망연계 없음). 편집기 후보 Toast UI/Crepe. soft lock + 담당자 소유권(소유자·편집권·위임). 다음=베이스라인→Phase 1 |
 
 ## ❄️ 보류 (Icebox — 설계·로드맵·트리거 대기)
 
