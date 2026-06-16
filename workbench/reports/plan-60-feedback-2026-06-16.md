@@ -1,6 +1,6 @@
 # Plan-60 실행 피드백 — Explorer WYSIWYG 편집기 (Phase 0 PoC)
 
-> 실행일 2026-06-16 · 실행자 Claude (/plan-execute) · 대상 계획서 `workbench/plans/60-explorer-wysiwyg-editor.md`
+> 실행일 2026-06-16 · 실행자 Claude (/plan-execute) · 대상 계획서 `workbench/plans/60-doc-authoring-export.md` (당시 파일명 `60-explorer-wysiwyg-editor.md`, 2026-06-16 통합 재정립 시 개명)
 > 범위: 선행 결정 확정 마무리(MD 저장 경로) + **Phase 0 PoC** (Toast UI 폐쇄망 드롭인 + MD↔WYSIWYG 토글 동작 검증)
 
 ## 요약

@@ -1,7 +1,34 @@
-# Plan-60 — Explorer 문서 편집기 WYSIWYG 모드 도입
+# Plan-60 — 통일 양식 기반 문서 저작·내보내기 플랫폼
 
-> **상태: 🟢 확정 — 착수 대기 (구현 미착수)**
-> 작성: 2026-06-15 · 확정: 2026-06-15 · 트리거: "플랫폼을 일반 엔지니어용 문서 작성·공유 공간으로 확장" 요구
+> **상태: 🟡 Phase 0 PoC 완료 / Phase 1(공통 계약) 대기**
+> 작성: 2026-06-15 · 통합 재정립: 2026-06-16 · 트리거: "플랫폼을 일반 엔지니어용 문서 작성·공유 공간으로 확장" + AAM 양사 공동 저작 검토
+>
+> **📌 통합 이력 (2026-06-16)**: 구 "Explorer WYSIWYG 편집기"(저작)와 "통일 양식·DOCX 내보내기"(조사)를 **하나의 계획으로 통합**.
+> 사유: 두 축이 **"통일 양식·콘텐츠 모델"이라는 공통 계약으로 강결합** — 따로 두면 양식을 두 번 설계하고 서로 어긋남. 아직 실코드 통합 전이라 지금이 합치기 가장 싼 시점.
+> 두 기둥: **(A) 저작** = 마크다운 웹 편집기(§1~6-B) · **(B) 내보내기·양식** = Pandoc DOCX + reference.docx(§6-C). 공통 계약(통일 양식 사양)은 **Phase 1 선행**에서 확정.
+> 조사 근거: `workbench/reports/doc-authoring-export-research-2026-06-16.md`
+
+## 🧭 현황 한눈에 (Status Dashboard)
+> 최종 갱신 2026-06-16 · 상세 체크리스트는 ↓ [진행 상태](#-진행-상태-progress-tracker)
+>
+> **🔑 성격 = 교체 아닌 "추가".** 기존 편집기(Monaco·HTML)·업로드 문서는 **그대로 유지·무이동**. 신규 마크다운 편집기는 **앞으로 새로 쓰는 문서에만** 적용(편집기 2개 공존). 기존 매뉴얼을 MD로 옮기지 않음(lossy 방지).
+
+| 단계 | 내용 | 상태 | 비고 |
+|------|------|:----:|------|
+| **Phase 0** | 편집기 드롭인 PoC | ✅ 완료 | Toast UI 폐쇄망 검증 (`poc-tui-editor.html`) |
+| **Phase 1** | 통일 양식 사양 + 내보내기 충실도 PoC【공통 계약】 | 🚧 **다음** | 최우선 선행 — A·B 양축의 입력 |
+| **Phase 2** | 저작 경로 구현 (A: 편집기·저장·soft lock·소유권) | ⬜ 대기 | Phase 1 사양 확정 후 |
+| **Phase 3** | DOCX 내보내기 (B: Pandoc + reference.docx) | ⬜ 대기 | Phase 1 충실도 결과 반영 |
+| **Phase 4** | 폴더·메뉴·테스트·회귀 | ⬜ 대기 | — |
+
+| 핵심 확정 | 값 |
+|------|------|
+| 편집기 | 드롭인 MD (Toast UI ↔ Crepe 택1 @Phase1) · **TipTap 불채택** |
+| 콘텐츠 | 마크다운(.md) SSOT · 서빙 marked+DOMPurify |
+| 내보내기 | Pandoc + reference.docx → DOCX (폐쇄망 백엔드 동봉) |
+| 동시편집 | soft lock + 담당자 소유권(소유자·편집권·위임) |
+| 빌드 | 무빌드 원칙 (Crepe 시 1회 빌드 완화 허용) |
+| 미해결 | 통일 양식 사양 · 편집기 택1 · 충실도(병합표·수식) — 전부 **Phase 1** |
 
 ## ✅ 확정 사항 (2026-06-15 사용자 승인)
 | 결정 | 확정 내용 |
@@ -11,51 +38,53 @@
 | **빌드 제약** | **무빌드 원칙** (완제품 드롭인) → TipTap 등 헤드리스 배제. 단 Crepe 채택 시 "1회 빌드+벤더링"(Monaco 선례) 완화 허용 |
 | **동시 편집** | **Soft Lock + 담당자 소유권** — presence + 낙관적 저장 검사(ETag) / 충돌 시 비교·합치기·사본·덮어쓰기. **담당자(소유자 1인 + 편집권 + 위임 + 관리자 재지정)**. 배타 잠금·실시간 협업 제외 |
 | **콘텐츠 포맷** | 신규 = 마크다운(`.md`), 서빙/검색/RAG 는 기존 marked+html_to_text 경로 재사용 |
+| **내보내기·양식** | **마크다운 SSOT → Pandoc + `reference.docx`(통일 양식 1벌) → DOCX**. Pandoc 정적 바이너리 백엔드 동봉(폐쇄망). "내보내고 워드에서 다듬어 제출" 흐름(병합표·수식 충실도 한계). 통일 양식 사양은 **Phase 1 선행 확정**. (§6-C) |
 
-> 남은 미세 결정(진입 위치·공유 모델·잠금 소급 범위)은 §7 참조 — Phase 0 사전 단계에서 확정.
+> 착수 전 미세 결정은 전부 확정(§7). **남은 핵심 선행 = "통일 양식 사양 + 내보내기 충실도 PoC"(Phase 1) — 저작·내보내기 공통 계약.**
 
 ---
 
 ## 📋 진행 상태 (Progress Tracker)
-> 단일 진행 현황. 단계 완료 시 `[ ]`→`[x]` + 날짜 기입. 상세는 각 절(§) 참조. 최종 갱신: 2026-06-16
+> 단일 진행 현황. 단계 완료 시 `[ ]`→`[x]` + 날짜. 통합(저작+내보내기) 후 단계 재편. 최종 갱신: 2026-06-16
 
-### 🚧 선행 — 착수 전 확정 (Phase 0-사전 · 잔여 미세결정 §7)
-- [x] **진입 위치** 확정 (2026-06-15): **공통 모달 단일안** — 기존 `editor-modal` 셸 재사용, 신규 저작 시 풀스크린 기본 (전용 페이지 신설 안 함, §6)
-- [x] **공유 모델** 확정 (2026-06-16): **v1 최소형** — `contents/` 공유 공간 + 전역 RBAC, 신규 권한 개념 0. 메뉴 배치 = **(가) admin 큐레이션**(전용 "작성 문서" 폴더 → admin이 메뉴 편입) (§7)
-- [x] **잠금 소급 범위** 확정 (2026-06-16): **기존 Explorer 에도 소급** — soft lock 공통 적용 (§7)
-- [x] **MD 저장 경로 분기** 확정 (2026-06-16): 신규 MD 는 **신규 엔드포인트 필요** — 현 `save_document` 는 ①파일 미존재 시 404(생성 불가) ②`prettify_html` 강제(MD 손상). → `POST /api/documents`(생성) + MD-safe 저장(prettify 우회, raw `.md`). HTML 웹북용 `save_document` 는 불변. (§6 검증 반영)
-- [ ] **베이스라인 캡처**: 현행 인벤토리·스크린샷·대표문서 코퍼스·작성 소요시간 + 체크리스트 3종 (§6-B) — *미완(Phase 1 착수 전 수행)*
-
-### Phase 0 — PoC (0.5d) ✅ 완료 (2026-06-16)
+### Phase 0 — 편집기 드롭인 PoC ✅ 완료 (2026-06-16)
 - [x] Toast UI UMD 번들 폐쇄망 드롭인 (`js/lib/tui-editor/`, **3.2.2 동결**, 700KB) — `poc-tui-editor.html`
 - [x] Markdown ↔ WYSIWYG 토글 동작 확인 (CDN 0접속·콘솔 0에러·`.md` 왕복 직렬화·한국어 i18n 검증)
-  - ⚠️ 발견: npm `@toast-ui/editor` `toastui-editor.js` 는 ProseMirror 외부화 → 무빌드 불가. **NHN uicdn `-all.min.js`(ProseMirror 내장)만 드롭인 가능** (피드백 보고서 참조)
+  - ⚠️ 발견: npm `@toast-ui/editor` `toastui-editor.js` 는 ProseMirror 외부화 → 무빌드 불가. **NHN uicdn `-all.min.js`(ProseMirror 내장)만 드롭인 가능**
   - ⚠️ Phase 2 이월: 에디터 본문 다크 테마 미브리지 (셸만 토큰 적용)
 
-### Phase 1 — 신규 작성 경로
-- [ ] `EditorEngine` 선택 레이어 (Monaco | ToastUI), 모달/저장 훅 공유
-- [ ] 신규 작성 화면 + `.md` 저장
-- [ ] MD 서빙(marked+DOMPurify) 연결
+### 🚧 Phase 1 — 통일 양식 사양 + 내보내기 충실도 PoC【공통 계약·최우선 선행】
+> 저작(B축)과 내보내기(B축)의 **공통 계약**. 결과가 콘텐츠 모델·편집기 설계를 확정 → Phase 2·3 의 입력.
+- [ ] **베이스라인·대표문서 코퍼스**: 단순/표/수식/이미지 포함 샘플 N개 고정 + 현행 인벤토리·작성 소요시간 (§6-B)
+- [ ] **Pandoc + reference.docx 충실도 PoC** (우리 샘플) → 병합표·수식·표지/머리글 충실도 + "다듬기 공수" 정량화 (§6-C). 우리 Converter(OMML→MathML·표병합) 후처리 보강 가능성도 검토
+- [ ] **통일 양식 사양 정의**: 섹션 스키마 · 헤딩/스타일 규칙 · reference.docx 스타일 매핑 · custom-style 마커 필요성 → **콘텐츠 모델 확정**
+- [ ] **편집기 최종 택1**: Toast UI(드롭인·노후) vs Milkdown Crepe(유지보수·1회 빌드) — 충실도/공수 근거로
 
-### Phase 2 — 통합 · 동시편집 방어
-- [ ] 디자인 토큰 매핑 + 다크모드 브리지
-- [ ] RBAC (editor/admin)
-- [ ] 검색/RAG 연결 (신규 MD → `html_to_text` → 인덱스)
-- [ ] **soft lock**: 편집 중 표시(presence) + 낙관적 저장 검사(ETag/If-Match) (§6-A)
-- [ ] 충돌 UX: 비교·합치기 / 사본 저장 / 덮어쓰기
+### Phase 2 — 저작 경로 구현 (A축)
+- [ ] `EditorEngine` 선택 레이어 (Monaco | 드롭인MD), 공통 모달·저장 훅 공유 (§6)
+- [ ] **통일 양식 템플릿 프리필** (Phase 1 사양 반영) + 신규 작성(공통 모달·풀스크린 기본)
+- [ ] `.md` 저장 (`POST /api/documents`, MD-safe) + MD 서빙(marked+DOMPurify) 연결
+- [ ] 디자인 토큰 매핑 + 다크모드 브리지 + RBAC(editor/admin) + 검색/RAG 연결
+- [ ] **soft lock + 담당자 소유권**: presence + 낙관적 저장 검사(ETag) / 소유자·편집권·위임·관리자 재지정 (§6-A)
 
-### Phase 3 — 마무리
+### Phase 3 — DOCX 내보내기 파이프라인 (B축)
+- [ ] 백엔드(FastAPI)에 **Pandoc 단일 바이너리 동봉** (폐쇄망, subprocess)
+- [ ] `POST /api/export {md, format}` + **`reference.docx`(통일 양식 1벌)** 일괄 적용
+- [ ] custom-style 주입/후처리 (Phase 1 사양) + "내보내고 워드 다듬어 제출" 안내 UX (§6-C)
+
+### Phase 4 — 마무리
 - [ ] "작성 문서" 폴더 + admin 메뉴 편입 흐름 (공유 모델 v1 최소형)
-- [ ] 사용자 테스트
-- [ ] Monaco 경로 회귀 검증
+- [ ] 사용자 테스트 · Monaco 경로 회귀 검증
 
 ---
 
 ## 0. 한 줄 요약
 
-현재 Explorer 편집기(Monaco · **원본 HTML 직접 편집**)는 비전문가에게 진입장벽이 높다.
-→ **일반 엔지니어용 "신규 문서 작성 경로"를 Toast UI Editor(마크다운↔WYSIWYG 토글, 무빌드 드롭인)로 추가**한다.
-기존 변환 웹북(복잡 HTML)은 Monaco 유지로 안전 보존. 동시 편집은 **soft lock(편집 중 표시 + 낙관적 저장 검사) + 담당자 소유권(소유자 1인·편집권·위임)**으로 데이터 손실을 막고 책임을 명확히 한다.
+**워드 등 기존 문서 문화는 유지하되, "통일 양식"을 웹 편집기에 반영해 작성·관리하고, 내보내기로 DOCX 출력→다듬어→제출하는 협업 저작 공간을 만든다.**
+- **(A) 저작**: 일반 엔지니어가 **마크다운↔WYSIWYG(드롭인 편집기)** 로 새 문서를 쉽게 작성, `.md`(SSOT) 저장. 기존 변환 웹북(복잡 HTML)은 Monaco 유지로 안전 보존.
+- **(B) 내보내기·양식**: 마크다운 SSOT → **Pandoc + `reference.docx`(통일 양식 1벌)** → DOCX. 충실도 한계는 "워드 다듬기" 단계로 흡수(업계 표준 docs-as-code 흐름).
+- **동시 편집**: **soft lock(presence + 낙관적 저장 검사) + 담당자 소유권(소유자 1인·편집권·위임)** 으로 손실 방지 + 책임 명확화.
+- **공통 계약**: A·B 를 잇는 **"통일 양식 사양·콘텐츠 모델"** 은 Phase 1 에서 먼저 확정(이게 둘의 강결합 지점).
 
 ---
 
@@ -150,10 +179,9 @@
   | 무빌드 고수(드롭인만) | **Toast UI**(1순위) vs **Editor.js**(블록 트렌드) 택1 |
   | "1회 빌드 후 벤더링" 허용 | **TipTap** 또는 **Milkdown/Crepe**(트렌드·확장성·미래성 우위) |
 
-### Toast UI Editor 유지보수 실사 (리스크 점검)
-- 최신 **3.2.2 (2026-02-24)**, 3.2.0(2025-08), 3.1.8(2025-07) — **2026년까지 릴리스 지속**
-- open issue 다수(~574) = "성숙·저빈도 유지보수" 신호 (방치 아님)
-- MIT·자가호스팅·한국어 문서 → 폐쇄망 적합. **유지보수 리스크 中, 수용 가능**
+### Toast UI Editor 유지보수 실사 (리스크 점검) — 2026-06-16 정정
+- ⚠️ **정정**: 최종 릴리스 **3.2.2 / 2023-02** (PoC 번들 헤더 실측). 앞서 "2026-02" 기재는 오류. **사실상 유지보수 정체**.
+- MIT·자가호스팅·한국어 문서 → 폐쇄망 적합하나 **노후화 리스크 = 中~高**. 대안 **Milkdown Crepe(유지보수 중)** 를 Phase 1 에서 비교.
 - 보완: 우리가 특정 버전 번들을 `js/lib/` 에 고정 보관(Monaco 와 동일) → 업스트림 의존 최소화
 
 > 출처: github.com/nhn/tui.editor (releases), ui.toast.com/tui-editor, tiny.cloud, ckeditor.com docs
@@ -304,6 +332,36 @@
 ### 성공 지표
 - 도입률(신규 작성 중 신에디터 비율) · 작성 소요시간 ↓ · **충돌/데이터손실 0건** · 지원 문의 ↓
 
+## 6-C. 통일 양식 + DOCX 내보내기 (B축) — **통합 신설 (조사 2026-06-16)**
+> 상세 근거·출처: `workbench/reports/doc-authoring-export-research-2026-06-16.md` (deep-research, 22소스·25주장 교차검증)
+
+### 컨셉
+- 워드 등 **기존 문서 문화 유지**. 웹에서 **통일 양식으로 작성/관리 → 내보내기로 DOCX 출력 → 워드에서 다듬어 제출**.
+- 마크다운 **단일 원본(SSOT)** → 다중 출력(웹 HTML 서빙 + DOCX 제출본). 업계 표준 **docs-as-code / single-source authoring**.
+
+### 검증된 방식 — Pandoc + reference.docx (공식 MANUAL 교차검증)
+- `pandoc in.md -o out.docx --reference-doc=회사양식.docx` → 참조 문서의 **스타일·여백·머리글/바닥글을 일괄 적용**(본문 내용은 무시). **통일 양식을 reference.docx 한 벌로 관리**.
+- Pandoc = **정적 단일 바이너리**, 1회 다운로드 후 오프라인 동작, Win/Linux, GPL → **폐쇄망 적합**. 백엔드(FastAPI)에 동봉, subprocess 호출(별도 실행파일이라 GPL 비전염).
+- `custom-style`(div=단락/span=문자)로 내장 매핑 넘는 스타일 적용 가능 — 단 **스타일명 매칭 기반**.
+
+### 한계 → "다듬기 단계" 필수 (사용자 컨셉과 일치)
+- **병합표(rowspan/colspan)·복합 수식·표지/목차는 완전 충실하지 않음.** → 내보내기를 최종 제출본으로 보지 말 것.
+- 우리 **Converter(OMML→MathML·표 병합) 노하우로 후처리 보강 가능성** → Phase 1 PoC 에서 충실도·공수 정량화.
+
+### 비채택 (조사 근거)
+- **Notion식 블록 모델**: 마크다운이 native 저장 아닌 **lossy 내보내기** → 우리 마크다운 SSOT 확정과 충돌.
+- **DITA/Schematron 풀 스키마 강제**: 중량급 XML 저작·무빌드 위배 → **템플릿 골격 프리필 + 경량 누락 경고** 수준만 차용.
+
+### 아키텍처
+```
+[Toast UI 마크다운 저작] (통일 양식 템플릿 프리필)
+  → .md (SSOT, contents/ "작성 문서" 폴더)
+  ├ 웹 서빙: marked + DOMPurify → HTML  (Plan-60 A축, 기존 파이프라인)
+  └ 내보내기: POST /api/export → Pandoc --reference-doc=양식.docx → DOCX
+                                 → 사용자가 워드에서 다듬어 제출
+- 통일 양식 = data/ 에 reference.docx 한 벌 버전관리 + 편집기 템플릿 골격(쌍을 1개 사양으로 설계)
+```
+
 ## 7. 리스크 · 미해결 의사결정
 
 ### 리스크
@@ -317,6 +375,8 @@
 | **담당자 소유권 도입** | 편집권 한정·위임·재지정 로직 추가 | 영속 속성(세션 락 아님)으로 단순화, 관리자 재지정으로 부재 대응 (§6-A) |
 | **동시 수정(현재 방어 없음)** | 공유 시 데이터 손실 | soft lock(편집 중 표시 + 낙관적 저장 검사) + 충돌 시 비교·합치기(§6-A), 기존 경로 소급 |
 | **동시 저장 충돌 시 작업 좌절** | 공들인 수정이 저장 거부됨 | presence 배너로 사전 회피 + 거부 시 작업 보존·비교/합치기/사본 (폐기 강요 금지) |
+| **MD→DOCX 내보내기 충실도 미검증** | 병합표·수식·표지 깨짐 → 다듬기 공수 과다 가능 | Phase 1 충실도 PoC(우리 샘플)로 정량화 + Converter 후처리 보강 + "다듬기 단계" 명시 (§6-C) |
+| **저작·내보내기 양식 불일치** | 두 축이 따로 설계되면 어긋남 | **통일 양식 사양 1벌**(편집기 템플릿 ↔ reference.docx 스타일)을 Phase 1 공통 계약으로 단일 확정 |
 
 ### 확정된 결정 (2026-06-15~16)
 - ✅ 방향 **A** (신규 MD 작성 경로) · **무빌드 고수** · 콘텐츠 이원화(HTML 웹북 + MD 신규) 수용
@@ -328,23 +388,32 @@
   - **메뉴 배치 = (가) admin 큐레이션**: 신규 문서는 `contents/` 의 **전용 "작성 문서" 폴더**에 모이고, 좌측 메뉴 트리(`data/menu.json`) 편입은 **admin 권한 유지**(현 `menu.py` = `require_admin` 규칙 불변). editor 는 트리 직접 수정 불가 → drafts→published 흐름.
 - ✅ **잠금 소급 범위 (2026-06-16)**: **기존 Explorer 에도 소급** — soft lock(presence + If-Match)을 신규 MD/기존 Monaco·HTML **공통 적용**. 공통 모달 셸 공유 + `save_document` 단일 진입 덕에 한 번 추가로 양쪽 커버(신규에만 적용은 오히려 분기 추가). 기존 last-write-wins 갭도 동시 해소.
 - ✅ **MD 저장 경로 (2026-06-16, 코드 검증)**: 현 `save_document` 는 **파일 미존재 시 404(생성 불가) + `prettify_html` 강제(MD 손상)** → 신규 MD 는 **신규 엔드포인트**(`POST /api/documents` 생성 + MD-safe 저장). HTML 웹북 `save_document` 는 불변. 위치 = `contents/` "작성 문서" 폴더.
+- ✅ **내보내기·양식 (2026-06-16, 조사)**: 마크다운 SSOT → **Pandoc + `reference.docx`(통일 양식 1벌) → DOCX**, Pandoc 정적 바이너리 백엔드 동봉(폐쇄망). "내보내고 워드 다듬어 제출" 흐름. Notion 블록·DITA 강제 비채택. (§6-C)
+- ✅ **통합 (2026-06-16)**: 구 "Explorer WYSIWYG 편집기"(저작)와 "통일 양식·DOCX 내보내기"(조사)를 **본 계획 하나로 통합** — 공통 계약(통일 양식·콘텐츠 모델) 강결합 때문.
 
-### 잔여 미세 결정
-- (없음) — 착수 전 선행 결정 전부 확정 완료. Phase 0-사전(베이스라인 캡처)부터 진행 가능.
+### Phase 1 에서 확정할 설계 결정 (공통 계약)
+> 착수 전 미세 결정은 전부 확정. 아래는 **Phase 1(충실도 PoC 결과 기반)에서 확정**할 설계 항목 — 저작·내보내기 양축의 입력.
+1. **통일 양식 사양**: 섹션 스키마 · 헤딩/스타일 규칙 · reference.docx 매핑 · custom-style 마커 필요 범위
+2. **편집기 최종 택1**: Toast UI vs Milkdown Crepe (충실도·공수 근거)
+3. **양식 강제 수준**: 템플릿 골격 프리필만 vs 필수 섹션 누락 경고까지
+4. **custom-style 주입 방식**: raw HTML div/span 허용 vs 내보내기 후처리 매핑 (무빌드 제약 하)
 
 ---
 
-## 8. 단계 제안 (승인 시)
-- **Phase 0-사전 (베이스라인)**: 현행 인벤토리·스크린샷·대표문서 코퍼스·작성 소요시간 캡처 + 체크리스트 3종 확정 (전/후 비교 기준선)
-- **Phase 0 (PoC, 0.5d)**: Toast UI UMD 번들 폐쇄망 드롭인 + 빈 화면 토글 동작 확인
-- **Phase 1**: `EditorEngine` 선택 레이어 + 신규 작성(공통 모달·풀스크린 기본) + MD 저장/서빙 연결
-- **Phase 2**: 디자인 토큰 매핑 + 다크모드 + RBAC + 검색/RAG 연결 + **동시편집 방어(soft lock: presence + 낙관적 저장 검사) + 담당자 소유권(소유자·편집권·위임·관리자 재지정, §6-A)**
-- **Phase 3**: "작성 문서" 폴더 + admin 메뉴 편입 흐름(공유 모델 v1 최소형), 사용자 테스트, Monaco 경로 회귀 검증
+## 8. 단계 제안 (통합 후 재편 — 상세 체크는 상단 트래커)
+- **Phase 0 (완료)**: 편집기 드롭인 PoC — 폐쇄망 토글·`.md` 직렬화 검증 ✓
+- **Phase 1【공통 계약·최우선】**: 대표문서 코퍼스·베이스라인 + **Pandoc/reference.docx 충실도 PoC** + **통일 양식 사양 정의** + 편집기 최종 택1. → 콘텐츠 모델 확정(Phase 2·3 입력)
+- **Phase 2 (A 저작)**: `EditorEngine` 레이어 + 공통 모달 + 양식 템플릿 프리필 + `.md` 저장/서빙 + soft lock + 담당자 소유권
+- **Phase 3 (B 내보내기)**: 백엔드 Pandoc 동봉 + `/api/export` + reference.docx 통일 양식 + custom-style 후처리
+- **Phase 4 (마무리)**: "작성 문서" 폴더·admin 메뉴 편입, 사용자 테스트, Monaco 경로 회귀 검증
+
+> **왜 Phase 1 이 선행인가**: 충실도 PoC 결과가 "마크다운이 양식 구조를 얼마나 품어야 하는가"를 결정 → 그게 편집기(A)·내보내기(B) 양쪽 설계의 입력. 자유형식으로 A 를 먼저 짜면 B 에서 재작업 발생.
 
 ---
 
 ## 부록: 조사 출처
-- Toast UI Editor: github.com/nhn/tui.editor, ui.toast.com/tui-editor (MIT, 3.2.2/2026-02)
+- Toast UI Editor: github.com/nhn/tui.editor, ui.toast.com/tui-editor (MIT, 3.2.2/**2023-02**)
+- 내보내기·양식 조사: `workbench/reports/doc-authoring-export-research-2026-06-16.md` (Pandoc MANUAL, GitBook, Notion 데이터모델, AEM/DITA 등)
 - TinyMCE: tiny.cloud/get-tiny/self-hosted (GPLv2+, "Powered by Tiny" 브랜딩)
 - CKEditor 5: ckeditor.com docs self-hosted ZIP (v44+ licenseKey 필수)
 - 비교: tecmint/strapi/eddyter "Best WYSIWYG/Markdown editors 2026"
