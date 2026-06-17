@@ -1,6 +1,6 @@
 # Plan-60 — 통일 양식 기반 문서 저작·내보내기 플랫폼
 
-> **상태: 🟡 Phase 0 PoC 완료 / Phase 1(공통 계약) 대기**
+> **상태: 🟡 Phase 1 마무리 — 충실도 PoC ✅ + 통일 양식 사양서 v0.2 ✅ (2026-06-16) / 대표문서 코퍼스 확장만 남음 → Phase 2·3 착수 가능**
 > 작성: 2026-06-15 · 통합 재정립: 2026-06-16 · 트리거: "플랫폼을 일반 엔지니어용 문서 작성·공유 공간으로 확장" + AAM 양사 공동 저작 검토
 >
 > **📌 통합 이력 (2026-06-16)**: 구 "Explorer WYSIWYG 편집기"(저작)와 "통일 양식·DOCX 내보내기"(조사)를 **하나의 계획으로 통합**.
@@ -16,9 +16,9 @@
 | 단계 | 내용 | 상태 | 비고 |
 |------|------|:----:|------|
 | **Phase 0** | 편집기 드롭인 PoC | ✅ 완료 | Toast UI 폐쇄망 검증 (`poc-tui-editor.html`) |
-| **Phase 1** | 통일 양식 사양 + 내보내기 충실도 PoC【공통 계약】 | 🚧 **다음** | 최우선 선행 — A·B 양축의 입력 |
-| **Phase 2** | 저작 경로 구현 (A: 편집기·저장·soft lock·소유권) | ⬜ 대기 | Phase 1 사양 확정 후 |
-| **Phase 3** | DOCX 내보내기 (B: Pandoc + reference.docx) | ⬜ 대기 | Phase 1 충실도 결과 반영 |
+| **Phase 1** | 통일 양식 사양 + 내보내기 충실도 PoC【공통 계약】 | 🟢 거의 완료 | 충실도 PoC ✅ + 사양서 v0.2 ✅ · 코퍼스 확장만 남음 |
+| **Phase 2** | 저작 경로 구현 (A: 편집기·저장·soft lock·소유권) | 🟡 진행 중 | **2a 저작→저장→서빙→편집 ✅** · 2b soft lock·소유권 · 토큰/다크/검색연동 남음 |
+| **Phase 3** | DOCX 내보내기 (B: Pandoc + reference.docx) | 🟢 핵심 완료 | **3a 엔진 ✅ + 3c 버튼 ✅** (저작→DOCX end-to-end) · 3b 표지폴리시·하드닝 남음 |
 | **Phase 4** | 폴더·메뉴·테스트·회귀 | ⬜ 대기 | — |
 
 | 핵심 확정 | 값 |
@@ -55,22 +55,23 @@
 
 ### 🚧 Phase 1 — 통일 양식 사양 + 내보내기 충실도 PoC【공통 계약·최우선 선행】
 > 저작(B축)과 내보내기(B축)의 **공통 계약**. 결과가 콘텐츠 모델·편집기 설계를 확정 → Phase 2·3 의 입력.
-- [ ] **베이스라인·대표문서 코퍼스**: 단순/표/수식/이미지 포함 샘플 N개 고정 + 현행 인벤토리·작성 소요시간 (§6-B)
-- [ ] **Pandoc + reference.docx 충실도 PoC** (우리 샘플) → 병합표·수식·표지/머리글 충실도 + "다듬기 공수" 정량화 (§6-C). 우리 Converter(OMML→MathML·표병합) 후처리 보강 가능성도 검토
-- [ ] **통일 양식 사양 정의**: 섹션 스키마 · 헤딩/스타일 규칙 · reference.docx 스타일 매핑 · custom-style 마커 필요성 → **콘텐츠 모델 확정**
+- [x] **Pandoc + reference.docx 충실도 PoC** ✅ (2026-06-16) — 기술보고서 표준 reference.docx 자작 + 까다로운 샘플 변환 + **LibreOffice 시각 렌더 검증 + 표지 결합 PoC**. **핵심: 경로 `MD→HTML→DOCX` 시 병합표·이미지·양식 시각 보존**(직접 MD→DOCX 는 병합표 깨짐 시각 확인). **표지=후처리(python-docx) 주입으로 PoC 성공**(reference.docx 본문은 Pandoc 무시). ⚠️ **수식은 LibreOffice 빈칸 렌더 → Word 교차확인 필요(미결)**. 리포트 `reports/plan-60-phase1-fidelity-poc-2026-06-16.md`, 산출물 `workbench/poc-pandoc/`(렌더 이미지 `render/`)
+- [ ] **베이스라인·대표문서 코퍼스**: 단순/표/수식/이미지 포함 샘플 N개 고정 + 현행 인벤토리·작성 소요시간 (§6-B) — PoC 샘플 1개 확보, 코퍼스 확장 남음
+- [x] **통일 양식 사양 정의** v0.2 ✅ (2026-06-16) — `workbench/standards/unified-doc-format-spec.md`. 콘텐츠 모델·섹션 스키마·헤딩/자동번호·표/수식/그림 규칙·내보내기 파이프라인(MD→HTML→DOCX)·reference.docx 스타일 매핑·custom-style(v1 미사용) 확정. **표지=reference.docx 내장 + front matter 문서번호·보안등급 결정**. 잔여(경미): 그림/표 자동번호=v1수동, 웹 헤딩번호=Phase2
 - [ ] **편집기 최종 택1**: Toast UI(드롭인·노후) vs Milkdown Crepe(유지보수·1회 빌드) — 충실도/공수 근거로
 
 ### Phase 2 — 저작 경로 구현 (A축)
-- [ ] `EditorEngine` 선택 레이어 (Monaco | 드롭인MD), 공통 모달·저장 훅 공유 (§6)
-- [ ] **통일 양식 템플릿 프리필** (Phase 1 사양 반영) + 신규 작성(공통 모달·풀스크린 기본)
-- [ ] `.md` 저장 (`POST /api/documents`, MD-safe) + MD 서빙(marked+DOMPurify) 연결
+- [x] **2a-2 편집기 ✅ (2026-06-16)** — `js/md-editor.js`(`window.MdEditor`, Toast UI 풀스크린 모달, 기존 EditorCore/Monaco와 독립·ID 충돌 0) + `css/md-editor.css` + index.html 통합(TUI 번들·i18n·CSS) + app.js "새 문서" nav(auth-editor-only). front matter(제목·작성자·날짜·문서번호·보안등급)는 헤더 폼→저장 시 합성. **결정: EditorCore 미공유**(`_domBuilt` 싱글턴 Monaco 전용 → 별도 모달, 영향성 분석 권고). Playwright 검증: 버튼→모달 오픈·골격 프리필·작성자 자동입력·ko-KR·저장→`/api/save-markdown`→파일 생성·front matter 합성·0 에러·Monaco 회귀 무손상
+- [x] **통일 양식 템플릿 프리필 ✅** — 신규 문서 = 사양 §2 골격(개요/배경/목적/본론/결론) 자동 프리필, 풀스크린 기본
+- [x] `.md` 저장 + MD 서빙(marked+DOMPurify) 연결 — **2a-1 백엔드 ✅** `POST /api/save-markdown`(require_editor, `contents/authored/` 전용, 신규+덮어쓰기+백업, prettify 미적용, 경로/traversal/확장자 검증, 기존 save_document 무수정). **2a-3 서빙·편집 ✅ (2026-06-16)**: `app.js renderMarkdownDoc()` + `loadContent()` `.md` 분기(front matter 스트립→marked.parse→DOMPurify, translator.js:1210 선례 재사용) → 기존 후처리 파이프라인(섹션네비·북마크·브레드크럼) 그대로 통과. `editor.js openEditor()` `.md`→`MdEditor.openExisting`(front matter 파싱→폼 자동채움) 분기. Playwright 검증: 렌더(heading/표/목록/강조, 원문·메타 누출 0)·섹션네비 자동생성·기존편집·HTML문서 회귀 무손상. index.html marked/purify 로드 추가
 - [ ] 디자인 토큰 매핑 + 다크모드 브리지 + RBAC(editor/admin) + 검색/RAG 연결
 - [ ] **soft lock + 담당자 소유권**: presence + 낙관적 저장 검사(ETag) / 소유자·편집권·위임·관리자 재지정 (§6-A)
 
 ### Phase 3 — DOCX 내보내기 파이프라인 (B축)
-- [ ] 백엔드(FastAPI)에 **Pandoc 단일 바이너리 동봉** (폐쇄망, subprocess)
-- [ ] `POST /api/export {md, format}` + **`reference.docx`(통일 양식 1벌)** 일괄 적용
-- [ ] custom-style 주입/후처리 (Phase 1 사양) + "내보내고 워드 다듬어 제출" 안내 UX (§6-C)
+- [x] **3a 엔진 ✅ (2026-06-16)** — Pandoc 3.10 동봉(`tools/pandoc/`, subprocess) + `POST /api/export-docx`(require_editor) + `docx_export_service.py`(MD→HTML→DOCX 2단계 + 표지 후처리 주입) + 기본 `backend/assets/reference.docx`. ⚠️ 라우트/서비스명 기존 Excel export(`/api/compare/export`·`export_service.py`)와 분리. 직접 테스트(서비스 정확성+HTTP 인증/RBAC+시각렌더)·회귀 통과. 피드백 `reports/plan-60-phase3a-feedback-2026-06-16.md`
+- [ ] **3b** 표지 헤더/바닥글 억제(first-page 섹션) + custom-style 후처리 (Phase 1 사양) — 표지 주입 자체는 3a 에 포함됨
+- [x] **3c 내보내기 버튼 ✅ (2026-06-17)** — `MdEditor` 헤더에 "DOCX 내보내기" 버튼 + `doExport()`(현재 편집 내용 → `/api/export-docx` → Blob 다운로드, 파일명=제목.docx). Playwright 검증: 버튼→200→다운로드 트리거(`*.docx`, 11.9KB)·0 에러. **⇒ 저작→통일양식 DOCX end-to-end UI 완성** (새 문서→작성→저장→열람/편집→DOCX 내보내기→다운로드). 뷰모드 버튼·"워드 다듬어 제출" 안내문구는 후속(미세)
+- [ ] **하드닝**: SSRF(원격 이미지)·입력 크기 제한·Windows pandoc 바이너리 동봉 (피드백 H2~H7)
 
 ### Phase 4 — 마무리
 - [ ] "작성 문서" 폴더 + admin 메뉴 편입 흐름 (공유 모델 v1 최소형)

@@ -75,6 +75,14 @@ UPLOAD_TEMP_DIR = None  # None이면 기본값 (backend/temp/)
 # DRM 환경에서 COM 임시 파일이 암호화되어 변환 실패 시 False로 설정
 WORD_COM_PREPROCESS = False
 
+# ── 내보내기 (Plan-60 Phase 3 / 통일 양식 DOCX) ──
+# Pandoc 바이너리 경로. None 이면 자동 탐색: tools/pandoc/<플랫폼> → PATH 의 pandoc
+PANDOC_BIN = None
+# 통일 양식 reference.docx. None 이면 자동: data/reference.docx(관리자 교체) → backend/assets/reference.docx(기본)
+EXPORT_REFERENCE_DOCX = None
+# 내보내기 변환 타임아웃 (초)
+EXPORT_TIMEOUT = 120
+
 # Verify 설정
 VERIFY_DATA_DIR = str(Path(__file__).parent.parent / "data" / "verify")
 VERIFY_HISTORY_MAX = 10

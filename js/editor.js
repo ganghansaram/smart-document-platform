@@ -74,6 +74,18 @@ async function openEditor() {
         return;
     }
 
+    // 마크다운 저작 문서(.md) → 전용 MD 편집기 (Plan-60), HTML 은 기존 Monaco
+    if (currentPage.endsWith('.md') && window.MdEditor) {
+        try {
+            var resp = await fetch(currentPage + '?t=' + Date.now());
+            if (!resp.ok) throw new Error('load failed');
+            MdEditor.openExisting(currentPage, await resp.text());
+        } catch (e) {
+            showToast('문서를 불러오지 못했습니다', 'error');
+        }
+        return;
+    }
+
     // 인증 필요 시 체크
     if (EDITOR_CONFIG.requireAuth && typeof requireAdmin === 'function') {
         requireAdmin(function () { _openEditorInner(); });

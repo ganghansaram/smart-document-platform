@@ -112,6 +112,93 @@ async def save_document(request: SaveDocumentRequest, user: dict = Depends(requi
         raise HTTPException(status_code=500, detail=f"Failed to save document: {str(e)}")
 
 
+# ── 저작 마크다운 저장 (Plan-60 Phase 2a) ───────────────────────────────
+# 기존 save_document(HTML, prettify 적용, 기존 파일만)와 별개:
+#  - contents/authored/ 전용 (기존 웹북과 격리)
+#  - 신규 파일 생성 지원, 원문 그대로 저장(prettify 미적용)
+AUTHORED_DIR_REL = "contents/authored"
+# 허용 파일명: 한글·영숫자·공백·- _ . ( ) + 확장자 .md
+_SAFE_MD_NAME = re.compile(r"^[\w\-. ()가-힣]+\.md$")
+
+
+class SaveMarkdownRequest(BaseModel):
+    path: str            # contents/authored/<name>.md
+    content: str
+    createBackup: bool = True
+    overwrite: bool = True
+
+
+class SaveMarkdownResponse(BaseModel):
+    success: bool
+    message: str
+    path: str
+    created: bool = False
+    backupPath: str | None = None
+
+
+def _resolve_authored_path(rel_path: str) -> str:
+    """contents/authored/ 하위 .md 경로만 허용하고 절대경로를 반환한다 (path traversal 방지)."""
+    rel_path = (rel_path or "").strip().replace("\\", "/")
+    if not rel_path.startswith(AUTHORED_DIR_REL + "/"):
+        raise HTTPException(status_code=400, detail="Invalid path: must be under contents/authored/")
+
+    basename = os.path.basename(rel_path)
+    if not _SAFE_MD_NAME.match(basename):
+        raise HTTPException(status_code=400,
+                            detail="Invalid filename (허용: 한글·영숫자·공백·-_.() + .md)")
+
+    authored_root = os.path.join(PROJECT_ROOT, "contents", "authored")
+    abs_path = os.path.normpath(os.path.join(PROJECT_ROOT, rel_path))
+    if abs_path != authored_root and not abs_path.startswith(authored_root + os.sep):
+        raise HTTPException(status_code=400, detail="Invalid path: path traversal detected")
+    return abs_path
+
+
+@router.post("/save-markdown", response_model=SaveMarkdownResponse)
+async def save_markdown(request: SaveMarkdownRequest, user: dict = Depends(require_editor)):
+    """저작 마크다운(.md)을 contents/authored/ 에 저장한다.
+
+    - 신규 생성 + 기존 덮어쓰기 모두 지원 (overwrite=False 면 기존 존재 시 409)
+    - 덮어쓰기 시 기존본을 backups/ 에 백업
+    - HTML prettify 미적용 — 마크다운 원문 그대로 저장
+    """
+    if not request.content or not request.content.strip():
+        raise HTTPException(status_code=400, detail="빈 내용은 저장할 수 없습니다.")
+    try:
+        file_path = _resolve_authored_path(request.path)
+        exists = os.path.exists(file_path)
+        if exists and not request.overwrite:
+            raise HTTPException(status_code=409, detail="이미 존재하는 문서입니다 (overwrite=false).")
+
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        backup_path = None
+        if exists and request.createBackup:
+            backup_dir = os.path.join(PROJECT_ROOT, "backups")
+            os.makedirs(backup_dir, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            stem = os.path.splitext(os.path.basename(file_path))[0]
+            backup_filename = f"{stem}_{timestamp}.md.bak"
+            shutil.copy2(file_path, os.path.join(backup_dir, backup_filename))
+            backup_path = f"backups/{backup_filename}"
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(request.content)
+
+        rel = os.path.relpath(file_path, PROJECT_ROOT).replace(os.sep, "/")
+        return SaveMarkdownResponse(
+            success=True,
+            message="Markdown saved successfully",
+            path=rel,
+            created=not exists,
+            backupPath=backup_path,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save markdown: {str(e)}")
+
+
 @router.get("/document-history/{path:path}")
 async def get_document_history(path: str):
     """

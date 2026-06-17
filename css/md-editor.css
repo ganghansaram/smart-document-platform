@@ -1,0 +1,65 @@
+/* ===================================
+   Plan-60 — 통일 양식 마크다운 저작 편집기 (Toast UI 래퍼)
+   기존 EditorCore(Monaco/HTML) 와 독립된 풀스크린 모달
+   =================================== */
+
+.md-editor-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 4000;                 /* 헤더/툴팁보다 위 */
+    display: none;
+    flex-direction: column;
+    background: var(--bg-primary);
+}
+.md-editor-overlay.open { display: flex; }
+
+/* ── 상단 바 ── */
+.md-editor-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+.md-editor-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+.md-editor-title {
+    flex: 1;
+    font-size: var(--font-title);
+    font-weight: 600;
+}
+.md-editor-meta {
+    flex-wrap: wrap;
+}
+.md-editor-meta .form-input,
+.md-editor-meta .form-select {
+    max-width: 200px;
+}
+.md-editor-meta label {
+    font-size: var(--font-small);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* ── 편집 영역 ── */
+.md-editor-host {
+    flex: 1;
+    min-height: 0;                 /* flex 자식 스크롤 가능하게 */
+    overflow: hidden;
+}
+.md-editor-host .toastui-editor-defaultUI {
+    height: 100%;
+    border: none;
+}
+
+/* ── Toast UI 디자인 토큰 브리지 (플랫폼 악센트 통일) ── */
+.toastui-editor-defaultUI-toolbar { background: var(--bg-secondary); }
+.toastui-editor-mode-switch .tab-item.active { color: var(--active-color); }
+.toastui-editor-tabs .tab-item.active {
+    color: var(--active-color);
+    border-color: var(--active-color);
+}

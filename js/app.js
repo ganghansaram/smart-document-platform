@@ -30,6 +30,8 @@ async function initializeApp() {
             navItems: [
                 { id: 'nav-edit-item', label: 'Edit', className: 'auth-editor-only', hidden: true,
                   onClick: function() { openEditor(); } },
+                { id: 'nav-new-doc-item', label: '새 문서', className: 'auth-editor-only',
+                  onClick: function() { if (window.MdEditor) MdEditor.openNew(); } },
                 { label: 'Home', onClick: function() { loadContent('contents/home.html'); } },
                 { label: 'About', onClick: function() { loadContent('contents/about.html'); } },
                 { id: 'bookmarks-trigger', label: 'Bookmarks' },
@@ -372,6 +374,20 @@ function applyDisplayConfig() {
 }
 
 /**
+ * 마크다운 저작 문서(.md)를 HTML 로 렌더 (Plan-60)
+ * Notebook 웹뷰 선례(js/translator.js) 재사용: front matter 스트립 → marked.parse → DOMPurify.sanitize
+ */
+function renderMarkdownDoc(md) {
+    if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') {
+        return '<p class="placeholder-error">마크다운 렌더러를 불러오지 못했습니다.</p>';
+    }
+    // 선두 YAML front matter 제거 (제목/메타는 본문에 노출하지 않음)
+    var body = md.replace(/^﻿?---\s*\n[\s\S]*?\n---\s*(?:\n|$)/, '');
+    var inner = DOMPurify.sanitize(marked.parse(body), { ADD_ATTR: ['style'] });
+    return '<article class="authored-doc">' + inner + '</article>';
+}
+
+/**
  * 콘텐츠 로드
  */
 function loadContent(url) {
@@ -420,7 +436,9 @@ function loadContent(url) {
             }
             return response.text();
         })
-        .then(html => {
+        .then(text => {
+            // 마크다운 저작 문서(.md)는 marked+DOMPurify 로 렌더 (Plan-60), 그 외 HTML 그대로
+            let html = url.endsWith('.md') ? renderMarkdownDoc(text) : text;
             // 상대 경로를 콘텐츠 파일 기준 절대 경로로 변환
             html = resolveRelativePaths(html, baseDir);
             // 이미지 비동기 디코딩 + 섹션 래핑 적용
