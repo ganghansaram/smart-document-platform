@@ -13,27 +13,66 @@
 }
 .md-editor-overlay.open { display: flex; }
 
-/* ── 상단 바 ── */
+/* ── 상단 바: 플랫폼 헤더(네이비 그라데이션) 정체성 계승 ── */
 .md-editor-header {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
-    padding: var(--space-md) var(--space-lg);
     border-bottom: 1px solid var(--border-color);
-    background: var(--bg-secondary);
+    background: var(--bg-primary);
 }
 .md-editor-row {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
 }
+/* 1행(제목 + 액션) = 플랫폼 헤더와 동일한 네이비 바 */
+.md-editor-header > .md-editor-row:first-child {
+    background: linear-gradient(135deg, var(--primary-navy) 0%, var(--secondary-navy) 100%);
+    padding: var(--space-sm) var(--space-lg);
+    min-height: 60px;
+}
 .md-editor-title {
     flex: 1;
     font-size: var(--font-title);
     font-weight: 600;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #fff;
 }
+.md-editor-title::placeholder { color: rgba(255, 255, 255, 0.6); }
+.md-editor-title:focus {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.55);
+    outline: none;
+}
+/* 네이비 바 위 액션 버튼 (.btn 위계 유지, 네이비 대비로 반전) */
+.md-editor-header > .md-editor-row:first-child .btn-primary {
+    background: #fff;
+    color: var(--primary-navy);
+    border-color: #fff;
+}
+.md-editor-header > .md-editor-row:first-child .btn-primary:hover {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(255, 255, 255, 0.88);
+}
+.md-editor-header > .md-editor-row:first-child .btn-secondary {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.md-editor-header > .md-editor-row:first-child .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+.md-editor-header > .md-editor-row:first-child .btn-ghost { color: #fff; }
+.md-editor-header > .md-editor-row:first-child .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+/* 2행(메타) = 흰 표면 */
 .md-editor-meta {
     flex-wrap: wrap;
+    padding: var(--space-sm) var(--space-lg);
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
 }
 .md-editor-meta .form-input,
 .md-editor-meta .form-select {
@@ -56,10 +95,111 @@
     border: none;
 }
 
-/* ── Toast UI 디자인 토큰 브리지 (플랫폼 악센트 통일) ── */
-.toastui-editor-defaultUI-toolbar { background: var(--bg-secondary); }
-.toastui-editor-mode-switch .tab-item.active { color: var(--active-color); }
-.toastui-editor-tabs .tab-item.active {
+/* ── Toast UI 디자인 토큰 브리지 (플랫폼 톤·다크 통일) ──
+   index.html 은 라이트 기준 toastui-editor.min.css 만 로드(다크 CSS 미동봉).
+   따라서 theme:'dark' 클래스만으론 본문이 라이트 색(#222)에 머물러 저대비가 된다.
+   여기서 우리 토큰(--text-primary 등, 라이트/다크 자동 전환)으로 직접 덮어
+   Toast UI 자체 팔레트 없이 플랫폼 톤으로 통일한다. 모두 .md-editor-host 로 스코프(영향 격리). */
+
+/* 외곽·툴바·구분선 */
+.md-editor-host .toastui-editor-defaultUI { border-color: var(--border-color); }
+.md-editor-host .toastui-editor-defaultUI-toolbar {
+    background: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+.md-editor-host .toastui-editor-toolbar-divider { background-color: var(--border-color); }
+.md-editor-host .toastui-editor-md-splitter { background-color: var(--border-color); }
+
+/* 하단 모드 전환 탭 */
+.md-editor-host .toastui-editor-mode-switch,
+.md-editor-host .toastui-editor-tabs { background: var(--bg-secondary); }
+.md-editor-host .toastui-editor-mode-switch .tab-item.active,
+.md-editor-host .toastui-editor-tabs .tab-item.active {
     color: var(--active-color);
     border-color: var(--active-color);
+}
+
+/* 본문 — 플랫폼 .main-content 타이포 정합 (글꼴·크기·행간·색)
+   font-family 는 inherit 가 Toast UI 부모(Open Sans)를 물어 와 플랫폼 시스템 폰트로 명시 지정 */
+.md-editor-host .toastui-editor-md-container .ProseMirror,
+.md-editor-host .toastui-editor-contents {
+    color: var(--text-dark);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", "맑은 고딕", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.8;
+}
+.md-editor-host .toastui-editor-contents p { margin-bottom: 16px; color: var(--text-dark); }
+.md-editor-host .toastui-editor-contents li { margin-bottom: 8px; line-height: 1.7; color: var(--text-dark); }
+.md-editor-host .toastui-editor-contents td,
+.md-editor-host .toastui-editor-contents th { color: var(--text-dark); }
+
+/* 헤딩 — 플랫폼 .main-content h1~h6 정확 복제 (크기·굵기·색·여백·보더) */
+.md-editor-host .toastui-editor-contents h1 {
+    font-size: 32px; font-weight: 700; color: var(--primary-navy);
+    margin-bottom: 20px; padding-bottom: 15px;
+    border-bottom: 3px solid var(--primary-navy);
+}
+.md-editor-host .toastui-editor-contents h2 {
+    font-size: 26px; font-weight: 600; color: var(--secondary-navy);
+    margin-top: 40px; margin-bottom: 16px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+}
+.md-editor-host .toastui-editor-contents h3 {
+    font-size: 21px; font-weight: 600; color: var(--dark-gray);
+    margin-top: 30px; margin-bottom: 12px;
+}
+.md-editor-host .toastui-editor-contents h4 {
+    font-size: 18px; font-weight: 600; color: var(--dark-gray);
+    margin-top: 24px; margin-bottom: 10px;
+}
+.md-editor-host .toastui-editor-contents h5 {
+    font-size: 16px; font-weight: 600; color: var(--dark-gray);
+    margin-top: 20px; margin-bottom: 8px;
+}
+.md-editor-host .toastui-editor-contents h6 {
+    font-size: 14px; font-weight: 600; color: var(--text-dark);
+    margin-top: 16px; margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 0.02em;
+}
+/* 다크 헤딩 색 — 플랫폼과 동일 (navy 토큰이 다크서 검정이라 별도 처리) */
+body[data-theme="dark"] .md-editor-host .toastui-editor-contents h1 {
+    color: var(--active-color); border-bottom-color: var(--active-color);
+}
+body[data-theme="dark"] .md-editor-host .toastui-editor-contents h2 { color: #7db8f0; }
+
+/* 마크다운 소스 — 헤딩 색 + 구문 표식(#, ** 등) 옅게 */
+.md-editor-host .toastui-editor-md-container .toastui-editor-md-heading { color: var(--text-dark); }
+.md-editor-host .toastui-editor-md-container .toastui-editor-md-delimiter,
+.md-editor-host .toastui-editor-md-container .toastui-editor-md-meta { color: var(--text-light); }
+
+/* 마크다운 소스 헤딩 크기 = 미리보기·플랫폼과 동일 스케일 */
+.md-editor-host .toastui-editor-md-container .toastui-editor-md-heading1 { font-size: 32px; font-weight: 700; }
+.md-editor-host .toastui-editor-md-container .toastui-editor-md-heading2 { font-size: 26px; font-weight: 600; }
+.md-editor-host .toastui-editor-md-container .toastui-editor-md-heading3 { font-size: 21px; font-weight: 600; }
+.md-editor-host .toastui-editor-md-container .toastui-editor-md-heading4 { font-size: 18px; font-weight: 600; }
+.md-editor-host .toastui-editor-md-container .toastui-editor-md-heading5 { font-size: 16px; font-weight: 600; }
+.md-editor-host .toastui-editor-md-container .toastui-editor-md-heading6 { font-size: 14px; font-weight: 600; }
+
+/* 링크·인용·코드·표 */
+.md-editor-host .toastui-editor-contents a { color: var(--active-color); }
+.md-editor-host .toastui-editor-contents blockquote {
+    border-left-color: var(--border-color);
+    color: var(--text-secondary);
+}
+.md-editor-host .toastui-editor-contents code,
+.md-editor-host .toastui-editor-contents pre {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+.md-editor-host .toastui-editor-contents table td,
+.md-editor-host .toastui-editor-contents table th { border-color: var(--border-color); }
+.md-editor-host .toastui-editor-contents table th { background: var(--bg-secondary); }
+
+/* 플레이스홀더 */
+.md-editor-host .toastui-editor-md-container .ProseMirror .placeholder { color: var(--text-secondary); }
+
+/* 다크 모드: 툴바 아이콘 스프라이트가 어두운 라이트용이라 반전해 가독성 확보 */
+body[data-theme="dark"] .md-editor-host .toastui-editor-toolbar-icons {
+    filter: invert(0.85) hue-rotate(180deg);
+    opacity: 0.9;
 }
