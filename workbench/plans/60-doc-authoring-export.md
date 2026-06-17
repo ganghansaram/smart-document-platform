@@ -1,6 +1,7 @@
 # Plan-60 — 통일 양식 기반 문서 저작·내보내기 플랫폼
 
-> **상태: 🟡 Phase 1 마무리 — 충실도 PoC ✅ + 통일 양식 사양서 v0.2 ✅ (2026-06-16) / 대표문서 코퍼스 확장만 남음 → Phase 2·3 착수 가능**
+> **상태: 🟡 Phase 2·3·4 진행 중 — 2a 저작 ✅ + 디자인 토큰·다크 브리지 ✅(2026-06-18) + 3a/3c 내보내기 ✅ + 4 "작성 문서" 자동 메뉴 편입 ✅(방법 가) / 남음: 2b 소유권·3b 표지·하드닝·검색연동·admin 큐레이션·회귀**
+> 최근 커밋: `cddc377`(메뉴 편입) · `d44e7c1`(에디터 디자인 브리지) — 둘 다 origin/main 푸시됨
 > 작성: 2026-06-15 · 통합 재정립: 2026-06-16 · 트리거: "플랫폼을 일반 엔지니어용 문서 작성·공유 공간으로 확장" + AAM 양사 공동 저작 검토
 >
 > **📌 통합 이력 (2026-06-16)**: 구 "Explorer WYSIWYG 편집기"(저작)와 "통일 양식·DOCX 내보내기"(조사)를 **하나의 계획으로 통합**.
@@ -17,9 +18,9 @@
 |------|------|:----:|------|
 | **Phase 0** | 편집기 드롭인 PoC | ✅ 완료 | Toast UI 폐쇄망 검증 (`poc-tui-editor.html`) |
 | **Phase 1** | 통일 양식 사양 + 내보내기 충실도 PoC【공통 계약】 | 🟢 거의 완료 | 충실도 PoC ✅ + 사양서 v0.2 ✅ · 코퍼스 확장만 남음 |
-| **Phase 2** | 저작 경로 구현 (A: 편집기·저장·soft lock·소유권) | 🟡 진행 중 | **2a 저작→저장→서빙→편집 ✅** · 2b soft lock·소유권 · 토큰/다크/검색연동 남음 |
+| **Phase 2** | 저작 경로 구현 (A: 편집기·저장·soft lock·소유권) | 🟡 진행 중 | **2a ✅ + 디자인 토큰·다크 브리지 ✅(2026-06-18)** · 2b soft lock·소유권 · 검색연동 남음 |
 | **Phase 3** | DOCX 내보내기 (B: Pandoc + reference.docx) | 🟢 핵심 완료 | **3a 엔진 ✅ + 3c 버튼 ✅** (저작→DOCX end-to-end) · 3b 표지폴리시·하드닝 남음 |
-| **Phase 4** | 폴더·메뉴·테스트·회귀 | ⬜ 대기 | — |
+| **Phase 4** | 폴더·메뉴·테스트·회귀 | 🟡 진행 중 | **"작성 문서" 자동 메뉴 편입 ✅(방법 가)** · admin 큐레이션·관리(삭제/개명)·사용자테스트·Monaco 회귀 남음 |
 
 | 핵심 확정 | 값 |
 |------|------|
@@ -64,7 +65,8 @@
 - [x] **2a-2 편집기 ✅ (2026-06-16)** — `js/md-editor.js`(`window.MdEditor`, Toast UI 풀스크린 모달, 기존 EditorCore/Monaco와 독립·ID 충돌 0) + `css/md-editor.css` + index.html 통합(TUI 번들·i18n·CSS) + app.js "새 문서" nav(auth-editor-only). front matter(제목·작성자·날짜·문서번호·보안등급)는 헤더 폼→저장 시 합성. **결정: EditorCore 미공유**(`_domBuilt` 싱글턴 Monaco 전용 → 별도 모달, 영향성 분석 권고). Playwright 검증: 버튼→모달 오픈·골격 프리필·작성자 자동입력·ko-KR·저장→`/api/save-markdown`→파일 생성·front matter 합성·0 에러·Monaco 회귀 무손상
 - [x] **통일 양식 템플릿 프리필 ✅** — 신규 문서 = 사양 §2 골격(개요/배경/목적/본론/결론) 자동 프리필, 풀스크린 기본
 - [x] `.md` 저장 + MD 서빙(marked+DOMPurify) 연결 — **2a-1 백엔드 ✅** `POST /api/save-markdown`(require_editor, `contents/authored/` 전용, 신규+덮어쓰기+백업, prettify 미적용, 경로/traversal/확장자 검증, 기존 save_document 무수정). **2a-3 서빙·편집 ✅ (2026-06-16)**: `app.js renderMarkdownDoc()` + `loadContent()` `.md` 분기(front matter 스트립→marked.parse→DOMPurify, translator.js:1210 선례 재사용) → 기존 후처리 파이프라인(섹션네비·북마크·브레드크럼) 그대로 통과. `editor.js openEditor()` `.md`→`MdEditor.openExisting`(front matter 파싱→폼 자동채움) 분기. Playwright 검증: 렌더(heading/표/목록/강조, 원문·메타 누출 0)·섹션네비 자동생성·기존편집·HTML문서 회귀 무손상. index.html marked/purify 로드 추가
-- [ ] 디자인 토큰 매핑 + 다크모드 브리지 + RBAC(editor/admin) + 검색/RAG 연결
+- [x] **디자인 토큰·다크 브리지 ✅ (2026-06-18) — 커밋 `d44e7c1`** — `css/md-editor.css`: Toast UI 를 플랫폼 디자인 시스템에 정합. ① 다크 가독성(Toast UI 다크 CSS 미동봉 → 본문이 라이트색 #222 에 머무름 → 우리 토큰으로 직접 덮기 + 툴바 아이콘 invert) ② 네이비 헤더 계승(상단 제목·액션 행 = 플랫폼 헤더 그라데이션 `--primary/secondary-navy`, 메타 행 흰 표면, 버튼 네이비 대비 재배색) ③ 타이포 정합(미리보기·소스 헤딩 h1~h6 + 본문을 `content.css .main-content` 와 픽셀 일치: h1 32px 네이비 3px보더, h2 26px, 본문 15px/1.8, 시스템 폰트, 다크 헤딩색 오버라이드). 모두 `.md-editor-host` 스코프(누수 0). Playwright 검증: 서빙(.main-content)↔에디터 미리보기 픽셀일치·소스=미리보기 크기·버튼기능 유지·콘솔 0. RBAC(editor/admin)는 기존 require_editor·auth-editor-only 로 충족
+- [ ] 검색/RAG 연결 (authored .md → html_to_text → 인덱스)
 - [ ] **soft lock + 담당자 소유권**: presence + 낙관적 저장 검사(ETag) / 소유자·편집권·위임·관리자 재지정 (§6-A)
 
 ### Phase 3 — DOCX 내보내기 파이프라인 (B축)
@@ -74,7 +76,8 @@
 - [ ] **하드닝**: SSRF(원격 이미지)·입력 크기 제한·Windows pandoc 바이너리 동봉 (피드백 H2~H7)
 
 ### Phase 4 — 마무리
-- [ ] "작성 문서" 폴더 + admin 메뉴 편입 흐름 (공유 모델 v1 최소형)
+- [x] **"작성 문서" 자동 메뉴 편입 ✅ (2026-06-17, 방법 가) — 커밋 `cddc377`** — `GET /api/authored`(`contents/authored/*.md` 목록, front matter title·author, 최신순) + `tree-menu.js` 가상 "작성 문서" 폴더(홈 바로 아래 자동 합성, ✏️ NotePencil 아이콘) + 저장 후 새 문서 하이라이트(W1, `loadMenuData(onDone)`+`highlightAuthoredDoc` data-url 정밀) + 동명 식별 tooltip(작성자·수정일·파일명, W3) + 제목 위생(maxlength 120·제어문자 제거, W2). 결정 = **방법 가**(자동 노출, 작성자 발견성 우선) vs 방법 나(admin 큐레이션). Playwright 검증: 폴더 노출·제목추출/파일명폴백·정렬·클릭렌더·검색필터·다크모드·XSS안전·중복제목 tooltip 구분·저장후 하이라이트·콘솔0. 피드백 `reports/plan-60-phase4-menu-feedback-2026-06-17.md`
+- [ ] **admin 큐레이션(정식 메뉴 트리 승격) + 관리(삭제/이름변경)** — 결합 사안(올라간 문서 삭제·개명 시 dangling 처리 정책 선행 필요), 별건으로 분리
 - [ ] 사용자 테스트 · Monaco 경로 회귀 검증
 
 ---
