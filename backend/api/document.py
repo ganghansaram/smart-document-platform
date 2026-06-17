@@ -199,6 +199,63 @@ async def save_markdown(request: SaveMarkdownRequest, user: dict = Depends(requi
         raise HTTPException(status_code=500, detail=f"Failed to save markdown: {str(e)}")
 
 
+def _read_front_matter_fields(abs_path: str, keys) -> dict:
+    """파일 선두 front matter 에서 지정 키들의 값을 추출한다 (없으면 빈 dict).
+
+    md-editor.js buildFrontMatter 형식과 일치: `key: "값"` (BOM·따옴표 허용).
+    """
+    out = {}
+    try:
+        with open(abs_path, "r", encoding="utf-8") as f:
+            head = f.read(2048)
+    except OSError:
+        return out
+    head = head.lstrip("﻿")
+    if not head.startswith("---"):
+        return out
+    end = head.find("\n---", 3)
+    if end == -1:
+        return out
+    wanted = set(keys)
+    for line in head[3:end].splitlines():
+        m = re.match(r"^\s*([A-Za-z_]+)\s*:\s*(.+?)\s*$", line)
+        if m and m.group(1) in wanted:
+            out[m.group(1)] = m.group(2).strip().strip('"').strip("'")
+    return out
+
+
+@router.get("/authored")
+def list_authored():
+    """contents/authored/ 의 저작 마크다운 목록을 반환한다 (좌측 메뉴 자동 노출용).
+
+    각 항목: { label(front matter title→없으면 파일명), author, url, modified }. 최신 수정순.
+    인증 불요 — 콘텐츠는 정적 공개 서빙되며 menu.json 도 공개 파일이다.
+    """
+    authored_root = os.path.join(PROJECT_ROOT, "contents", "authored")
+    docs = []
+    if os.path.isdir(authored_root):
+        for name in os.listdir(authored_root):
+            if not name.lower().endswith(".md"):
+                continue
+            abs_path = os.path.join(authored_root, name)
+            if not os.path.isfile(abs_path):
+                continue
+            try:
+                mtime = os.stat(abs_path).st_mtime
+            except OSError:
+                continue
+            fields = _read_front_matter_fields(abs_path, ("title", "author"))
+            title = fields.get("title") or os.path.splitext(name)[0]
+            docs.append({
+                "label": title,
+                "author": fields.get("author", ""),
+                "url": "contents/authored/" + name,
+                "modified": datetime.fromtimestamp(mtime).isoformat(),
+            })
+    docs.sort(key=lambda d: d["modified"], reverse=True)
+    return {"documents": docs}
+
+
 @router.get("/document-history/{path:path}")
 async def get_document_history(path: str):
     """

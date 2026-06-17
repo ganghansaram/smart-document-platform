@@ -61,11 +61,21 @@
         return lines.join('\n');
     }
 
+    // 제어문자 제거 + 앞뒤 공백 정리 (메뉴 라벨·파일명 위생)
+    function cleanField(v) {
+        var s = v || '', out = '';
+        for (var i = 0; i < s.length; i++) {
+            var c = s.charCodeAt(i);
+            if (c >= 32 && c !== 127) out += s.charAt(i);  // 제어문자 제외
+        }
+        return out.trim();
+    }
+
     function metaFromFields() {
         return {
-            title: dom.title.value.trim(),
-            author: dom.author.value.trim(),
-            doc_number: dom.docNumber.value.trim(),
+            title: cleanField(dom.title.value),
+            author: cleanField(dom.author.value),
+            doc_number: cleanField(dom.docNumber.value),
             classification: dom.classification.value,
             date: dom.date || todayISO(),
         };
@@ -83,7 +93,7 @@
         ov.innerHTML =
             '<div class="md-editor-header">' +
               '<div class="md-editor-row">' +
-                '<input type="text" class="form-input md-editor-title" placeholder="문서 제목 (필수)" />' +
+                '<input type="text" class="form-input md-editor-title" placeholder="문서 제목 (필수)" maxlength="120" />' +
                 '<button type="button" class="btn btn-primary" data-act="save">저장</button>' +
                 '<button type="button" class="btn btn-secondary" data-act="export">DOCX 내보내기</button>' +
                 '<button type="button" class="btn btn-ghost" data-act="close">닫기</button>' +
@@ -208,6 +218,13 @@
             if (!wasNew && typeof window.loadContent === 'function' &&
                 window.AppState && AppState.currentPage === state.path) {
                 loadContent(state.path);
+            }
+            // 신규 저작 문서는 좌측 "작성 문서" 메뉴에 즉시 반영 + 새 문서 짚어주기
+            if (wasNew && typeof window.loadMenuData === 'function') {
+                var savedUrl = state.path;
+                window.loadMenuData(function () {
+                    if (typeof window.highlightAuthoredDoc === 'function') window.highlightAuthoredDoc(savedUrl);
+                });
             }
         } catch (e) {
             showToast('저장 실패: ' + e.message, 'error');
