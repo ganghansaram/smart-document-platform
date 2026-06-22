@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Author — 진입 홈 시안 v2</title>
+
+<!-- ★ 실제 플랫폼 토큰·헤더 CSS 링크 (색·간격·다크모드 100% 정합) -->
+<link rel="stylesheet" href="../../css/tokens.css">
+<link rel="stylesheet" href="../../css/platform-header.css">
+
+<style>
+/* =========================================================
+   Author 홈 전용 레이아웃 (→ 향후 css/author.css 의 원형)
+   원칙: tokens.css 변수만 소비. 색/간격/둥글기 하드코딩 0.
+   ========================================================= */
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;
+  background:var(--canvas-bg); color:var(--text-primary);
+  min-height:100vh; display:flex; flex-direction:column;
+  transition:background var(--transition-slow),color var(--transition-slow);
+}
+
+/* ── 본문 컨테이너 ── */
+.author-main{flex:1;width:100%;max-width:1120px;margin:0 auto;padding:var(--space-2xl) var(--space-xl) 60px;}
+
+/* ── 히어로 ── */
+.au-hero{margin-bottom:var(--space-lg);}
+.au-hero h2{font-size:26px;font-weight:var(--font-weight-bold);letter-spacing:-.4px;color:var(--text-primary);}
+.au-hero p{margin-top:6px;font-size:14px;color:var(--text-secondary);max-width:640px;line-height:var(--line-height-relaxed);}
+
+/* ── 두 모드 진입 카드 ── */
+.au-modes{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg);margin-bottom:var(--space-2xl);}
+.au-mode{
+  background:var(--content-bg);border:1px solid var(--border-color);border-radius:var(--radius-xl);
+  padding:var(--space-lg) var(--space-lg) var(--space-md);cursor:pointer;position:relative;overflow:hidden;
+  transition:border-color var(--transition-normal),transform var(--transition-normal),box-shadow var(--transition-normal);
+  display:flex;flex-direction:column;
+}
+.au-mode:hover,.au-mode:focus-visible{border-color:var(--active-color);transform:translateY(-3px);box-shadow:var(--shadow-md);outline:none;}
+.au-mode::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--active-color);opacity:0;transition:opacity var(--transition-normal);}
+.au-mode:hover::after,.au-mode:focus-visible::after{opacity:1;}
+.au-mode-ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:24px;margin-bottom:var(--space-md);background:var(--active-color-subtle);color:var(--active-color);}
+.au-mode-title{font-size:18px;font-weight:var(--font-weight-bold);color:var(--text-primary);}
+.au-mode-sub{font-size:12.5px;color:var(--text-secondary);margin-top:6px;line-height:1.55;flex:1;}
+.au-mode-chips{margin-top:var(--space-md);display:flex;gap:7px;flex-wrap:wrap;}
+.au-chip{font-size:11px;font-weight:var(--font-weight-medium);color:var(--text-secondary);background:var(--panel-bg);
+  border:1px solid var(--border-color);border-radius:20px;padding:3px 10px;}
+.au-chip.accent{color:var(--active-color);background:var(--active-color-subtle);border-color:transparent;}
+
+/* ── 섹션 ── */
+.au-section{margin-bottom:var(--space-xl);}
+.au-section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:var(--space-md);}
+.au-section-head h3{font-size:15px;font-weight:var(--font-weight-bold);color:var(--text-primary);letter-spacing:-.2px;}
+.au-more{font-size:12.5px;color:var(--active-color);cursor:pointer;font-weight:var(--font-weight-medium);background:none;border:none;}
+.au-more:hover{text-decoration:underline;}
+
+/* ── 카드 그리드 ── */
+.au-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-md);}
+.au-item{background:var(--content-bg);border:1px solid var(--border-color);border-radius:var(--radius-md);
+  padding:15px 16px;cursor:pointer;transition:border-color var(--transition-normal),box-shadow var(--transition-normal),transform var(--transition-normal);}
+.au-item:hover,.au-item:focus-visible{border-color:var(--active-color);box-shadow:var(--shadow-sm);transform:translateY(-2px);outline:none;}
+.au-item-top{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.au-item-emoji{font-size:17px;}
+.au-item-name{font-size:13.5px;font-weight:var(--font-weight-semibold);color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.au-item-meta{font-size:11.5px;color:var(--text-muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.au-dot{width:3px;height:3px;border-radius:50%;background:var(--text-muted);display:inline-block;}
+
+/* 상태 배지 (시맨틱 토큰 기반) */
+.au-badge{font-size:10px;font-weight:var(--font-weight-semibold);border-radius:4px;padding:2px 7px;letter-spacing:.2px;}
+.au-badge.published{background:rgba(34,197,94,.15);color:var(--color-success);}
+.au-badge.draft{background:rgba(245,158,11,.18);color:var(--color-warning);}
+.au-badge.review{background:var(--active-color-subtle);color:var(--active-color);}
+.au-badge.progress{background:rgba(59,130,246,.15);color:var(--color-info);}
+
+/* 합성 프로젝트 카드: 소스 핀 + 매트릭스 미니바 */
+.au-src{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap;align-items:center;}
+.au-src-pill{font-size:10px;color:var(--text-secondary);background:var(--panel-bg);border:1px solid var(--border-color);border-radius:4px;padding:2px 6px;white-space:nowrap;}
+.au-mm{display:flex;gap:3px;margin-top:10px;}
+.au-mm span{height:6px;border-radius:3px;}
+/* 합성 매트릭스 색 = 시맨틱 토큰 (sim-* 표절색 아님) : 공통/부분/충돌/단일 */
+.au-mm .c{background:var(--color-success);} .au-mm .p{background:var(--color-warning);}
+.au-mm .x{background:var(--color-error);}   .au-mm .s{background:var(--text-muted);}
+
+/* "새로 시작" 점선 타일 */
+.au-item.new{border-style:dashed;display:flex;align-items:center;justify-content:center;gap:8px;
+  color:var(--active-color);font-weight:var(--font-weight-semibold);font-size:13.5px;min-height:96px;background:transparent;}
+.au-item.new:hover{background:var(--active-color-subtle);}
+
+/* 합성 빈 상태 (백엔드 미구현 → empty-first) */
+.au-empty{grid-column:1/-1;border:1px dashed var(--border-color);border-radius:var(--radius-lg);
+  padding:var(--space-xl);text-align:center;color:var(--text-secondary);background:var(--panel-bg);}
+.au-empty .ico{font-size:30px;opacity:.7;}
+.au-empty h4{margin-top:10px;font-size:14px;color:var(--text-primary);font-weight:var(--font-weight-semibold);}
+.au-empty p{margin-top:4px;font-size:12.5px;}
+.au-empty button{margin-top:14px;}
+
+/* 버튼 (components.css .btn 미링크 → 토큰 기반 최소 정의) */
+.au-btn{font-size:13px;font-weight:var(--font-weight-semibold);border-radius:var(--radius-sm);padding:8px 16px;cursor:pointer;
+  border:1px solid var(--active-color);background:var(--active-color);color:#fff;transition:background var(--transition-fast);}
+.au-btn:hover{background:var(--active-color-hover);}
+
+/* ── 연동 흐름 스트립 ── */
+.au-flow{background:var(--panel-bg);border:1px solid var(--border-color);border-radius:var(--radius-lg);
+  padding:18px 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--text-secondary);}
+.au-flow .node{background:var(--content-bg);border:1px solid var(--border-color);border-radius:8px;padding:5px 11px;font-weight:var(--font-weight-semibold);color:var(--text-primary);}
+.au-flow .arrow{color:var(--active-color);font-weight:var(--font-weight-bold);}
+
+.au-note{margin-top:30px;font-size:11.5px;color:var(--text-muted);text-align:center;line-height:1.7;}
+
+/* ── 반응형 ── */
+@media(max-width:880px){
+  .au-modes{grid-template-columns:1fr;}
+  .au-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:560px){
+  .au-grid{grid-template-columns:1fr;}
+  .author-main{padding:var(--space-xl) var(--space-md) 40px;}
+}
+</style>
+</head>
+<body data-theme="light">
+
+<!-- ===== 실제 플랫폼 헤더 구조 (platform-header.css 클래스 그대로) ===== -->
+<header class="platform-header">
+  <div class="platform-header-logo">
+    <img src="../../css/images/team_logo.svg" alt="Digital Engineering Team">
+    <h1>Author</h1>
+    <!-- 시스템 스위처 (점-그리드) — 실제 플랫폼은 platform-header.js 가 드롭다운 구동 -->
+    <button class="ph-switcher-btn" type="button" title="시스템 전환" aria-label="시스템 전환">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+        <circle cx="5" cy="5" r="2.2"/><circle cx="12" cy="5" r="2.2"/><circle cx="19" cy="5" r="2.2"/>
+        <circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/>
+        <circle cx="5" cy="19" r="2.2"/><circle cx="12" cy="19" r="2.2"/><circle cx="19" cy="19" r="2.2"/>
+      </svg>
+    </button>
+  </div>
+  <nav class="platform-header-nav">
+    <span class="ph-auth-group" style="display:flex">
+      <span class="ph-username">testbot</span>
+      <span class="ph-sep">|</span>
+      <button class="ph-link" type="button">Logout</button>
+    </span>
+    <!-- 테마 토글 — sun/moon 아이콘 스왑은 platform-header.css 가 data-theme 기준 자동 처리 -->
+    <button class="theme-toggle-btn" id="themeBtn" type="button" title="테마 전환" aria-label="테마 전환">
+      <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18">
+        <circle cx="12" cy="12" r="5" fill="currentColor"/>
+        <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </g>
+      </svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/>
+      </svg>
+    </button>
+  </nav>
+</header>
+
+<!-- ===== 본문 ===== -->
+<main class="author-main">
+
+  <div class="au-hero">
+    <h2>무엇을 만들까요?</h2>
+    <p>Author는 새 문서를 <b>생산</b>하는 공간입니다. 빈 문서를 통일 양식으로 작성하거나, 여러 원문 스펙을 합성해 초안을 만들 수 있어요.</p>
+  </div>
+
+  <!-- 두 모드 진입 -->
+  <div class="au-modes">
+    <div class="au-mode" tabindex="0" role="button" aria-label="빈 문서 작성">
+      <div class="au-mode-ic">✏️</div>
+      <div class="au-mode-title">빈 문서 작성</div>
+      <div class="au-mode-sub">통일 양식 골격에서 새 기술 보고서를 마크다운 ↔ WYSIWYG 로 작성합니다. 작성 후 DOCX로 내보내 워드에서 다듬어 제출.</div>
+      <div class="au-mode-chips">
+        <span class="au-chip accent">마크다운 SSOT</span>
+        <span class="au-chip">통일 양식 프리필</span>
+        <span class="au-chip">DOCX 내보내기</span>
+      </div>
+    </div>
+    <div class="au-mode" tabindex="0" role="button" aria-label="합성 프로젝트 시작">
+      <div class="au-mode-ic">🧩</div>
+      <div class="au-mode-title">합성 프로젝트 시작</div>
+      <div class="au-mode-sub">원문 스펙 2~5개를 나란히 분석 → 비교 매트릭스에서 공통·충돌을 판정 → 선별 결과로 AI 초안을 생성합니다.</div>
+      <div class="au-mode-chips">
+        <span class="au-chip accent">다중 소스 합성</span>
+        <span class="au-chip">비교 매트릭스</span>
+        <span class="au-chip">Verify 검증 연계</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 작성 문서 (실데이터: GET /api/authored) -->
+  <div class="au-section">
+    <div class="au-section-head">
+      <h3>작성 문서</h3>
+      <button class="au-more">전체 보기 →</button>
+    </div>
+    <div class="au-grid">
+      <div class="au-item" tabindex="0">
+        <div class="au-item-top"><span class="au-item-emoji">📄</span><span class="au-item-name">통합 시험 보고서</span></div>
+        <div class="au-item-meta"><span class="au-badge published">발행됨</span><span>연구개발팀</span><span class="au-dot"></span><span>6/17</span></div>
+      </div>
+      <div class="au-item" tabindex="0">
+        <div class="au-item-top"><span class="au-item-emoji">📄</span><span class="au-item-name">구조 설계 기준 v2</span></div>
+        <div class="au-item-meta"><span class="au-badge draft">초안</span><span>홍길동</span><span class="au-dot"></span><span>6/16</span></div>
+      </div>
+      <div class="au-item" tabindex="0">
+        <div class="au-item-top"><span class="au-item-emoji">📄</span><span class="au-item-name">전장전기 인터페이스 규격</span></div>
+        <div class="au-item-meta"><span class="au-badge review">검토중</span><span>김엔지니어</span><span class="au-dot"></span><span>6/14</span></div>
+      </div>
+      <div class="au-item new" tabindex="0" role="button">＋ 빈 문서 작성</div>
+    </div>
+  </div>
+
+  <!-- 합성 프로젝트 -->
+  <div class="au-section">
+    <div class="au-section-head">
+      <h3>합성 프로젝트</h3>
+      <button class="au-more">전체 보기 →</button>
+    </div>
+    <div class="au-grid">
+      <div class="au-item" tabindex="0">
+        <div class="au-item-top"><span class="au-item-emoji">🧩</span><span class="au-item-name">진동 시험 규격 제정</span></div>
+        <div class="au-item-meta"><span class="au-badge progress">진행중</span><span>3개 소스</span><span class="au-dot"></span><span>12/24 항목 선별</span></div>
+        <div class="au-src">
+          <span class="au-src-pill">MIL-STD-810G</span><span class="au-src-pill">AS9100</span><span class="au-src-pill">사내 현행</span>
+        </div>
+        <div class="au-mm" title="공통/부분/충돌/단일 분포">
+          <span class="c" style="flex:4"></span><span class="p" style="flex:3"></span><span class="x" style="flex:2"></span><span class="s" style="flex:1"></span>
+        </div>
+      </div>
+      <div class="au-item" tabindex="0">
+        <div class="au-item-top"><span class="au-item-emoji">🧩</span><span class="au-item-name">EMI 차폐 표준화</span></div>
+        <div class="au-item-meta"><span class="au-badge draft">초안 생성됨</span><span>4개 소스</span><span class="au-dot"></span><span>6/12</span></div>
+        <div class="au-src">
+          <span class="au-src-pill">MIL-STD-461</span><span class="au-src-pill">DO-160G</span><span class="au-src-pill">+2</span>
+        </div>
+        <div class="au-mm">
+          <span class="c" style="flex:5"></span><span class="p" style="flex:2"></span><span class="x" style="flex:1"></span><span class="s" style="flex:2"></span>
+        </div>
+      </div>
+      <div class="au-item new" tabindex="0" role="button">＋ 합성 프로젝트</div>
+    </div>
+  </div>
+
+  <!-- 연동 흐름 안내 -->
+  <div class="au-flow">
+    <span class="node">Explorer / Notebook</span>
+    <span class="arrow">→</span><span>소스 가져오기</span>
+    <span class="arrow">→</span><span class="node">Author</span>
+    <span class="arrow">→</span><span>초안 검증</span>
+    <span class="arrow">→</span><span class="node">Verify</span>
+    <span class="arrow">→</span><span>발행</span>
+    <span class="arrow">→</span><span class="node">Explorer 열람</span>
+  </div>
+
+  <div class="au-note">
+    화면 시안 v2 — 실제 <code>tokens.css</code> · <code>platform-header.css</code> 링크(색·간격·다크모드 정합) · 실제 데이터 아님<br>
+    우측 상단 아이콘으로 라이트/다크 전환을 확인하세요.
+  </div>
+
+</main>
+
+<script>
+  // 테마 토글: body[data-theme] 만 바꾸면 sun/moon 스왑은 platform-header.css 가 자동 처리
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var b=document.body;
+    b.setAttribute('data-theme', b.getAttribute('data-theme')==='dark'?'light':'dark');
+  });
+</script>
+</body>
+</html>

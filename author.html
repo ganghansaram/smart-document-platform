@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Author — Smart Document Platform</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+    <!-- 공통 CSS (CLAUDE.md 로드 순서) -->
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/scrollbar.css">
+    <link rel="stylesheet" href="css/toast.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/platform-header.css">
+    <link rel="stylesheet" href="css/author.css">
+    <link rel="stylesheet" href="css/platform-footer.css">
+</head>
+<body style="visibility:hidden">
+
+    <main class="author-main">
+
+        <!-- 새로 만들기 -->
+        <div class="au-start">
+            <h3 class="au-section-title">새로 만들기</h3>
+        </div>
+        <div class="au-tiles">
+            <button type="button" class="au-tile" id="tile-new-doc">
+                <span class="au-tile-ic">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                </span>
+                <span class="au-tile-title">빈 문서 작성</span>
+                <span class="au-tile-sub">통일 양식 골격에서 새 기술 보고서를 마크다운 ↔ WYSIWYG로 작성하고, DOCX로 내보내 워드에서 다듬어 제출합니다.</span>
+                <span class="au-chips">
+                    <span class="au-chip">마크다운 SSOT</span>
+                    <span class="au-chip">통일 양식 프리필</span>
+                    <span class="au-chip">DOCX 내보내기</span>
+                </span>
+            </button>
+
+            <button type="button" class="au-tile" id="tile-new-synth">
+                <span class="au-tile-ic">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"></path><path d="m2 17 10 5 10-5"></path><path d="m2 12 10 5 10-5"></path></svg>
+                </span>
+                <span class="au-tile-head">
+                    <span class="au-tile-title">합성 프로젝트</span>
+                    <span class="au-badge-beta">개발 예정</span>
+                </span>
+                <span class="au-tile-sub">원문 스펙 2~5개를 나란히 분석해 공통·충돌을 판정하고, 선별 결과로 AI 초안을 생성합니다.</span>
+                <span class="au-chips">
+                    <span class="au-chip">다중 소스 합성</span>
+                    <span class="au-chip">비교 매트릭스</span>
+                    <span class="au-chip">Verify 검증 연계</span>
+                </span>
+            </button>
+        </div>
+
+        <!-- 최근 문서 (실데이터: GET /api/authored) -->
+        <div class="au-section">
+            <div class="au-section-head">
+                <h3 class="au-section-title">최근 문서</h3>
+                <div class="au-section-actions">
+                    <div class="au-seg" role="tablist" aria-label="보기 전환">
+                        <button type="button" class="au-seg-btn" id="seg-cards" aria-pressed="true">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>카드
+                        </button>
+                        <button type="button" class="au-seg-btn" id="seg-list" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>리스트
+                        </button>
+                    </div>
+                    <button type="button" class="au-link auth-editor-only" id="act-new-doc">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>새 문서
+                    </button>
+                </div>
+            </div>
+            <div id="recent-host">
+                <div class="au-loading">불러오는 중…</div>
+            </div>
+        </div>
+
+        <!-- 합성 프로젝트 (셸 = empty-state) -->
+        <div class="au-section">
+            <div class="au-section-head">
+                <h3 class="au-section-title">합성 프로젝트</h3>
+            </div>
+            <div class="au-empty">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"></path><path d="m2 17 10 5 10-5"></path><path d="m2 12 10 5 10-5"></path></svg>
+                <h4>합성 프로젝트가 아직 없습니다</h4>
+                <p>여러 원문 스펙을 분석해 공통·충돌을 판정하고 새 초안을 만드는 기능이 곧 제공됩니다.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="author-footer"></div>
+
+    <!-- JavaScript -->
+    <script src="js/config.js"></script>
+    <script src="js/platform-header.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/platform-footer.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/author.js"></script>
+</body>
+</html>

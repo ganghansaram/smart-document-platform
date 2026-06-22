@@ -215,10 +215,9 @@
                 <div class="system-card-desc">문서 비교 · 유사도 검증</div>
                 <span class="badge badge-warning system-card-badge dev">개발중</span>
             </a>
-            <a class="system-card disabled" id="card-author" href="#">
+            <a class="system-card" id="card-author" href="author.html">
                 <h3>Author</h3>
                 <div class="system-card-desc">문서 작성 · 구조화 합성</div>
-                <span class="badge badge-info system-card-badge">개발 예정</span>
             </a>
         </div>
     </div>
@@ -263,9 +262,10 @@
             setTimeout(function() { window.location.href = 'compare.html'; }, 400);
         });
 
-        // Author 카드는 disabled — 클릭 무시
         document.getElementById('card-author').addEventListener('click', function(e) {
             e.preventDefault();
+            document.body.classList.add('fade-out');
+            setTimeout(function() { window.location.href = 'author.html'; }, 400);
         });
 
         // 푸터

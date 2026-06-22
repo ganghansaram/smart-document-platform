@@ -1,0 +1,283 @@
+/* ===================================================================
+   Author 셸(진입 홈) — Plan-61
+   레이아웃 출처: Claude Design 시안 v2 (claudedesign_260621/Author Home v2.dc.html)
+   원칙: tokens.css 변수만 소비. 색 하드코딩 0 (#fff = accent/navy 위 텍스트, 플랫폼 관례).
+   =================================================================== */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background var(--transition-slow), color var(--transition-slow);
+}
+
+.author-main {
+    flex: 1;
+    width: 100%;
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: var(--space-xl) var(--space-xl) 72px;
+}
+
+/* ── 섹션 공통 ── */
+.au-section { margin-bottom: var(--space-2xl); }
+.au-section-title {
+    font-size: 15px;
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+}
+.au-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+}
+.au-section-actions { display: flex; align-items: center; gap: var(--space-md); }
+
+.au-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--active-color);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity var(--transition-fast);
+}
+.au-link:hover { opacity: 0.7; }
+.au-link.muted { color: var(--text-secondary); font-weight: var(--font-weight-medium); }
+
+/* ── "새로 만들기" 진입 타일 2개 ── */
+.au-start { margin-bottom: var(--space-md); }
+.au-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    margin-bottom: 44px;
+}
+.au-tile {
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+    background: var(--content-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px 24px 22px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--panel-shadow);
+    transition: border-color var(--transition-normal), transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+.au-tile:hover, .au-tile:focus-visible {
+    border-color: var(--active-color);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    outline: none;
+}
+.au-tile-ic {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: var(--active-color-subtle);
+    color: var(--active-color);
+    margin-bottom: var(--space-md);
+}
+.au-tile-head { display: flex; align-items: center; gap: var(--space-sm); }
+.au-tile-title { font-size: 17px; font-weight: var(--font-weight-bold); color: var(--text-primary); }
+.au-tile-sub {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-top: 7px;
+    line-height: 1.6;
+    flex: 1;
+}
+.au-chips { margin-top: var(--space-md); display: flex; gap: 7px; flex-wrap: wrap; }
+.au-chip {
+    font-size: 11px;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 3px 9px;
+    white-space: nowrap;
+}
+.au-badge-beta {
+    background: var(--active-color);
+    color: #fff;                       /* accent 배경 위 텍스트 — 플랫폼 관례(platform-header.css 동일) */
+    font-size: 10px;
+    font-weight: var(--font-weight-semibold);
+    border-radius: 4px;
+    padding: 2px 7px;
+}
+
+/* ── 보기 전환 (세그먼트) ── */
+.au-seg {
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+}
+.au-seg-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-family: inherit;
+    transition: all var(--transition-normal);
+}
+.au-seg-btn[aria-pressed="true"] {
+    background: var(--content-bg);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* ── 카드 그리드 ── */
+.au-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); }
+.au-card {
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+    background: var(--content-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 15px 16px;
+    display: flex;
+    flex-direction: column;
+    transition: border-color var(--transition-normal), transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+.au-card:hover, .au-card:focus-visible {
+    border-color: var(--active-color);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+    outline: none;
+}
+.au-card-top { display: flex; align-items: center; gap: 9px; margin-bottom: 11px; color: var(--text-muted); }
+.au-card-top svg { flex-shrink: 0; }
+.au-card-name {
+    font-size: 13.5px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.au-card-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    font-size: 11.5px;
+    color: var(--text-muted);
+}
+.au-dot { width: 3px; height: 3px; border-radius: var(--radius-pill); background: var(--text-muted); display: inline-block; }
+
+/* "새로 시작" 점선 타일 */
+.au-card.new {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    border-style: dashed;
+    background: transparent;
+    color: var(--active-color);
+    font-weight: var(--font-weight-semibold);
+    font-size: 13.5px;
+    min-height: 92px;
+}
+.au-card.new:hover { background: var(--active-color-subtle); }
+
+/* ── 리스트 뷰 ── */
+.au-list { background: var(--content-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; }
+.au-list-head, .au-row {
+    display: grid;
+    grid-template-columns: 1fr 150px 110px;
+    gap: 12px;
+    align-items: center;
+}
+.au-list-head {
+    padding: 9px 18px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 11px;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--panel-bg);
+}
+.au-list-head .ra { text-align: right; }
+.au-row {
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 18px;
+    transition: background var(--transition-fast);
+}
+.au-row:last-child { border-bottom: none; }
+.au-row:hover { background: var(--hover-bg); }
+.au-row-name { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--text-muted); }
+.au-row-name > span { font-size: 13px; font-weight: var(--font-weight-semibold); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.au-row-owner { font-size: 12.5px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.au-row-date { font-size: 12.5px; color: var(--text-muted); text-align: right; }
+
+/* ── 합성 카드 보조(후속 Phase 렌더용 — 셸은 empty-state) ── */
+.au-stage { font-size: 10px; font-weight: var(--font-weight-semibold); border-radius: 4px; padding: 2px 7px; letter-spacing: 0.2px; background: var(--active-color-subtle); color: var(--active-color); }
+.au-src { display: flex; gap: 4px; margin-top: 11px; flex-wrap: wrap; }
+.au-src-pill { font-size: 10px; color: var(--text-secondary); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+.au-mm { display: flex; gap: 3px; margin-top: 11px; }
+.au-mm span { height: 6px; border-radius: 3px; }
+.au-mm .c { background: var(--color-success); }
+.au-mm .p { background: var(--color-warning); }
+.au-mm .x { background: var(--color-error); }
+.au-mm .s { background: var(--text-muted); }
+
+/* ── 빈 상태 / 로딩 ── */
+.au-empty {
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    text-align: center;
+    color: var(--text-secondary);
+    background: var(--panel-bg);
+}
+.au-empty svg { color: var(--text-muted); opacity: 0.7; }
+.au-empty h4 { margin-top: 10px; font-size: 14px; color: var(--text-primary); font-weight: var(--font-weight-semibold); }
+.au-empty p { margin-top: 4px; font-size: 12.5px; }
+.au-empty .au-link { margin-top: 14px; }
+.au-loading { color: var(--text-muted); font-size: 12.5px; padding: var(--space-md) 0; }
+
+/* ── 반응형 ── */
+@media (max-width: 880px) {
+    .au-tiles { grid-template-columns: 1fr; }
+    .au-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+    .author-main { padding: var(--space-xl) var(--space-md) 40px; }
+    .au-grid { grid-template-columns: 1fr; }
+    .au-list-head, .au-row { grid-template-columns: 1fr 92px; }
+    .au-list-head .col-owner, .au-row .au-row-owner { display: none; }
+}

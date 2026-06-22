@@ -32,13 +32,14 @@ services:
   # ── Nginx (프론트엔드 정적 자산) ──
   nginx:
     volumes:
-      # HTML 페이지 (루트 7개)
+      # HTML 페이지 (루트 8개)
       - ./launcher.html:/app/frontend/launcher.html:ro
       - ./login.html:/app/frontend/login.html:ro
       - ./index.html:/app/frontend/index.html:ro
       - ./translator.html:/app/frontend/translator.html:ro
       - ./compare.html:/app/frontend/compare.html:ro
       - ./admin.html:/app/frontend/admin.html:ro
+      - ./author.html:/app/frontend/author.html:ro
       - ./favicon.svg:/app/frontend/favicon.svg:ro
 
       # 정적 자산 디렉터리
