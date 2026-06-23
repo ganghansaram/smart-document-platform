@@ -145,7 +145,7 @@
     function init() {
         if (typeof initPlatformHeader === 'function') {
             initPlatformHeader({
-                title: 'Author',
+                title: 'Document Author',
                 currentSystem: 'author',
                 showThemeToggle: true,
                 authRequired: true,      // 미로그인 → login.html (헤더 onUnauth 기본)
