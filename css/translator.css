@@ -141,9 +141,10 @@ body[data-theme="dark"] .hero-banner-img {
     background: var(--active-color-subtle);
 }
 
-.upload-zone-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.4; }
-.upload-zone-text { font-size: 15px; color: var(--text-light); }
-.upload-zone-hint { font-size: 13px; color: var(--text-light); margin-top: 6px; }
+.upload-zone-icon { color: var(--active-color); margin-bottom: 12px; line-height: 0; }
+.upload-zone-icon svg { width: 42px; height: 42px; }
+.upload-zone-text { font-size: 15px; color: var(--text-secondary); font-weight: var(--font-weight-semibold); }
+.upload-zone-hint { font-size: 12.5px; color: var(--text-light); margin-top: 5px; }
 .upload-zone input[type="file"] { display: none; }
 
 /* 문서 카드 그리드 */
