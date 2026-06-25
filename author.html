@@ -17,29 +17,31 @@
 </head>
 <body style="visibility:hidden">
 
-    <!-- 진입 히어로 — Verify .verify-hero 스펙 그대로 복제 (배경·텍스트만 Author) -->
+    <!-- 진입 히어로 — Author 정체성(딥 네이비 클린 캔버스 + 문서 콘스텔레이션). 골격은 형제 시스템과 공유,
+         질감은 차별화: Verify=사각 그리드+추상 노드 / Author=격자 없는 빈 캔버스+문서 글리프 망 -->
     <section class="author-hero">
-        <div class="author-hero-grid"></div>
         <div class="author-hero-glow author-hero-glow-1"></div>
         <div class="author-hero-glow author-hero-glow-2"></div>
         <div class="author-hero-glow author-hero-glow-3"></div>
-        <div class="author-hero-ring author-hero-ring-1"></div>
-        <div class="author-hero-ring author-hero-ring-2"></div>
-        <div class="author-hero-nodes">
-            <div class="author-hero-node author-hero-node-1"></div>
-            <div class="author-hero-node author-hero-node-2"></div>
-            <div class="author-hero-node author-hero-node-3"></div>
-            <div class="author-hero-node author-hero-node-4"></div>
-        </div>
-        <div class="author-hero-lines">
-            <svg viewBox="0 0 1200 220" preserveAspectRatio="none">
-                <line x1="82%" y1="30%" x2="70%" y2="55%" stroke="rgba(80,180,220,0.08)" stroke-width="1"/>
-                <line x1="70%" y1="55%" x2="62%" y2="22%" stroke="rgba(80,180,220,0.06)" stroke-width="1"/>
-                <line x1="82%" y1="30%" x2="88%" y2="45%" stroke="rgba(80,180,220,0.07)" stroke-width="1"/>
-                <line x1="88%" y1="45%" x2="70%" y2="55%" stroke="rgba(80,180,220,0.05)" stroke-width="1"/>
-            </svg>
-        </div>
         <div class="author-hero-grain"></div>
+        <!-- 우측 모티프 — 문서 글리프 콘스텔레이션(저작 = 빈 종이에서 문서가 생겨나는 망) -->
+        <svg class="author-hero-motif" width="360" height="200" viewBox="0 0 360 200" fill="none" aria-hidden="true">
+            <g stroke="rgba(120, 175, 235, 0.32)" stroke-width="1.1">
+                <line x1="80" y1="60" x2="180" y2="110"/>
+                <line x1="180" y1="110" x2="120" y2="150"/>
+                <line x1="180" y1="110" x2="280" y2="70"/>
+                <line x1="280" y1="70" x2="300" y2="130"/>
+            </g>
+            <g stroke="rgba(150, 200, 250, 0.78)" stroke-width="1.4" fill="rgba(99, 160, 224, 0.1)">
+                <g transform="translate(64 44)"><rect width="22" height="28" rx="3"/><line x1="5" y1="9" x2="17" y2="9" stroke-width="1.8"/><line x1="5" y1="15" x2="17" y2="15"/><line x1="5" y1="21" x2="13" y2="21"/></g>
+                <g transform="translate(166 92)"><rect width="26" height="32" rx="3"/><line x1="6" y1="10" x2="20" y2="10" stroke-width="2"/><line x1="6" y1="17" x2="20" y2="17"/><line x1="6" y1="24" x2="15" y2="24"/></g>
+                <g transform="translate(106 132)"><rect width="18" height="24" rx="3"/><line x1="4" y1="8" x2="14" y2="8"/><line x1="4" y1="14" x2="14" y2="14"/></g>
+                <g transform="translate(268 52)"><rect width="20" height="26" rx="3"/><line x1="5" y1="8" x2="15" y2="8"/><line x1="5" y1="14" x2="15" y2="14"/></g>
+            </g>
+            <circle cx="300" cy="130" r="3.5" fill="rgba(160, 210, 255, 0.9)"/>
+            <circle cx="300" cy="130" r="8" fill="rgba(160, 210, 255, 0.22)"/>
+            <circle cx="180" cy="110" r="2.5" fill="rgba(160, 210, 255, 0.75)"/>
+        </svg>
         <div class="author-hero-overlay">
             <h2>Author it.</h2>
             <p>빈 문서 작성 · 구조화 합성 · 통일 양식 · DOCX 내보내기</p>

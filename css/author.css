@@ -14,30 +14,19 @@ body {
     transition: background var(--transition-slow), color var(--transition-slow);
 }
 
-/* ── 진입 히어로 — Verify .verify-hero 스펙 그대로 복제 (css/compare.css:4033~) ──
-   동일 규격(200px·고정 다크 그라데이션+다크변형·44px 그리드·글로우3+애니·링2·
-   노드4+애니·연결선·grain·오버레이 32px/300)으로 형제 정합. Author 적응 2곳:
-   ① 풀블리드(top-level → breakout 불요, width:100%) ② 오버레이를 본문 1160 컬럼에
-   정렬(Verify는 left:48 고정) ③ 페이드 = --canvas-bg(Author 배경). 장식 rgba/hex는
-   Verify 원본 그대로(고정 다크 위 장식값). */
+/* ── 진입 히어로 — 형제 시스템과 골격 공유(200px·고정 다크·글로우3+애니·grain·오버레이
+   32px/300·페이드), 정체성은 차별화. Verify=스틸네이비+사각 그리드+추상 노드라면,
+   Author=딥 네이비 클린 캔버스(격자 없음)+문서 글리프 콘스텔레이션("빈 종이 → 문서 생성").
+   Author 적응: ① 풀블리드(width:100%) ② 오버레이 left:48 ③ 페이드 = --canvas-bg(Author 배경). */
 .author-hero {
     position: relative;
     width: 100%;
     height: 200px;
     overflow: hidden;
     flex-shrink: 0;
-    background: linear-gradient(150deg, #091e30 0%, #0f2d47 40%, #133a55 70%, #0d2a40 100%);
+    background: linear-gradient(135deg, #001f3f 0%, #003d7a 100%);
     pointer-events: none;
     user-select: none;
-}
-.author-hero-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(80, 160, 200, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(80, 160, 200, 0.05) 1px, transparent 1px);
-    background-size: 44px 44px;
-    z-index: 1;
 }
 .author-hero-glow {
     position: absolute;
@@ -48,17 +37,17 @@ body {
 }
 .author-hero-glow-1 {
     width: 300px; height: 250px; top: -50px; right: 5%;
-    background: radial-gradient(ellipse, rgba(60, 160, 200, 0.2) 0%, transparent 70%);
+    background: radial-gradient(ellipse, rgba(99, 160, 224, 0.28) 0%, transparent 70%);
     animation: aHeroGlow1 18s ease-in-out infinite;
 }
 .author-hero-glow-2 {
     width: 200px; height: 180px; bottom: -30px; left: 20%;
-    background: radial-gradient(ellipse, rgba(40, 130, 180, 0.15) 0%, transparent 70%);
+    background: radial-gradient(ellipse, rgba(44, 82, 130, 0.4) 0%, transparent 70%);
     animation: aHeroGlow2 22s ease-in-out infinite;
 }
 .author-hero-glow-3 {
     width: 160px; height: 160px; top: 20%; left: 55%;
-    background: radial-gradient(ellipse, rgba(80, 180, 220, 0.1) 0%, transparent 70%);
+    background: radial-gradient(ellipse, rgba(120, 175, 235, 0.12) 0%, transparent 70%);
     animation: aHeroGlow3 15s ease-in-out infinite;
 }
 @keyframes aHeroGlow1 {
@@ -75,46 +64,6 @@ body {
     40%      { transform: translate(-20px, 10px) scale(1.15); opacity: 0.8; }
     80%      { transform: translate(10px, -5px) scale(0.95); opacity: 0.5; }
 }
-.author-hero-ring {
-    position: absolute;
-    border: 1px solid rgba(80, 180, 220, 0.06);
-    border-radius: 50%;
-    z-index: 2;
-}
-.author-hero-ring-1 { width: 200px; height: 200px; top: 5px; right: 60px; }
-.author-hero-ring-2 { width: 130px; height: 130px; top: 40px; right: 95px; }
-.author-hero-nodes { position: absolute; inset: 0; z-index: 3; }
-.author-hero-node { position: absolute; border-radius: 50%; z-index: 4; }
-.author-hero-node-1 {
-    width: 6px; height: 6px; top: 30%; right: 18%;
-    background: rgba(80, 200, 230, 0.7);
-    box-shadow: 0 0 12px 3px rgba(80, 200, 230, 0.25);
-    animation: aHeroNode 3.5s ease-in-out infinite;
-}
-.author-hero-node-2 {
-    width: 5px; height: 5px; top: 55%; right: 30%;
-    background: rgba(80, 180, 210, 0.6);
-    box-shadow: 0 0 10px 2px rgba(80, 180, 210, 0.2);
-    animation: aHeroNode 4.5s ease-in-out 1s infinite;
-}
-.author-hero-node-3 {
-    width: 4px; height: 4px; top: 22%; right: 38%;
-    background: rgba(100, 200, 230, 0.5);
-    box-shadow: 0 0 8px 2px rgba(100, 200, 230, 0.15);
-    animation: aHeroNode 5s ease-in-out 2s infinite;
-}
-.author-hero-node-4 {
-    width: 5px; height: 5px; top: 45%; right: 12%;
-    background: rgba(70, 190, 220, 0.55);
-    box-shadow: 0 0 10px 2px rgba(70, 190, 220, 0.2);
-    animation: aHeroNode 4s ease-in-out 0.5s infinite;
-}
-@keyframes aHeroNode {
-    0%, 100% { opacity: 0.3; transform: scale(1); }
-    50%      { opacity: 1;   transform: scale(1.3); }
-}
-.author-hero-lines { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
-.author-hero-lines svg { width: 100%; height: 100%; }
 .author-hero-grain {
     position: absolute;
     inset: 0;
@@ -124,6 +73,18 @@ body {
     pointer-events: none;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     background-size: 128px 128px;
+}
+/* 우측 모티프 — 문서 글리프 콘스텔레이션 (grain 아래, 글로우 위) */
+.author-hero-motif {
+    position: absolute;
+    top: 0;
+    right: 36px;
+    height: 200px;
+    z-index: 4;
+    pointer-events: none;
+}
+@media (max-width: 640px) {
+    .author-hero-motif { display: none; }
 }
 .author-hero-overlay { position: absolute; bottom: 28px; left: 48px; z-index: 8; }
 .author-hero-overlay h2 {
@@ -147,7 +108,7 @@ body {
     z-index: 9;
 }
 body[data-theme="dark"] .author-hero {
-    background: linear-gradient(150deg, #060f1a 0%, #0a1e30 40%, #0e2a3f 70%, #091a2c 100%);
+    background: linear-gradient(135deg, #00152c 0%, #002b54 100%);
 }
 body[data-theme="dark"] .author-hero-glow-1 { opacity: 0.5; }
 body[data-theme="dark"] .author-hero-glow-2 { opacity: 0.4; }

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Author 히어로 — 배경×모티프 비교 (틸 vs 네이비 vs Verify)</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#eef1f4; font-family:-apple-system,"Segoe UI","Malgun Gothic",sans-serif;
+    color:#34495e; padding:24px 32px 80px; }
+  h1 { font-size:17px; margin-bottom:6px; color:#2c3e50; }
+  .intro { font-size:12.5px; color:#5a6b78; margin-bottom:24px; line-height:1.6; max-width:880px; }
+  .variant { margin-bottom:30px; }
+  .variant > .label { font-size:13px; font-weight:700; margin-bottom:8px; color:#34495e; }
+  .variant > .label .desc { font-weight:400; font-size:12px; color:#7a8896; margin-left:6px; }
+
+  .hero { position:relative; width:100%; height:200px; overflow:hidden; border-radius:8px; user-select:none; }
+  .grid { position:absolute; inset:0; z-index:1; }
+  .grid-teal { background-image:Verif
+      linear-gradient(rgba(80,200,170,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(80,200,170,.05) 1px, transparent 1px);
+    background-size:44px 44px; }
+  .grid-blue { background-image:
+      linear-gradient(rgba(99,160,224,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,160,224,.05) 1px, transparent 1px);
+    background-size:44px 44px; }
+  /* V2 블루프린트 그리드 (옛 목업 그대로) */
+  .grid-blueprint { background-image:
+      repeating-linear-gradient(0deg,transparent 0,transparent 39px,rgba(255,255,255,.05) 39px,rgba(255,255,255,.05) 40px),
+      repeating-linear-gradient(90deg,transparent 0,transparent 39px,rgba(255,255,255,.05) 39px,rgba(255,255,255,.05) 40px);
+    z-index:1; }
+  .glow { position:absolute; border-radius:50%; filter:blur(50px); z-index:2; }
+  .grain { position:absolute; inset:0; z-index:5; opacity:.3; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:128px 128px; }
+  .overlay { position:absolute; bottom:28px; left:48px; z-index:8; }
+  .overlay h2 { font-size:32px; font-weight:300; color:#fff; letter-spacing:-.5px; text-shadow:0 2px 20px rgba(0,0,0,.4); }
+  .overlay p { font-size:13.5px; color:rgba(255,255,255,.65); margin-top:5px; letter-spacing:.3px; }
+  .fade { position:absolute; bottom:0; left:0; right:0; height:50px; z-index:9;
+    background:linear-gradient(to top,#eef1f4,transparent); }
+  .motif { position:absolute; top:0; right:36px; height:200px; z-index:4; pointer-events:none; }
+
+  /* 배경들 */
+  .bg-teal { background:linear-gradient(150deg,#04231f 0%,#073530 40%,#0a4740 70%,#052e29 100%); }
+  .bg-navy { background:linear-gradient(135deg,#001f3f 0%,#003d7a 100%); }
+  .bg-verify { background:linear-gradient(150deg,#091e30 0%,#0f2d47 40%,#133a55 70%,#0d2a40 100%); }
+</style>
+</head>
+<body>
+  <h1>Author 히어로 — 배경 × V5 모티프 비교</h1>
+  <p class="intro">아래 A·B는 <b>V5 콘스텔레이션 모티프(확정)</b>를 두 배경 위에 얹은 것. C는 실제 <b>Verify 히어로</b>(닮음 여부 판단용). 텍스트는 안 바뀌며 우측 그림+배경만 차이.</p>
+
+  <!-- A. 틸 + V5 (현재 작업본 방향) -->
+  <div class="variant">
+    <div class="label">A · 틸 배경 + V5 <span class="desc">— 현재 작업본 방향. Verify와 색으로 확실히 구분(시스템별 정체성).</span></div>
+    <div class="hero bg-teal">
+      <div class="grid grid-teal"></div>
+      <div class="glow" style="width:300px;height:250px;top:-50px;right:5%;background:radial-gradient(ellipse,rgba(50,200,160,.2),transparent 70%);"></div>
+      <div class="glow" style="width:160px;height:160px;top:20%;left:55%;background:radial-gradient(ellipse,rgba(90,220,180,.1),transparent 70%);"></div>
+      <div class="grain"></div>
+      <svg class="motif" width="360" height="200" viewBox="0 0 360 200" fill="none">
+        <g stroke="rgba(130,235,205,.3)" stroke-width="1.1">
+          <line x1="80" y1="60" x2="180" y2="110"/><line x1="180" y1="110" x2="120" y2="150"/>
+          <line x1="180" y1="110" x2="280" y2="70"/><line x1="280" y1="70" x2="300" y2="130"/></g>
+        <g stroke="rgba(160,250,222,.72)" stroke-width="1.4" fill="rgba(80,200,170,.08)">
+          <g transform="translate(64 44)"><rect width="22" height="28" rx="3"/><line x1="5" y1="9" x2="17" y2="9" stroke-width="1.8"/><line x1="5" y1="15" x2="17" y2="15"/><line x1="5" y1="21" x2="13" y2="21"/></g>
+          <g transform="translate(166 92)"><rect width="26" height="32" rx="3"/><line x1="6" y1="10" x2="20" y2="10" stroke-width="2"/><line x1="6" y1="17" x2="20" y2="17"/><line x1="6" y1="24" x2="15" y2="24"/></g>
+          <g transform="translate(106 132)"><rect width="18" height="24" rx="3"/><line x1="4" y1="8" x2="14" y2="8"/><line x1="4" y1="14" x2="14" y2="14"/></g>
+          <g transform="translate(268 52)"><rect width="20" height="26" rx="3"/><line x1="5" y1="8" x2="15" y2="8"/><line x1="5" y1="14" x2="15" y2="14"/></g></g>
+        <circle cx="300" cy="130" r="3.5" fill="rgba(170,255,230,.85)"/><circle cx="300" cy="130" r="8" fill="rgba(170,255,230,.2)"/>
+        <circle cx="180" cy="110" r="2.5" fill="rgba(170,255,230,.7)"/>
+      </svg>
+      <div class="overlay"><h2>Author it.</h2><p>빈 문서 작성 · 구조화 합성 · 통일 양식 · DOCX 내보내기</p></div>
+      <div class="fade"></div>
+    </div>
+  </div>
+
+  <!-- B. 네이비(V2 블루프린트) + V5 -->
+  <div class="variant">
+    <div class="label">B · 네이비 블루프린트(옛 V2) + V5 <span class="desc">— 네이비 그라데이션 + 블루프린트 그리드 + V5(블루 톤). 플랫폼 통일 블루와 정합.</span></div>
+    <div class="hero bg-navy">
+      <div class="grid grid-blueprint"></div>
+      <div class="glow" style="width:340px;height:240px;top:-40px;right:6%;background:radial-gradient(ellipse,rgba(99,160,224,.28),transparent 70%);"></div>
+      <div class="grain"></div>
+      <svg class="motif" width="360" height="200" viewBox="0 0 360 200" fill="none">
+        <g stroke="rgba(120,175,235,.32)" stroke-width="1.1">
+          <line x1="80" y1="60" x2="180" y2="110"/><line x1="180" y1="110" x2="120" y2="150"/>
+          <line x1="180" y1="110" x2="280" y2="70"/><line x1="280" y1="70" x2="300" y2="130"/></g>
+        <g stroke="rgba(150,200,250,.78)" stroke-width="1.4" fill="rgba(99,160,224,.1)">
+          <g transform="translate(64 44)"><rect width="22" height="28" rx="3"/><line x1="5" y1="9" x2="17" y2="9" stroke-width="1.8"/><line x1="5" y1="15" x2="17" y2="15"/><line x1="5" y1="21" x2="13" y2="21"/></g>
+          <g transform="translate(166 92)"><rect width="26" height="32" rx="3"/><line x1="6" y1="10" x2="20" y2="10" stroke-width="2"/><line x1="6" y1="17" x2="20" y2="17"/><line x1="6" y1="24" x2="15" y2="24"/></g>
+          <g transform="translate(106 132)"><rect width="18" height="24" rx="3"/><line x1="4" y1="8" x2="14" y2="8"/><line x1="4" y1="14" x2="14" y2="14"/></g>
+          <g transform="translate(268 52)"><rect width="20" height="26" rx="3"/><line x1="5" y1="8" x2="15" y2="8"/><line x1="5" y1="14" x2="15" y2="14"/></g></g>
+        <circle cx="300" cy="130" r="3.5" fill="rgba(160,210,255,.9)"/><circle cx="300" cy="130" r="8" fill="rgba(160,210,255,.22)"/>
+        <circle cx="180" cy="110" r="2.5" fill="rgba(160,210,255,.75)"/>
+      </svg>
+      <div class="overlay"><h2>Author it.</h2><p>빈 문서 작성 · 구조화 합성 · 통일 양식 · DOCX 내보내기</p></div>
+      <div class="fade"></div>
+    </div>
+  </div>
+
+  <!-- C. 실제 Verify 히어로 (닮음 판단용) -->
+  <div class="variant">
+    <div class="label">C · 실제 Verify 히어로 <span class="desc">— 닮음 여부 판단 기준. 스틸네이비 + 그리드 + 노드 그래프.</span></div>
+    <div class="hero bg-verify">
+      <div class="grid grid-blue"></div>
+      <div class="glow" style="width:300px;height:250px;top:-50px;right:5%;background:radial-gradient(ellipse,rgba(99,160,224,.18),transparent 70%);"></div>
+      <div class="grain"></div>
+      <svg class="motif" width="360" height="200" viewBox="0 0 360 200" fill="none">
+        <g stroke="rgba(120,175,225,.2)" stroke-width="1">
+          <line x1="90" y1="70" x2="190" y2="110"/><line x1="190" y1="110" x2="150" y2="155"/>
+          <line x1="190" y1="110" x2="290" y2="60"/><line x1="290" y1="60" x2="310" y2="120"/>
+          <line x1="190" y1="110" x2="250" y2="140"/></g>
+        <g fill="rgba(130,200,240,.85)">
+          <circle cx="90" cy="70" r="3"/><circle cx="190" cy="110" r="4"/><circle cx="150" cy="155" r="2.5"/>
+          <circle cx="290" cy="60" r="3"/><circle cx="250" cy="140" r="2.5"/></g>
+        <circle cx="310" cy="120" r="3.5" fill="rgba(150,215,255,.9)"/><circle cx="310" cy="120" r="9" fill="rgba(150,215,255,.18)"/>
+      </svg>
+      <div class="overlay"><h2>Verify Your Documents</h2><p>문서 비교 · 유사도 검사 · 규칙 검증 · 문서 품질 게이트</p></div>
+      <div class="fade"></div>
+    </div>
+  </div>
+
+</body>
+</html>
