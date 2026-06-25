@@ -350,7 +350,7 @@
 
         function createDocCard(doc) {
             var card = document.createElement('div');
-            card.className = 'doc-card';
+            card.className = 'doc-card content-card';
             card.setAttribute('data-doc-id', doc.id);
 
             var title = document.createElement('div');

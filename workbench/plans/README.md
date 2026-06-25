@@ -30,7 +30,6 @@
 | 49 | Verify 가이드 튜토리얼화 | 🟡 Phase 1 완료 / Phase 2 진행 | 유사도 모드 완료, 비교 모드 진행 중 |
 | 57 | Verify 비교/검증 모드 뷰 통일 | ⬜ 미착수 (대작 ~11.75일) | 4차 design-review 통과, 착수 결정 대기 |
 | 60 | 통일 양식 기반 문서 저작·내보내기 플랫폼 (저작+DOCX 내보내기 통합) | 🟡 Phase 2·3·4 진행 중 | 2a 저작 풀사이클 ✅ + 에디터 디자인 토큰·다크 브리지 ✅(2026-06-18) + 3a/3c DOCX 내보내기 ✅ + 4 "작성 문서" 자동 메뉴 편입 ✅(방법 가). 남음: 2b 소유권·3b 표지·하드닝·검색연동·admin 큐레이션/관리·회귀. 최근 커밋 `cddc377`·`d44e7c1`(push됨) |
-| 63 | Notebook 문서 카드를 Author 카드 언어로 정합 | ⬜ 착수 대기 (계획 승인 단계) | Plan-62의 문서 카드판. 공통 *경량* 카드 스킨(가칭 `.content-card`, entry-card와 자매) 추출 → Notebook `.doc-card` 테마 현대화(호버 들림·다크정합), Author `.au-card` 베이스 전환(시각 무변). 버튼/제목편집/상태 등 Notebook 인터랙션은 유지 |
 
 ## ❄️ 보류 (Icebox — 설계·로드맵·트리거 대기)
 
@@ -101,6 +100,7 @@
 | 59 | verdict 라벨 재갱신 + legacy 정합 |
 | 61 | Author 셸("빈 방") 구축 — 4번째 시스템 진입 셸·생산 허브 홈 (Claude Design 시안 v2 기반, 바닐라 이식·검증 통과). 후속: 저작 이관(Plan-60)·합성(Plan-24) |
 | 62 | 공통 진입 카드(`.entry-card`) 추출 + Verify 허브 현대화 — components.css 공통 스킨 추출, Verify 허브 평상시 elevation 통일(모드 3색·레이아웃 유지), Author 회귀 0 |
+| 63 | Notebook 문서 카드를 Author 카드 언어로 정합 — `.content-card`(entry-card 경량 자매) 추출, Notebook `.doc-card` 현대화(호버 들림·다크 솔리드), Author `.au-card` 베이스 전환(회귀 0), 인터랙션 보존 |
 | — | (설계) Phase4 AI 요약 설계서 → `phase4-ai-summary-design.md` |
 
 > 결번 46: 미생성. 08·09·24·25·26·34 는 icebox.

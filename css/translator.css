@@ -164,16 +164,11 @@ body[data-theme="dark"] .hero-banner-img {
 }
 
 .doc-card {
-    background: var(--white);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
+    /* 스킨(배경·테두리·둥글기·호버 들림)은 .content-card 상속 — 여기선 레이아웃만 */
     padding: 20px;
-    transition: border-color 0.2s, background 0.2s;
     position: relative;
     cursor: pointer;
 }
-
-.doc-card:hover { border-color: color-mix(in srgb, var(--active-color) 40%, transparent); }
 
 .doc-card-title {
     font-size: 15px;
@@ -362,8 +357,12 @@ body[data-theme="dark"] .hero-banner-img {
     transition: background var(--transition-fast);
 }
 
-.doc-grid.doc-list-mode .doc-card:hover {
+.doc-grid.doc-list-mode .doc-card:hover,
+.doc-grid.doc-list-mode .doc-card:focus-visible {
     background: var(--hover-bg);
+    /* 리스트 행은 평평하게 — content-card 의 호버/포커스 들림(-2px/shadow) 억제 */
+    transform: none;
+    box-shadow: none;
 }
 
 .doc-grid.doc-list-mode .doc-card:first-child {
@@ -1400,8 +1399,7 @@ body[data-theme="dark"] .upload-zone.dragover { border-color: var(--active-color
 body[data-theme="dark"] .upload-zone-text { color: rgba(255,255,255,0.5); }
 body[data-theme="dark"] .upload-zone-hint { color: rgba(255,255,255,0.3); }
 
-body[data-theme="dark"] .doc-card { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
-body[data-theme="dark"] .doc-card:hover { border-color: color-mix(in srgb, var(--active-color) 40%, transparent); }
+/* 다크 카드 배경·호버는 .content-card 토큰 자동 전환에 위임 (Author .au-card 와 정합) */
 body[data-theme="dark"] .doc-card-title .title-edit-btn svg { fill: var(--text-secondary); }
 body[data-theme="dark"] .doc-card-title .title-edit-btn:hover svg { fill: var(--active-color); }
 body[data-theme="dark"] .doc-card-title .title-edit-input { background: var(--content-bg); color: var(--text-primary); border-color: var(--active-color); }

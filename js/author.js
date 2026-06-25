@@ -93,7 +93,7 @@
                 rows + '</div>';
         } else {
             var cards = docs.map(function (d) {
-                return '<button type="button" class="au-card" data-url="' + esc(d.url) + '">' +
+                return '<button type="button" class="au-card content-card" data-url="' + esc(d.url) + '">' +
                     '<span class="au-card-top">' + FILE_SVG +
                     '<span class="au-card-name">' + esc(d.label) + '</span></span>' +
                     '<span class="au-card-meta"><span>' + esc(d.author || '—') + '</span>' +
@@ -101,7 +101,7 @@
                     '</button>';
             }).join('');
             // editor+ 만 보이는 "빈 문서 작성" 점선 타일
-            cards += '<button type="button" class="au-card new auth-editor-only" data-act="new-doc">＋ 빈 문서 작성</button>';
+            cards += '<button type="button" class="au-card new content-card auth-editor-only" data-act="new-doc">＋ 빈 문서 작성</button>';
             host.innerHTML = '<div class="au-grid">' + cards + '</div>';
         }
 

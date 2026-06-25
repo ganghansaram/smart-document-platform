@@ -1,6 +1,6 @@
 # Plan-63 — Notebook 문서 카드를 Author 카드 언어로 정합 (공통 경량 카드 스킨 추출)
 
-> **상태: ⬜ 착수 대기 (계획 승인 단계)**
+> **상태: ✅ 완료 (2026-06-25, /plan-execute) — `.content-card`(entry-card 경량 자매) 추출, Notebook 문서 카드 현대화·다크 솔리드 정합, Author 회귀 0. 피드백 `reports/plan-63-feedback-2026-06-25.md`**
 > 작성: 2026-06-25 · 트리거: 진입 홈 정합 작업(Plan-61/62, 히어로·헤더·`.entry-card`) 후, Notebook 배너 **아래** 문서 카드가 Author 카드보다 구형(평평·다크 비정합)으로 관찰됨.
 > 근거: Plan-62(`.entry-card` 추출)의 *문서 카드판*. "복붙 아닌 추출"로 드리프트 방지.
 

@@ -247,22 +247,13 @@ body[data-theme="dark"] .author-hero-glow-3 { opacity: 0.3; }
 /* ── 카드 그리드 ── */
 .au-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); }
 .au-card {
+    /* 스킨(배경·테두리·둥글기·호버 들림)은 .content-card 상속 — 여기선 레이아웃만 */
     text-align: left;
     font-family: inherit;
     cursor: pointer;
-    background: var(--content-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
     padding: 15px 16px;
     display: flex;
     flex-direction: column;
-    transition: border-color var(--transition-normal), transform var(--transition-normal), box-shadow var(--transition-normal);
-}
-.au-card:hover, .au-card:focus-visible {
-    border-color: var(--active-color);
-    box-shadow: var(--shadow-sm);
-    transform: translateY(-2px);
-    outline: none;
 }
 .au-card-top { display: flex; align-items: center; gap: 9px; margin-bottom: 11px; color: var(--text-muted); }
 .au-card-top svg { flex-shrink: 0; }

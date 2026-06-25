@@ -611,3 +611,20 @@ body[data-theme="dark"] .mode-toggle-btn.active { background: var(--white); colo
     box-shadow: var(--shadow-md);
     outline: none;
 }
+
+/* ── 문서/리스트 카드 (경량) — .entry-card 의 자매. 평상시 평평(그림자 없음),
+   호버 때만 들림(-2px). 카드가 많은 문서 그리드에 적합(전부 elevation 주면 시끄러움).
+   Author `.au-card`·Notebook `.doc-card` 가 함께 확장(레이아웃·액션은 각 시스템 유지). */
+.content-card {
+    background: var(--content-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: border-color var(--transition-normal), transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+.content-card:hover,
+.content-card:focus-visible {
+    border-color: var(--active-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+    outline: none;
+}
