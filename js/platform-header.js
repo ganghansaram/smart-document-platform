@@ -88,7 +88,7 @@ function initPlatformHeader(config) {
               icon: '<svg ' + _svgAttr + '><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' },
             { id: 'translator', label: 'Notebook', href: 'translator.html',
               icon: '<svg ' + _svgAttr + '><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>' },
-            { id: 'compare',    label: 'Verify',     href: 'compare.html', badge: '개발중', badgeClass: 'dev',
+            { id: 'compare',    label: 'Verify',     href: 'compare.html',
               icon: '<svg ' + _svgAttr + '><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>' },
             { id: 'author',     label: 'Author',     href: 'author.html', badge: '개발중', badgeClass: 'dev',
               icon: '<svg ' + _svgAttr + '><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>' },
