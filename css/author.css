@@ -14,10 +14,18 @@ body {
     transition: background var(--transition-slow), color var(--transition-slow);
 }
 
+/* 헤더 고정 — Author는 형제(앱-셸: body overflow:hidden + 내부 스크롤)와 달리 문서 흐름으로
+   스크롤한다. 공유 .platform-header 는 기본 static 이라 페이지와 함께 사라지므로, Author 에서만
+   sticky 로 상단 고정. (author.css 가 platform-header.css 보다 나중 로드 → 형제 무영향) */
+.platform-header {
+    position: sticky;
+    top: 0;
+}
+
 /* ── 진입 히어로 — 형제 시스템과 골격 공유(200px·고정 다크·글로우3+애니·grain·오버레이
-   32px/300·페이드), 정체성은 차별화. Verify=스틸네이비+사각 그리드+추상 노드라면,
+   32px/300), 정체성은 차별화. Verify=스틸네이비+사각 그리드+추상 노드라면,
    Author=딥 네이비 클린 캔버스(격자 없음)+문서 글리프 콘스텔레이션("빈 종이 → 문서 생성").
-   Author 적응: ① 풀블리드(width:100%) ② 오버레이 left:48 ③ 페이드 = --canvas-bg(Author 배경). */
+   Author 적응: ① 풀블리드(width:100%) ② 오버레이 left:48 ③ 하단=crisp 엣지(페이드 제거). */
 .author-hero {
     position: relative;
     width: 100%;
@@ -99,13 +107,6 @@ body {
     color: rgba(255, 255, 255, 0.65);
     margin-top: 5px;
     letter-spacing: 0.3px;
-}
-.author-hero-fade {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 50px;
-    background: linear-gradient(to top, var(--canvas-bg), transparent);
-    z-index: 9;
 }
 body[data-theme="dark"] .author-hero {
     background: linear-gradient(135deg, #00152c 0%, #002b54 100%);
