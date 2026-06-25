@@ -1,6 +1,6 @@
 # Plan-62 — 공통 진입 카드(`.entry-card`) 추출 + Verify 허브 카드 현대화
 
-> **상태: ⬜ 착수 대기 (계획 승인 단계)**
+> **상태: ✅ 완료 (2026-06-25, /plan-execute) — `.entry-card` 추출, Verify 허브 평상시 elevation 통일, Author 회귀 0. 피드백 `reports/plan-62-feedback-2026-06-25.md`**
 > 작성: 2026-06-23 · 트리거: Author 홈 진입 타일이 Verify 허브 카드보다 세련돼 보임 → "구형 시스템을 현재 디자인 기준으로 정합"
 > 근거: Plan-61(Author 셸·홈) 완료 후 비교 관찰. 관련 커밋 `f46590a`.
 
@@ -59,9 +59,9 @@
 ## 4. 파일별 변경
 - `css/components.css` (신규 블록): `.entry-card` + 호버/포커스. 컴포넌트 테이블(문서)에 1행 추가.
 - `compare.html`: 허브 카드 **3개(L145·157·169)** 에 `class="entry-card verify-hub-card"` 추가.
-- `css/compare.css` (L666~756): `.verify-hub-card` **중복 제거(필수)** — `background:var(--bg-gray)`·`border:2px transparent`·`:hover{background/box-shadow/transform}` 삭제(→ entry-card 상속). 잔존 = 가운데정렬·220px·모드 3색 아이콘. **추가 수정: `.verify-hub-card-tag`(L749~) 배경 `var(--white)` → `var(--bg-gray)`/`var(--panel-bg)`** — 카드가 흰색이 되면 *흰 태그가 흰 카드 위에서 사라지는* 대비 문제(+ 다크 정합) 발생하므로 함께 정정.
-- `author.html`: 모드 타일 **2개(L57·70)** 에 `entry-card` 클래스 추가.
-- `css/author.css` (L205~): `.au-tile` 중복 제거(entry-card 상속), 좌측정렬·아이콘·칩만 잔존. (`.au-card.new` 대시 타일은 본 계획 범위 밖 — 영향 없음)
+- `css/compare.css` (L672~796, 다크 변형 774~796 포함): `.verify-hub-card`(672) **중복 제거(필수)** — `background:var(--bg-gray)`·`border:2px transparent`·`:hover{background/box-shadow/transform}`(689) 삭제(→ entry-card 상속). 잔존 = 가운데정렬·220px·모드 3색 아이콘. **추가 수정: `.verify-hub-card-tag`(L749) 배경 `var(--white)` → `var(--bg-gray)`/`var(--panel-bg)`** — 카드가 흰색이 되면 *흰 태그가 흰 카드 위에서 사라지는* 대비 문제(+ 다크 정합) 발생하므로 함께 정정. 다크 변형 `.verify-hub-card`(774)·`:hover`(778)·`-tag`(783)도 entry-card 다크와 충돌 없게 정리.
+- `author.html`: 모드 타일 **2개(L59·72)** 에 `entry-card` 클래스 추가.
+- `css/author.css` (L166~): `.au-tile`(166) 중복 제거(entry-card 상속), 좌측정렬·아이콘·칩만 잔존. (`.au-card.new` 대시 타일은 본 계획 범위 밖 — 영향 없음)
 - (선택) `CLAUDE.md` 공통 컴포넌트 표에 `.entry-card` 등재.
 
 ## 5. 리스크 · 주의
@@ -91,8 +91,9 @@
 ---
 
 ## 부록 — 근거 파일
-- `css/compare.css` L666~735 (`.verify-hub-card` 현재 스펙: bg-gray·2px투명·호버 white)
-- `css/author.css` (`.au-tile`: content-bg·panel-shadow·1px·호버 들림)
+> 라인 참조 2026-06-25 재검증 (Plan-60 Author 히어로 작업 이후 드리프트 반영).
+- `css/compare.css` L672~796 (`.verify-hub-card` 현재 스펙: bg-gray·2px투명·호버 white, 다크 변형 774~796)
+- `css/author.css` L166 (`.au-tile`: content-bg·panel-shadow·1px·호버 translateY(-3px)/shadow-md)
 - `css/components.css` (공통 컴포넌트 정의처)
 - `css/tokens.css` (`--content-bg`·`--panel-shadow`·`--shadow-md`·`--active-color`)
 - Plan-61 (Author 셸·홈, `.au-tile` 출처)

@@ -670,13 +670,10 @@ body.cp-resizing {
 }
 
 .verify-hub-card {
+    /* 스킨(배경·테두리·둥글기·평상시 그림자·호버 들림)은 .entry-card 상속 — 여기선 레이아웃만 */
     width: 220px;
     padding: 28px 20px 24px;
-    background: var(--bg-gray);
-    border-radius: var(--radius-lg);
-    border: 2px solid transparent;
     cursor: pointer;
-    transition: all var(--transition-normal);
     text-align: center;
     display: flex;
     flex-direction: column;
@@ -686,14 +683,8 @@ body.cp-resizing {
     color: inherit;
 }
 
-.verify-hub-card:hover {
-    border-color: var(--active-color);
-    background: var(--white);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-    transform: translateY(-4px);
-}
-
 .verify-hub-card:active {
+    /* entry-card:hover 의 -3px 를 누름 시 -1px 로 덮음 (compare.css 가 components.css 보다 나중 로드 전제) */
     transform: translateY(-1px);
 }
 
@@ -750,7 +741,7 @@ body.cp-resizing {
     font-size: var(--font-caption);
     padding: 1px 7px;
     border-radius: var(--radius-sm);
-    background: var(--white);
+    background: var(--bg-gray); /* 카드가 entry-card 흰배경이 되므로 흰→회색(대비 확보) */
     color: var(--text-light);
     border: 1px solid var(--border-color);
 }
@@ -770,16 +761,7 @@ body.cp-resizing {
     opacity: 0.5;
 }
 
-/* 다크 모드 — 허브 */
-body[data-theme="dark"] .verify-hub-card {
-    background: rgba(255,255,255,0.04);
-}
-
-body[data-theme="dark"] .verify-hub-card:hover {
-    background: rgba(255,255,255,0.10);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-}
-
+/* 다크 모드 — 허브 (카드 배경·호버는 .entry-card 토큰 자동 전환에 위임) */
 body[data-theme="dark"] .verify-hub-card-tag {
     background: rgba(255,255,255,0.06);
     border-color: rgba(255,255,255,0.08);

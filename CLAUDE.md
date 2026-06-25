@@ -82,6 +82,7 @@ python -m http.server 8080            # http://localhost:8080
 | 리사이즈 | `.resize-handle` | — |
 | 슬라이더 | `.form-range-wrap` > `.form-range` | `.form-range-value` — 현재값 배지 표시 |
 | 툴팁 | `.tooltip-icon` | `.tooltip-bottom` — `data-tooltip="설명"` 속성으로 내용 지정 |
+| 진입 카드 | `.entry-card` | 시스템 홈 진입 타일·허브 카드 공통 스킨(평상시 elevation+호버 들림). Author `.au-tile`·Verify `.verify-hub-card` 가 확장(레이아웃은 각자) |
 
 ### 모달 (modal.css)
 새 모달은 `.modal-overlay` + `.modal-box` + `.modal-header` / `.modal-body` / `.modal-footer` 조합.
