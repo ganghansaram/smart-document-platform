@@ -101,6 +101,7 @@
 | 61 | Author 셸("빈 방") 구축 — 4번째 시스템 진입 셸·생산 허브 홈 (Claude Design 시안 v2 기반, 바닐라 이식·검증 통과). 후속: 저작 이관(Plan-60)·합성(Plan-24) |
 | 62 | 공통 진입 카드(`.entry-card`) 추출 + Verify 허브 현대화 — components.css 공통 스킨 추출, Verify 허브 평상시 elevation 통일(모드 3색·레이아웃 유지), Author 회귀 0 |
 | 63 | Notebook 문서 카드를 Author 카드 언어로 정합 — `.content-card`(entry-card 경량 자매) 추출, Notebook `.doc-card` 현대화(호버 들림·다크 솔리드), Author `.au-card` 베이스 전환(회귀 0), 인터랙션 보존 |
+| 64 | Verify 허브 모드 색 모노크롬화 — 3색(주황/파랑/초록)="AI생성 느낌" → 단일 악센트 통일(허브 아이콘+최근작업 배지). 유사도 분류색(`sim-*`) 무손상. Plan-62 "색코딩 유지" 번복 |
 | — | (설계) Phase4 AI 요약 설계서 → `phase4-ai-summary-design.md` |
 
 > 결번 46: 미생성. 08·09·24·25·26·34 는 icebox.
