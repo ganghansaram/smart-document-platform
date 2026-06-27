@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan-65 B축 — 공통 섹션 헤더 규격 시안 (Verify · Notebook · Author)</title>
+<style>
+/* ────────────────────────────────────────────────────────────
+   Plan-65 B축 시안 — 홈 하단 "목록/이력" 섹션 헤더 규격 통일
+   - 현재: 3시스템 헤더가 크기/굵기/색/구조 제각각
+       Verify   12px·600·옅음·우측없음     (verify-hub-history-header)
+       Notebook 13px·normal·옅음·우측토글   (doc-toolbar-count)
+       Author   15px·700·진함·우측링크      (au-section-title)  ← 가장 완성형
+   - 후보 헤더 규격 3종(B1 강조 / B2 중도 / B3 경량)을
+     3시스템 콘텐츠에 "동일 적용"해 정합 여부를 나란히 본다.
+   - 단독 시안(코드 미반영). A축(Verify 리스트 틀)은 별도 — 여기선 헤더 규격만.
+   - 결정 후 author.css(기준) · compare.css · translator.css 헤더 정합 이식.
+   ──────────────────────────────────────────────────────────── */
+
+/* tokens.css 실측값 미러 (light/dark) */
+:root {
+    --canvas-bg: #f7f8fa;
+    --white: #ffffff;
+    --text-dark: #2c3e50;
+    --text-primary: #2c3e50;
+    --text-secondary: #7f8c8d;
+    --text-light: #7f8c8d;
+    --border-color: #e3e7ec;
+    --active-color: #2c5282;
+    --active-color-subtle: rgba(44,82,130,0.10);
+    --hover-bg: #f4f6f8;
+    --panel-bg: #ffffff;
+    --score-warn: #c05621;
+    --space-sm: 8px; --space-md: 16px; --space-lg: 24px; --space-xl: 32px;
+    --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px;
+}
+body[data-theme="dark"] {
+    --canvas-bg: #0d1117;
+    --white: #161b22;
+    --text-dark: #e0e0e0;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a4b8;
+    --text-light: #a0a4b8;
+    --border-color: #2a313c;
+    --active-color: #63a0e0;
+    --active-color-subtle: rgba(99,160,224,0.15);
+    --hover-bg: rgba(255,255,255,0.04);
+    --panel-bg: #161b22;
+    --score-warn: #f0a868;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+    background: var(--canvas-bg); color: var(--text-primary);
+    padding: 32px 0 100px; transition: background 0.3s;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.page-head h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+.page-head p { margin-top: 6px; font-size: 13px; color: var(--text-secondary); line-height: 1.65; max-width: 760px; }
+.toggle-btn {
+    flex-shrink: 0; cursor: pointer; font-size: 13px; font-weight: 500;
+    padding: 8px 16px; border-radius: 8px; background: var(--panel-bg);
+    color: var(--text-primary); border: 1px solid var(--border-color);
+}
+.toggle-btn:hover { border-color: var(--active-color); }
+.spec-note {
+    margin: 18px 0 8px; padding: 14px 18px; background: var(--panel-bg);
+    border: 1px solid var(--border-color); border-left: 3px solid var(--active-color);
+    border-radius: 8px; font-size: 12.5px; line-height: 1.75; color: var(--text-secondary);
+}
+.spec-note b { color: var(--text-primary); }
+.spec-note code { font-family: "SF Mono", Consolas, monospace; font-size: 11.5px; background: var(--canvas-bg); padding: 1px 5px; border-radius: 4px; }
+
+/* 시안 컬럼 레이아웃: 4개(현재 + B1/B2/B3) 가로 비교 */
+.cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 26px; }
+@media (max-width: 1100px) { .cols { grid-template-columns: repeat(2, 1fr); } }
+.col-head { margin-bottom: 12px; }
+.col-head .name { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+.col-head.is-current .name { color: var(--text-secondary); }
+.col-head.is-pick .name { color: var(--active-color); }
+.col-head .desc { font-size: 11px; color: var(--text-secondary); margin-top: 3px; line-height: 1.5; }
+.col-spec { font-size: 10.5px; font-family: "SF Mono", Consolas, monospace; color: var(--text-secondary); margin-top: 4px; }
+
+/* 시스템 블록 */
+.sysblk { margin-bottom: 26px; }
+.sysblk-tag { font-size: 10.5px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; opacity: 0.7; }
+
+/* ── 공통 섹션 헤더 구조 ── */
+.sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md); gap: 12px; }
+.sec-head-left { display: flex; align-items: center; gap: var(--space-sm); min-width: 0; }
+.sec-icon { width: 14px; height: 14px; flex-shrink: 0; stroke: var(--text-light); }
+.sec-count { font-size: 11.5px; color: var(--text-light); flex-shrink: 0; }
+.sec-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.sec-link {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 12px;
+    font-weight: 600; color: var(--active-color); background: none; border: none; cursor: pointer;
+}
+.sec-link:hover { opacity: 0.7; }
+.view-btn { width: 28px; height: 28px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--white); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.view-btn svg { width: 14px; height: 14px; stroke: var(--text-light); }
+.view-btn.on { border-color: var(--active-color); }
+.view-btn.on svg { stroke: var(--active-color); }
+
+/* ── 현재 규격 (열0) — 각 시스템 실제 스펙 그대로 ── */
+.cur-verify .sec-title { font-size: 12px; font-weight: 600; color: var(--text-light); }
+.cur-verify .sec-icon { opacity: 0.5; }
+.cur-notebook .sec-title { display: none; }      /* Notebook 은 타이틀 없이 개수만 */
+.cur-notebook .sec-count { font-size: 13px; }
+.cur-notebook .sec-icon { display: none; }
+.cur-author .sec-title { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.2px; }
+.cur-author .sec-icon { display: none; }
+
+/* ── B1 강조 (Author 15px/700 기준) ── */
+.b1 .sec-title { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.2px; }
+.b1 .sec-icon { display: none; }
+
+/* ── B2 중도 (13.5px/600, 아이콘 유지) ── */
+.b2 .sec-title { font-size: 13.5px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.1px; }
+.b2 .sec-icon { opacity: 0.7; }
+
+/* ── B3 경량 (12px/600 옅음 + 아이콘, 로그톤) ── */
+.b3 .sec-title { font-size: 12px; font-weight: 600; color: var(--text-light); letter-spacing: 0.2px; }
+.b3 .sec-icon { opacity: 0.5; }
+
+/* ── 본문 스켈레톤 (헤더를 맥락 속에서 보기 위함) ── */
+/* Verify 이력 행 (A축 미정 = 현행 틀없는 리스트 유지) */
+.h-list { display: flex; flex-direction: column; gap: 2px; }
+.h-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--radius-md); }
+.h-item:hover { background: var(--hover-bg); }
+.h-mode { font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-sm); background: var(--active-color-subtle); color: var(--active-color); min-width: 64px; text-align: center; white-space: nowrap; }
+.h-files { flex: 1; font-size: 12px; color: var(--text-dark); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h-files .arr { color: var(--text-light); margin: 0 3px; }
+.h-score { font-size: 12px; font-weight: 600; min-width: 44px; text-align: right; color: var(--score-warn); }
+.h-time { font-size: 11px; color: var(--text-light); min-width: 40px; text-align: right; }
+/* Notebook/Author 카드 그리드 */
+.c-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.c-card { background: var(--white); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 12px; min-height: 58px; }
+.c-card .t { font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 5px; }
+.c-card .m { font-size: 10.5px; color: var(--text-light); }
+.c-line { height: 6px; border-radius: 3px; background: var(--border-color); opacity: 0.6; margin-top: 6px; }
+.c-line.s { width: 55%; }
+</style>
+</head>
+<body data-theme="light">
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>Plan-65 · B축 — 공통 섹션 헤더 규격 시안</h1>
+      <p>홈 하단 "목록/이력" 영역의 <b>섹션 헤더만</b> 한 규격으로 통일하기 위한 후보 비교입니다.
+         맨 왼쪽이 현재(3시스템 제각각), 오른쪽 3개가 통일 후보. 같은 규격을 Verify·Notebook·Author 콘텐츠에 동일 적용했습니다.
+         A축(Verify 리스트를 감쌀지/맨 리스트 유지할지)은 <b>별도 시안</b>이며 여기선 손대지 않았습니다(현행 틀 없는 리스트 유지).</p>
+    </div>
+    <button class="toggle-btn" onclick="document.body.dataset.theme = document.body.dataset.theme==='dark'?'light':'dark'; document.documentElement.dataset.theme=document.body.dataset.theme;">🌓 라이트/다크</button>
+  </div>
+
+  <div class="spec-note">
+    <b>통일 헤더 구조(공통):</b> <code>좌측 = (아이콘) + 타이틀 + (개수)</code> · <code>우측 = 액션 슬롯(링크/뷰 토글)</code> — 구조는 고정, 후보별로 <b>타이틀의 크기·굵기·색·아이콘 노출</b>만 다릅니다.<br>
+    <b>B1 강조</b> = Author 현행(15px·700·진함, 아이콘 없음) 기준으로 통일 · <b>B2 중도</b> = 13.5px·600·진함 + 아이콘 유지 · <b>B3 경량</b> = 12px·600·옅음 + 아이콘(로그톤, Verify 현행에 가까움).
+  </div>
+
+  <div class="cols" id="cols"></div>
+
+  <div class="spec-note" style="margin-top:30px;">
+    <b>의견:</b> <b>B2(중도)</b>를 1순위로 봅니다. B1은 "작성 문서"엔 맞지만 Verify <b>이력 로그</b>엔 과하게 무겁고(헤더가 콘텐츠보다 도드라짐), B3는 통일은 되나 Author 라이브러리가 빈약해 보입니다.
+    B2는 진한 색·세미볼드로 <b>위계는 주되 외치지 않아</b> 카드 그리드(Notebook/Author)와 로그 리스트(Verify) 양쪽에 자연스럽습니다. 아이콘 유지로 시스템별 성격도 한 글자 남길 수 있습니다.<br>
+    이식 기준 파일은 <code>css/author.css</code> <code>.au-section-*</code> 규격을 살짝 낮추는 방향(15→13.5px)이거나, 그대로 두고 Verify/Notebook을 끌어올리는 방향 — 결정 후 정합.
+  </div>
+</div>
+
+<script>
+/* 시스템별 헤더 콘텐츠 정의 (좌측 구성 + 우측 액션이 시스템마다 다름) */
+const ICON_HISTORY = '<svg class="sec-icon" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>';
+const ICON_LIB = '<svg class="sec-icon" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 5h16M4 12h16M4 19h10"/></svg>';
+const ICON_PEN = '<svg class="sec-icon" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 19l7-7-4-4-7 7v4z"/><path d="M15 6l3 3"/></svg>';
+
+const VERIFY_BODY = `<div class="h-list">
+  <div class="h-item"><span class="h-mode">유사도</span><span class="h-files">2025_보고서.docx<span class="arr">→</span>참조본.docx</span><span class="h-score">73%</span><span class="h-time">2분 전</span></div>
+  <div class="h-item"><span class="h-mode">비교</span><span class="h-files">규정안_v3.docx<span class="arr">→</span>규정안_v2.docx</span><span class="h-score">41%</span><span class="h-time">1시간</span></div>
+  <div class="h-item"><span class="h-mode">검증</span><span class="h-files">제출본.docx<span class="arr">→</span>표준양식.docx</span><span class="h-score">88%</span><span class="h-time">어제</span></div>
+</div>`;
+const CARD2 = (a,b) => `<div class="c-grid">
+  <div class="c-card"><div class="t">${a}</div><div class="m">홍길동 · 06-25</div><div class="c-line"></div><div class="c-line s"></div></div>
+  <div class="c-card"><div class="t">${b}</div><div class="m">김철수 · 06-24</div><div class="c-line"></div><div class="c-line s"></div></div>
+</div>`;
+
+/* 열 정의: cls = 헤더 규격 클래스, perSysClass = 현재열일 때 시스템별 실제 스펙 */
+const COLUMNS = [
+  { key:'current', name:'현재 (제각각)', head:'is-current', desc:'3시스템 실제 스펙 그대로', spec:'V:12·600·옅음 / N:13·개수만 / A:15·700·진함', perSys:true },
+  { key:'b1', name:'B1 · 강조', head:'is-pick', desc:'Author 기준 통일', spec:'15px · 700 · 진함 · 아이콘✕', cls:'b1' },
+  { key:'b2', name:'B2 · 중도  ◀ 추천', head:'is-pick', desc:'위계 유지·과하지 않음', spec:'13.5px · 600 · 진함 · 아이콘○', cls:'b2' },
+  { key:'b3', name:'B3 · 경량', head:'', desc:'로그톤(Verify 현행 근접)', spec:'12px · 600 · 옅음 · 아이콘○', cls:'b3' },
+];
+
+const SYSTEMS = [
+  { tag:'Verify · 최근 작업',  curCls:'cur-verify',   icon:ICON_HISTORY, title:'최근 작업', count:'3건',
+    actions:'<button class="sec-link">전체 보기</button>', body:VERIFY_BODY },
+  { tag:'Notebook · 라이브러리', curCls:'cur-notebook', icon:ICON_LIB, title:'문서 라이브러리', count:'12개 문서',
+    actions:'<button class="view-btn on" title="카드"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>'
+      + '<button class="view-btn" title="리스트"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>',
+    body:CARD2('회의록_0625','RAG_설계노트') },
+  { tag:'Author · 작성 문서',  curCls:'cur-author',   icon:ICON_PEN, title:'작성 문서', count:'5개',
+    actions:'<button class="sec-link">전체 보기</button>', body:CARD2('기술보고서_초안','제안서_v1') },
+];
+
+function headerHTML(sys, isCurrent) {
+  const showIcon = true; // CSS가 display로 제어
+  return `<div class="sec-head">
+    <div class="sec-head-left">
+      ${sys.icon}
+      <span class="sec-title">${sys.title}</span>
+      <span class="sec-count">${sys.count}</span>
+    </div>
+    <div class="sec-actions">${sys.actions}</div>
+  </div>`;
+}
+
+const cols = document.getElementById('cols');
+COLUMNS.forEach(col => {
+  const colEl = document.createElement('div');
+  colEl.className = 'col';
+  colEl.innerHTML = `<div class="col-head ${col.head}">
+      <div class="name">${col.name}</div>
+      <div class="desc">${col.desc}</div>
+      <div class="col-spec">${col.spec}</div>
+    </div>`;
+  SYSTEMS.forEach(sys => {
+    const blk = document.createElement('div');
+    blk.className = 'sysblk';
+    // 현재열이면 시스템별 실제 스펙 클래스, 후보열이면 통일 규격 클래스
+    const scope = col.perSys ? sys.curCls : col.cls;
+    blk.innerHTML = `<div class="sysblk-tag">${sys.tag}</div>
+      <div class="${scope}">${headerHTML(sys, col.perSys)}${sys.body}</div>`;
+    colEl.appendChild(blk);
+  });
+  cols.appendChild(colEl);
+});
+</script>
+</body>
+</html>

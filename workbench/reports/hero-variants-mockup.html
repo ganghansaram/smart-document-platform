@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>진입 히어로 시안 (역할 일러스트) — Notebook · Verify · Author</title>
+<style>
+/* ────────────────────────────────────────────────────────────
+   진입 히어로 시안 — 역할 형상화 일러스트 버전
+   - 공유 골격: 네이비 그라디언트 + 정밀 그리드 + 글로우 블롭 + 그레인  (형제감)
+   - 시스템별: 색조(hue) + 역할 SVG 일러스트 (에어갭 안전 인라인 벡터)
+       Notebook → 책 + 돋보기 + 지식 노드   (탐색·열람·RAG)
+       Verify   → 두 문서 대조 + 매칭선 + 체크  (비교·검증)
+       Author   → 문서 + 펜촉 + DOCX 내보내기 화살표  (저작·합성·출력)
+   - 단독 시안(코드 미반영). 결정 후 compare.css·author.css·index.html 이식
+   ──────────────────────────────────────────────────────────── */
+
+:root {
+    --canvas-bg: #f7f8fa;
+    --text-primary: #1a2330;
+    --text-secondary: #5a6675;
+    --panel-bg: #ffffff;
+    --border-color: #e3e7ec;
+}
+body[data-theme="dark"] {
+    --canvas-bg: #0d1117;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b97a5;
+    --panel-bg: #161b22;
+    --border-color: #2a313c;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+    background: var(--canvas-bg); color: var(--text-primary);
+    padding: 32px 0 80px; transition: background 0.3s;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.page-head h1 { font-size: 23px; font-weight: 700; letter-spacing: -0.4px; }
+.page-head p { margin-top: 6px; font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; max-width: 680px; }
+.toggle-btn {
+    flex-shrink: 0; cursor: pointer; font-size: 13px; font-weight: 500;
+    padding: 8px 16px; border-radius: 8px; background: var(--panel-bg);
+    color: var(--text-primary); border: 1px solid var(--border-color);
+}
+.toggle-btn:hover { border-color: #2c5282; }
+.spec-note {
+    margin: 18px 0 30px; padding: 14px 18px; background: var(--panel-bg);
+    border: 1px solid var(--border-color); border-left: 3px solid #2c5282;
+    border-radius: 8px; font-size: 12.5px; line-height: 1.7; color: var(--text-secondary);
+}
+.spec-note b { color: var(--text-primary); }
+.spec-note code { font-family: "SF Mono", Consolas, monospace; font-size: 11.5px; background: var(--canvas-bg); padding: 1px 5px; border-radius: 4px; }
+.variant { margin-bottom: 38px; }
+.variant-label { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.variant-label .sys { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+.variant-label .tag { font-size: 11.5px; color: var(--text-secondary); }
+.variant-label .swatch { width: 14px; height: 14px; border-radius: 4px; }
+
+/* ═══════ 공유 히어로 골격 ═══════ */
+.hero {
+    position: relative; width: 100%; height: 200px; overflow: hidden;
+    border-radius: 12px; pointer-events: none; user-select: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+.hero-grid {
+    position: absolute; inset: 0; z-index: 1;
+    background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 44px 44px;
+}
+.hero-glow { position: absolute; border-radius: 50%; filter: blur(50px); will-change: transform, opacity; z-index: 2; }
+.hero-glow-1 { width: 300px; height: 250px; top: -50px; right: 8%; background: radial-gradient(ellipse, var(--glow-a) 0%, transparent 70%); animation: glow1 18s ease-in-out infinite; }
+.hero-glow-2 { width: 200px; height: 180px; bottom: -30px; left: 22%; background: radial-gradient(ellipse, var(--glow-b) 0%, transparent 70%); animation: glow2 22s ease-in-out infinite; }
+.hero-glow-3 { width: 160px; height: 160px; top: 20%; left: 52%; background: radial-gradient(ellipse, var(--glow-c) 0%, transparent 70%); animation: glow3 15s ease-in-out infinite; }
+@keyframes glow1 { 0%,100%{transform:translate(0,0);opacity:.6;} 30%{transform:translate(-40px,20px);opacity:1;} 70%{transform:translate(20px,-10px);opacity:.7;} }
+@keyframes glow2 { 0%,100%{transform:translate(0,0);opacity:.5;} 50%{transform:translate(30px,-15px);opacity:.9;} }
+@keyframes glow3 { 0%,100%{transform:translate(0,0) scale(1);opacity:.4;} 40%{transform:translate(-20px,10px) scale(1.15);opacity:.8;} 80%{transform:translate(10px,-5px) scale(.95);opacity:.5;} }
+
+/* 역할 일러스트 (우측) */
+.hero-art { position: absolute; top: 0; right: 24px; height: 200px; width: 360px; z-index: 4; }
+.hero-art svg { width: 100%; height: 100%; }
+@keyframes floaty { 0%,100%{opacity:.5;transform:translateY(0);} 50%{opacity:1;transform:translateY(-4px);} }
+.floaty { animation: floaty 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.floaty.d1 { animation-delay: 1s; } .floaty.d2 { animation-delay: 2s; }
+
+.hero-grain {
+    position: absolute; inset: 0; z-index: 5; opacity: 0.3; mix-blend-mode: overlay; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
+}
+.hero-overlay { position: absolute; bottom: 28px; left: 48px; z-index: 8; }
+.hero-overlay h2 { font-size: 32px; font-weight: 300; color: #fff; text-shadow: 0 2px 20px rgba(0,0,0,0.45); letter-spacing: -0.5px; }
+.hero-overlay p { font-size: 13.5px; color: rgba(255,255,255,0.66); margin-top: 5px; letter-spacing: 0.3px; }
+.hero-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 50px; background: linear-gradient(to top, var(--canvas-bg), transparent); z-index: 9; }
+
+/* ═══════ 시스템별 색조 ═══════ */
+.hero--notebook {
+    background: linear-gradient(150deg, #131033 0%, #1c1a4d 40%, #232066 70%, #15123f 100%);
+    --grid-line: rgba(130,130,220,0.05);
+    --glow-a: rgba(120,120,240,0.22); --glow-b: rgba(90,90,210,0.16); --glow-c: rgba(150,140,250,0.12);
+}
+body[data-theme="dark"] .hero--notebook { background: linear-gradient(150deg, #0c0a22 0%, #131135 40%, #181550 70%, #0d0b2c 100%); }
+
+.hero--verify {
+    background: linear-gradient(150deg, #091e30 0%, #0f2d47 40%, #133a55 70%, #0d2a40 100%);
+    --grid-line: rgba(80,160,200,0.05);
+    --glow-a: rgba(60,160,200,0.20); --glow-b: rgba(40,130,180,0.15); --glow-c: rgba(80,180,220,0.10);
+}
+body[data-theme="dark"] .hero--verify { background: linear-gradient(150deg, #060f1a 0%, #0a1e30 40%, #0e2a3f 70%, #091a2c 100%); }
+
+.hero--author {
+    background: linear-gradient(150deg, #04231f 0%, #073530 40%, #0a4740 70%, #052e29 100%);
+    --grid-line: rgba(80,200,170,0.05);
+    --glow-a: rgba(50,200,160,0.20); --glow-b: rgba(40,170,150,0.15); --glow-c: rgba(90,220,180,0.11);
+}
+body[data-theme="dark"] .hero--author { background: linear-gradient(150deg, #021712 0%, #04241f 40%, #06332c 70%, #031d18 100%); }
+
+@media (max-width: 680px) {
+    .hero-overlay { left: 24px; bottom: 20px; } .hero-overlay h2 { font-size: 26px; }
+    .hero-art { right: -20px; opacity: 0.6; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="page-head">
+        <div>
+            <h1>진입 히어로 시안 — 역할 형상화 일러스트</h1>
+            <p>홈화면 상단 배너 대상은 <b>Notebook · Verify · Author</b> 3종입니다 (Explorer는 구조가 달라 제외).
+               같은 네이비 골격·그리드·글로우를 공유하되, 우측에 <b>각 시스템 역할을 형상화한 인라인 SVG 일러스트</b>를 얹었습니다.
+               외부 이미지 없이 벡터로 그려 폐쇄망·무빌드 제약에 안전합니다.</p>
+        </div>
+        <button class="toggle-btn" onclick="var t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;document.body.dataset.theme=t;">◐ 라이트/다크</button>
+    </div>
+
+    <div class="spec-note">
+        <b>일러스트 컨셉</b> — Notebook=📖 원문↔번역 듀얼 페이지+언어글리프(A→가)+책갈피(번역·지식관리) · Verify=📑 두 문서 대조+매칭선+체크(비교·검증) · Author=✒️ 문서+펜촉+DOCX 화살표(저작·내보내기).<br>
+        <b>색조</b> — Notebook 인디고 · Verify 시안(현행) · Author 틸/에메랄드. 골격 동일, 색·일러스트만 분기.<br>
+        <b>주의</b> — UI 악센트(<code>--active-color</code> 블루) 통일 규칙 불변. 차별화는 <b>장식용 다크 히어로 배경에 한정</b>.
+    </div>
+
+    <!-- ════════ NOTEBOOK ════════ -->
+    <div class="variant">
+        <div class="variant-label">
+            <span class="swatch" style="background:#232066;"></span>
+            <span class="sys">Notebook</span><span class="tag">translator.html · 문서 번역·지식 관리 · 인디고 · 원문↔번역</span>
+        </div>
+        <section class="hero hero--notebook">
+            <div class="hero-grid"></div>
+            <div class="hero-glow hero-glow-1"></div><div class="hero-glow hero-glow-2"></div><div class="hero-glow hero-glow-3"></div>
+            <div class="hero-art">
+                <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 원문 페이지 (뒤) -->
+                    <rect x="104" y="46" width="78" height="102" rx="6" stroke="rgba(175,175,250,0.42)" stroke-width="1.5" fill="rgba(150,150,240,0.05)"/>
+                    <text x="116" y="73" font-family="Georgia, serif" font-size="19" font-weight="700" fill="rgba(185,185,255,0.6)">A</text>
+                    <g stroke="rgba(180,180,255,0.22)" stroke-width="1.3" stroke-linecap="round">
+                        <line x1="116" y1="89" x2="170" y2="89"/><line x1="116" y1="101" x2="170" y2="101"/><line x1="116" y1="113" x2="156" y2="113"/>
+                    </g>
+                    <!-- 번역 화살표 (원문 → 번역) -->
+                    <g stroke="rgba(205,205,255,0.72)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M150 76 Q166 96 178 90"/><path d="M170 84 L179 90 L172 98"/>
+                    </g>
+                    <!-- 번역 페이지 (앞, 강조) -->
+                    <rect x="166" y="66" width="92" height="114" rx="7" stroke="rgba(202,202,255,0.62)" stroke-width="1.8" fill="rgba(120,120,235,0.13)"/>
+                    <!-- 책갈피 리본 (노트북·지식관리) -->
+                    <path d="M236 66 L236 98 L244 90 L252 98 L252 66 Z" fill="rgba(165,165,250,0.5)" stroke="rgba(205,205,255,0.6)" stroke-width="1" stroke-linejoin="round"/>
+                    <text x="180" y="99" font-family="'Malgun Gothic', sans-serif" font-size="20" font-weight="700" fill="rgba(208,208,255,0.9)">가</text>
+                    <g stroke="rgba(190,190,255,0.34)" stroke-width="1.4" stroke-linecap="round">
+                        <line x1="180" y1="119" x2="244" y2="119"/><line x1="180" y1="132" x2="244" y2="132"/><line x1="180" y1="145" x2="228" y2="145"/><line x1="180" y1="158" x2="240" y2="158"/>
+                    </g>
+                    <!-- 지식 노드 -->
+                    <g fill="rgba(190,190,255,0.5)">
+                        <circle class="floaty" cx="300" cy="52" r="3"/><circle class="floaty d2" cx="318" cy="124" r="2.5"/>
+                    </g>
+                </svg>
+            </div>
+            <div class="hero-grain"></div>
+            <div class="hero-overlay"><h2>Translate it.</h2><p>PDF 번역 · 듀얼 뷰어 · AI 요약 · 지식 관리</p></div>
+            <div class="hero-fade"></div>
+        </section>
+    </div>
+
+    <!-- ════════ VERIFY ════════ -->
+    <div class="variant">
+        <div class="variant-label">
+            <span class="swatch" style="background:#133a55;"></span>
+            <span class="sys">Verify</span><span class="tag">Compare · 비교·검증 · 시안(현행) · 문서대조+체크</span>
+        </div>
+        <section class="hero hero--verify">
+            <div class="hero-grid"></div>
+            <div class="hero-glow hero-glow-1"></div><div class="hero-glow hero-glow-2"></div><div class="hero-glow hero-glow-3"></div>
+            <div class="hero-art">
+                <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 문서 A -->
+                    <rect x="92" y="56" width="84" height="112" rx="6" stroke="rgba(125,212,236,0.55)" stroke-width="1.7" fill="rgba(80,180,210,0.08)"/>
+                    <g stroke="rgba(125,212,236,0.32)" stroke-width="1.4" stroke-linecap="round">
+                        <line x1="105" y1="73" x2="163" y2="73"/><line x1="105" y1="86" x2="163" y2="86"/><line x1="105" y1="99" x2="148" y2="99"/>
+                        <line x1="105" y1="124" x2="163" y2="124"/><line x1="105" y1="137" x2="156" y2="137"/>
+                    </g>
+                    <!-- 문서 B -->
+                    <rect x="206" y="44" width="84" height="112" rx="6" stroke="rgba(125,212,236,0.55)" stroke-width="1.7" fill="rgba(80,180,210,0.05)"/>
+                    <g stroke="rgba(125,212,236,0.32)" stroke-width="1.4" stroke-linecap="round">
+                        <line x1="219" y1="61" x2="277" y2="61"/><line x1="219" y1="74" x2="277" y2="74"/><line x1="219" y1="87" x2="262" y2="87"/>
+                        <line x1="219" y1="112" x2="277" y2="112"/><line x1="219" y1="125" x2="270" y2="125"/>
+                    </g>
+                    <!-- 매칭선 -->
+                    <g stroke="rgba(150,232,252,0.5)" stroke-width="1.3" stroke-dasharray="3 3">
+                        <line x1="176" y1="73" x2="206" y2="61"/><line x1="176" y1="124" x2="206" y2="112"/>
+                    </g>
+                    <!-- 검증 체크 -->
+                    <g class="floaty">
+                        <circle cx="252" cy="150" r="18" fill="rgba(80,200,150,0.20)" stroke="rgba(125,232,182,0.78)" stroke-width="1.7"/>
+                        <path d="M243 150 l6 6 l10 -13" stroke="rgba(155,242,205,0.96)" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    </g>
+                </svg>
+            </div>
+            <div class="hero-grain"></div>
+            <div class="hero-overlay"><h2>Verify it.</h2><p>문서 비교 · 유사도 검증 · 규칙 검사 · 표절 분석</p></div>
+            <div class="hero-fade"></div>
+        </section>
+    </div>
+
+    <!-- ════════ AUTHOR ════════ -->
+    <div class="variant">
+        <div class="variant-label">
+            <span class="swatch" style="background:#0a4740;"></span>
+            <span class="sys">Author</span><span class="tag">생산 허브 · 저작·합성·출력 · 틸/에메랄드 · 펜+DOCX</span>
+        </div>
+        <section class="hero hero--author">
+            <div class="hero-grid"></div>
+            <div class="hero-glow hero-glow-1"></div><div class="hero-glow hero-glow-2"></div><div class="hero-glow hero-glow-3"></div>
+            <div class="hero-art">
+                <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 문서 -->
+                    <rect x="96" y="42" width="110" height="132" rx="7" stroke="rgba(125,238,203,0.55)" stroke-width="1.7" fill="rgba(80,200,170,0.07)"/>
+                    <rect x="110" y="58" width="56" height="7" rx="3.5" fill="rgba(125,238,203,0.5)"/>
+                    <g stroke="rgba(125,238,203,0.32)" stroke-width="1.4" stroke-linecap="round">
+                        <line x1="110" y1="84" x2="190" y2="84"/><line x1="110" y1="97" x2="190" y2="97"/><line x1="110" y1="110" x2="172" y2="110"/>
+                        <line x1="110" y1="132" x2="190" y2="132"/><line x1="110" y1="145" x2="164" y2="145"/>
+                    </g>
+                    <!-- 펜촉 (문서에 작성) -->
+                    <g stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M250 50 L206 124 L198 144 L216 138 Z" fill="rgba(120,235,200,0.16)" stroke="rgba(165,247,217,0.85)" stroke-width="2"/>
+                        <line x1="206" y1="124" x2="216" y2="138" stroke="rgba(165,247,217,0.85)" stroke-width="2"/>
+                        <circle cx="201" cy="147" r="1.8" fill="rgba(170,250,220,0.95)"/>
+                    </g>
+                    <!-- 내보내기 화살표 -->
+                    <g stroke="rgba(125,238,203,0.6)" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="232" y1="92" x2="294" y2="92"/><path d="M284 84 L296 92 L284 100"/>
+                    </g>
+                    <!-- DOCX 배지 -->
+                    <g class="floaty d1">
+                        <rect x="300" y="78" width="44" height="29" rx="5" fill="rgba(80,200,170,0.14)" stroke="rgba(125,238,203,0.65)" stroke-width="1.5"/>
+                        <text x="322" y="97" text-anchor="middle" font-size="11" font-family="sans-serif" font-weight="700" fill="rgba(170,250,220,0.92)">DOCX</text>
+                    </g>
+                </svg>
+            </div>
+            <div class="hero-grain"></div>
+            <div class="hero-overlay"><h2>Author it.</h2><p>빈 문서 작성 · 구조화 합성 · 통일 양식 · DOCX 내보내기</p></div>
+            <div class="hero-fade"></div>
+        </section>
+    </div>
+
+</div>
+</body>
+</html>
