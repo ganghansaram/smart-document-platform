@@ -1,6 +1,6 @@
 # Plan-66 — Notebook 트리 패널 도킹(밀어내기) 모드 추가
 
-> **상태: 🟢 착수 가능 — 방향·결정 확정, 구현 미착수.** ② 도킹-듀얼(밀어내기) + 리사이즈 완충 · min-width 180/320(시작값) · 상태 전역 저장 · 도킹은 새 키 `tp-docked`로 핀과 분리(B안, 기존 핀 보존). design-reviewer 검증 반영(340px·`rerenderBothPanels` 재사용·A2 확정). 잔여=구현 설계(트리 리사이즈 핸들).
+> **상태: ✅ 완료 (2026-06-28)** — ② 도킹-듀얼(밀어내기) 구현·검증·코드리뷰 완료. 도킹은 새 토글 `#tp-dock`/키 `tp-docked`(핀 보존, B안) · A2 push(`--tp-width`) · 트리 리사이즈 핸들(듀얼 핸들 로직 재사용) · 전역 폭 저장+복원 클램프 · `rerenderBothPanels` 재사용. code-reviewer 검토 후 Critical 1(복원 max 클램프)+안전장치 3 수정. testbot 실데이터·라이트/다크·회귀·콘솔0 검증.
 > 작성: 2026-06-27 · 트리거: 동료 피드백 — "트리 패널이 본문 위에 겹쳐 떠서, 띄워놓고 작업하려면 뒷 문서가 가려져 결국 접어야 한다. 본문을 밀어내며 펼쳐지면 좋겠다."
 > 성격: **UX 패턴 보강** (기능·데이터 모델 무관). 분할(PDF 듀얼페인) 화면 특수성 때문에 "교체"가 아닌 "선택지 추가"로 접근.
 
@@ -92,6 +92,15 @@
 4. 검증·문서
 
 ---
+
+## ✅ 구현·검증 결과 (2026-06-28)
+**구현** — `translator.html`(도킹 토글 `#tp-dock` + 리사이즈 핸들 `#tp-resize`), `css/translator.css`(`--tp-width`, `.tp-docked` 시 `view-viewer`/`view-list` `margin-left` push=A2, 핸들·버튼 스타일, 닫힘 시 핸들 `pointer-events:none`), `js/translator.js`(도킹 토글 핸들러+새 키 `tp-docked`, 트리 리사이즈 드래그=듀얼 핸들 로직 재사용, 폭 복원+뷰포트 클램프, 토글/리사이즈 종료 시 `rerenderBothPanels()`).
+
+**검증 (testbot 실문서)** — 도킹 push(본문 정확히 340px 밀림, 트리+PDF 동시 표시) · 리사이즈 escape valve(240px→듀얼 확보) · 최소폭 클램프(→180) · 복원 클램프(760px서 580→400) · undock 복귀 · 새로고침 복원 · 오버레이/핀 회귀 무손상 · 라이트/다크 · 콘솔0.
+
+**코드 리뷰 (code-reviewer + 직접 검증)** — Critical 1(복원 max 클램프 누락) + 안전장치 3(닫힘 핸들 pointer-events, `$tpDock` null 가드, aria-label) 수정. 오탐 확인: rerender 크래시(`renderLeftPage` `if(!leftPdfDoc)return` 가드), hero-banner 수평스크롤(미재현). 전역 단일 폭 저장은 의도(결정 5).
+
+> OUT(별건, 미구현): ③ 단일페인 폴백(극단 좁은화면 안전망)은 미구현 — 현 클램프로 충분 판단, 필요 시 후속. 아이콘 레일(접힘) 미구현.
 
 ## 부록 — 근거 파일 (design-reviewer 검증 2026-06-27)
 - `translator.html:29~45` (`.translator-body` > `#tp-overlay`(`#tp-pin`) + `#tp-trigger`), `:119~267` (`#view-viewer` > `#viewer-panels` > `#panel-left`/`#panel-right` 듀얼)

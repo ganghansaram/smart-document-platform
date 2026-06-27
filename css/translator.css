@@ -36,6 +36,8 @@ body {
     flex: 1;
     overflow: hidden;
     position: relative;
+    /* Plan-66 — 트리 패널 폭(도킹 시 본문 push 폭과 공유). 리사이즈가 이 값을 갱신 */
+    --tp-width: 340px;
 }
 
 /* ══ State: Document List ══ */
@@ -1556,7 +1558,7 @@ body[data-theme="dark"] .highlight.has-memo::after {
     position: absolute;
     left: 0;
     top: 0;
-    width: 340px;
+    width: var(--tp-width, 340px);
     height: 100%;
     background: var(--white);
     border-right: 1px solid var(--border-color);
@@ -1570,6 +1572,46 @@ body[data-theme="dark"] .highlight.has-memo::after {
 
 .tree-panel-overlay.open {
     transform: translateX(0);
+}
+
+/* ── Plan-66: 도킹(밀어내기) 모드 ──
+   도킹 시 트리는 좌측 틈에 안착하고 본문(view-viewer/view-list)을 트리 폭만큼 밀어냄(A2).
+   오버레이(겹침)는 디폴트 유지 — 도킹은 #tp-dock 토글(상태 키 tp-docked)로 opt-in. */
+.translator-body.tp-docked .view-viewer,
+.translator-body.tp-docked .view-list {
+    margin-left: var(--tp-width, 340px);
+}
+.translator-body.tp-docked .tree-panel-overlay {
+    box-shadow: none;   /* 본문과 맞붙으므로 떠있는 그림자 제거 */
+}
+
+/* 트리 패널 리사이즈 핸들 (우측 모서리) — 리사이즈가 도킹의 주 완충 장치 */
+.tp-resize {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 101;
+    background: transparent;
+    transition: background 0.15s;
+}
+.tp-resize:hover,
+.tp-resize.dragging {
+    background: var(--active-color);
+    opacity: 0.35;
+}
+/* 패널이 닫혀 있으면(translateX 로 화면 밖) 핸들 비활성 — 좌측 호버 트리거와 충돌 방지 */
+.tree-panel-overlay:not(.open) .tp-resize {
+    pointer-events: none;
+}
+
+/* 도킹 토글 버튼 활성 상태 (핀과 동일 비주얼 언어) */
+.tp-btn.docked {
+    background: var(--hover-bg);
+    border-color: var(--active-color);
+    color: var(--active-color);
 }
 
 .tp-header {

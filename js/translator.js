@@ -2483,6 +2483,9 @@
         var $tpOverlay  = document.getElementById('tp-overlay');
         var $tpTree     = document.getElementById('tp-tree');
         var $tpPin      = document.getElementById('tp-pin');
+        var $tpDock     = document.getElementById('tp-dock');       // Plan-66 도킹 토글
+        var $tpResize   = document.getElementById('tp-resize');     // Plan-66 트리 폭 리사이즈 핸들
+        var $translatorBody = document.querySelector('.translator-body');
         var $tpNewFolder = document.getElementById('tp-new-folder');
         var $ctxMenu    = document.getElementById('tp-ctx-menu');
         var $fpOverlay  = document.getElementById('fp-overlay');
@@ -2491,6 +2494,8 @@
         var $fpSubmit   = document.getElementById('fp-submit');
 
         var tpPinned = localStorage.getItem('tp-pinned') === 'true';
+        var tpDocked = localStorage.getItem('tp-docked') === 'true';   // Plan-66 (핀과 별개 키)
+        var TP_MIN_WIDTH = 180;                                        // 트리 최소 폭
         var tpExpandedSet = JSON.parse(localStorage.getItem('tp-expanded') || '{}');
         var treeFolders = [];
         var treeDocs = [];
@@ -2499,25 +2504,42 @@
         var ctxTargetId = null;       // 컨텍스트 메뉴 대상 ID
         var ctxTargetType = null;     // 'folder' | 'doc'
 
-        // Pin 초기화
+        // ── Plan-66: 트리 폭 복원 (현재 뷰포트 기준 상·하한 클램프 — 넓은 화면서 저장한 폭이
+        //    좁은 화면서 뷰어를 찌부하지 않게. 드래그 때와 동일한 한계 적용) ──
+        var _savedW = parseInt(localStorage.getItem('tp-width') || '', 10);
+        if (_savedW && $translatorBody) {
+            var _maxW = Math.max(TP_MIN_WIDTH, Math.min(600, document.documentElement.clientWidth - 360));
+            var _w = Math.max(TP_MIN_WIDTH, Math.min(_savedW, _maxW));
+            $translatorBody.style.setProperty('--tp-width', _w + 'px');
+        }
+
+        // 초기화 — 도킹(밀어내기)은 핀(오버레이 고정)보다 우선해 열린 상태 유지
+        if (tpDocked && $translatorBody && $tpDock) {
+            $translatorBody.classList.add('tp-docked');
+            $tpDock.classList.add('docked');
+            $tpOverlay.classList.add('open');
+        }
         if (tpPinned) {
             $tpPin.classList.add('pinned');
             $tpOverlay.classList.add('open');
         }
+
+        // 패널을 열린 채 유지해야 하는가 (핀 또는 도킹)
+        function tpHeldOpen() { return tpPinned || tpDocked; }
 
         // ── 패널 열기/닫기 ──
         function openTreePanel() {
             $tpOverlay.classList.add('open');
         }
         function closeTreePanel() {
-            if (!tpPinned) $tpOverlay.classList.remove('open');
+            if (!tpHeldOpen()) $tpOverlay.classList.remove('open');
         }
 
         $tpTrigger.addEventListener('mouseenter', function() { openTreePanel(); });
         $tpTrigger.addEventListener('click', function() { openTreePanel(); });
 
         $tpOverlay.addEventListener('mouseleave', function(e) {
-            if (!tpPinned) {
+            if (!tpHeldOpen()) {
                 // 커서가 트리거 쪽으로 갔으면 닫지 않음
                 var rect = $tpTrigger.getBoundingClientRect();
                 if (e.clientX <= rect.right) return;
@@ -2529,10 +2551,61 @@
             tpPinned = !tpPinned;
             $tpPin.classList.toggle('pinned', tpPinned);
             localStorage.setItem('tp-pinned', tpPinned);
-            if (!tpPinned && !$tpOverlay.matches(':hover')) {
+            if (!tpHeldOpen() && !$tpOverlay.matches(':hover')) {
                 closeTreePanel();
             }
         });
+
+        // ── Plan-66: 도킹 토글 (핀과 별개) — 본문을 밀어내고 트리 동시 표시 ──
+        if ($tpDock) $tpDock.addEventListener('click', function() {
+            tpDocked = !tpDocked;
+            $tpDock.classList.toggle('docked', tpDocked);
+            localStorage.setItem('tp-docked', tpDocked);
+            if ($translatorBody) $translatorBody.classList.toggle('tp-docked', tpDocked);
+            if (tpDocked) {
+                openTreePanel();                       // 도킹하면 항상 열림
+            } else if (!tpPinned && !$tpOverlay.matches(':hover')) {
+                closeTreePanel();
+            }
+            // 본문 폭이 바뀌었으니 PDF 재렌더 (기구현 함수 재사용)
+            if (currentDocId && typeof rerenderBothPanels === 'function') rerenderBothPanels();
+        });
+
+        // ── Plan-66: 트리 패널 폭 리사이즈 (도킹 완충의 주 장치) ──
+        (function() {
+            if (!$tpResize || !$translatorBody) return;
+            var dragging = false;
+
+            $tpResize.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                dragging = true;
+                $tpResize.classList.add('dragging');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!dragging) return;
+                var rect = $translatorBody.getBoundingClientRect();
+                // 트리 폭 = 커서 위치 − 본문 좌측. 최소 180px, 본문 뷰어 최소 360px 확보
+                var maxW = Math.min(600, rect.width - 360);
+                var w = Math.max(TP_MIN_WIDTH, Math.min(maxW, e.clientX - rect.left));
+                $translatorBody.style.setProperty('--tp-width', w + 'px');
+            });
+
+            document.addEventListener('mouseup', function() {
+                if (!dragging) return;
+                dragging = false;
+                $tpResize.classList.remove('dragging');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                // 폭 저장 (전역)
+                var cur = $translatorBody.style.getPropertyValue('--tp-width');
+                if (cur) localStorage.setItem('tp-width', parseInt(cur, 10));
+                // 도킹 중이면 본문 폭이 바뀌었으니 PDF 재렌더
+                if (tpDocked && currentDocId && typeof rerenderBothPanels === 'function') rerenderBothPanels();
+            });
+        })();
 
         // ── 트리 데이터 로드 ──
         function loadTreeData() {
