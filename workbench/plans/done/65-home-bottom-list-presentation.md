@@ -1,6 +1,6 @@
 # Plan-65 — 홈 하단 "목록/이력" 영역 표현 정합
 
-> **상태: ⬜ 착수 대기 (계획 승인 단계 · 시안 탐색 선행)**
+> **상태: ✅ 완료 (2026-06-27) — B축 헤더 규격 통일(B2: 13.5px·600·진한색, 3시스템) + A축 Verify 이력 리스트 A1 패널 감쌈. 시안 선행→확정→이식→검증(testbot 실데이터·라이트/다크·콘솔0) 완료.**
 > 작성: 2026-06-25 · 트리거: 3개 시스템 홈 하단의 "작업 목록/이력" 표현방식이 제각각이라는 디자인 검토.
 > 근거: 진입 홈 정합 시리즈(Plan-61~64, 히어로·헤더·카드·아이콘 색) 후 남은 마지막 불일치 = **하단 영역**. 기능(저장/재실행)이 아니라 **표현(presentation)** 한정.
 
@@ -70,6 +70,24 @@
 2. Verify `.verify-hub-history*` 틀/헤더 적용
 3. 공통 섹션 헤더 규격을 3시스템에 정합
 4. 검증·문서
+
+## ✅ 구현 결과 (2026-06-27)
+A/B 분리 진행 — 각 축 시안 미리보기로 방향 확정 후 이식.
+
+**B축 — 공통 섹션 헤더 규격 = B2 중도 (13.5px·600·진한색 `text-primary`)**
+- `css/author.css` `.au-section-title` 15px/700 → 13.5px/600 (이미 통일 구조라 타이포만 하향, 기준)
+- `css/compare.css` `.verify-hub-history-header` 12px·옅음 → 13.5px·진함, 아이콘 opacity 0.5→0.7
+- `translator.html` + `css/translator.css` — 카운트만 있던 툴바에 "문서 라이브러리" 타이틀 추가(`.doc-toolbar-left` 래퍼), 카운트는 12px 보조로 강등
+- 아이콘은 현존 시스템(Verify)만 유지 — 과확장 방지. 통일 핵심 = 타이틀 타이포
+- 커밋 `2523f3a`
+
+**A축 — Verify 이력 리스트 틀 = A1 패널 감쌈**
+- `css/compare.css` `.verify-hub-history` 옅은 평평 패널(content-bg + hairline 테두리 + radius-lg, **그림자 0** — 위 `.entry-card` elevation 과 무게 안 겹치게), 헤더 하단 hairline 구분선
+- 모드 배지 단색(Plan-64)·점수색·엔진 무관 (틀만)
+
+**검증**: testbot 실데이터(이력 10행·문서 3건), 3시스템 헤더 13.5/600/text-primary 라이트·다크 자동전환, A1 패널 box-shadow none 확인, 콘솔 0, 하드코딩 색 0. 시안: `reports/section-header-variants-mockup.html`(B), `reports/verify-history-frame-variants-mockup.html`(A). 스크린샷: `screenshots/plan65-*`.
+
+> OUT(별건, 미착수): 결과 저장·행 클릭 재실행(기능), Author 빈상태 카피.
 
 ---
 

@@ -765,13 +765,22 @@ body[data-theme="dark"] .verify-hub-card-tag {
 .verify-hub-history {
     width: 100%;
     max-width: 780px;
+    /* Plan-65 A축(A1) — 떠있는 진입 카드 아래 흩어지던 맨 리스트를 옅은 평평 패널로 감쌈
+       (그림자 0 + hairline 테두리 — 위 .entry-card 의 elevation 과 무게가 겹치지 않게) */
+    background: var(--content-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md) var(--space-md) 10px;
 }
 
 .verify-hub-history-header {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    margin-bottom: var(--space-sm);
+    /* Plan-65 A축(A1) — 패널 내부 헤더: 하단 hairline 구분선으로 리스트와 분리 */
+    margin-bottom: 10px;
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border-color);
     /* Plan-65 B축 — 3시스템 공통 섹션 헤더 규격(B2 중도): 13.5px·600·진한색 */
     font-size: 13.5px;
     font-weight: var(--font-weight-semibold);
