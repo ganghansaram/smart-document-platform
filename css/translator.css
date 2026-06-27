@@ -290,8 +290,23 @@ body[data-theme="dark"] .hero-banner-img {
     width: 100%;
 }
 
+/* Plan-65 B축 — 3시스템 공통 섹션 헤더 규격(B2 중도): 타이틀 13.5px·600·진한색 + 카운트는 보조 */
+.doc-toolbar-left {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+    min-width: 0;
+}
+
+.doc-toolbar-title {
+    font-size: 13.5px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    letter-spacing: -0.1px;
+}
+
 .doc-toolbar-count {
-    font-size: var(--font-body);
+    font-size: var(--font-small);
     color: var(--text-light);
 }
 

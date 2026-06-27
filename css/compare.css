@@ -772,15 +772,17 @@ body[data-theme="dark"] .verify-hub-card-tag {
     align-items: center;
     gap: var(--space-sm);
     margin-bottom: var(--space-sm);
-    font-size: var(--font-small);
+    /* Plan-65 B축 — 3시스템 공통 섹션 헤더 규격(B2 중도): 13.5px·600·진한색 */
+    font-size: 13.5px;
     font-weight: var(--font-weight-semibold);
-    color: var(--text-light);
+    color: var(--text-primary);
+    letter-spacing: -0.1px;
 }
 
 .verify-hub-history-header svg {
     width: 14px;
     height: 14px;
-    opacity: 0.5;
+    opacity: 0.7;
 }
 
 .verify-hub-history-list {

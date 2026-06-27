@@ -127,10 +127,11 @@ body[data-theme="dark"] .author-hero-glow-3 { opacity: 0.3; }
 /* ── 섹션 공통 ── */
 .au-section { margin-bottom: var(--space-2xl); }
 .au-section-title {
-    font-size: 15px;
-    font-weight: var(--font-weight-bold);
+    /* Plan-65 B축 — 3시스템 공통 섹션 헤더 규격(B2 중도): 13.5px·600·진한색 */
+    font-size: 13.5px;
+    font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
-    letter-spacing: -0.2px;
+    letter-spacing: -0.1px;
 }
 .au-section-head {
     display: flex;
