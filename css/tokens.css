@@ -87,6 +87,9 @@
     --panel-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06);
     --panel-border: none;
 
+    /* 홈 히어로 배너 사진 위 scrim — 짙은 남색(텍스트 가독성·3시스템 톤 통일). 라이트/다크 공통 */
+    --hero-scrim-rgb: 15, 32, 64;
+
     /* 폰트 사이즈 5단계 — 라이트·다크 동일, 다크 블록 오버라이드 없음 */
     --font-title: 15px;
     --font-body: 13px;
