@@ -105,3 +105,4 @@ workbench/screenshots/
 # Docker runtime
 .env
 *.tar
+release-v*/
