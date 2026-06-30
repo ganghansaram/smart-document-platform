@@ -3,7 +3,7 @@
 > 작성일: 2026-06-30 (v1) / 2026-06-30 갱신 (v1.1 — plan-advisor 사전 검토 반영: authored 통합 삭제 + 동시성 락 + 중복노드 + 5e 격하)
 > 대상 시스템: Explorer (`index.html` + `js/tree-menu.js` + `js/admin-settings.js` + `backend/api/` + `backend/services/vector_search.py`)
 > 변경 범위: 삭제 코어 서비스(휴지통 이동 + 벡터/검색 인덱스 제거) + Explorer 문서 삭제 API 신설 + 메뉴 노드 cascade 삭제 + 문서 detach + admin UX(영향 미리보기 모달) + 재시작 폴리시 audit(곁가지)
-> 상태: ✅ 구현·검증 완료 (7/7) — done 이관·커밋 대기
+> 상태: ✅ 완료 (삭제 cascade·인덱스 정합·detach·재시작 audit — 단위 6/6 + 실서버 e2e + 실브라우저 UI 검증, 커밋 `fba7df6`)
 
 ---
 
@@ -102,7 +102,7 @@ Explorer 좌측 문서 트리·업로드는 **표시·편집·즉시반영**은 
 - [x] F1. 직접 경로 검증 — 실서버 HTTP e2e: impact(2/2/1)→delete→휴지통 이동·검색/벡터/메뉴 무잔존(360·436·노드제거) ✅
 - [x] F2. 메타 정합 검증 — remove_ids 순서보존 + 행↔메타 정합 단위 검증, 복원 후 ntotal==meta ✅
 - [x] F3. 회귀 — sim 게이트 PASS, 벡터 인덱스 로드 정합, 실데이터 백업→복원 무손상 ✅
-- [ ] F4. 보고서 작성 + done 처리(README 이동) — 진행 중
+- [x] F4. 보고서 작성 (`reports/plan-67-feedback-2026-06-30.md`) + done 이관(README 갱신) ✅
 
 ## Acceptance
 
@@ -157,4 +157,5 @@ Explorer 좌측 문서 트리·업로드는 **표시·편집·즉시반영**은 
 ## Progress Log
 - 2026-06-30 — plan 생성. 사전 조사(벡터 삭제 가능성·삭제 정책) 완료, 휴지통 폴더 이동 방식으로 결정.
 - 2026-06-30 — plan-advisor 사전 검토 완료 → v1.1. 4대 전제 코드 검증 통과. authored 통합 삭제(Critical) 채택·동시성 락·중복 url 노드·미리보기 섹션수 표기 반영, 5e 멀티워커 비해당 격하. 공수 6→6.5일. **착수 가능(조건부 해소).**
+- **2026-06-30 (완료)**: 구현·검증·커밋(`fba7df6`) 완료 후 done 이관. 잔여(휴지통 비우기/복구 UI·N일 자동정리·`SESSION_EXPIRY_HOURS` 핫리로드·authored 큐레이션=Plan-60·레이블경로→id 매핑)는 전부 backlog/별건. 실브라우저 UI 검증까지 통과.
 - 2026-06-30 — /run-plan 수행 완료 (Phase 0~6, 7/7). 삭제 통합방식=1번(즉시 분리 액션) 승인. 린치핀 실측(remove_ids 순서보존)→삭제 코어·API·detach·admin UX 구현. **검증: 단위 6/6 + 실서버 HTTP e2e(백업→삭제→복원) 2회 PASS + sim 게이트 PASS, 실데이터 무손상.** code-review Critical 3/Warning 6/Suggestion 4 → 타당 5건 수정·오탐 4건 근거 기각(C1 `remove_ids` 미지원 주장은 e2e로 반증). 재시작 audit=배너 7항목만, 이미 표준 결론. 보고서 `reports/plan-67-feedback-2026-06-30.md`. **done 이관·커밋 대기.**
