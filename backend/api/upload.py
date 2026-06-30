@@ -15,8 +15,8 @@ from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional
-from dependencies import require_editor
+from typing import Optional, List
+from dependencies import require_editor, require_admin
 
 router = APIRouter(tags=["upload"])
 
@@ -240,24 +240,26 @@ def _run_vector_reindex() -> dict:
         return {"success": False, "error": "build-vector-index.py not found"}
 
     try:
-        result = subprocess.run(
-            [sys.executable, str(vector_script)],
-            cwd=str(PROJECT_ROOT),
-            capture_output=True,
-            text=True,
-            timeout=600  # 임베딩 생성은 시간이 더 걸림
-        )
+        # Plan-67: 전체 재빌드 동안 증분 add/remove 와 경쟁 방지 (인덱스 쓰기 직렬화)
+        from services.vector_search import INDEX_WRITE_LOCK, reload_index
+        with INDEX_WRITE_LOCK:
+            result = subprocess.run(
+                [sys.executable, str(vector_script)],
+                cwd=str(PROJECT_ROOT),
+                capture_output=True,
+                text=True,
+                timeout=600  # 임베딩 생성은 시간이 더 걸림
+            )
 
-        if result.returncode == 0:
-            # 서버 메모리의 FAISS 캐시 갱신
-            try:
-                from services.vector_search import reload_index
-                reload_index()
-            except Exception:
-                pass  # 임포트 실패 시 다음 검색에서 자동 로드됨
-            return {"success": True, "output": result.stdout}
-        else:
-            return {"success": False, "error": result.stderr or result.stdout}
+            if result.returncode == 0:
+                # 서버 메모리의 FAISS 캐시 갱신
+                try:
+                    reload_index()
+                except Exception:
+                    pass  # 임포트 실패 시 다음 검색에서 자동 로드됨
+                return {"success": True, "output": result.stdout}
+            else:
+                return {"success": False, "error": result.stderr or result.stdout}
 
     except subprocess.TimeoutExpired:
         return {"success": False, "error": "벡터 인덱싱 시간 초과 (600초)"}
@@ -483,6 +485,88 @@ async def reindex(user: dict = Depends(require_editor)):
         media_type="text/plain; charset=utf-8",
         headers=STREAM_HEADERS,
     )
+
+
+# ── 문서 삭제 (Plan-67) ────────────────────────────────────────────────────────
+# 업로드(생성)의 대칭쌍. 메뉴 cascade·인덱스 정합·휴지통 보관을 담당.
+# menu.json 을 수정하므로 menu.py 와 동일하게 require_admin (인가 일관성).
+
+
+class DocImpactRequest(BaseModel):
+    urls: List[str]
+
+
+class DocDeleteRequest(BaseModel):
+    urls: List[str]
+    keep_nodes: bool = False  # True = detach(노드 유지, url만 분리)
+
+
+@router.post("/document-impact")
+async def document_impact(body: DocImpactRequest, user: dict = Depends(require_admin)):
+    """삭제 전 영향 산출 (미리보기 모달용) — 파일·검색섹션·벡터섹션·참조노드 수."""
+    from services.document_delete_service import impact_for_url
+    from api.menu import count_url_references
+
+    urls = [u.strip() for u in body.urls if u and u.strip()]
+    if len(urls) > 100:
+        raise HTTPException(status_code=400, detail="한 번에 처리 가능한 문서 수를 초과했습니다 (최대 100).")
+    items = []
+    files = search_sections = vector_sections = 0
+    for url in urls:
+        try:
+            imp = impact_for_url(url)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        items.append(imp)
+        files += imp["files"]
+        search_sections += imp["search_sections"]
+        vector_sections += imp["vector_sections"]
+
+    return {
+        "files": files,
+        "search_sections": search_sections,
+        "vector_sections": vector_sections,
+        "ref_nodes": count_url_references(set(urls)),
+        "items": items,
+    }
+
+
+@router.post("/document-delete")
+async def document_delete(body: DocDeleteRequest, user: dict = Depends(require_admin)):
+    """문서 삭제 cascade — 파일 휴지통 이동 + 인덱스 제거 + menu.json 노드 처리 (원자적 묶음).
+
+    keep_nodes=False: 노드 제거(delete) · keep_nodes=True: url만 분리(detach).
+    중복 url 참조 노드도 일괄 처리(깨진 링크 0).
+    """
+    from services.document_delete_service import delete_document_by_url, validate_url
+    from api.menu import remove_or_detach_urls
+
+    urls = [u.strip() for u in body.urls if u and u.strip()]
+    if not urls:
+        raise HTTPException(status_code=400, detail="삭제할 url 이 없습니다.")
+    if len(urls) > 100:
+        raise HTTPException(status_code=400, detail="한 번에 삭제 가능한 문서 수를 초과했습니다 (최대 100).")
+
+    # 전수 사전 검증 — 일부 url 만 통과해 파일/인덱스가 부분 변경되는 것 방지 (code-review Critical 3)
+    for url in urls:
+        try:
+            validate_url(url)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    results = []
+    for url in urls:
+        results.append(await asyncio.to_thread(delete_document_by_url, url))
+
+    # 메뉴 노드 처리 (파일·인덱스 제거 후)
+    menu_result = remove_or_detach_urls(set(urls), body.keep_nodes)
+
+    return {
+        "success": True,
+        "keep_nodes": body.keep_nodes,
+        "results": results,
+        "nodes_affected": menu_result["affected"],
+    }
 
 
 @router.get("/index-status", response_model=IndexStatusResponse)

@@ -3,6 +3,7 @@ FAISS 벡터 검색 서비스
 """
 import json
 import logging
+import threading
 from pathlib import Path
 from typing import List, Optional
 
@@ -15,6 +16,10 @@ logger = logging.getLogger(__name__)
 # 모듈 레벨 캐시
 _faiss_index = None
 _index_metadata = None
+
+# 인덱스 쓰기 직렬화 락 (Plan-67) — append/remove/전체 재빌드가 FAISS·메타 파일을
+# 동시에 건드려 손상되는 것을 방지. 임베딩 생성 등 느린 작업은 락 밖에서 수행.
+INDEX_WRITE_LOCK = threading.Lock()
 
 
 def _load_index():
@@ -106,45 +111,93 @@ def append_documents(docs: list) -> dict:
 
     faiss_path, meta_path = _index_paths()
 
-    # 기존 인덱스 로드 (없으면 새로 생성)
-    if Path(faiss_path).exists() and Path(meta_path).exists():
-        index = faiss.read_index(faiss_path)
-        with open(meta_path, "r", encoding="utf-8") as f:
-            metadata = json.load(f)
-    else:
-        index = faiss.IndexFlatL2(config.EMBEDDING_DIMENSION)
-        metadata = []
-
     # 임베딩 생성 (title 가중 반복) — Plan-40: 인덱싱 경로 (GPU 가속 위임 가능)
+    # 느린 작업이므로 락 밖에서 먼저 수행한다.
     texts = [f"{d.get('title','')}\n{d.get('title','')}\n{d.get('content','')}" for d in docs]
     embeddings = np.array(get_embeddings(texts, purpose="index"), dtype=np.float32)
 
-    # FAISS에 추가
-    index.add(embeddings)
+    with INDEX_WRITE_LOCK:
+        # 기존 인덱스 로드 (없으면 새로 생성)
+        if Path(faiss_path).exists() and Path(meta_path).exists():
+            index = faiss.read_index(faiss_path)
+            with open(meta_path, "r", encoding="utf-8") as f:
+                metadata = json.load(f)
+        else:
+            index = faiss.IndexFlatL2(config.EMBEDDING_DIMENSION)
+            metadata = []
 
-    # 메타데이터 추가
-    for doc in docs:
-        metadata.append({
-            "title": doc.get("title", ""),
-            "content": doc.get("content", ""),
-            "url": doc.get("url", ""),
-            "section_id": doc.get("section_id"),
-            "path": doc.get("path", ""),
-        })
+        # FAISS에 추가
+        index.add(embeddings)
 
-    # 저장
-    Path(faiss_path).parent.mkdir(parents=True, exist_ok=True)
-    faiss.write_index(index, faiss_path)
-    with open(meta_path, "w", encoding="utf-8") as f:
-        json.dump(metadata, f, ensure_ascii=False, indent=2)
+        # 메타데이터 추가
+        for doc in docs:
+            metadata.append({
+                "title": doc.get("title", ""),
+                "content": doc.get("content", ""),
+                "url": doc.get("url", ""),
+                "section_id": doc.get("section_id"),
+                "path": doc.get("path", ""),
+            })
 
-    # 메모리 캐시 갱신
-    global _faiss_index, _index_metadata
-    _faiss_index = index
-    _index_metadata = metadata
+        # 저장
+        Path(faiss_path).parent.mkdir(parents=True, exist_ok=True)
+        faiss.write_index(index, faiss_path)
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+
+        # 메모리 캐시 갱신
+        global _faiss_index, _index_metadata
+        _faiss_index = index
+        _index_metadata = metadata
 
     logger.info("벡터 인덱스 증분 추가: %d문서 (총 %d)", len(docs), index.ntotal)
     return {"success": True, "added": len(docs)}
+
+
+def count_sections(url: str) -> int:
+    """주어진 url 에 해당하는 벡터 인덱스 섹션 수 (삭제 영향 미리보기용)."""
+    _, metadata = _load_index()
+    if not metadata:
+        return 0
+    return sum(1 for m in metadata if m.get("url") == url)
+
+
+def remove_documents(url: str) -> dict:
+    """주어진 url 의 모든 섹션을 FAISS 인덱스에서 제거 (Plan-67, append_documents 대칭).
+
+    IndexFlatL2.remove_ids 는 남은 행의 순서를 보존하며 압축하므로, 동일 위치를
+    메타데이터에서 필터링하면 행↔메타 정합이 유지된다 (2026-06-30 실측 확인).
+    returns: {"success": bool, "removed": int}
+    """
+    import faiss
+
+    faiss_path, meta_path = _index_paths()
+    if not (Path(faiss_path).exists() and Path(meta_path).exists()):
+        return {"success": True, "removed": 0}
+
+    with INDEX_WRITE_LOCK:
+        index = faiss.read_index(faiss_path)
+        with open(meta_path, "r", encoding="utf-8") as f:
+            metadata = json.load(f)
+
+        positions = [i for i, m in enumerate(metadata) if m.get("url") == url]
+        if not positions:
+            return {"success": True, "removed": 0}
+
+        index.remove_ids(np.array(positions, dtype=np.int64))
+        drop = set(positions)
+        metadata = [m for i, m in enumerate(metadata) if i not in drop]
+
+        faiss.write_index(index, faiss_path)
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+
+        global _faiss_index, _index_metadata
+        _faiss_index = index
+        _index_metadata = metadata
+
+    logger.info("벡터 인덱스 제거: url=%s, %d섹션 (총 %d)", url, len(positions), index.ntotal)
+    return {"success": True, "removed": len(positions)}
 
 
 def hybrid_search(

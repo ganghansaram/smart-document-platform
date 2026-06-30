@@ -855,6 +855,7 @@ function _escHtml(s) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 var _menuEditorData = null;
+var _menuEditorOriginal = null;  // 마지막 로드/저장 시점 스냅샷 (dirty 판정용, Plan-67)
 
 function _renderMenuTab() {
     var panel = document.getElementById('tab-explorer-menu');
@@ -882,6 +883,7 @@ async function _menuFetchData() {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         var data = await r.json();
         _menuEditorData = data.menu || [];
+        _menuEditorOriginal = JSON.stringify(_menuEditorData);
         _menuRenderEditor();
     } catch (e) {
         var editor = document.querySelector('.menu-editor');
@@ -945,6 +947,9 @@ function _menuRenderNode(node, depth, index, siblingCount, path) {
     html += '<button class="menu-btn" title="\uC544\uB798\uB85C" onclick="_menuMoveByPath(\'' + pathStr + '\',1)"' + (index === siblingCount - 1 ? ' disabled' : '') + '>&#9660;</button>';
     html += '<button class="menu-btn" title="\uD558\uC704 \uCD94\uAC00" onclick="_menuAddChildByPath(\'' + pathStr + '\')">+</button>';
     html += '<button class="menu-btn" title="\uD3B8\uC9D1" onclick="_menuEditByPath(\'' + pathStr + '\')">\u270E</button>';
+    if (node.url) {
+        html += '<button class="menu-btn" title="\uBB38\uC11C\uB9CC \uC81C\uAC70 (\uB178\uB4DC \uC720\uC9C0)" onclick="_menuDetachByPath(\'' + pathStr + '\')">\u2298</button>';
+    }
     html += '<button class="menu-btn menu-btn-danger" title="\uC0AD\uC81C" onclick="_menuDeleteByPath(\'' + pathStr + '\')">\u2715</button>';
     html += '</div>';
     html += '</div>';
@@ -1032,6 +1037,10 @@ function _menuCollectUrls(node) {
     return urls;
 }
 
+function _menuIsDirty() {
+    return JSON.stringify(_menuEditorData) !== _menuEditorOriginal;
+}
+
 function _menuDeleteByPath(pathStr) {
     var path = _menuParsePath(pathStr);
     var ctx = _menuNodeByPath(path);
@@ -1040,25 +1049,121 @@ function _menuDeleteByPath(pathStr) {
     var linkedUrls = _menuCollectUrls(ctx.node);
     var hasChildren = ctx.node.children && ctx.node.children.length > 0;
 
-    var msg = '"' + ctx.node.label + '"';
-    if (hasChildren) {
-        msg += ' \uD56D\uBAA9\uACFC \uD558\uC704 ' + ctx.node.children.length + '\uAC1C \uD56D\uBAA9\uC744 \uBAA8\uB450 \uC0AD\uC81C\uD569\uB2C8\uB2E4.';
-    } else {
-        msg += ' \uD56D\uBAA9\uC744 \uC0AD\uC81C\uD569\uB2C8\uB2E4.';
+    // \uBB38\uC11C(\uB9C1\uD06C) \uC5C6\uB294 \uBE48 \uD56D\uBAA9/\uCE74\uD14C\uACE0\uB9AC \u2192 \uAE30\uC874 \uC2A4\uD14C\uC774\uC9D5 splice (\uC800\uC7A5 \uC2DC \uBC18\uC601)
+    if (linkedUrls.length === 0) {
+        var m = '"' + ctx.node.label + '"';
+        m += hasChildren ? ' \uD56D\uBAA9\uACFC \uD558\uC704 ' + ctx.node.children.length + '\uAC1C\uB97C \uC0AD\uC81C\uD569\uB2C8\uB2E4.' : ' \uD56D\uBAA9\uC744 \uC0AD\uC81C\uD569\uB2C8\uB2E4.';
+        m += '\n\n\uC0AD\uC81C\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C? (\uC800\uC7A5 \uC2DC \uBC18\uC601)';
+        if (!confirm(m)) return;
+        ctx.parentList.splice(ctx.index, 1);
+        _menuRenderEditor();
+        return;
     }
 
-    if (linkedUrls.length > 0) {
-        msg += '\n\n\u26A0 \uC5F0\uACB0\uB41C \uBB38\uC11C ' + linkedUrls.length + '\uAC1C\uAC00 \uC788\uC2B5\uB2C8\uB2E4:';
-        linkedUrls.slice(0, 5).forEach(function(u) { msg += '\n  \u2022 ' + u; });
-        if (linkedUrls.length > 5) msg += '\n  \u2026 \uC678 ' + (linkedUrls.length - 5) + '\uAC1C';
-        msg += '\n\n\uC0AD\uC81C\uD558\uBA74 \uBA54\uB274\uC5D0\uC11C \uC811\uADFC\uD560 \uC218 \uC5C6\uAC8C \uB429\uB2C8\uB2E4.\n(\uB514\uC2A4\uD06C\uC758 \uD30C\uC77C\uC740 \uC0AD\uC81C\uB418\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4)';
+    // \uBB38\uC11C \uBCF4\uC720 \u2192 \uC989\uC2DC cascade \uC0AD\uC81C (\uD30C\uC77C \uD734\uC9C0\uD1B5 + \uC778\uB371\uC2A4 \uC81C\uAC70 + \uB178\uB4DC \uC81C\uAC70)
+    if (_menuIsDirty()) {
+        _showNotice('warn', '\u26A0 \uC800\uC7A5\uB418\uC9C0 \uC54A\uC740 \uBA54\uB274 \uD3B8\uC9D1\uC774 \uC788\uC2B5\uB2C8\uB2E4. \uBA3C\uC800 <b>[\uC800\uC7A5]</b> \uD6C4 \uBB38\uC11C\uB97C \uC0AD\uC81C\uD558\uC138\uC694.');
+        return;
     }
+    _openDocDeleteModal(linkedUrls, { keepNodes: false, label: ctx.node.label });
+}
 
-    msg += '\n\n\uC0AD\uC81C\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?';
-    if (!confirm(msg)) return;
+function _menuDetachByPath(pathStr) {
+    var path = _menuParsePath(pathStr);
+    var ctx = _menuNodeByPath(path);
+    if (!ctx || !ctx.node || !ctx.node.url) return;
+    if (_menuIsDirty()) {
+        _showNotice('warn', '\u26A0 \uC800\uC7A5\uB418\uC9C0 \uC54A\uC740 \uBA54\uB274 \uD3B8\uC9D1\uC774 \uC788\uC2B5\uB2C8\uB2E4. \uBA3C\uC800 <b>[\uC800\uC7A5]</b> \uD6C4 \uC9C4\uD589\uD558\uC138\uC694.');
+        return;
+    }
+    _openDocDeleteModal([ctx.node.url], { keepNodes: true, label: ctx.node.label });
+}
 
-    ctx.parentList.splice(ctx.index, 1);
-    _menuRenderEditor();
+// \uBB38\uC11C \uC0AD\uC81C/\uBD84\uB9AC \u2014 \uC601\uD5A5 \uBBF8\uB9AC\uBCF4\uAE30 \uBAA8\uB2EC \u2192 \uD655\uC778 \u2192 \uC989\uC2DC cascade (Plan-67)
+function _openDocDeleteModal(urls, opts) {
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
+    var existing = document.getElementById('doc-delete-overlay');
+    if (existing) existing.remove();
+
+    var isDetach = !!opts.keepNodes;
+    var verb = isDetach ? '\uBB38\uC11C\uB9CC \uC81C\uAC70' : '\uC0AD\uC81C';
+
+    var overlay = document.createElement('div');
+    overlay.id = 'doc-delete-overlay';
+    overlay.className = 'admin-modal-overlay';
+    overlay.innerHTML =
+        '<div class="admin-modal">' +
+            '<h3>' + _escHtml(opts.label || '') + ' \u2014 ' + verb + '</h3>' +
+            '<div id="doc-delete-impact" style="margin:8px 0 16px;font-size:13px;line-height:1.75">' +
+                '<span class="spinner spinner-sm"></span> \uC601\uD5A5 \uBD84\uC11D \uC911\u2026' +
+            '</div>' +
+            '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+                '<button class="btn btn-secondary admin-btn" id="doc-delete-cancel">\uCDE8\uC18C</button>' +
+                '<button class="btn btn-danger admin-btn" id="doc-delete-confirm" disabled>' + verb + '</button>' +
+            '</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+
+    function close() { overlay.remove(); }
+    document.getElementById('doc-delete-cancel').addEventListener('click', close);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+
+    fetch(backendUrl + '/api/document-impact', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: urls })
+    }).then(function(r) {
+        if (r.status === 401) { if (typeof window.handleApiUnauthorized === 'function') window.handleApiUnauthorized(); return null; }
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+    }).then(function(imp) {
+        if (!imp) return;
+        var el = document.getElementById('doc-delete-impact');
+        if (!el) return;
+        // \uC11C\uBC84 \uC720\uB798 \uC22B\uC790\uAC12\uC740 Number() \uAC15\uC81C \uBCC0\uD658 \uD6C4 \uC0BD\uC785 (\uBC29\uC5B4\uC801, code-review W2)
+        var nFiles = Number(imp.files) || 0;
+        var nSearch = Number(imp.search_sections) || 0;
+        var nVector = Number(imp.vector_sections) || 0;
+        var nRef = Number(imp.ref_nodes) || 0;
+        var rows =
+            '\u2022 \uBB38\uC11C \uD30C\uC77C: <b>' + nFiles + '</b>\uAC1C \u2192 <code>data/trash/</code> \uB85C \uC774\uB3D9<br>' +
+            '\u2022 \uAC80\uC0C9 \uC778\uB371\uC2A4: <b>' + nSearch + '</b> \uC139\uC158 \uC81C\uAC70<br>' +
+            '\u2022 AI(\uBCA1\uD130) \uC778\uB371\uC2A4: <b>' + nVector + '</b> \uC139\uC158 \uC81C\uAC70';
+        if (nRef > 1) {
+            rows += '<br>\u2022 \u26A0 \uC774 \uBB38\uC11C\uB97C \uCC38\uC870\uD558\uB294 \uBA54\uB274 \uB178\uB4DC <b>' + nRef + '</b>\uAC1C \u2014 \uBAA8\uB450 ' + (isDetach ? '\uBD84\uB9AC' : '\uC815\uB9AC') + '\uB429\uB2C8\uB2E4';
+        }
+        rows += '<br><span style="opacity:.65">\uD30C\uC77C\uC740 \uC601\uAD6C \uC0AD\uC81C\uAC00 \uC544\uB2C8\uB77C \uD734\uC9C0\uD1B5 \uD3F4\uB354\uB85C \uC774\uB3D9\uD569\uB2C8\uB2E4 (\uC218\uB3D9 \uBCF5\uAD6C \uAC00\uB2A5).</span>';
+        if (isDetach) rows += '<br><span style="opacity:.65">\uBA54\uB274 \uB178\uB4DC\uB294 \uC720\uC9C0\uB418\uACE0 \uBB38\uC11C \uB9C1\uD06C\uB9CC \uC81C\uAC70\uB429\uB2C8\uB2E4.</span>';
+        el.innerHTML = rows;
+        var okBtn = document.getElementById('doc-delete-confirm');
+        if (okBtn) okBtn.disabled = false;
+    }).catch(function(e) {
+        var el = document.getElementById('doc-delete-impact');
+        if (el) el.innerHTML = '<span style="color:var(--color-error)">\uC601\uD5A5 \uBD84\uC11D \uC2E4\uD328: ' + _escHtml(e.message) + '</span>';
+    });
+
+    document.getElementById('doc-delete-confirm').addEventListener('click', function() {
+        var btn = this;
+        btn.disabled = true; btn.textContent = '\uCC98\uB9AC \uC911\u2026';
+        fetch(backendUrl + '/api/document-delete', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ urls: urls, keep_nodes: isDetach })
+        }).then(function(r) {
+            if (r.status === 401) { if (typeof window.handleApiUnauthorized === 'function') window.handleApiUnauthorized(); return null; }
+            if (!r.ok) return r.json().then(function(err) { throw new Error(err.detail || ('HTTP ' + r.status)); });
+            return r.json();
+        }).then(function(res) {
+            if (!res) return;
+            close();
+            _menuFetchData();                                       // \uD3B8\uC9D1\uAE30 \uC7AC\uB3D9\uAE30\uD654 (\uC11C\uBC84 menu.json \uAE30\uC900)
+            if (typeof loadMenuData === 'function') loadMenuData();  // \uC88C\uCE21 \uD2B8\uB9AC \uAC31\uC2E0
+            _showNotice('ok', '\u2713 ' + (isDetach ? '\uBB38\uC11C\uB97C \uC81C\uAC70\uD588\uC2B5\uB2C8\uB2E4 (\uB178\uB4DC \uC720\uC9C0).' : '\uBB38\uC11C\uB97C \uC0AD\uC81C\uD588\uC2B5\uB2C8\uB2E4 (\uD734\uC9C0\uD1B5 \uC774\uB3D9).'));
+        }).catch(function(e) {
+            close();
+            _showNotice('error', '\u2717 \uC0AD\uC81C \uC2E4\uD328: ' + _escHtml(e.message));
+        });
+    });
 }
 
 // ── 이동 ──────────────────────────────────────────────────────────────────────
@@ -1157,6 +1262,8 @@ async function _menuSave() {
         if (!r.ok) throw new Error('HTTP ' + r.status);
 
         _showNotice('ok', '\u2713 \uBA54\uB274\uAC00 \uC800\uC7A5\uB418\uC5C8\uC2B5\uB2C8\uB2E4.');
+
+        _menuEditorOriginal = JSON.stringify(_menuEditorData);  // 저장 후 dirty 해제
 
         // 좌측 패널 갱신
         if (typeof loadMenuData === 'function') loadMenuData();
