@@ -83,6 +83,10 @@ EXPORT_REFERENCE_DOCX = None
 # 내보내기 변환 타임아웃 (초)
 EXPORT_TIMEOUT = 120
 
+# 보존정책 (Plan-67 후속) — 휴지통/백업 자동 청소 (서버 시작 시 1회)
+TRASH_RETENTION_DAYS = 30    # data/trash/<stamp>/ 경과분 삭제
+BACKUP_KEEP_PER_FILE = 5     # backups/ 파일당 최근 N개만 유지
+
 # Verify 설정
 VERIFY_DATA_DIR = str(Path(__file__).parent.parent / "data" / "verify")
 VERIFY_HISTORY_MAX = 10

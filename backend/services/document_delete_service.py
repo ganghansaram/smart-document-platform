@@ -13,13 +13,14 @@ import json
 import shutil
 import logging
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 CONTENTS_ROOT = (PROJECT_ROOT / "contents").resolve()
 TRASH_ROOT = PROJECT_ROOT / "data" / "trash"
+BACKUPS_ROOT = PROJECT_ROOT / "backups"
 SEARCH_INDEX_PATH = PROJECT_ROOT / "data" / "search-index.json"
 AUTHORED_PREFIX = "contents/authored/"
 
@@ -153,3 +154,48 @@ def delete_document_by_url(url: str) -> dict:
         "url": url, "kind": kind, "trashed": trashed,
         "search_removed": search_removed, "vector_removed": vector_removed,
     }
+
+
+# ── 보존정책 자동 청소 (Plan-67 후속) ──────────────────────────────────
+# 소프트삭제(휴지통)·백업의 업계표준 보존정리. 서버 시작 시 1회 실행(main.py lifespan).
+# 대상은 "이미 버린 것/옛 백업"뿐 — 살아있는 문서·인덱스는 건드리지 않는다.
+
+def purge_expired_trash(retention_days: int) -> int:
+    """휴지통 <stamp> 폴더 중 이름의 시각이 retention_days 초과한 것 삭제. 삭제 폴더 수 반환."""
+    if not TRASH_ROOT.exists():
+        return 0
+    cutoff = datetime.now() - timedelta(days=retention_days)
+    removed = 0
+    for d in TRASH_ROOT.iterdir():
+        if not d.is_dir():
+            continue
+        try:
+            ts = datetime.strptime(d.name[:15], "%Y%m%d_%H%M%S")  # 규약 폴더만 대상
+        except ValueError:
+            continue  # 규약(YYYYMMDD_HHMMSS…) 밖 폴더는 건드리지 않음
+        if ts < cutoff:
+            shutil.rmtree(d, ignore_errors=True)
+            removed += 1
+    return removed
+
+
+def purge_old_backups(keep_per_file: int) -> int:
+    """backups/*.bak 를 원본(stem)별로 묶어 최신 keep_per_file 개만 남기고 삭제. 삭제 수 반환."""
+    if not BACKUPS_ROOT.exists():
+        return 0
+    import re
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for p in BACKUPS_ROOT.glob("*.bak"):
+        key = re.sub(r"_\d{8}_\d{6}.*$", "", p.name)  # 시각 앞부분 = 원본 stem 그룹키
+        groups[key].append(p)
+    removed = 0
+    for files in groups.values():
+        files.sort(key=lambda f: f.name, reverse=True)  # 이름=고정폭 시각 → 최신순
+        for old in files[keep_per_file:]:
+            try:
+                old.unlink()
+                removed += 1
+            except OSError:
+                pass
+    return removed

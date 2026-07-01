@@ -31,6 +31,7 @@ async def lifespan(app):
     apply_settings_on_startup()  # settings.json → config 적용
     _reset_stuck_tasks()
     _cleanup_stale_preprocessed()
+    _cleanup_old_trash_backups()
     # Plan-44 Phase 5: AI 지표 시간별 스냅샷 루프
     import asyncio as _asyncio
     from services.ai_metrics import snapshot_loop
@@ -124,6 +125,18 @@ def _cleanup_stale_preprocessed():
             logger.info("stale preprocessed 임시파일 %d건 정리", removed)
     except Exception as e:
         logger.warning("preprocessed temp cleanup 실패 (무시): %s", e)
+
+
+def _cleanup_old_trash_backups():
+    """휴지통/백업 보존정책 적용 (Plan-67 후속) — TTL/개수 기반 자동 청소."""
+    try:
+        from services.document_delete_service import purge_expired_trash, purge_old_backups
+        t = purge_expired_trash(config.TRASH_RETENTION_DAYS)
+        b = purge_old_backups(config.BACKUP_KEEP_PER_FILE)
+        if t or b:
+            logger.info("보존정리: 휴지통 %d폴더, 백업 %d파일 삭제", t, b)
+    except Exception as e:
+        logger.warning("휴지통/백업 청소 실패 (무시): %s", e)
 
 
 async def _graceful_shutdown():
