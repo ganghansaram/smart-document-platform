@@ -1090,15 +1090,24 @@ async def _run_pmt_pages(username: str, doc_id: str, pages_str: str, page_list: 
         if proc.returncode != 0:
             elapsed = time.monotonic() - pmt_start
             _log(f"FAILED (exit {proc.returncode}) | total {elapsed:.1f}s")
-            stdout_fh.close()
+            try:
+                stdout_fh.close()
+            except Exception:
+                pass
             log_text = ""
             try:
-                log_text = stdout_log.read_text(encoding="utf-8", errors="replace")[-500:]
+                log_text = stdout_log.read_text(encoding="utf-8", errors="replace")[-1500:]
             except Exception:
                 pass
             shutil.rmtree(tmp_dir, ignore_errors=True)
+            detail = (f"pdf2zh 종료 코드: {proc.returncode}\n\n"
+                      "[pdf2zh 로그 끝부분]\n" + (log_text or "(로그 없음)"))
             for pnum in page_list:
-                _mark_page_error(username, doc_id, pnum, f"pdf2zh 실패 (exit {proc.returncode}): {log_text}")
+                _mark_page_error(
+                    username, doc_id, pnum,
+                    f"PDF 번역에 실패했습니다 (pdf2zh 종료 코드 {proc.returncode}).",
+                    detail=detail,
+                )
             return
 
         # 결과 PDF 찾기
@@ -1107,9 +1116,34 @@ async def _run_pmt_pages(username: str, doc_id: str, pages_str: str, page_list: 
             mono_files = [f for f in tmp_dir.glob("*.pdf") if "dual" not in f.name]
 
         if not mono_files:
+            # 진단 수집 (tmp 삭제 전) — 출력 폴더 내용 + pdf2zh 로그 끝부분
+            try:
+                stdout_fh.close()
+            except Exception:
+                pass
+            try:
+                tmp_listing = ", ".join(sorted(p.name for p in tmp_dir.iterdir())) or "(빈 폴더)"
+            except Exception:
+                tmp_listing = "(목록 확인 실패)"
+            log_tail = ""
+            try:
+                log_tail = stdout_log.read_text(encoding="utf-8", errors="replace")[-1500:]
+            except Exception:
+                pass
+            _log(f"결과 PDF 없음 | 출력폴더: {tmp_listing}")
+            detail = (
+                "pdf2zh는 정상 종료(exit 0)했지만 번역 결과 PDF가 생성되지 않았습니다.\n"
+                "흔한 원인: 페이지 워터마크·오버레이 등으로 번역 대상 문단이 검출되지 않는 경우입니다.\n\n"
+                "[출력 폴더 내용]\n" + tmp_listing + "\n\n"
+                "[pdf2zh 로그 끝부분]\n" + (log_tail or "(로그 없음)")
+            )
             shutil.rmtree(tmp_dir, ignore_errors=True)
             for pnum in page_list:
-                _mark_page_error(username, doc_id, pnum, "pdf2zh 완료되었으나 결과 PDF가 없습니다")
+                _mark_page_error(
+                    username, doc_id, pnum,
+                    "PDF 번역 결과가 생성되지 않았습니다. 워터마크 등으로 번역 대상 문단이 검출되지 않았을 수 있습니다 — 웹뷰 번역을 권장합니다.",
+                    detail=detail,
+                )
             return
 
         mono_file = mono_files[0]
@@ -2106,13 +2140,17 @@ def _update_page_progress(username: str, doc_id: str, page_num: int, stage: str)
     _page_progress[f"{doc_id}:{page_num}"] = stage
 
 
-def _mark_page_error(username: str, doc_id: str, page_num: int, error_msg: str):
+def _mark_page_error(username: str, doc_id: str, page_num: int, error_msg: str, detail: str = None):
     meta = _load_meta(username, doc_id)
     if meta:
         ps = meta.get("page_status", {})
         entry = ps.get(str(page_num), {})
         entry["status"] = "error"
         entry["error"] = error_msg
+        if detail:
+            entry["error_detail"] = detail
+        else:
+            entry.pop("error_detail", None)  # 재시도/다른 에러 경로에서 이전 detail 잔존 방지
         entry["progress_stage"] = None
         ps[str(page_num)] = entry
         meta["page_status"] = ps

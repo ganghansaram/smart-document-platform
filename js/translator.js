@@ -1127,10 +1127,41 @@
             $webViewContainer.style.display = 'none';
             $rightPlaceholder.style.display = 'flex';
             var errMsg = (ps && ps.error) || '알 수 없는 오류';
-            $rightPlaceholder.innerHTML =
+            var detail = (ps && ps.error_detail) || '';
+            var canSwitchWeb = translateEngine !== 'web' &&
+                !!document.querySelector('.rail-btn[data-panel="web-translate"]');
+            var html =
                 '<div class="placeholder-icon">&#9888;&#65039;</div>' +
                 '<div class="placeholder-error">' + escHtml(errMsg) + '</div>' +
-                '<div class="placeholder-hint">"이 페이지 번역" 버튼으로 재시도하세요</div>';
+                '<div class="placeholder-hint">"재시도" 버튼으로 다시 시도할 수 있습니다.</div>' +
+                '<div class="error-actions">' +
+                    (canSwitchWeb ? '<button type="button" class="btn btn-sm btn-secondary" id="err-switch-web">웹뷰 번역으로 전환</button>' : '') +
+                    (detail ? '<button type="button" class="btn btn-sm btn-ghost" id="err-detail-toggle">오류 상세 보기</button>' : '') +
+                '</div>' +
+                (detail ? '<pre class="error-detail-body" id="err-detail-body" hidden>' + escHtml(detail) + '</pre>' : '');
+            $rightPlaceholder.innerHTML = html;
+
+            var $sw = document.getElementById('err-switch-web');
+            if ($sw) {
+                $sw.addEventListener('click', function() {
+                    var $webBtn = document.querySelector('.rail-btn[data-panel="web-translate"]');
+                    if ($webBtn) $webBtn.click();
+                });
+            }
+            var $tg = document.getElementById('err-detail-toggle');
+            if ($tg) {
+                $tg.addEventListener('click', function() {
+                    var $b = document.getElementById('err-detail-body');
+                    if (!$b) return;
+                    if ($b.hasAttribute('hidden')) {
+                        $b.removeAttribute('hidden');
+                        $tg.textContent = '오류 상세 숨기기';
+                    } else {
+                        $b.setAttribute('hidden', '');
+                        $tg.textContent = '오류 상세 보기';
+                    }
+                });
+            }
         }
 
         function showRightTranslatedPage() {
