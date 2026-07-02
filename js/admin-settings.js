@@ -783,17 +783,19 @@ async function _adminSave() {
             data.restart_needed.forEach(function(item) {
                 if (_pendingRestartItems.indexOf(item) === -1) _pendingRestartItems.push(item);
             });
+            // 즉시 피드백(스크롤 중에도 보이도록) — 재시작 대기 목록은 상단 배너로 지속 표시(리마인더)
+            showToast('저장됨 — 일부 항목은 서버 재시작 후 적용됩니다', 'warning', 6000);
             _showNotice(
                 'warn',
-                '⚠ 저장되었습니다. 다음 항목은 <strong>서버 재시작 후</strong> 적용됩니다: ' +
+                '⚠ 다음 항목은 <strong>서버 재시작 후</strong> 적용됩니다: ' +
                 '<code>' + _pendingRestartItems.join(', ') + '</code>'
             );
         } else {
-            _showNotice('ok', '✓ 설정이 저장되었으며 즉시 적용되었습니다.');
+            showToast('설정이 저장되어 즉시 적용되었습니다', 'success');
         }
 
     } catch (e) {
-        _showNotice('error', '✗ 저장 실패: ' + _escHtml(e.message));
+        showToast('저장 실패: ' + e.message, 'error');
     } finally {
         if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '저장'; }
     }
@@ -1062,7 +1064,7 @@ function _menuDeleteByPath(pathStr) {
 
     // \uBB38\uC11C \uBCF4\uC720 \u2192 \uC989\uC2DC cascade \uC0AD\uC81C (\uD30C\uC77C \uD734\uC9C0\uD1B5 + \uC778\uB371\uC2A4 \uC81C\uAC70 + \uB178\uB4DC \uC81C\uAC70)
     if (_menuIsDirty()) {
-        _showNotice('warn', '\u26A0 \uC800\uC7A5\uB418\uC9C0 \uC54A\uC740 \uBA54\uB274 \uD3B8\uC9D1\uC774 \uC788\uC2B5\uB2C8\uB2E4. \uBA3C\uC800 <b>[\uC800\uC7A5]</b> \uD6C4 \uBB38\uC11C\uB97C \uC0AD\uC81C\uD558\uC138\uC694.');
+        showToast('\uC800\uC7A5\uB418\uC9C0 \uC54A\uC740 \uD3B8\uC9D1\uC774 \uC788\uC2B5\uB2C8\uB2E4. \uBA3C\uC800 [\uC800\uC7A5] \uD6C4 \uBB38\uC11C\uB97C \uC0AD\uC81C\uD558\uC138\uC694', 'warning', 4000);
         return;
     }
     _openDocDeleteModal(linkedUrls, { keepNodes: false, label: ctx.node.label });
@@ -1073,7 +1075,7 @@ function _menuDetachByPath(pathStr) {
     var ctx = _menuNodeByPath(path);
     if (!ctx || !ctx.node || !ctx.node.url) return;
     if (_menuIsDirty()) {
-        _showNotice('warn', '\u26A0 \uC800\uC7A5\uB418\uC9C0 \uC54A\uC740 \uBA54\uB274 \uD3B8\uC9D1\uC774 \uC788\uC2B5\uB2C8\uB2E4. \uBA3C\uC800 <b>[\uC800\uC7A5]</b> \uD6C4 \uC9C4\uD589\uD558\uC138\uC694.');
+        showToast('\uC800\uC7A5\uB418\uC9C0 \uC54A\uC740 \uD3B8\uC9D1\uC774 \uC788\uC2B5\uB2C8\uB2E4. \uBA3C\uC800 [\uC800\uC7A5] \uD6C4 \uC9C4\uD589\uD558\uC138\uC694', 'warning', 4000);
         return;
     }
     _openDocDeleteModal([ctx.node.url], { keepNodes: true, label: ctx.node.label });
@@ -1158,10 +1160,10 @@ function _openDocDeleteModal(urls, opts) {
             close();
             _menuFetchData();                                       // \uD3B8\uC9D1\uAE30 \uC7AC\uB3D9\uAE30\uD654 (\uC11C\uBC84 menu.json \uAE30\uC900)
             if (typeof loadMenuData === 'function') loadMenuData();  // \uC88C\uCE21 \uD2B8\uB9AC \uAC31\uC2E0
-            _showNotice('ok', '\u2713 ' + (isDetach ? '\uBB38\uC11C\uB97C \uC81C\uAC70\uD588\uC2B5\uB2C8\uB2E4 (\uB178\uB4DC \uC720\uC9C0).' : '\uBB38\uC11C\uB97C \uC0AD\uC81C\uD588\uC2B5\uB2C8\uB2E4 (\uD734\uC9C0\uD1B5 \uC774\uB3D9).'));
+            showToast(isDetach ? '\uBB38\uC11C\uB97C \uC81C\uAC70\uD588\uC2B5\uB2C8\uB2E4 (\uB178\uB4DC \uC720\uC9C0)' : '\uBB38\uC11C\uB97C \uC0AD\uC81C\uD588\uC2B5\uB2C8\uB2E4 (\uD734\uC9C0\uD1B5 \uC774\uB3D9)', 'success');
         }).catch(function(e) {
             close();
-            _showNotice('error', '\u2717 \uC0AD\uC81C \uC2E4\uD328: ' + _escHtml(e.message));
+            showToast('\uC0AD\uC81C \uC2E4\uD328: ' + e.message, 'error');
         });
     });
 }
@@ -1261,7 +1263,7 @@ async function _menuSave() {
         }
         if (!r.ok) throw new Error('HTTP ' + r.status);
 
-        _showNotice('ok', '\u2713 \uBA54\uB274\uAC00 \uC800\uC7A5\uB418\uC5C8\uC2B5\uB2C8\uB2E4.');
+        showToast('\uBA54\uB274\uAC00 \uC800\uC7A5\uB418\uC5C8\uC2B5\uB2C8\uB2E4', 'success');
 
         _menuEditorOriginal = JSON.stringify(_menuEditorData);  // 저장 후 dirty 해제
 
@@ -1269,7 +1271,7 @@ async function _menuSave() {
         if (typeof loadMenuData === 'function') loadMenuData();
 
     } catch (e) {
-        _showNotice('error', '\u2717 \uBA54\uB274 \uC800\uC7A5 \uC2E4\uD328: ' + _escHtml(e.message));
+        showToast('\uBA54\uB274 \uC800\uC7A5 \uC2E4\uD328: ' + e.message, 'error');
     } finally {
         if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '\uC800\uC7A5'; }
     }
