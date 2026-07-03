@@ -32,6 +32,9 @@ ALLOWED_EXTENSIONS = {'.doc', '.docx', '.pdf'}
 # 최대 파일 크기 (500MB)
 MAX_FILE_SIZE = 500 * 1024 * 1024
 
+# 업로드 스트리밍 청크 크기 — 전체 파일을 메모리에 적재하지 않기 위함
+UPLOAD_CHUNK_SIZE = 4 * 1024 * 1024
+
 # 임시 업로드 디렉토리
 from config import UPLOAD_TEMP_DIR as _CUSTOM_TEMP_DIR
 UPLOAD_TEMP_DIR = Path(_CUSTOM_TEMP_DIR) if _CUSTOM_TEMP_DIR else PROJECT_ROOT / "backend" / "temp"
@@ -337,28 +340,34 @@ async def upload_document(
 
     output_path = validate_target_path(target_path)
 
-    contents = await file.read()
-    if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"파일 크기 초과: {len(contents) / 1024 / 1024:.1f}MB (최대 {MAX_FILE_SIZE / 1024 / 1024:.0f}MB)"
-        )
-
-    # 기존 파일 백업
-    if output_path.exists():
-        backup_dir = PROJECT_ROOT / "backups"
-        backup_dir.mkdir(exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_name = f"{output_path.stem}_{timestamp}_before_upload.bak"
-        shutil.copy2(str(output_path), str(backup_dir / backup_name))
-
-    # 임시 파일로 저장
+    # 임시 파일로 청크 스트리밍 저장 — 전체 파일 메모리 적재 회피 + 크기 가드
     UPLOAD_TEMP_DIR.mkdir(exist_ok=True)
     temp_file = UPLOAD_TEMP_DIR / f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}{file_ext}"
-    with open(temp_file, "wb") as f:
-        f.write(contents)
+    size = 0
+    try:
+        with open(temp_file, "wb") as f:
+            while chunk := await file.read(UPLOAD_CHUNK_SIZE):
+                size += len(chunk)
+                if size > MAX_FILE_SIZE:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"파일 크기 초과: 최대 {MAX_FILE_SIZE // (1024 * 1024)}MB 까지 업로드할 수 있습니다"
+                    )
+                f.write(chunk)
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+        # 기존 파일 백업
+        if output_path.exists():
+            backup_dir = PROJECT_ROOT / "backups"
+            backup_dir.mkdir(exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_name = f"{output_path.stem}_{timestamp}_before_upload.bak"
+            shutil.copy2(str(output_path), str(backup_dir / backup_name))
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        # 크기 초과·백업/디렉토리 실패 등 어떤 오류든 temp 고아 방지
+        temp_file.unlink(missing_ok=True)
+        raise
 
     async def _upload_stream():
         try:

@@ -12,14 +12,14 @@
 
 | Phase | 내용 | 예상 공수 | 상태 |
 |-------|------|---------|------|
-| Phase 0 | **진단·증거수집** — 원인 확정 (해법 착수 전제) | 0.5일 | ⬜ |
-| Phase 1 | 회귀복구 — 업로드 예외 → 구조화 JSON 오류 + 인덱싱 실패 원인 제거 | 1일 | ⬜ |
+| Phase 0 | **진단·증거수집** — 원인 확정 (해법 착수 전제) | 0.5일 | 🟡 A1·A2·A3·A6 완료(회사 VM 현장, `reports/plan-68-phase0-diagnosis-2026-07-02.md`) / A4·A5 보류 |
+| Phase 1 | 업로드 대용량 지원 — nginx 500m·청크 스트리밍·413 친절오류 (A1 근본원인=크기초과에 맞춰 재구성) | 1일 | 🟡 코드·정적검증·코드리뷰 통과 + **Docker 스모크(nginx 120MB통과/550MB 413) ✅** / 인증 e2e·tar 배포 대기 |
 | Phase 2 | 성능복원 — **벡터 600초 타임아웃 근본(CPU-Ollama 지연)** + 백엔드/GPU 관측 UI + Ollama 실패 명확화 + 증분화 | 2일 | ⬜ |
 | Phase 3 | 정합성 — 빈 폴더 정리 + 벡터메타 관측 (⚠️ 고아 재빌드실패 가설 반증 → **축소**) | 0.5일 | ⬜ |
 | Phase 4 | 관리자 올클린 초기화 (가이드 보존 + 2단 확인) | 1일 | ⬜ |
 | Phase 5 | UX — 메뉴 알림 토스트 전환 + "항목 추가 불가" 버그 | 1일 | 🟡 F1·F2·F4 완료·검증·커밋(`f1e1ada`) / F3 미해결 |
 | Phase 6 | 업계표준 비교·추가 식별 개선안 (문서) | 0.5일 | ⬜ |
-| **합계** | — | **~6.5일** | **0/7** |
+| **합계** | — | **~6.5일** | **P0 진단 완료 · P1 코드완료(배포대기) · P5 부분 / 나머지 P2·P3·P4·P6 대기** |
 
 > 상태 표기: ⬜ 대기 · 🟡 진행 중 · ✅ 완료 · ❌ 보류/롤백
 > Phase 우선순위 (⚠️ 설계검토 후 조정) = **2(성능=실패 근본, 벡터 600초 타임아웃)** > 1(회귀=업로드, A1 응답본문 확정 선행) > 5(UX) > 4(초기화) > 3(정합=경량) > 6(문서). 협의 후 조정.
@@ -73,17 +73,20 @@
 ## Tasks
 
 ### A. Phase 0 — 진단·증거수집 (해법 착수 전제)
-- [ ] A1. 실패하는 "특정 문서" 업로드 재현 + **서버 로그에서 실제 예외 스택 캡처** (어느 converter/preprocess 단계, 어느 예외)
-- [ ] A2. 현장 `.env`/`data/settings.json` 의 `EMBEDDING_BACKEND_INDEX/_RUNTIME` **실측값** + Ollama `/api/tags` 도달성 + `nvidia-smi`/`/api/ps` 로 임베딩이 **GPU에서 도는지** 확인
-- [ ] A3. `/api/reindex` 가 전체 재빌드임을 재확인 + 실제 소요/실패 지점(로그) — 벡터 타임아웃(600s)인지 예외인지
-- [ ] A4. `search-index.json` vs `contents/` 실제 파일 **대조 → 고아 항목 수** 산출 (OS 직접삭제 잔재 정량화)
-- [ ] A5. 메뉴 저장 시 "재시작 후 적용" 경고 **재현 경로 특정** (메뉴 vs 설정 혼선인지 실제 버그인지) + "항목 추가 불가" 재현 순서 기록
-- [ ] A6. Phase 0 결과를 `reports/` 에 요약 → Phase 1~ 범위 확정
+- [x] A1. 업로드 실패 원인 확정 → **실패 문서 277MB > nginx `client_max_body_size 100m` → 413 HTML → `Unexpected token '<'`**. 요청이 백엔드 미도달(서버 로그 무흔적). nginx 100m 은 `docker/Dockerfile.nginx:7` 로 이미지에 구움(2026-04-07, Plan-27). 백엔드 상한 500MB(`upload.py:33`)는 무관.
+- [x] A2. **레거시 `EMBEDDING_BACKEND=local`(VM `docker-compose.yml:14` 기본값) → 인덱싱이 GPU 아닌 컨테이너 CPU**. Ollama 서버(`xxx.179`) 도달·`bge-m3`·`/api/embed` dim1024 정상 확인. VM 코드는 per-purpose 지원(True) → 이미지 재빌드 없이 compose 한 줄(`EMBEDDING_BACKEND_INDEX=ollama`)로 해결 가능(staged, `up -d` 보류).
+- [x] A3. A2 로 "수십 분 후 실패"=**CPU 임베딩 전량 재빌드 600초 타임아웃** 규명(메모리 358섹션 CPU 575.7s). 업로드는 증분(`_run_vector_incremental`)이라 빨랐음. 별도 재빌드 로그 캡처는 생략.
+- [ ] A4. **보류** — 설계검토(`scan_html_files` 파일시스템 재구성)로 검색 고아 자가치유 확인, 정량화 저가치.
+- [ ] A5. **보류(현장 재현 어려움)** — "항목 추가 불가" = 세션 30분 TTL 만료 → 401 강등 가설. 다음 회사 재현 시 F12 Network 401 여부 캡처.
+- [x] A6. Phase 0 결과 `reports/plan-68-phase0-diagnosis-2026-07-02.md` 작성 → Phase 1(업로드)·Phase 2(GPU) 범위 확정.
 
-### B. Phase 1 — 회귀복구
-- [ ] B1. `run_converter()` 일반 `Exception` catch → 로깅 + 구조화 오류 반환 (프론트가 JSON으로 파싱 가능한 형태, HTML 500 제거)
-- [ ] B2. 업로드 프론트: 오류 응답을 사용자 메시지로 표시(어느 문서·왜 실패) — `Unexpected token` 소멸 확인
-- [ ] B3. (A1 결과) 실패 문서의 근본 변환 예외가 **회귀**면 원인 커밋 역추적 후 수정, **문서 고유 결함**이면 방어적 처리
+### B. Phase 1 — 업로드 대용량 지원 (A1 근본원인=nginx 100m 초과 413 에 맞춰 재구성)
+> Phase 0 확정: `Unexpected token '<'` = 변환기 예외 아님 = nginx 413 HTML. 원안 B1/B3(변환기 예외 경로)은 본 버그와 무관 → 미적용.
+- [x] B0. nginx `client_max_body_size` **100m → 500m** (`docker/nginx.conf`·`nginx.dev.conf`). 백엔드 `MAX_FILE_SIZE`·프론트 `UPLOAD_CONFIG.maxFileSize` 와 500MB 정합.
+- [x] B0b. 백엔드 업로드 수신 **전체 메모리 적재 → 4MB 청크 스트리밍**(`upload.py`) + 크기 가드 + temp 누수 방지(백업/mkdir 실패 포함 단일 try).
+- [x] B2. 프론트 **413/비-JSON 응답 방어** + 업로드 전 크기 사전 체크 (`tree-menu.js`) — `Unexpected token '<'` → "파일이 너무 큽니다(최대 500MB)".
+- [~] B1/B3. **N/A** — 근본원인이 크기초과라 변환기 예외 경로 수정 불필요. (필요 시 후속 방어적 catch 는 별건)
+- [~] B-deploy. Docker 스모크(로컬 dev) **일부 완료** — nginx 500m 기능검증(120MB통과·550MB 413)·backend healthy. 남음: 인증 e2e(실 docx) + **nginx·backend 이미지 재빌드 → tar 배포**(회사).
 
 ### C. Phase 2 — 성능복원·관측
 - [ ] C1. 관리자 화면에 **인덱싱 상태 카드**: index/runtime 백엔드, Ollama 도달성, 마지막 재빌드 소요·섹션수. **GPU 여부 소스 주의**: index=ollama 일 때 GPU 사용은 **Ollama `/api/ps`** 로만 확인 가능(`embedding_client._cuda_available()` 는 로컬 torch 프로세스만 반영 → 오지정 금지)
@@ -153,4 +156,6 @@
 ## Progress Log
 - 2026-07-02 — plan 생성. 사전 조사 3건(인덱싱/업로드·삭제/관리자·메뉴·토스트) 완료, 원인 가설 코드근거까지 확보. Phase 0 진단 게이트 설정.
 - 2026-07-02 — **Phase 5 부분 완료·커밋·푸시(`f1e1ada`).** F1(메뉴 탭 알림 전부 하단 토스트)·F2(재시작 경고=메뉴 버그 아님, 설정 배너 복원 현상으로 규명)·F4(설정 저장 토스트+지속 배너 병행) 구현 + 실브라우저(testbot/admin) 검증 통과. **F3(항목 추가 불가) 미해결** — 추가 함수 자체는 정상 확인, 세션만료 추정, 회사 재현 로그 대기. Phase 0·1·2·3·4·6 은 회사 VM(업로드 로그·Ollama GPU) 필요로 미착수.
+- 2026-07-03 — **Phase 1 구현 완료(집, 코드).** 업로드 대용량 지원: nginx 100m→500m(2곳)·백엔드 4MB 청크 스트리밍+크기가드·프론트 413/비-JSON 친절오류+사전 크기체크. 상한 500MB(사용자 결정, nginx·백엔드·프론트 3자 정합). `/code-review` 실결함 1건(백업 실패 시 temp 누수) 수정. py_compile·정적검증·회귀 스팟체크 통과. **미검증=Docker e2e**, **배포=이미지 재빌드+tar 대기(회사).** 원안 B1/B3(변환기 예외)는 A1 근본원인(크기초과)과 무관 판명→미적용. 피드백 `reports/plan-68-phase1-feedback-2026-07-03.md`.
+- 2026-07-02 — **Phase 0 진단 완료(회사 리눅스 VM 현장).** A1·A2·A3·A6 확정, A4·A5 보류. 두 헤드라인 원인 확정: **①A2 업로드 인덱싱 CPU** — 레거시 `EMBEDDING_BACKEND=local`(VM compose 기본값)이 인덱싱을 GPU 대신 컨테이너 CPU 로 강제 → 전량 재빌드 600초 타임아웃("수십 분 후 실패"). Ollama GPU 경로 정상 확인, VM 코드 per-purpose 지원 → compose 한 줄로 해결(staged, 반영 보류). **②A1 업로드 실패** — 277MB docx > nginx 100m(이미지에 구움) → 413 → `Unexpected token '<'`. 다운스트림 위험: `upload.py:340` 파일 전체 RAM 적재 + docx 변환 메모리 증가, VM RAM 24GB(방어적 구현 시 지원 가능). 열람 경로는 nginx 정적 서빙이라 무관. **다음: 집에서 Phase 1(nginx 상향+청크 스트리밍+친절오류, 이미지 재빌드+tar) / Phase 2 는 VM compose `up -d`.** 상세 `reports/plan-68-phase0-diagnosis-2026-07-02.md`.
 - 2026-07-02 (v1.1) — **design-reviewer 검토 반영.** 두 "확정 사실" 정정: ①업로드는 StreamingResponse라 converter 예외가 전체 HTML 500을 못 만듦 → 진짜 원인은 스트리밍 이전 구간/프론트 인프라, **A1에서 실제 응답 본문 캡처 필수** ②`scan_html_files` 파일시스템 스캔 재구성이라 **OS 삭제 고아는 재빌드를 죽이지 않음(가설 반증)** → Phase 3 축소. "수십분 실패"=**벡터 600초 타임아웃(CPU-Ollama 지연)** 로 재귀속 → Phase 2 확대. 부수 정정: analytics/auth.db는 TRUNCATE(파일이동 금지), GPU관측=Ollama /api/ps, F3=loadMenuData 재조회, "604초"→600초.

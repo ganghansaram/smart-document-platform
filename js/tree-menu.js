@@ -739,6 +739,14 @@ async function uploadDocument(file, targetUrl, backendUrl, menuPath) {
         formData.append('menu_path', JSON.stringify(menuPath));
     }
 
+    // 업로드 전 크기 사전 체크 — nginx 왕복 전 즉시 안내
+    var maxBytes = config.maxFileSize || (500 * 1024 * 1024);
+    if (file.size > maxBytes) {
+        showToast('파일이 너무 큽니다 (최대 ' + Math.floor(maxBytes / 1024 / 1024) + 'MB): '
+            + (file.size / 1024 / 1024).toFixed(0) + 'MB', 'error');
+        return;
+    }
+
     showStepProgress(true, 'upload');
 
     try {
@@ -749,10 +757,22 @@ async function uploadDocument(file, targetUrl, backendUrl, menuPath) {
             credentials: 'include'
         });
 
-        // 유효성 에러는 스트리밍 전에 HTTPException으로 반환됨
+        // 유효성 에러는 스트리밍 전에 HTTPException(JSON)으로 반환됨.
+        // 단 nginx 등 앞단이 반환하는 오류(413 등)는 HTML 이라 JSON 파싱이 실패하므로 방어.
         if (!response.ok) {
-            var errData = await response.json();
-            throw new Error(errData.detail || '업로드 실패');
+            var detail;
+            try {
+                var errData = await response.json();
+                detail = errData.detail;
+            } catch (e) {
+                if (response.status === 413) {
+                    var maxMB = Math.floor((config.maxFileSize || (500 * 1024 * 1024)) / 1024 / 1024);
+                    detail = '파일이 너무 큽니다 (최대 ' + maxMB + 'MB)';
+                } else {
+                    detail = '업로드 실패 (HTTP ' + response.status + ')';
+                }
+            }
+            throw new Error(detail || '업로드 실패');
         }
 
         var result = await readProgressStream(response);
