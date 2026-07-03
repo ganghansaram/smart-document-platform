@@ -38,6 +38,10 @@
 ## 업계표준 재검토
 - 대용량 업로드는 (a) 프록시 한도 상향 (b) 서버 스트리밍 수신 (c) 클라 사전검증 (d) 명확한 413 처리 — 4개 표준 계층 모두 반영. 한계: 단일 프로세스 동기 변환(python-docx 전체 적재)은 여전 → 매우 큰 문서 동시 처리 시 메모리 압박 가능(Phase 6/후속 관찰, 24GB에선 단건 여유).
 
+## ⚠️ 세션 인수인계 (로컬 dev 상태)
+- 로컬 dev 컨테이너 `sdp-backend`·`sdp-nginx` 는 **이미 Phase 1 새 코드로 재시작됨**(backend restart + nginx `-s reload`, 2026-07-03). dev override 가 `nginx.dev.conf`·backend 소스를 바인드 마운트하므로 재빌드 없이 반영된 상태. 새 세션에서 다시 restart 불필요.
+- 커밋 `2910c02`(main, origin 푸시됨)에 Phase 0·1 전부 포함. 무관 변경(`docx2html.py`·`__version__.py`·`data/verify/*.json`)·릴리즈 압축본은 미커밋으로 남아 있음(의도적).
+
 ## 잔여·후속
 - **Docker e2e 스모크**(로컬) → **nginx+backend 이미지 재빌드 → tar 배포**(회사)
 - (관찰) `proxy_read_timeout 600s`: 초대형 변환이 600s 넘게 이벤트 없이 블록되면 타임아웃 — 후속
