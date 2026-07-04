@@ -22,9 +22,11 @@
 docker compose up -d                  # http://localhost:80
 # override가 소스 bind mount → 코드 수정 즉시 반영
 # 프론트엔드: Ctrl+F5, 백엔드: docker compose restart backend
-# 개발 PC Docker→Ollama 접근 불가 (WSL 제한) → AI 기능 테스트 시 아래 방식 사용
+# Docker→Ollama 관통됨 (.env OLLAMA_URL=host.docker.internal:11434) → AI 기능도 Docker(:80)에서 동작
+#   (2026-07-04 생성 스모크로 END-TO-END 확인. 과거 WSL 제한으로 막혔던 이슈는 해결됨)
+# ⇒ 개발 기본값 = Docker(localhost:80). 아래 직접 실행은 디버깅/회사 Windows용 탈출구.
 
-# ── 직접 실행 (회사 Windows / AI 기능 테스트) ──
+# ── 직접 실행 (회사 Windows[Docker 없음] / 디버거 붙일 때) ──
 cd backend && python main.py          # http://localhost:8000
 python -m http.server 8080            # http://localhost:8080
 ```
