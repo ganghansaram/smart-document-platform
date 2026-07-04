@@ -191,6 +191,9 @@
         // 2-a. AI 동시성 상태 (Plan-44 Phase 5)
         html += _renderAIStatus(data.ai_status);
 
+        // 2-b. 인덱싱 백엔드·GPU·재빌드 관측 (Plan-68 C1)
+        html += _renderIndexingStatus(data.indexing);
+
         // 3. Subsystem tiles (Plan-41)
         html += _renderSubsystemTiles(data.by_subsystem);
 
@@ -708,6 +711,67 @@
         if (v === 'stale' || v === 'missing' || v === 'low') return 'ad-badge-warn';
         if (v === 'error' || v === 'unreachable') return 'ad-badge-error';
         return 'ad-badge-neutral';
+    }
+
+    // -- 인덱싱 백엔드·GPU·재빌드 관측 (Plan-68 C1) --------------------------
+
+    function _idxBadge(label, value, cls) {
+        return '<span class="ad-badge ' + cls + '">' +
+            '<span class="ad-badge-label">' + _escHtml(label) + '</span>' +
+            '<span class="ad-badge-value">' + _escHtml(String(value)) + '</span></span>';
+    }
+
+    function _renderIndexingStatus(idx) {
+        if (!idx) return '';  // 조회 실패 시 섹션 비노출 (빈 섹션 숨김 원칙)
+        var idxOllama = idx.index_backend === 'ollama';
+        var gpu = idx.gpu;
+        var last = idx.last_reindex || {};
+
+        var html = '<div class="ad-health">';
+        html += '<div class="ad-section-title">인덱싱 백엔드 <span class="ad-section-hint">(재빌드 성능·GPU)</span></div>';
+        html += '<div class="ad-badges">';
+
+        // 인덱싱 경로 백엔드 (index=ollama 면 GPU 서버 위임, local 이면 컨테이너 CPU)
+        html += _idxBadge('인덱싱 경로', idxOllama ? 'GPU 위임(ollama)' : 'CPU(local)',
+                          idxOllama ? 'ad-badge-ok' : 'ad-badge-warn');
+
+        // 임베딩 실행 — GPU 여부는 Ollama /api/ps 로만 확정 (Plan-68 C1)
+        var gcls, gval;
+        if (!idxOllama) { gcls = 'ad-badge-neutral'; gval = 'CPU 인프로세스'; }
+        else if (!gpu || !gpu.reachable) { gcls = 'ad-badge-error'; gval = 'Ollama 미도달'; }
+        else if (!gpu.embed_loaded) { gcls = 'ad-badge-warn'; gval = '모델 미로드'; }
+        else if (gpu.on_gpu) { gcls = 'ad-badge-ok'; gval = 'GPU 사용중'; }
+        else { gcls = 'ad-badge-warn'; gval = 'CPU 로드'; }
+        html += _idxBadge('임베딩 실행', gval, gcls);
+
+        // 런타임(검색 쿼리) 경로
+        html += _idxBadge('런타임 경로', idx.runtime_backend || '?', 'ad-badge-neutral');
+
+        // 마지막 재빌드 요약
+        var rcls, rval;
+        if (!last.last_vector_at) { rcls = 'ad-badge-neutral'; rval = '기록 없음'; }
+        else if (last.vector_ok === false) { rcls = 'ad-badge-error'; rval = '실패'; }
+        else {
+            rcls = 'ad-badge-ok';
+            rval = (last.vector_duration_s != null ? last.vector_duration_s + '초' : '완료') +
+                   (last.indexed_count != null ? ' · ' + last.indexed_count + '건' : '');
+        }
+        html += _idxBadge('마지막 재빌드', rval, rcls);
+        html += '</div>';
+
+        // 상세 (시각·오류 원인) — muted footer
+        var detail = '';
+        if (last.last_vector_at) {
+            detail = '최근 벡터 재빌드 ' + last.last_vector_at;
+            if (last.vector_ok === false && last.vector_error) {
+                detail += ' — ' + last.vector_error;
+            }
+        }
+        if (detail) {
+            html += '<div class="ad-ai-footer">' + _escHtml(detail) + '</div>';
+        }
+        html += '</div>';
+        return html;
     }
 
     // -- AI 동시성 상태 (Plan-44 Phase 5) ------------------------------------

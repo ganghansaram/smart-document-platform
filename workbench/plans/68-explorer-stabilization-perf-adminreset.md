@@ -3,7 +3,7 @@
 > 작성일: 2026-07-02 (v1) / 2026-07-02 갱신 (v1.1 — design-reviewer 검토 반영: 업로드500 기전·고아 가설 정정, Phase 2↔3 재배분)
 > 대상 시스템: Explorer (`index.html` + `backend/api/` + `backend/services/` + `js/admin-settings.js` + `js/tree-menu.js` + 인덱스 빌더)
 > 변경 범위: 업로드 예외 처리 · 벡터 인덱싱 성능/관측 · 인덱스-파일시스템 정합(고아 정리) · 관리자 올클린 초기화 신설 · 메뉴 알림 UX(토스트) · 업계표준 비교
-> 상태: 🟡 진행 중 — Phase 5 부분 완료(F1·F2·F4, `f1e1ada`) / F3·나머지 Phase 미착수. **Phase 0 진단으로 원인 확정 전 Phase 1+ 착수 금지**
+> 상태: 🟡 진행 중 — P0 진단 완료 · P1 코드완료(배포대기) · **P2 코드완료(2026-07-04, 배포대기)** · P5 부분(F1·F2·F4) / F3·P3·P4·P6 미착수
 > 선행 인지: Plan-40(임베딩 백엔드 분리), Plan-67(GUI 삭제 cascade) — 본 계획은 그 **사각지대(OS 직접삭제 고아·관측성·회귀)** 를 메운다
 
 ---
@@ -14,7 +14,7 @@
 |-------|------|---------|------|
 | Phase 0 | **진단·증거수집** — 원인 확정 (해법 착수 전제) | 0.5일 | 🟡 A1·A2·A3·A6 완료(회사 VM 현장, `reports/plan-68-phase0-diagnosis-2026-07-02.md`) / A4·A5 보류 |
 | Phase 1 | 업로드 대용량 지원 — nginx 500m·청크 스트리밍·413 친절오류 (A1 근본원인=크기초과에 맞춰 재구성) | 1일 | 🟡 코드·정적검증·코드리뷰 통과 + **Docker 스모크(nginx 120MB통과/550MB 413) ✅** / 인증 e2e·tar 배포 대기 |
-| Phase 2 | 성능복원 — **벡터 600초 타임아웃 근본(CPU-Ollama 지연)** + 백엔드/GPU 관측 UI + Ollama 실패 명확화 + 증분화 | 2일 | ⬜ |
+| Phase 2 | 성능복원 — **벡터 600초 타임아웃 근본(CPU-Ollama 지연)** + 백엔드/GPU 관측 UI + Ollama 실패 명확화 + 증분화 | 2일 | 🟡 코드 완료(C1·C2·C3·C4, 집 Docker 검증) / 배포=.env+이미지 재빌드 대기 |
 | Phase 3 | 정합성 — 빈 폴더 정리 + 벡터메타 관측 (⚠️ 고아 재빌드실패 가설 반증 → **축소**) | 0.5일 | ⬜ |
 | Phase 4 | 관리자 올클린 초기화 (가이드 보존 + 2단 확인) | 1일 | ⬜ |
 | Phase 5 | UX — 메뉴 알림 토스트 전환 + "항목 추가 불가" 버그 | 1일 | 🟡 F1·F2·F4 완료·검증·커밋(`f1e1ada`) / F3 미해결 |
@@ -89,10 +89,10 @@
 - [~] B-deploy. Docker 스모크(로컬 dev) **일부 완료** — nginx 500m 기능검증(120MB통과·550MB 413)·backend healthy. 남음: 인증 e2e(실 docx) + **nginx·backend 이미지 재빌드 → tar 배포**(회사).
 
 ### C. Phase 2 — 성능복원·관측
-- [ ] C1. 관리자 화면에 **인덱싱 상태 카드**: index/runtime 백엔드, Ollama 도달성, 마지막 재빌드 소요·섹션수. **GPU 여부 소스 주의**: index=ollama 일 때 GPU 사용은 **Ollama `/api/ps`** 로만 확인 가능(`embedding_client._cuda_available()` 는 로컬 torch 프로세스만 반영 → 오지정 금지)
-- [ ] C2. Ollama 실패 시 재인덱싱 오류를 **원인 명확화**(연결 실패/타임아웃/모델 미로드 구분) — 조용한 실패 금지
-- [ ] C3. (검토) 관리자 "인덱싱" 버튼을 **증분 우선**으로: 전체 재빌드는 "정합성 재구축" 안전망으로 분리 라벨링
-- [ ] C4. (선택) CPU 폴백 정책 결정 — 자동 폴백 vs 명시적 실패. **개발책임자 결정 필요** (Notes)
+- [x] C1. 관리자 대시보드에 **인덱싱 상태 카드**: index/runtime 백엔드, Ollama 도달성·GPU, 마지막 재빌드 소요·건수. GPU 는 Ollama `/api/ps`(`get_ollama_ps()`, `size_vram>0`)로만 판정 — `_cuda_available()` 미사용. 구현: `embedding_client.get_backend_info/get_ollama_ps` + `upload.get_indexing_status`+`index-meta.json` + `analytics.py` payload + `analytics.js` 카드. 집 Docker 실 Ollama 로 GPU 감지(on_gpu:true)·카드 렌더·콘솔0 검증.
+- [x] C2. Ollama 실패 원인 **명확화** — `EmbeddingBackendError(reason)` 연결/타임아웃/모델/HTTP 구분. 서브프로세스 stderr 는 `_extract_embedding_error()` 로 원인 한 줄 추출. 조용한 실패 제거.
+- [x] C3. (라벨) 재빌드 버튼 툴팁 정직화 — "전체 재구축=정합성 안전망 · 평소 업로드·삭제는 자동 증분". 별도 증분 버튼 신설은 후속(범위).
+- [x] C4. CPU 폴백 정책 = **명시적 실패**(자동 CPU 폴백 반대 — 600초 타임아웃 조용한 재발 방지). 타임아웃 메시지에 "index=ollama(GPU) 확인 권장" 안내.
 
 ### D. Phase 3 — 정합성 (⚠️ 설계검토로 축소 — 고아 재빌드 실패 가설 반증됨)
 - [ ] ~~D1. 빌드 스크립트 원본 부재 항목 스킵/제거~~ — **취소**: `scan_html_files` 가 파일시스템 스캔 재구성이라 검색 인덱스엔 불필요 (Context #4 참조)
@@ -154,6 +154,7 @@
 - 폐쇄망·Vanilla·무빌드 제약 유지
 
 ## Progress Log
+- 2026-07-04 — **Phase 2 코드 완료(집 Docker).** 성능복원의 본질=관측성으로 규명(GPU 전환은 Phase 0 확정대로 .env 한 줄, 코드 아님). C1 인덱싱 관측 카드(백엔드/GPU=Ollama `/api/ps`/재빌드 통계) + C2 `EmbeddingBackendError` 원인 구분(연결/타임아웃/모델/HTTP) + C3 재빌드 버튼 툴팁 정직화 + C4 CPU 폴백=명시적 실패 결정. 변경 5파일(embedding_client·upload·analytics.py·analytics.js·index.html). 실 Ollama 관통 검증(GPU on_gpu:true·C2 분류·메타 왕복)·Playwright 카드 렌더·콘솔0. 자체리뷰 async 블로킹 1건 즉시 수정(`asyncio.to_thread`). **잔여=배포**: 회사 VM `.env` 교정(recreate) + 프론트 nginx 이미지 재빌드+tar(Phase 1과 함께). 피드백 `reports/plan-68-phase2-feedback-2026-07-04.md`.
 - 2026-07-02 — plan 생성. 사전 조사 3건(인덱싱/업로드·삭제/관리자·메뉴·토스트) 완료, 원인 가설 코드근거까지 확보. Phase 0 진단 게이트 설정.
 - 2026-07-02 — **Phase 5 부분 완료·커밋·푸시(`f1e1ada`).** F1(메뉴 탭 알림 전부 하단 토스트)·F2(재시작 경고=메뉴 버그 아님, 설정 배너 복원 현상으로 규명)·F4(설정 저장 토스트+지속 배너 병행) 구현 + 실브라우저(testbot/admin) 검증 통과. **F3(항목 추가 불가) 미해결** — 추가 함수 자체는 정상 확인, 세션만료 추정, 회사 재현 로그 대기. Phase 0·1·2·3·4·6 은 회사 VM(업로드 로그·Ollama GPU) 필요로 미착수.
 - 2026-07-03 — **Phase 1 구현 완료(집, 코드).** 업로드 대용량 지원: nginx 100m→500m(2곳)·백엔드 4MB 청크 스트리밍+크기가드·프론트 413/비-JSON 친절오류+사전 크기체크. 상한 500MB(사용자 결정, nginx·백엔드·프론트 3자 정합). `/code-review` 실결함 1건(백업 실패 시 temp 누수) 수정. py_compile·정적검증·회귀 스팟체크 통과. **미검증=Docker e2e**, **배포=이미지 재빌드+tar 대기(회사).** 원안 B1/B3(변환기 예외)는 A1 근본원인(크기초과)과 무관 판명→미적용. 피드백 `reports/plan-68-phase1-feedback-2026-07-03.md`.

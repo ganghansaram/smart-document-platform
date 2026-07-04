@@ -39,6 +39,35 @@ UPLOAD_CHUNK_SIZE = 4 * 1024 * 1024
 from config import UPLOAD_TEMP_DIR as _CUSTOM_TEMP_DIR
 UPLOAD_TEMP_DIR = Path(_CUSTOM_TEMP_DIR) if _CUSTOM_TEMP_DIR else PROJECT_ROOT / "backend" / "temp"
 
+# 재빌드 관측 메타 (Plan-68 C1) — 마지막 재인덱싱 소요·건수·시각. 관리자 대시보드 노출용.
+INDEX_META_PATH = PROJECT_ROOT / "data" / "index-meta.json"
+
+
+def _record_reindex_meta(**fields) -> None:
+    """재빌드 통계 병합 기록 (관측용). 실패는 무시 — 재인덱싱을 죽이지 않는다."""
+    try:
+        meta = {}
+        if INDEX_META_PATH.exists():
+            meta = json.loads(INDEX_META_PATH.read_text(encoding="utf-8"))
+        meta.update(fields)
+        INDEX_META_PATH.write_text(
+            json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+
+def _extract_embedding_error(text: str) -> Optional[str]:
+    """서브프로세스 stderr 에서 EmbeddingBackendError 원인 한 줄만 추출 (Plan-68 C2).
+
+    build-vector-index.py 는 예외를 감싸지 않아 stderr 에 raw traceback 이 남는데,
+    그 마지막 줄이 `services.embedding_client.EmbeddingBackendError: <메시지>` 형태다.
+    """
+    for line in reversed(text.splitlines()):
+        if "EmbeddingBackendError:" in line:
+            return line.split("EmbeddingBackendError:", 1)[-1].strip()
+    return None
+
 
 def _progress_event(step: str, status: str, message: str, **extra) -> str:
     """NDJSON 진행 이벤트 생성"""
@@ -177,6 +206,7 @@ def _run_search_reindex() -> dict:
     if not index_script.exists():
         return {"success": False, "error": "build-search-index.py not found"}
 
+    t0 = datetime.now()
     try:
         result = subprocess.run(
             [sys.executable, str(index_script), "--inject-ids"],
@@ -196,6 +226,11 @@ def _run_search_reindex() -> dict:
                         indexed_count = int(nums[0])
                         break
 
+            _record_reindex_meta(
+                last_search_at=t0.isoformat(timespec="seconds"),
+                search_duration_s=round((datetime.now() - t0).total_seconds(), 1),
+                indexed_count=indexed_count,
+            )
             return {"success": True, "indexed_count": indexed_count, "output": result.stdout}
         else:
             return {"success": False, "error": result.stderr or result.stdout}
@@ -245,6 +280,7 @@ def _run_vector_reindex() -> dict:
     try:
         # Plan-67: 전체 재빌드 동안 증분 add/remove 와 경쟁 방지 (인덱스 쓰기 직렬화)
         from services.vector_search import INDEX_WRITE_LOCK, reload_index
+        t0 = datetime.now()
         with INDEX_WRITE_LOCK:
             result = subprocess.run(
                 [sys.executable, str(vector_script)],
@@ -254,18 +290,36 @@ def _run_vector_reindex() -> dict:
                 timeout=600  # 임베딩 생성은 시간이 더 걸림
             )
 
+            duration_s = round((datetime.now() - t0).total_seconds(), 1)
             if result.returncode == 0:
                 # 서버 메모리의 FAISS 캐시 갱신
                 try:
                     reload_index()
                 except Exception:
                     pass  # 임포트 실패 시 다음 검색에서 자동 로드됨
+                _record_reindex_meta(
+                    last_vector_at=t0.isoformat(timespec="seconds"),
+                    vector_duration_s=duration_s,
+                    vector_ok=True,
+                    vector_error=None,
+                )
                 return {"success": True, "output": result.stdout}
             else:
-                return {"success": False, "error": result.stderr or result.stdout}
+                # Plan-68 C2: raw traceback 대신 임베딩 실패 원인을 한 줄로 명확화
+                raw = result.stderr or result.stdout
+                clear = _extract_embedding_error(raw)
+                err = clear or (raw or "").strip()[-500:]
+                _record_reindex_meta(
+                    last_vector_at=t0.isoformat(timespec="seconds"),
+                    vector_duration_s=duration_s,
+                    vector_ok=False,
+                    vector_error=err,
+                )
+                return {"success": False, "error": err}
 
     except subprocess.TimeoutExpired:
-        return {"success": False, "error": "벡터 인덱싱 시간 초과 (600초)"}
+        _record_reindex_meta(vector_ok=False, vector_error="벡터 인덱싱 시간 초과 (600초)")
+        return {"success": False, "error": "벡터 인덱싱 시간 초과 (600초) — 임베딩 백엔드가 CPU(local)면 문서 증가 시 초과 가능. index=ollama(GPU) 확인 권장."}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -605,3 +659,30 @@ async def index_status():
         index_modified=datetime.fromtimestamp(index_mtime).isoformat(),
         latest_content_modified=datetime.fromtimestamp(latest_content_mtime).isoformat() if latest_content_mtime > 0 else None
     )
+
+
+def get_indexing_status() -> dict:
+    """관리자 대시보드용 인덱싱 관측 (Plan-68 C1) — 백엔드·GPU·마지막 재빌드.
+
+    순수 조회. Ollama 미도달 등은 하위 함수가 흡수(예외 없음).
+    """
+    from services.embedding_client import get_backend_info, get_ollama_ps
+
+    info = get_backend_info()
+    uses_ollama = "ollama" in (info["index"], info["runtime"])
+    gpu = get_ollama_ps() if uses_ollama else None
+
+    last_reindex = {}
+    try:
+        if INDEX_META_PATH.exists():
+            last_reindex = json.loads(INDEX_META_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        last_reindex = {}
+
+    return {
+        "index_backend": info["index"],
+        "runtime_backend": info["runtime"],
+        "model": info["model"],
+        "gpu": gpu,  # {reachable, embed_loaded, on_gpu, vram_ratio} | None(로컬 전용)
+        "last_reindex": last_reindex,
+    }

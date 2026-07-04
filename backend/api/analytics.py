@@ -1,6 +1,8 @@
 """
 Analytics API -- heartbeat, page-view, dashboard data
 """
+import asyncio
+
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from typing import Optional
@@ -76,6 +78,10 @@ async def dashboard(user: dict = Depends(require_admin)):
     except Exception:
         health_resp = {"status": "unknown", "checks": {}}
 
+    # Plan-68 C1: 인덱싱 관측은 Ollama /api/ps 동기 호출(최대 3초)을 포함 →
+    # 이벤트 루프 블로킹 방지를 위해 스레드로 오프로드 (Ollama 지연 시에도 대시보드 무정지)
+    indexing = await asyncio.to_thread(_safe_indexing_status)
+
     return {
         # 기존 필드 (Plan-43: active_users 의미가 "로그인 사용자 유니크" 로 전환)
         "active_users": get_active_user_count(),
@@ -100,6 +106,8 @@ async def dashboard(user: dict = Depends(require_admin)):
         "health": health_resp,
         # Plan-44 Phase 5: AI 동시성 상태 (4 지표 + L2/L3 트리거 판정)
         "ai_status": _safe_ai_status(),
+        # Plan-68 C1: 인덱싱 백엔드·GPU·마지막 재빌드 관측 (스레드 오프로드 결과)
+        "indexing": indexing,
     }
 
 
@@ -107,6 +115,14 @@ def _safe_ai_status():
     try:
         from services.ai_metrics import get_ai_status
         return get_ai_status()
+    except Exception:
+        return None
+
+
+def _safe_indexing_status():
+    try:
+        from api.upload import get_indexing_status
+        return get_indexing_status()
     except Exception:
         return None
 

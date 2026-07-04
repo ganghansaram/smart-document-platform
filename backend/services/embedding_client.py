@@ -31,6 +31,19 @@ _DEFAULT_BACKEND_BY_PURPOSE = {
     "runtime": "local",
 }
 
+
+class EmbeddingBackendError(RuntimeError):
+    """임베딩 백엔드 호출 실패 — 원인(연결/타임아웃/모델/HTTP)을 구분해 담는다.
+
+    조용한 실패(raw traceback·모호한 에러) 방지용. 서브프로세스(build-vector-index.py)
+    에서 발생 시 stderr 마지막 줄에 `EmbeddingBackendError: <메시지>` 형태로 남아
+    재인덱싱 스트림이 사람이 읽을 원인으로 되살릴 수 있다 (Plan-68 C2).
+    """
+
+    def __init__(self, reason: str, message: str):
+        self.reason = reason  # connection | timeout | model | http
+        super().__init__(message)
+
 # ── 싱글턴 모델 캐시 ──
 _model = None
 
@@ -134,14 +147,87 @@ def _encode_ollama(texts: List[str]) -> List[List[float]]:
 
 
 def _ollama_embed_call(texts: List[str]) -> List[List[float]]:
-    response = requests.post(
-        f"{config.OLLAMA_URL}/api/embed",
-        json={
-            "model": config.EMBEDDING_MODEL,
-            "input": texts,
-        },
-        timeout=120,
-    )
-    response.raise_for_status()
+    url = f"{config.OLLAMA_URL}/api/embed"
+    try:
+        response = requests.post(
+            url,
+            json={
+                "model": config.EMBEDDING_MODEL,
+                "input": texts,
+            },
+            timeout=120,
+        )
+        response.raise_for_status()
+    except requests.exceptions.ReadTimeout as e:
+        raise EmbeddingBackendError(
+            "timeout",
+            f"Ollama 임베딩 응답 타임아웃(120초): {config.OLLAMA_URL}. "
+            f"모델 로드 지연 또는 서버 과부하 가능.",
+        ) from e
+    except requests.exceptions.ConnectionError as e:
+        # ConnectTimeout 포함 — 서버 미기동/주소 오류/네트워크 차단
+        raise EmbeddingBackendError(
+            "connection",
+            f"Ollama 연결 실패: {config.OLLAMA_URL}. 서버 미기동 또는 주소·네트워크 오류.",
+        ) from e
+    except requests.exceptions.Timeout as e:
+        raise EmbeddingBackendError(
+            "timeout",
+            f"Ollama 연결 타임아웃: {config.OLLAMA_URL}. 서버 응답 없음.",
+        ) from e
+    except requests.exceptions.HTTPError as e:
+        sc = e.response.status_code if e.response is not None else None
+        if sc == 404:
+            raise EmbeddingBackendError(
+                "model",
+                f"Ollama 모델 미로드: '{config.EMBEDDING_MODEL}'. "
+                f"대상 서버에 `ollama pull {config.EMBEDDING_MODEL}` 필요.",
+            ) from e
+        raise EmbeddingBackendError("http", f"Ollama HTTP 오류({sc}): {url}.") from e
+
     data = response.json()
     return data["embeddings"]
+
+
+# ── 관측 (Plan-68 C1) — 순수 조회, 부작용 없음 ──
+
+def get_backend_info() -> dict:
+    """현재 해석된 용도별 백엔드·모델·URL. 관리자 대시보드 노출용."""
+    return {
+        "index": _resolve_backend("index"),
+        "runtime": _resolve_backend("runtime"),
+        "model": config.EMBEDDING_MODEL,
+        "ollama_url": config.OLLAMA_URL,
+    }
+
+
+def get_ollama_ps() -> dict:
+    """Ollama `/api/ps` 조회 — 임베딩 모델 로드 여부·GPU(VRAM) 사용 여부.
+
+    ⚠️ index=ollama 일 때 GPU 사용은 이 경로로만 확인 가능
+    (`_cuda_available()` 는 컨테이너 내 로컬 torch 만 반영 → 오지정 금지, Plan-68 C1).
+    관측용이라 실패는 예외 대신 reachable=False 로 반환.
+    """
+    try:
+        resp = requests.get(f"{config.OLLAMA_URL}/api/ps", timeout=3)
+        resp.raise_for_status()
+        models = resp.json().get("models", []) or []
+    except Exception:
+        return {"reachable": False, "embed_loaded": False, "on_gpu": None}
+
+    model = config.EMBEDDING_MODEL
+    entry = next(
+        (m for m in models if model in (m.get("name", "") or "") or model in (m.get("model", "") or "")),
+        None,
+    )
+    if not entry:
+        return {"reachable": True, "embed_loaded": False, "on_gpu": None}
+
+    size = entry.get("size", 0) or 0
+    vram = entry.get("size_vram", 0) or 0
+    return {
+        "reachable": True,
+        "embed_loaded": True,
+        "on_gpu": vram > 0,
+        "vram_ratio": round(vram / size, 2) if size else None,
+    }
