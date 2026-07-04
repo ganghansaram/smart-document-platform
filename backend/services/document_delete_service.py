@@ -156,6 +156,34 @@ def delete_document_by_url(url: str) -> dict:
     }
 
 
+# ── Explorer 올클린 초기화 (Plan-68 Phase 4) ──────────────────────────────────
+# allowlist 방식: 시스템 baseline 만 남기고 그 외 최상위 콘텐츠(=사용자 업로드/작성)를
+# 전부 휴지통 이동. denylist(알려진 것만 삭제)보다 안전 — 미래 업로드도 자동 포함.
+# 판별 근거(reports/plan-68-phase4-scope-2026-07-04): home/about=수기 시스템 페이지,
+# guide=시스템 가이드, banner_images=화면 데코(translator/author/compare CSS 참조),
+# authored=빈 시스템 폴더. 계정(auth.db)·통계(analytics.db)·설정은 무접촉.
+_ALLCLEAN_PRESERVE = {"home.html", "about.html", "guide", "banner_images", "authored"}
+
+
+def all_clean_explorer() -> dict:
+    """Explorer 사용자 콘텐츠 올클린 — 보존 목록 외 최상위 항목을 휴지통 이동.
+
+    인덱스·메뉴 갱신은 호출측(엔드포인트)에서 수행(재빌드가 파일시스템 스캔으로 정합).
+    returns: {stamp, trashed:[상대경로...], preserved:[...]}
+    """
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    targets = []
+    for child in sorted(CONTENTS_ROOT.iterdir()):
+        if child.name in _ALLCLEAN_PRESERVE or child.name.startswith("."):
+            continue
+        targets.append(child)
+
+    trashed = _move_to_trash(targets, stamp) if targets else []
+    logger.info("Explorer 올클린: %d개 항목 휴지통 이동 (stamp=%s): %s",
+                len(trashed), stamp, trashed)
+    return {"stamp": stamp, "trashed": trashed, "preserved": sorted(_ALLCLEAN_PRESERVE)}
+
+
 # ── 보존정책 자동 청소 (Plan-67 후속) ──────────────────────────────────
 # 소프트삭제(휴지통)·백업의 업계표준 보존정리. 서버 시작 시 1회 실행(main.py lifespan).
 # 대상은 "이미 버린 것/옛 백업"뿐 — 살아있는 문서·인덱스는 건드리지 않는다.

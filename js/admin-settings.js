@@ -597,7 +597,7 @@ function _renderSystemContent(sys) {
     area.innerHTML = html;
 
     // 메뉴 관리 탭 커스텀 렌더링
-    if (sys.id === 'explorer') _renderMenuTab();
+    if (sys.id === 'explorer') { _renderMenuTab(); _renderExplorerDangerZone(); }
 }
 
 // ── 필드 렌더링 ───────────────────────────────────────────────────────────────
@@ -872,6 +872,121 @@ function _renderMenuTab() {
         '</div>';
 
     _menuFetchData();
+}
+
+// ── Explorer 콘텐츠 올클린 초기화 (Plan-68 Phase 4) ────────────────────────────
+// 콘텐츠 탭 하단에 위험 섹션 주입. 업로드/작성 문서만 휴지통 이동(시스템·계정·통계 보존).
+
+function _renderExplorerDangerZone() {
+    var panel = document.getElementById('tab-explorer-content');
+    if (!panel || document.getElementById('explorer-allclean-section')) return;
+
+    var sec = document.createElement('div');
+    sec.className = 'admin-section';
+    sec.id = 'explorer-allclean-section';
+    sec.innerHTML =
+        '<h3 class="admin-section-title">콘텐츠 초기화 (위험)</h3>' +
+        '<div class="admin-field-desc" style="margin-bottom:12px">' +
+            '업로드·작성으로 추가된 <b>사용자 문서를 전부 휴지통으로 이동</b>하여 Explorer를 처음 설치 상태로 되돌립니다. ' +
+            '시스템 페이지·가이드·화면 디자인, 계정·통계·설정은 <b>보존</b>됩니다. ' +
+            '<span style="opacity:.7">삭제분은 <code>data/trash/</code> 에 보관되어 수동 복구 가능.</span>' +
+        '</div>' +
+        '<button class="btn btn-danger admin-btn" id="explorer-allclean-btn">Explorer 콘텐츠 초기화</button>';
+    panel.appendChild(sec);
+
+    var btn = document.getElementById('explorer-allclean-btn');
+    if (btn) btn.addEventListener('click', _explorerAllCleanModal);
+}
+
+function _explorerAllCleanModal() {
+    var overlay = document.createElement('div');
+    overlay.id = 'explorer-allclean-overlay';
+    overlay.className = 'admin-modal-overlay';
+    overlay.innerHTML =
+        '<div class="admin-modal">' +
+            '<h3>Explorer 콘텐츠 초기화 — 되돌리기 어려움</h3>' +
+            '<div id="allclean-body" style="margin:8px 0 16px;font-size:13px;line-height:1.75">' +
+                '<b>사용자가 올리거나 작성한 문서 전부</b>가 휴지통으로 이동합니다.<br>' +
+                '<span style="opacity:.75">보존: 시스템 페이지·가이드·화면 디자인 · 계정 · 통계 · 설정</span><br>' +
+                '<span style="opacity:.75">삭제분은 <code>data/trash/</code> 에 보관(수동 복구 가능).</span>' +
+                '<div style="margin-top:14px">계속하려면 아래에 <b>초기화</b> 를 입력하세요.</div>' +
+                '<input type="text" id="allclean-confirm-input" class="form-input" autocomplete="off" ' +
+                    'placeholder="초기화" style="margin-top:6px;width:100%">' +
+            '</div>' +
+            '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+                '<button class="btn btn-secondary admin-btn" id="allclean-cancel">취소</button>' +
+                '<button class="btn btn-danger admin-btn" id="allclean-confirm" disabled>초기화 실행</button>' +
+            '</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+
+    var input = document.getElementById('allclean-confirm-input');
+    var confirmBtn = document.getElementById('allclean-confirm');
+    function close() { overlay.remove(); }
+    document.getElementById('allclean-cancel').addEventListener('click', close);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+    input.addEventListener('input', function() {
+        confirmBtn.disabled = (input.value.trim() !== '초기화');
+    });
+    confirmBtn.addEventListener('click', function() { _runExplorerAllClean(overlay); });
+    input.focus();
+}
+
+async function _runExplorerAllClean(overlay) {
+    var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
+    var body = document.getElementById('allclean-body');
+    var cancelBtn = document.getElementById('allclean-cancel');
+    var confirmBtn = document.getElementById('allclean-confirm');
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (cancelBtn) cancelBtn.disabled = true;
+    if (body) body.innerHTML = '<div id="allclean-progress"><span class="spinner spinner-sm"></span> 초기화 진행 중…</div>';
+
+    function step(msg) {
+        var p = document.getElementById('allclean-progress');
+        if (p) p.innerHTML = '<span class="spinner spinner-sm"></span> ' + _escHtml(msg);
+    }
+
+    try {
+        var res = await fetch(backendUrl + '/api/explorer/all-clean', { method: 'POST', credentials: 'include' });
+        if (res.status === 401) {
+            if (typeof window.handleApiUnauthorized === 'function') window.handleApiUnauthorized();
+            overlay.remove();
+            return;
+        }
+        if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);
+
+        var reader = res.body.getReader();
+        var decoder = new TextDecoder();
+        var buffer = '';
+        var final = null;
+        while (true) {
+            var chunk = await reader.read();
+            if (chunk.done) break;
+            buffer += decoder.decode(chunk.value, { stream: true });
+            var lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                if (!line) continue;
+                var ev;
+                try { ev = JSON.parse(line); } catch (e) { continue; }
+                if (ev.message) step(ev.message);
+                if (ev.step === 'done') final = ev;
+            }
+        }
+
+        overlay.remove();
+        if (final && final.success) {
+            var n = (final.trashed != null) ? final.trashed + '개 항목 정리' : '완료';
+            showToast('Explorer 초기화 완료 — ' + n + ' (휴지통 보관)', 'success');
+        } else {
+            showToast('초기화 실패: ' + (final && final.message ? final.message : '알 수 없는 오류'), 'error');
+        }
+        renderAdminSettings();
+    } catch (e) {
+        overlay.remove();
+        showToast('초기화 실패: ' + e.message, 'error');
+    }
 }
 
 async function _menuFetchData() {

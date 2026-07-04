@@ -89,6 +89,20 @@ def _reassemble(content: list, system_items: dict) -> list:
     return result
 
 
+def reset_menu_to_system() -> dict:
+    """menu.json 을 시스템 항목만으로 리셋 (Plan-68 Phase 4 올클린).
+
+    사용자 콘텐츠 노드를 모두 제거하고 홈·플랫폼 가이드(children 포함)·용어집만 보존.
+    returns: {"count": 보존 노드 수}
+    """
+    with _MENU_LOCK:
+        menu = _load_menu()
+        system_items = _extract_system_items(menu)
+        new_menu = _reassemble([], system_items)
+        _save_menu(new_menu)
+    return {"count": len(new_menu)}
+
+
 def _iter_nodes(nodes: list):
     """메뉴 트리 전체 노드를 순회 (재귀)."""
     for node in nodes:

@@ -550,6 +550,74 @@ async def reindex(user: dict = Depends(require_editor)):
     )
 
 
+@router.post("/explorer/all-clean")
+async def explorer_all_clean(user: dict = Depends(require_admin)):
+    """Explorer 올클린 초기화 (Plan-68 Phase 4) — NDJSON 스트리밍.
+
+    사용자 업로드/작성 콘텐츠를 휴지통 이동(복구여지) → 메뉴 시스템-only 리셋 →
+    검색·벡터 인덱스 재빌드(가이드만 남음). 시스템 페이지/가이드/화면 데코 + 계정·통계·설정은 무접촉.
+    menu.json 을 수정하므로 document-delete 와 동일하게 require_admin.
+    """
+
+    async def _clean_stream():
+        # 1. 사용자 콘텐츠 휴지통 이동
+        yield _progress_event("clean_content", "started", "사용자 콘텐츠 휴지통 이동 중...")
+        try:
+            from services.document_delete_service import all_clean_explorer
+            result = await asyncio.to_thread(all_clean_explorer)
+        except Exception as e:
+            yield _progress_event("clean_content", "error", f"콘텐츠 정리 실패: {e}")
+            yield _progress_event("done", "error", f"콘텐츠 정리 실패: {e}", success=False)
+            return
+        trashed_n = len(result["trashed"])
+        yield _progress_event("clean_content", "completed", f"콘텐츠 {trashed_n}개 항목 휴지통 이동")
+
+        # 2. 메뉴 시스템-only 리셋
+        yield _progress_event("reset_menu", "started", "메뉴 초기화 중...")
+        try:
+            from api.menu import reset_menu_to_system
+            reset_menu_to_system()
+            yield _progress_event("reset_menu", "completed", "메뉴 초기화 완료 (시스템 항목만)")
+        except Exception as e:
+            yield _progress_event("reset_menu", "error", f"메뉴 초기화 실패: {e}")
+
+        # 3. 검색 인덱스 재빌드 (파일시스템 스캔 → 남은 가이드만 반영)
+        yield _progress_event("search_index", "started", "검색 인덱스 재생성 중...")
+        search_result = await asyncio.to_thread(_run_search_reindex)
+        if search_result["success"]:
+            try:
+                from services.keyword_search import reload_bm25_index
+                reload_bm25_index()
+            except Exception:
+                pass
+            yield _progress_event("search_index", "completed", "검색 인덱스 완료")
+        else:
+            err = search_result.get("error", "")
+            yield _progress_event("search_index", "error", f"검색 인덱스 실패: {err}")
+            yield _progress_event("done", "error", f"검색 인덱스 실패: {err}", success=False)
+            return
+
+        # 4. 벡터 인덱스 재빌드
+        yield _progress_event("vector_index", "started", "벡터 인덱스 재생성 중...")
+        vector_result = await asyncio.to_thread(_run_vector_reindex)
+        if vector_result["success"]:
+            yield _progress_event("vector_index", "completed", "벡터 인덱스 재생성 완료")
+        else:
+            err = vector_result.get("error", "")
+            yield _progress_event("vector_index", "error", f"벡터 인덱스 실패: {err}")
+
+        yield _progress_event(
+            "done", "completed", f"Explorer 초기화 완료 — {trashed_n}개 항목 정리 (휴지통 보관)",
+            success=True, trashed=trashed_n,
+        )
+
+    return StreamingResponse(
+        _clean_stream(),
+        media_type="text/plain; charset=utf-8",
+        headers=STREAM_HEADERS,
+    )
+
+
 # ── 문서 삭제 (Plan-67) ────────────────────────────────────────────────────────
 # 업로드(생성)의 대칭쌍. 메뉴 cascade·인덱스 정합·휴지통 보관을 담당.
 # menu.json 을 수정하므로 menu.py 와 동일하게 require_admin (인가 일관성).

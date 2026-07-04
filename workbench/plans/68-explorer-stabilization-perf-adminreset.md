@@ -3,7 +3,7 @@
 > 작성일: 2026-07-02 (v1) / 2026-07-02 갱신 (v1.1 — design-reviewer 검토 반영: 업로드500 기전·고아 가설 정정, Phase 2↔3 재배분)
 > 대상 시스템: Explorer (`index.html` + `backend/api/` + `backend/services/` + `js/admin-settings.js` + `js/tree-menu.js` + 인덱스 빌더)
 > 변경 범위: 업로드 예외 처리 · 벡터 인덱싱 성능/관측 · 인덱스-파일시스템 정합(고아 정리) · 관리자 올클린 초기화 신설 · 메뉴 알림 UX(토스트) · 업계표준 비교
-> 상태: 🟡 진행 중 — P0 진단 완료 · P1 코드완료(배포대기) · **P2 코드완료(2026-07-04, 배포대기)** · P5 부분(F1·F2·F4) / F3·P3·P4·P6 미착수
+> 상태: 🟡 진행 중 — P0 진단 완료 · P1 코드완료(배포대기) · P2 코드완료(배포대기) · **P4 완료(2026-07-04 E2E)** · P5 부분(F1·F2·F4) / F3·P3·P6 미착수
 > 선행 인지: Plan-40(임베딩 백엔드 분리), Plan-67(GUI 삭제 cascade) — 본 계획은 그 **사각지대(OS 직접삭제 고아·관측성·회귀)** 를 메운다
 
 ---
@@ -16,7 +16,7 @@
 | Phase 1 | 업로드 대용량 지원 — nginx 500m·청크 스트리밍·413 친절오류 (A1 근본원인=크기초과에 맞춰 재구성) | 1일 | 🟡 코드·정적검증·코드리뷰 통과 + **Docker 스모크(nginx 120MB통과/550MB 413) ✅** / 인증 e2e·tar 배포 대기 |
 | Phase 2 | 성능복원 — **벡터 600초 타임아웃 근본(CPU-Ollama 지연)** + 백엔드/GPU 관측 UI + Ollama 실패 명확화 + 증분화 | 2일 | 🟡 코드 완료(C1·C2·C3·C4, 집 Docker 검증) / 배포=.env+이미지 재빌드 대기 |
 | Phase 3 | 정합성 — 빈 폴더 정리 + 벡터메타 관측 (⚠️ 고아 재빌드실패 가설 반증 → **축소**) | 0.5일 | ⬜ |
-| Phase 4 | 관리자 올클린 초기화 (가이드 보존 + 2단 확인) | 1일 | ⬜ |
+| Phase 4 | 관리자 올클린 초기화 (가이드 보존 + 2단 확인) | 1일 | ✅ 완료(집 Docker E2E 검증) / 배포=프론트 이미지 재빌드 대기 |
 | Phase 5 | UX — 메뉴 알림 토스트 전환 + "항목 추가 불가" 버그 | 1일 | 🟡 F1·F2·F4 완료·검증·커밋(`f1e1ada`) / F3 미해결 |
 | Phase 6 | 업계표준 비교·추가 식별 개선안 (문서) | 0.5일 | ⬜ |
 | **합계** | — | **~6.5일** | **P0 진단 완료 · P1 코드완료(배포대기) · P5 부분 / 나머지 P2·P3·P4·P6 대기** |
@@ -100,11 +100,11 @@
 - [ ] D3. `index_status` 에 파일 존재/고아 수 반영 (mtime만 비교 → 정합 상태 노출) — 관측 개선
 - [ ] D4. `_move_to_trash` 후 **빈 부모 폴더 정리**(시스템 폴더 제외) — 삭제 후 폴더 잔존 해소 **(Phase 3 핵심 유효 항목)**
 
-### E. Phase 4 — 관리자 올클린 초기화
-- [ ] E1. 보존 대상 확정: `contents/home.html` + `contents/guide/` + `menu.py` `SYSTEM_LABELS`(가이드 카테고리). 삭제 대상: 그 외 `contents/*` + `search-index.json` + `vector-index*` + `menu.json` 사용자 항목 + 부수 정리(BM25 캐시·conversation 세션·`backups/`). ⚠️ **`analytics.db`/`auth.db` 는 파일 이동 금지** — 서버가 연 SQLite 는 Windows 락·손상 위험 → 지우려면 **테이블 TRUNCATE(SQL)**. 기본 방침 = **통계·계정 보존**(협의)
-- [ ] E2. 백엔드 올클린 엔드포인트(`require_admin`) — 삭제 대신 **휴지통 이동**(복구여지) + 인덱스 재생성(가이드만) + 메뉴를 시스템 항목만으로 리셋
-- [ ] E3. 프론트 관리자 버튼 + **2단 확인**(경고 모달 + 확인 문구 타이핑) + 완료 토스트
-- [ ] E4. 실행 후 Explorer가 가이드만 남고 정상 동작(검색/트리/RAG) 확인
+### E. Phase 4 — 관리자 올클린 초기화 (✅ 완료 2026-07-04)
+- [x] E1. 보존 경계 확정 = **allowlist** `_ALLCLEAN_PRESERVE`(home.html·about.html·guide·banner_images·authored). 사용자 결정으로 **Explorer 사용자 업로드/작성 문서만** 삭제, 계정·통계·설정·backups 무접촉. ⚠️ 초기 "home+guide만" 에서 조사로 about·banner(화면 데코) 보존 추가. 판별 근거 `reports/plan-68-phase4-scope-2026-07-04.md`. (analytics.db/auth.db TRUNCATE 는 **보존 결정으로 불필요** — 무접촉이 가장 안전)
+- [x] E2. `POST /api/explorer/all-clean`(require_admin, NDJSON) — `document_delete_service.all_clean_explorer()`(휴지통 이동) + `menu.reset_menu_to_system()` + 검색·벡터 재빌드. 기존 `_move_to_trash`·reindex 헬퍼 재사용.
+- [x] E3. `admin-settings.js` 콘텐츠 탭 위험 섹션 + 2단 확인 모달("초기화" 타이핑 게이트) + 스트리밍 진행 + 완료 토스트.
+- [x] E4. 실행 E2E 검증: contents 9→5(보존만)·삭제4→휴지통·메뉴10→3·인덱스360→124·Explorer 가이드만·About 200·삭제 404·계정/통계 무접촉·RAG 정상. 피드백 `reports/plan-68-phase4-feedback-2026-07-04.md`.
 
 ### F. Phase 5 — 메뉴 알림 UX + 버그
 - [x] F1. 메뉴 탭 알림 전부 하단 토스트로 전환(저장완료·실패·삭제/제거·"저장 안 됨" 경고) — `admin-settings.js`. ✅ 실브라우저 검증(하단 success 토스트, 상단 배너 미표시)
@@ -154,6 +154,7 @@
 - 폐쇄망·Vanilla·무빌드 제약 유지
 
 ## Progress Log
+- 2026-07-04 — **Phase 4 완료(집 Docker, 실행 E2E).** 관리자 올클린 초기화 신설. 사용자 결정으로 범위=Explorer 사용자 업로드/작성 문서만, 계정·통계·설정·backups 무접촉. 보존경계=allowlist(조사로 about·banner 화면데코 추가, `reports/plan-68-phase4-scope-...md`). `POST /api/explorer/all-clean`(휴지통 이동+메뉴 시스템리셋+인덱스 재빌드) + admin-settings.js 위험섹션+2단확인("초기화" 타이핑). 실행검증: contents 9→5·삭제4→휴지통(복구가능)·메뉴10→3·인덱스360→124·Explorer 가이드만·About 무손상·계정/통계 보존·RAG 정상·콘솔0. 잔여=프론트 이미지 재빌드(배포). 피드백 `reports/plan-68-phase4-feedback-2026-07-04.md`.
 - 2026-07-04 — **Phase 2 코드 완료(집 Docker).** 성능복원의 본질=관측성으로 규명(GPU 전환은 Phase 0 확정대로 .env 한 줄, 코드 아님). C1 인덱싱 관측 카드(백엔드/GPU=Ollama `/api/ps`/재빌드 통계) + C2 `EmbeddingBackendError` 원인 구분(연결/타임아웃/모델/HTTP) + C3 재빌드 버튼 툴팁 정직화 + C4 CPU 폴백=명시적 실패 결정. 변경 5파일(embedding_client·upload·analytics.py·analytics.js·index.html). 실 Ollama 관통 검증(GPU on_gpu:true·C2 분류·메타 왕복)·Playwright 카드 렌더·콘솔0. 자체리뷰 async 블로킹 1건 즉시 수정(`asyncio.to_thread`). **잔여=배포**: 회사 VM `.env` 교정(recreate) + 프론트 nginx 이미지 재빌드+tar(Phase 1과 함께). 피드백 `reports/plan-68-phase2-feedback-2026-07-04.md`.
 - 2026-07-02 — plan 생성. 사전 조사 3건(인덱싱/업로드·삭제/관리자·메뉴·토스트) 완료, 원인 가설 코드근거까지 확보. Phase 0 진단 게이트 설정.
 - 2026-07-02 — **Phase 5 부분 완료·커밋·푸시(`f1e1ada`).** F1(메뉴 탭 알림 전부 하단 토스트)·F2(재시작 경고=메뉴 버그 아님, 설정 배너 복원 현상으로 규명)·F4(설정 저장 토스트+지속 배너 병행) 구현 + 실브라우저(testbot/admin) 검증 통과. **F3(항목 추가 불가) 미해결** — 추가 함수 자체는 정상 확인, 세션만료 추정, 회사 재현 로그 대기. Phase 0·1·2·3·4·6 은 회사 VM(업로드 로그·Ollama GPU) 필요로 미착수.
