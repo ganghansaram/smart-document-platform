@@ -1,7 +1,7 @@
 # 계획서 인덱스 (Plans Index)
 
 > 전 계획의 **상태 단일 출처(SSOT)**. 파일을 뒤지지 말고 여기서 위치·상태를 확인한다.
-> 최종 갱신: 2026-06-30
+> 최종 갱신: 2026-07-05
 
 ## 디렉토리 규약
 
@@ -30,7 +30,8 @@
 | 49 | Verify 가이드 튜토리얼화 | 🟡 Phase 1 완료 / Phase 2 진행 | 유사도 모드 완료, 비교 모드 진행 중 |
 | 57 | Verify 비교/검증 모드 뷰 통일 | ⬜ 미착수 (대작 ~11.75일) | 4차 design-review 통과, 착수 결정 대기 |
 | 60 | 통일 양식 기반 문서 저작·내보내기 플랫폼 (저작+DOCX 내보내기 통합) | 🟡 Phase 2·3·4 진행 중 | 2a 저작 풀사이클 ✅ + 에디터 디자인 토큰·다크 브리지 ✅(2026-06-18) + 3a/3c DOCX 내보내기 ✅ + 4 "작성 문서" 자동 메뉴 편입 ✅(방법 가). 남음: 2b 소유권·3b 표지·하드닝·검색연동·admin 큐레이션/관리·회귀. 최근 커밋 `cddc377`·`d44e7c1`(push됨) |
-| 68 | Explorer 안정화·성능복원·관리자 올클린 | 🟡 Phase 5 부분 완료 | Phase 5 F1·F2·F4(메뉴/설정 알림 하단 토스트) 완료·검증·푸시(`f1e1ada`). F3(항목 추가 불가) 미해결. Phase 0~4·6 은 회사 VM(업로드 로그·Ollama GPU) 필요로 미착수. [plans/68-*.md](68-explorer-stabilization-perf-adminreset.md) |
+| 68 | Explorer 안정화·성능복원·관리자 올클린 | 🟡 Phase 3 D4·Phase 5 부분 완료 | Phase 3 D4(삭제 후 빈 폴더 정리) 완료·UI E2E·푸시(`5fb8bed`). Phase 5 F1·F2·F4 완료·푸시(`f1e1ada`), F3 미해결. Phase 1·2·4 코드완료·배포대기. Phase 6·F3 은 회사 VM 필요. [plans/68-*.md](68-explorer-stabilization-perf-adminreset.md) |
+| 69 | Gmail식 하이브리드 관리자 설정 (빠른 설정 드로어) | 🔵 draft (협의 대기) | 각 시스템 헤더 톱니→우측 빠른설정 드로어 + admin.html 콘솔 유지. design-review 근거 "통짜 팝업 비권장·하이브리드 권장". 핵심 협의=경량 설정 후보 선별. [plans/69-*.md](69-hybrid-admin-settings-drawer.md) |
 
 ## ❄️ 보류 (Icebox — 설계·로드맵·트리거 대기)
 
