@@ -110,6 +110,8 @@ python -m http.server 8080            # http://localhost:8080
   3. `plans/README.md` 의 해당 행을 활성 → 완료 섹션으로 이동
   4. 외부 문서(`docs/` 등)가 옛 경로 참조 시 `plans/done/NN-…` 로 정정
 - 보류 전환도 동일 (`git mv … icebox/` + README 이동). 상세는 README "디렉토리 규약" 참조.
+- **완료 정의 = 코드 완성 + 로컬 Docker 검증** (회사 배포는 완료 조건 **아님**). 개발 축(계획서)과 운영 축(배포)을 분리한다 — "Definition of Done ≠ Definition of Shipped".
+- **배포·회사테스트는 `workbench/DEPLOY-QUEUE.md` 원장으로 추적** (별도 상시 축). plan 을 닫을 때 배포 필요분·회사전용 확인은 **계획서 꼬리에 남기지 말고** 큐에 append(누적). 회사 방문 시 이 큐 하나만 보면 됨.
 
 ## 유사도 분류 체계 (Plan-45 v3, Copyleaks 모방)
 

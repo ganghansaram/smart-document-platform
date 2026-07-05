@@ -129,12 +129,20 @@
 - 개선: 배치 `N/총 M` 형태 진행률 스트리밍 (SSE 또는 polling), 장문 문서(수천)에서도 사용자 대기 체감 완화
 - 관련 파일: `backend/api/upload.py` (_run_vector_reindex), `tools/build-vector-index.py`, `js/admin-settings.js` (인덱스 재생성 모달)
 
-## 플랫폼 — 관리자 설정 메뉴
+## Explorer — 인덱스 관측 경량화 (Plan-68 D2·D3, 선택)
 
-> 출처: memory/admin-settings-plan.md
+> 출처: Plan-68 done 이관 잔여 (계획서상 "선택" 명시 — 정리는 전체 재빌드로 자가치유)
 
-- Launcher 통합 A안 권장
-- 현재 `admin-settings.js` 기반, 별도 진입점 필요
+- D2: `vector-index_meta` 잔재 점검 — 증분만 돈 벡터 메타와 `contents/` 대조해 고아 유무 리포트
+- D3: `index_status` 에 파일 존재/고아 수 반영 (mtime 비교 → 정합 상태 노출) — 관측 개선
+- 관련 파일: `backend/api/upload.py`, 인덱스 빌더
+
+## Explorer — 인덱싱 업계표준 비교 문서 (Plan-68 Phase 6)
+
+> 출처: Plan-68 done 이관 잔여 — **회사 VM 데이터 필요**(업로드 로그·Ollama GPU)
+
+- Explorer 인덱싱·정합·관측을 업계 표준과 비교한 개선안 문서 + 추가 식별 이슈 정리
+- 산출물: `reports/plan-68-industry-standard-compare-YYYY-MM-DD.md`
 
 ## Explorer — Compare 시스템 고도화
 
@@ -165,6 +173,14 @@
 
 - **대화 세션 영속화 (5-A)** — 현재 인메모리 LRU, DB 또는 파일 저장으로 전환 시 세션 유지
 - **표 데이터 정밀 QA (5-D)** — GFM 테이블 파싱 후 수치 연산 (최대값, 평균 등)
+
+## Verify/플랫폼 — 가이드 튜토리얼 확장 (Plan-49 잔여)
+
+> 출처: Plan-49 done 이관 — 유사도·비교 모드 튜토리얼화 완료, 아래는 후속
+
+- Verify 규칙 모드(Phase 3) 튜토리얼화 — 21종 규칙 카탈로그, 별도 패턴 필요할 수 있음
+- notebook/explorer/admin 가이드에 동일 `po-*` 튜토리얼 패턴 확장 (Phase 1 시범 성공 기반)
+- 관련 파일: `contents/guide/*.html`
 
 ## Verify — TND(사내 용어 사전) + 캘리브레이션
 

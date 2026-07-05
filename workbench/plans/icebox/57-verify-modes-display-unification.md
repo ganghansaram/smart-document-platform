@@ -3,7 +3,7 @@
 > 작성일: 2026-05-02 (v1) / 2026-05-02 갱신 (v2 — 1차 design-review 반영) / 2026-05-02 갱신 (v3 — 2차 design-review 반영) / 2026-05-02 갱신 (v3.1 — 3차 design-review 반영, 미세 패치) / 2026-05-08 갱신 (v3.2 — 자동번호 보존: NumberingResolver 통합 명시) / 2026-05-09 갱신 (v3.3 — 4차 design-review 반영: Critical 3건 + Warning 정책 결정)
 > 대상 시스템: Verify (`compare.html` + `backend/api/compare.py`)
 > 변경 범위: 백엔드 추출기 통합 + Block AST 모델 + **heading-only 자동번호 polyfill (Plan-37 자산 재사용)** + **`similarity_engine._sentence_split` 숫자 가드** + 프론트 패널 렌더링 교체 + 단위/통합 테스트
-> 상태: 계획 단계 (사용자 승인 후 진행)
+> 상태: ❄️ 보류 (icebox, 2026-07-05) — 핵심 산출물 0줄(미착수)·11.75일 대작·미스케줄. design-review 4차 통과했으나 착수 결정 무기한. **착수 트리거 = 현업 비교/검증 모드 실사용 수요 발생 시**(현재 dormant: 비교 1건·검증 0건).
 
 ---
 
