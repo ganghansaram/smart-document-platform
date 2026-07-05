@@ -126,10 +126,35 @@ def _move_to_trash(paths: list[Path], stamp: str) -> list[str]:
     return moved
 
 
-def delete_document_by_url(url: str) -> dict:
-    """단건 문서 삭제 cascade — 파일 휴지통 이동 + (content 면) 인덱스 제거.
+def _prune_empty_parents(url: str) -> list[str]:
+    """삭제된 문서의 부모 폴더가 비면 위로 올라가며 정리 (빈 폴더 잔존 해소, Plan-68 D4).
 
-    returns: {url, kind, trashed:[...], search_removed:int, vector_removed:int}
+    업로드가 문서 저장 시 `mkdir(parents=True)` 로 만든 물리 폴더의 대칭쌍 — 마지막 문서를
+    지우면 빈 껍데기 폴더가 남던 것을 정리한다. 정리 대상은 **물리 폴더뿐**, 메뉴 트리
+    (menu.json)는 별도 SSOT 라 무관(빈 노드는 keep_nodes 정책이 처리).
+
+    - 빈 폴더는 복구할 데이터가 없어 휴지통 경유 없이 rmdir (비어있지 않으면 OSError→중단).
+    - contents/ 최상위와 시스템/보존 폴더(_ALLCLEAN_PRESERVE)는 절대 건드리지 않는다.
+    returns: 제거된 상대경로 목록 (하위→상위 순).
+    """
+    current = _resolve_under_contents(url).parent
+    removed = []
+    while current != CONTENTS_ROOT and str(current).startswith(str(CONTENTS_ROOT) + os.sep):
+        if current.name in _ALLCLEAN_PRESERVE:  # 시스템/보존 폴더 보호
+            break
+        try:
+            current.rmdir()  # 비어있지 않으면 OSError → 정리 중단
+        except OSError:
+            break
+        removed.append(str(current.relative_to(PROJECT_ROOT)).replace("\\", "/"))
+        current = current.parent
+    return removed
+
+
+def delete_document_by_url(url: str) -> dict:
+    """단건 문서 삭제 cascade — 파일 휴지통 이동 + (content 면) 인덱스 제거 + 빈 폴더 정리.
+
+    returns: {url, kind, trashed:[...], pruned_dirs:[...], search_removed:int, vector_removed:int}
     부분 실패 시 예외를 올리되, 파일 이동을 인덱스 제거보다 먼저 수행한다
     (인덱스 잔존은 정합성 재구축으로 회복 가능, 파일 잔존이 더 치명적).
     """
@@ -138,6 +163,7 @@ def delete_document_by_url(url: str) -> dict:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")  # 마이크로초 — 같은 초 충돌 방지
 
     trashed = _move_to_trash(paths, stamp) if paths else []
+    pruned_dirs = _prune_empty_parents(url) if trashed else []
 
     search_removed = 0
     vector_removed = 0
@@ -147,11 +173,11 @@ def delete_document_by_url(url: str) -> dict:
         vector_removed = remove_documents(url).get("removed", 0)
 
     logger.info(
-        "문서 삭제: url=%s kind=%s 파일=%d 검색=%d 벡터=%d",
-        url, kind, len(trashed), search_removed, vector_removed,
+        "문서 삭제: url=%s kind=%s 파일=%d 빈폴더=%d 검색=%d 벡터=%d",
+        url, kind, len(trashed), len(pruned_dirs), search_removed, vector_removed,
     )
     return {
-        "url": url, "kind": kind, "trashed": trashed,
+        "url": url, "kind": kind, "trashed": trashed, "pruned_dirs": pruned_dirs,
         "search_removed": search_removed, "vector_removed": vector_removed,
     }
 
