@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "sqlite-analytics": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-sqlite-npx", "./data/analytics.db"]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
+    }
+  }
+}
