@@ -31,7 +31,6 @@
 | 57 | Verify 비교/검증 모드 뷰 통일 | ⬜ 미착수 (대작 ~11.75일) | 4차 design-review 통과, 착수 결정 대기 |
 | 60 | 통일 양식 기반 문서 저작·내보내기 플랫폼 (저작+DOCX 내보내기 통합) | 🟡 Phase 2·3·4 진행 중 | 2a 저작 풀사이클 ✅ + 에디터 디자인 토큰·다크 브리지 ✅(2026-06-18) + 3a/3c DOCX 내보내기 ✅ + 4 "작성 문서" 자동 메뉴 편입 ✅(방법 가). 남음: 2b 소유권·3b 표지·하드닝·검색연동·admin 큐레이션/관리·회귀. 최근 커밋 `cddc377`·`d44e7c1`(push됨) |
 | 68 | Explorer 안정화·성능복원·관리자 올클린 | 🟡 Phase 3 D4·Phase 5 부분 완료 | Phase 3 D4(삭제 후 빈 폴더 정리) 완료·UI E2E·푸시(`5fb8bed`). Phase 5 F1·F2·F4 완료·푸시(`f1e1ada`), F3 미해결. Phase 1·2·4 코드완료·배포대기. Phase 6·F3 은 회사 VM 필요. [plans/68-*.md](68-explorer-stabilization-perf-adminreset.md) |
-| 69 | Gmail식 하이브리드 관리자 설정 (빠른 설정 드로어) | 🔵 draft (협의 대기) | 각 시스템 헤더 톱니→우측 빠른설정 드로어 + admin.html 콘솔 유지. design-review 근거 "통짜 팝업 비권장·하이브리드 권장". 핵심 협의=경량 설정 후보 선별. [plans/69-*.md](69-hybrid-admin-settings-drawer.md) |
 
 ## ❄️ 보류 (Icebox — 설계·로드맵·트리거 대기)
 
@@ -107,6 +106,7 @@
 | 65 | 홈 하단 "목록/이력" 영역 표현 정합 — B축 3시스템 섹션 헤더 규격 통일(B2: 13.5px·600·진한색) + A축 Verify 이력 리스트 A1 패널 감쌈(평평·hairline). 시안 선행→확정→이식→검증(testbot 실데이터·라이트/다크). 배지·점수색 불가침. 기능(저장/재실행)은 OUT. 커밋 `2523f3a` 외 |
 | 66 | Notebook 트리 패널 도킹(밀어내기) 모드 — 동료 요구(두 문서+트리 동시 표시) ② 도킹-듀얼 구현. 새 토글 `tp-docked`(핀 보존, B안)·A2 push(`--tp-width`)·트리 리사이즈 핸들(듀얼 로직 재사용)·전역 폭+복원 클램프·`rerenderBothPanels` 재사용. 시안 선행→design-review→구현→code-review(Critical 1+안전 3 수정)→검증. 오버레이 디폴트 유지. ③ 단일폴백·아이콘레일은 OUT |
 | 67 | Explorer 트리·문서 생애주기 관리 — 문서 삭제 cascade(파일 휴지통 이동 + 검색·벡터 인덱스 제거 + menu.json 노드 처리) + detach(문서만 제거) + admin 영향 미리보기 모달·dirty-guard + authored 통합 삭제. 벡터=`IndexFlatL2.remove_ids`(순서보존 실측) + `INDEX_WRITE_LOCK`. 재시작 audit=배너 7항목만(이미 표준). 단위 6/6 + 실서버 HTTP e2e + 실브라우저 UI 검증 통과. 커밋 `fba7df6` |
+| 69 | Gmail식 하이브리드 관리자 빠른설정 드로어 — 각 시스템(Explorer/Notebook/Verify)에서 페이지 전환 없이 우측 드로어로 그 시스템 설정 조정. `renderAdminSettings(container,opts)` 파라미터화 + 공통 헤더 admin 톱니 1개(lazy-load) + 빈 탭 필터·Explorer 무거운 확장 게이팅. 무거운 관리는 admin.html 존치(Gmail 하이브리드). 실측: 저장 왕복 디스크 영속·no-wipe, admin.html 회귀 0, 콘솔 0. 커밋 `1ae1966` |
 | — | (설계) Phase4 AI 요약 설계서 → `phase4-ai-summary-design.md` |
 
 > 결번 46: 미생성. 08·09·24·25·26·34 는 icebox.

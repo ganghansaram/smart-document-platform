@@ -53,28 +53,28 @@ design-review 결과, **전체 콘솔을 통짜 팝업/오버레이로 옮기는
 ## Tasks
 
 ### A. Phase 0 — 선결 리팩토링 (저리스크)
-- [ ] A1. `renderAdminSettings` 시그니처 → `renderAdminSettings(container = document.getElementById('main-content'), opts = {})`. `#main-content` 하드참조 전수 제거.
-- [ ] A2. `opts.only` (렌더할 system id 배열) + `opts.mode`('page'|'drawer') 지원 — drawer 모드는 사이드바 네비 숨김, 지정 시스템 탭만.
-- [ ] A3. admin.html 호출부(`admin.html:50` 부근) 무변경 동작 확인 — 회귀 0 (계정·대시보드·전체 탭 정상).
+- [x] A1. `renderAdminSettings` 시그니처 → `renderAdminSettings(container = document.getElementById('main-content'), opts = {})`. `#main-content` 하드참조 전수 제거.
+- [x] A2. `opts.only` (렌더할 system id 배열) + `opts.mode`('page'|'drawer') 지원 — drawer 모드는 사이드바 네비 숨김, 지정 시스템 탭만.
+- [x] A3. admin.html 호출부(`admin.html:50` 부근) 무변경 동작 확인 — 회귀 0 (계정·대시보드·전체 탭 정상).
 
 ### B. Phase 1 — 드로어 프로토타입 (한 시스템)
-- [ ] B1. `.settings-drawer` (우측 슬라이드) — `css/modal.css` 오버레이 변형. 열림/닫힘 트랜지션, z-index 2000, 배경 딤.
-- [ ] B2. Notebook(후보) 헤더에 톱니 진입점(`auth-admin-only`) → 드로어 open → `renderAdminSettings(drawerBody, {only:['notebook'], mode:'drawer'})`.
-- [ ] B3. 드로어 하단 **"전체 관리자 설정 열기 →"** → `admin.html`.
-- [ ] B4. 저장·적용·재시작 배너 동작 검증 (경량 필드 몇 개로 왕복 테스트).
-- [ ] B5. **경량 설정 후보 선별** — 어떤 필드를 드로어에 노출할지 확정 (협의 필요).
+- [x] B1. `.settings-drawer` (우측 슬라이드) — `css/modal.css` 오버레이 변형. 열림/닫힘 트랜지션, z-index 2000, 배경 딤.
+- [x] B2. Notebook(후보) 헤더에 톱니 진입점(`auth-admin-only`) → 드로어 open → `renderAdminSettings(drawerBody, {only:['notebook'], mode:'drawer'})`.
+- [x] B3. 드로어 하단 **"전체 관리자 설정 열기 →"** → `admin.html`.
+- [x] B4. 저장·적용·재시작 배너 동작 검증 (경량 필드 몇 개로 왕복 테스트).
+- [x] B5. **경량 설정 후보 선별** — 어떤 필드를 드로어에 노출할지 확정 (협의 필요).
 
 ### C. Phase 2 — 확장
-- [ ] C1. Explorer(`index.html`)·Verify(`compare.html`)·Author(`author.html`) 헤더 진입점 + 드로어 배선.
-- [ ] C2. 시스템별 `only` 매핑 확정 (각 페이지 = 자기 시스템 탭 + 공통 경량).
-- [ ] C3. 진입점 공통화 검토 — `platform-header` 계열에 재사용 가능한지 (중복 코드 최소화).
+- [x] C1. Explorer(`index.html`)·Verify(`compare.html`)·Author(`author.html`) 헤더 진입점 + 드로어 배선.
+- [x] C2. 시스템별 `only` 매핑 확정 (각 페이지 = 자기 시스템 탭 + 공통 경량).
+- [x] C3. 진입점 공통화 검토 — `platform-header` 계열에 재사용 가능한지 (중복 코드 최소화).
 
 ### D. Phase 3 — 하드닝·회귀
-- [ ] D1. ESC·포커스 트랩·배경클릭 닫기, 드로어 close 시 **모듈 전역 상태 teardown**(`_menuEditorData`·`_pendingRestartItems` 등 잔여 방지).
-- [ ] D2. **모달-온-모달 원천 차단** — 드로어 안에서 2차 오버레이 금지. 확인이 필요하면 **인라인 확인 행**으로.
-- [ ] D3. RBAC — 진입점 `auth-admin-only`, 드로어 코드 lazy-load(비-admin 페이지에 admin 코드 상주 최소화) 여부 결정.
-- [ ] D4. 다크모드·반응형(작은 화면=거의 전폭) 확인. 중복 로딩(스크립트 전역 오염) 점검.
-- [ ] D5. admin.html 풀 콘솔 **회귀 0** 최종 검증.
+- [x] D1. ESC·포커스 트랩·배경클릭 닫기, 드로어 close 시 **모듈 전역 상태 teardown**(`_menuEditorData`·`_pendingRestartItems` 등 잔여 방지).
+- [x] D2. **모달-온-모달 원천 차단** — 드로어 안에서 2차 오버레이 금지. 확인이 필요하면 **인라인 확인 행**으로.
+- [x] D3. RBAC — 진입점 `auth-admin-only`, 드로어 코드 lazy-load(비-admin 페이지에 admin 코드 상주 최소화) 여부 결정.
+- [x] D4. 다크모드·반응형(작은 화면=거의 전폭) 확인. 중복 로딩(스크립트 전역 오염) 점검.
+- [x] D5. admin.html 풀 콘솔 **회귀 0** 최종 검증.
 
 ---
 
@@ -114,3 +114,4 @@ design-review 결과, **전체 콘솔을 통짜 팝업/오버레이로 옮기는
 ## Progress Log
 - 2026-07-05 — plan 생성. design-review(agentId `a501665a54082b791`) 로 컨셉 검증 → "통짜 오버레이 비권장, Gmail식 하이브리드 조건부 권장" 판정 반영. Phase 0(선결 파라미터화)~Phase 3(하드닝) 구조화. 핵심 협의 지점 = 경량 설정 후보 선별. **착수 전 사용자 검토 대기.**
 - 2026-07-05 — /run-plan 수행·완료. 협의 3건 확정(필드범위=시스템탭 전체·진입점=공통헤더 톱니·로딩=lazy). 구현: `renderAdminSettings(container,opts)` 파라미터화, 드로어 모듈(`openSettingsDrawer` 등), 공통 헤더 톱니(admin 전용·lazy-load), 빈 탭 필터+Explorer 무거운 확장 게이팅, `body:has` 셀렉터 좁힘. **미해결 해소**: Notebook 호스트=`translator.html` 확정, 진입점 공통화=platform-header 톱니, Author=스키마 없음(톱니 미노출). /code-review high 5소견 + 자체 mid-flight 역회귀 1건 수정. Playwright 실측 회귀 0(admin.html 무손상·콘솔 0). 보고서 `workbench/reports/plan-69-feedback-2026-07-05.md`.
+- **2026-07-05 (완료)**: Task 16/16·필수 Acceptance 전부 충족. 실측 검증(저장 왕복 settings.json 디스크 영속·no-wipe, admin.html 회귀 0) 후 커밋 `1ae1966`. `done/` 이관. 잔여 없음(Author 편입은 선택 후속). 미해결 5건 전부 해소/판단.
