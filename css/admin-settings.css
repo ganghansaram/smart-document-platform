@@ -36,8 +36,8 @@ body[data-theme="dark"] .admin-settings-page {
     --as-restart-border: #78350f;
 }
 
-/* ── body 리셋 + 배경색 (admin.html 전용) ─────────────────────────────────── */
-body:has(.admin-settings-page) {
+/* ── body 리셋 + 배경색 (admin.html 전용 — Plan-69: 드로어 재사용 시 호스트 body 미오염) ── */
+body:has(.admin-settings-page:not(.admin-drawer-page)) {
     margin: 0;
     padding: 0;
     background-color: var(--canvas-bg);

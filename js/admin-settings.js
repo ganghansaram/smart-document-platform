@@ -358,12 +358,16 @@ var SETTINGS_SCHEMA = {
 
 // ── 메인 렌더러 ───────────────────────────────────────────────────────────────
 
-async function renderAdminSettings() {
-    var container = document.getElementById('main-content');
+async function renderAdminSettings(container, opts) {
+    // Plan-69: 컨테이너 파라미터화 — 기본값은 admin.html 의 #main-content (호출부 무변경)
+    container = container || document.getElementById('main-content');
+    opts = opts || {};
     if (!container) return;
 
-    container.innerHTML = '<div class="admin-settings-page"><div class="admin-settings-loading"><div class="network-spinner"><svg viewBox="0 0 32 50" fill="none"><line x1="8" y1="30" x2="18" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><line x1="18" y1="15" x2="24" y2="35" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><line x1="24" y1="35" x2="8" y2="30" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><circle class="ns-node-1" cx="8" cy="30" r="3.5" fill="currentColor"/><circle class="ns-node-2" cx="18" cy="15" r="3.5" fill="currentColor"/><circle class="ns-node-3" cx="24" cy="35" r="3.5" fill="currentColor"/><circle class="ns-particle" r="2" fill="currentColor" opacity="0.8"/></svg></div>설정 로드 중...</div></div>';
-    if (typeof updateSectionNav === 'function') updateSectionNav();
+    var _pageCls = (opts.mode === 'drawer') ? 'admin-settings-page admin-drawer-page' : 'admin-settings-page';
+    container.innerHTML = '<div class="' + _pageCls + '"><div class="admin-settings-loading"><div class="network-spinner"><svg viewBox="0 0 32 50" fill="none"><line x1="8" y1="30" x2="18" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><line x1="18" y1="15" x2="24" y2="35" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><line x1="24" y1="35" x2="8" y2="30" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/><circle class="ns-node-1" cx="8" cy="30" r="3.5" fill="currentColor"/><circle class="ns-node-2" cx="18" cy="15" r="3.5" fill="currentColor"/><circle class="ns-node-3" cx="24" cy="35" r="3.5" fill="currentColor"/><circle class="ns-particle" r="2" fill="currentColor" opacity="0.8"/></svg></div>설정 로드 중...</div></div>';
+    // 드로어 모드에서는 호스트 페이지(Explorer 등)의 섹션 네비를 건드리지 않는다
+    if (opts.mode !== 'drawer' && typeof updateSectionNav === 'function') updateSectionNav();
 
     var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
 
@@ -374,16 +378,16 @@ async function renderAdminSettings() {
             return;
         }
         if (r.status === 403) {
-            container.innerHTML = '<div class="admin-settings-page"><div class="admin-settings-error"><span>🔒</span><p>관리자 권한이 필요합니다.</p></div></div>';
+            container.innerHTML = '<div class="' + _pageCls + '"><div class="admin-settings-error"><span>🔒</span><p>관리자 권한이 필요합니다.</p></div></div>';
             return;
         }
         if (!r.ok) throw new Error('HTTP ' + r.status);
 
         var data = await r.json();
-        _renderAdminSettingsUI(container, data.settings);
+        _renderAdminSettingsUI(container, data.settings, opts);
 
     } catch (e) {
-        container.innerHTML = '<div class="admin-settings-page"><div class="admin-settings-error"><span>⚠</span><p>설정을 불러올 수 없습니다.<br><small>' + _escHtml(e.message) + '</small></p></div></div>';
+        container.innerHTML = '<div class="' + _pageCls + '"><div class="admin-settings-error"><span>⚠</span><p>설정을 불러올 수 없습니다.<br><small>' + _escHtml(e.message) + '</small></p></div></div>';
     }
 }
 
@@ -391,11 +395,48 @@ async function renderAdminSettings() {
 var _activeSystemId = null;
 var _activeTabId = null;
 var _currentSettings = null;
+var _drawerMode = false;  // Plan-69: 드로어 렌더 여부 (사이드바·페이지헤더·무거운 확장 억제)
 
 // ── UI 렌더링 ──────────────────────────────────────────────────────────────────
 
-function _renderAdminSettingsUI(container, settings) {
+function _renderAdminSettingsUI(container, settings, opts) {
+    opts = opts || {};
     _currentSettings = settings;
+    _drawerMode = (opts.mode === 'drawer');
+
+    // ── 드로어 모드 (Plan-69): 지정 시스템 탭만, 사이드바·페이지헤더 없이 ──
+    if (_drawerMode) {
+        // fetch 인플라이트 중 드로어가 닫혔으면(ESC 등) 뒤늦은 렌더 중단 — 잔여 렌더·상태 오염 방지
+        if (!_drawerOpen) {
+            _drawerMode = false;
+            return;
+        }
+        var only = opts.only || [];
+        var dsys = SETTINGS_SCHEMA.systems.filter(function(s) {
+            return only.indexOf(s.id) !== -1 && !s.custom && s.tabs;
+        });
+        if (!dsys.length) {
+            container.innerHTML = '<div class="admin-settings-page admin-drawer-page"><div class="admin-settings-error"><span>ℹ</span><p>이 시스템에는 조정 가능한 설정이 없습니다.</p></div></div>';
+            return;
+        }
+        _activeSystemId = dsys[0].id;
+        var dhtml = '<div class="admin-settings-page admin-drawer-page">';
+        dhtml += '<div class="admin-settings-notice" id="admin-notice" style="display:none"></div>';
+        dhtml += '<div class="admin-content" id="admin-content-area"></div>';
+        dhtml += '</div>';
+        container.innerHTML = dhtml;
+        _renderSystemContent(dsys[0]);
+        // 재시작 대기 상태 배너 복원 (드로어 안에서도 유지)
+        if (_pendingRestartItems.length > 0) {
+            _showNotice(
+                'warn',
+                '⚠ 다음 항목이 변경되어 <strong>서버 재시작이 필요</strong>합니다: ' +
+                '<code>' + _pendingRestartItems.join(', ') + '</code>'
+            );
+        }
+        return;
+    }
+
     _activeSystemId = SETTINGS_SCHEMA.systems[0].id;
 
     var html = '<div class="admin-settings-page">';
@@ -532,14 +573,20 @@ function _renderSystemContent(sys) {
         return;
     }
 
-    var firstTab = sys.tabs[0];
+    // Plan-69: 드로어에서는 JS 주입/플레이스홀더 전용 탭(빈 sections — 메뉴 관리·규칙 관리)을 숨긴다
+    var tabs = sys.tabs;
+    if (_drawerMode) {
+        tabs = tabs.filter(function(t) { return t.sections && t.sections.length > 0; });
+    }
+
+    var firstTab = tabs[0];
     _activeTabId = firstTab ? firstTab.tabId : null;
     var html = '';
 
     // 탭 바: 2개 이상일 때만 표시
-    if (sys.tabs.length >= 2) {
+    if (tabs.length >= 2) {
         html += '<div class="admin-tabs">';
-        sys.tabs.forEach(function(tab, idx) {
+        tabs.forEach(function(tab, idx) {
             html += '<button class="admin-tab-btn' + (idx === 0 ? ' active' : '') +
                     '" data-tab="' + tab.tabId + '" onclick="_adminSwitchTab(\'' + tab.tabId + '\')">' +
                     _escHtml(tab.tabLabel) + '</button>';
@@ -548,7 +595,7 @@ function _renderSystemContent(sys) {
     }
 
     // 탭 패널
-    sys.tabs.forEach(function(tab, idx) {
+    tabs.forEach(function(tab, idx) {
         html += '<div class="admin-tab-panel' + (idx === 0 ? ' active' : '') + '" id="' + tab.tabId + '">';
         if (tab.sections.length === 0) {
             html += '<div class="admin-section"><p class="admin-section-desc" style="text-align:center;padding:40px 0;color:var(--text-muted)">향후 추가 예정입니다.</p></div>';
@@ -596,8 +643,8 @@ function _renderSystemContent(sys) {
 
     area.innerHTML = html;
 
-    // 메뉴 관리 탭 커스텀 렌더링
-    if (sys.id === 'explorer') { _renderMenuTab(); _renderExplorerDangerZone(); }
+    // 메뉴 관리 탭 커스텀 렌더링 — 드로어에서는 제외 (무거운 관리는 admin.html 전용)
+    if (sys.id === 'explorer' && !_drawerMode) { _renderMenuTab(); _renderExplorerDangerZone(); }
 }
 
 // ── 필드 렌더링 ───────────────────────────────────────────────────────────────
@@ -754,6 +801,8 @@ function _collectSettings() {
 // ── 저장 ─────────────────────────────────────────────────────────────────────
 
 async function _adminSave() {
+    // 설정 로드 실패 상태(예: 드로어 열 때 백엔드 다운)에서 저장 클릭 시 null deref 방지
+    if (!_currentSettings) { showToast('설정을 불러오지 못해 저장할 수 없습니다', 'error'); return; }
     var saveBtn = document.getElementById('admin-save-btn');
     if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
 
@@ -850,6 +899,105 @@ function _escHtml(s) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── 빠른 설정 드로어 (Plan-69) — 각 서브시스템에서 페이지 전환 없이 그 시스템 설정 조정
+// ══════════════════════════════════════════════════════════════════════════════
+
+var _settingsDrawerEl = null;
+var _drawerLastFocus = null;
+var _drawerOpen = false;  // 동기 열림 상태 (렌더 인플라이트 중 닫힘 감지용 — .open 은 rAF 비동기라 부적합)
+
+function _buildSettingsDrawer() {
+    if (_settingsDrawerEl) return _settingsDrawerEl;
+
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay settings-drawer-overlay';
+    overlay.innerHTML =
+        '<aside class="settings-drawer" role="dialog" aria-modal="true" aria-label="빠른 설정">' +
+            '<div class="settings-drawer-header">' +
+                '<h3 class="settings-drawer-title">빠른 설정</h3>' +
+                '<button type="button" class="modal-close settings-drawer-close" aria-label="닫기">&times;</button>' +
+            '</div>' +
+            '<div class="settings-drawer-body admin-drawer-scope"></div>' +
+            '<div class="settings-drawer-footer">' +
+                '<a class="settings-drawer-fulllink" href="admin.html">전체 관리자 설정 열기 →</a>' +
+                '<button type="button" class="btn btn-primary" id="admin-save-btn" onclick="_adminSave()">저장</button>' +
+            '</div>' +
+        '</aside>';
+
+    // 배경 클릭 닫기 (드로어 내부 클릭은 유지)
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) closeSettingsDrawer();
+    });
+    overlay.querySelector('.settings-drawer-close').addEventListener('click', closeSettingsDrawer);
+
+    document.body.appendChild(overlay);
+    _settingsDrawerEl = overlay;
+    return overlay;
+}
+
+function openSettingsDrawer(systemId) {
+    if (!systemId) return;
+    var sys = null;
+    SETTINGS_SCHEMA.systems.forEach(function(s) { if (s.id === systemId) sys = s; });
+    if (!sys) { showToast('이 시스템의 설정이 없습니다', 'info'); return; }
+
+    _drawerLastFocus = document.activeElement;
+    _drawerOpen = true;
+    _buildSettingsDrawer();
+
+    _settingsDrawerEl.querySelector('.settings-drawer-title').textContent =
+        (sys.label || '설정') + ' 빠른 설정';
+    var body = _settingsDrawerEl.querySelector('.settings-drawer-body');
+
+    // 열림 (다음 프레임에 트랜지션 트리거) + 포커스를 드로어 안으로 이동(트랩 진입점)
+    _settingsDrawerEl.classList.remove('closing');
+    requestAnimationFrame(function() {
+        _settingsDrawerEl.classList.add('open');
+        var closeBtn = _settingsDrawerEl.querySelector('.settings-drawer-close');
+        if (closeBtn) closeBtn.focus();
+    });
+    document.addEventListener('keydown', _drawerKeydown);
+
+    renderAdminSettings(body, { only: [systemId], mode: 'drawer' });
+}
+
+function closeSettingsDrawer() {
+    if (!_settingsDrawerEl) return;
+    _drawerOpen = false;
+    _settingsDrawerEl.classList.remove('open');
+    document.removeEventListener('keydown', _drawerKeydown);
+
+    // teardown — 드로어 전용 렌더 상태 정리 (D1: 잔여 방지)
+    _drawerMode = false;
+    _currentSettings = null;  // 재오픈 실패 시 이전 스냅샷 저장(stale POST) 방지 — 저장은 null 가드로 차단
+    var body = _settingsDrawerEl.querySelector('.settings-drawer-body');
+    if (body) body.innerHTML = '';
+
+    if (_drawerLastFocus && typeof _drawerLastFocus.focus === 'function') {
+        _drawerLastFocus.focus();
+    }
+    _drawerLastFocus = null;
+}
+
+// ESC 닫기 + 포커스 트랩 (D1)
+function _drawerKeydown(e) {
+    if (e.key === 'Escape') { e.preventDefault(); closeSettingsDrawer(); return; }
+    if (e.key !== 'Tab' || !_settingsDrawerEl) return;
+
+    var focusables = _settingsDrawerEl.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusables.length) return;
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+    }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

@@ -206,6 +206,53 @@ function initPlatformHeader(config) {
         });
     }
 
+    // ── 빠른 설정 톱니 (Plan-69) — admin 전용, 해당 시스템 빠른설정 드로어 진입점 ──
+    var gearBtn = null;
+    var _drawerSysMap = { explorer: 'explorer', translator: 'notebook', compare: 'verify' };
+    var _adminSettingsLoading = false;
+
+    function _phOpenQuickSettings(schemaSysId) {
+        if (typeof openSettingsDrawer === 'function') { openSettingsDrawer(schemaSysId); return; }
+        if (_adminSettingsLoading) return;
+        _adminSettingsLoading = true;
+        // 드로어에 필요한 CSS lazy 주입 (폐쇄망·로컬 파일)
+        ['css/modal.css', 'css/admin-settings.css', 'css/settings-drawer.css'].forEach(function(href) {
+            if (document.querySelector('link[href="' + href + '"]')) return;
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            document.head.appendChild(link);
+        });
+        var s = document.createElement('script');
+        s.src = 'js/admin-settings.js';
+        s.onload = function() {
+            _adminSettingsLoading = false;
+            if (typeof openSettingsDrawer === 'function') openSettingsDrawer(schemaSysId);
+        };
+        s.onerror = function() {
+            _adminSettingsLoading = false;
+            if (typeof showToast === 'function') showToast('설정 모듈을 불러오지 못했습니다', 'error');
+        };
+        document.head.appendChild(s);
+    }
+
+    if (config.currentSystem && _drawerSysMap[config.currentSystem]) {
+        gearBtn = document.createElement('button');
+        gearBtn.className = 'ph-switcher-btn ph-settings-gear';
+        gearBtn.type = 'button';
+        gearBtn.title = '빠른 설정';
+        gearBtn.style.display = 'none';  // admin 확인 후 노출
+        gearBtn.innerHTML =
+            '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<circle cx="12" cy="12" r="3"/>' +
+                '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' +
+            '</svg>';
+        gearBtn.addEventListener('click', function() {
+            _phOpenQuickSettings(_drawerSysMap[config.currentSystem]);
+        });
+        logo.appendChild(gearBtn);
+    }
+
     // Mid slot
     var midSlotContainer = document.createElement('div');
     midSlotContainer.className = 'platform-header-mid';
@@ -308,6 +355,7 @@ function initPlatformHeader(config) {
             .then(function(d) {
                 if (!d.user) { onUnauth(); return; }
                 _phUser = d.user;
+                if (gearBtn && d.user.role === 'admin') gearBtn.style.display = '';
                 usernameEl.textContent = d.user.username;
                 authGroup.style.display = '';
                 onAuth(d.user);

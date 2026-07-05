@@ -1,6 +1,6 @@
 # Plan-69 — Gmail식 하이브리드 관리자 설정 (빠른 설정 드로어 + 콘솔 페이지 유지)
 
-> 상태: 🔵 draft (협의 대기) — 방향 확정, 착수 전 경량 설정 후보 선별·진입점 협의 필요
+> 상태: ✅ 완료 (2026-07-05) — Phase 0~3 END-TO-END. 공통 헤더 톱니 1개로 Explorer/Notebook/Verify 드로어, admin.html 회귀 0. 검증·보고서 `workbench/reports/plan-69-feedback-2026-07-05.md`
 > 작성: 2026-07-05 · owner: 솔로 + Claude Code
 > 트리거: 각 시스템(Explorer/Notebook/Verify/Author) 작업 중 그 시스템 설정 하나 바꾸려 `admin.html` 풀페이지로 튕겨나가는 맥락 단절
 > 설계 근거: design-review (agentId `a501665a54082b791`) — 코드 근거로 "통짜 오버레이 비권장 / 하이브리드 조건부 권장" 판정
@@ -14,11 +14,11 @@
 
 | Phase | 내용 | 예상 공수 | 상태 |
 |-------|------|:-------:|:----:|
-| Phase 0 | **선결 리팩토링** — `renderAdminSettings` 의 `#main-content` 하드코딩 → 컨테이너 인자 (admin.html 회귀 0) | 0.5일 | ⬜ |
-| Phase 1 | **드로어 프로토타입** — 한 시스템(Notebook 후보)에 우측 빠른설정 드로어 + 경량 스키마 필드 + "전체 설정 열기 →" | 1일 | ⬜ |
-| Phase 2 | **확장** — Explorer·Verify·Author 로 드로어 전개 + 각 헤더 진입점(admin 전용) | 1일 | ⬜ |
-| Phase 3 | **하드닝·회귀** — ESC/포커스트랩·teardown·RBAC·다크·반응형 + admin.html 회귀 검증 | 0.5일 | ⬜ |
-| **합계** | — | **~3일** | draft |
+| Phase 0 | **선결 리팩토링** — `renderAdminSettings` 의 `#main-content` 하드코딩 → 컨테이너 인자 (admin.html 회귀 0) | 0.5일 | ✅ |
+| Phase 1 | **드로어 프로토타입** — 한 시스템(Notebook)에 우측 빠른설정 드로어 + 스키마 필드 + "전체 설정 열기 →" | 1일 | ✅ |
+| Phase 2 | **확장** — Explorer·Verify 로 드로어 전개 + 공통 헤더 톱니 1개(Author=스키마 없음 미노출) | 1일 | ✅ |
+| Phase 3 | **하드닝·회귀** — ESC/포커스트랩·teardown·RBAC·다크·반응형 + admin.html 회귀 검증 | 0.5일 | ✅ |
+| **합계** | — | **~3일** | ✅ 완료 |
 
 ---
 
@@ -113,3 +113,4 @@ design-review 결과, **전체 콘솔을 통짜 팝업/오버레이로 옮기는
 
 ## Progress Log
 - 2026-07-05 — plan 생성. design-review(agentId `a501665a54082b791`) 로 컨셉 검증 → "통짜 오버레이 비권장, Gmail식 하이브리드 조건부 권장" 판정 반영. Phase 0(선결 파라미터화)~Phase 3(하드닝) 구조화. 핵심 협의 지점 = 경량 설정 후보 선별. **착수 전 사용자 검토 대기.**
+- 2026-07-05 — /run-plan 수행·완료. 협의 3건 확정(필드범위=시스템탭 전체·진입점=공통헤더 톱니·로딩=lazy). 구현: `renderAdminSettings(container,opts)` 파라미터화, 드로어 모듈(`openSettingsDrawer` 등), 공통 헤더 톱니(admin 전용·lazy-load), 빈 탭 필터+Explorer 무거운 확장 게이팅, `body:has` 셀렉터 좁힘. **미해결 해소**: Notebook 호스트=`translator.html` 확정, 진입점 공통화=platform-header 톱니, Author=스키마 없음(톱니 미노출). /code-review high 5소견 + 자체 mid-flight 역회귀 1건 수정. Playwright 실측 회귀 0(admin.html 무손상·콘솔 0). 보고서 `workbench/reports/plan-69-feedback-2026-07-05.md`.
