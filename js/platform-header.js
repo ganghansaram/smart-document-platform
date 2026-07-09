@@ -97,8 +97,6 @@ function initPlatformHeader(config) {
         ];
 
         var dropdown = null;
-        var _hoverOpenTimer = null;
-        var _hoverCloseTimer = null;
 
         function closeDropdown() {
             if (!dropdown) return;
@@ -168,14 +166,6 @@ function initPlatformHeader(config) {
                 if (dropdown) dropdown.classList.add('open');
             });
 
-            // 드롭다운 호버 유지
-            dropdown.addEventListener('mouseenter', function() {
-                clearTimeout(_hoverCloseTimer);
-            });
-            dropdown.addEventListener('mouseleave', function() {
-                _hoverCloseTimer = setTimeout(closeDropdown, 300);
-            });
-
             setTimeout(function() {
                 document.addEventListener('click', onOutsideClick);
             }, 0);
@@ -187,21 +177,9 @@ function initPlatformHeader(config) {
             }
         }
 
-        // 호버 트리거 (150ms 딜레이)
-        switcherBtn.addEventListener('mouseenter', function() {
-            clearTimeout(_hoverCloseTimer);
-            _hoverOpenTimer = setTimeout(openDropdown, 150);
-        });
-        switcherBtn.addEventListener('mouseleave', function() {
-            clearTimeout(_hoverOpenTimer);
-            _hoverCloseTimer = setTimeout(closeDropdown, 300);
-        });
-
-        // 클릭 폴백 유지
+        // 클릭 트리거 (앱 런처 관례 — 구글/MS 와플 메뉴와 동일)
         switcherBtn.addEventListener('click', function(e) {
             e.stopPropagation();
-            clearTimeout(_hoverOpenTimer);
-            clearTimeout(_hoverCloseTimer);
             if (dropdown) { closeDropdown(); } else { openDropdown(); }
         });
     }
