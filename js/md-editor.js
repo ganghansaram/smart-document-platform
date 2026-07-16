@@ -85,26 +85,72 @@
         return JSON.stringify(metaFromFields()) + '' + (state.editor ? state.editor.getMarkdown() : '');
     }
 
+    // ── 표지 요약 · dirty · 제목 auto-grow (전 입력원 공통) ──
+    function summaryText(m) {
+        var parts = [m.author, m.doc_number, m.classification].filter(Boolean);
+        return parts.length ? '· ' + parts.join(' · ') : '';
+    }
+
+    function refreshStatus() {
+        if (!dom) return;
+        if (dom.summary) dom.summary.textContent = summaryText(metaFromFields());
+        if (dom.status) {
+            var mod = isModified();
+            dom.status.textContent = mod ? '● 저장되지 않은 변경사항' : '저장됨';
+            dom.status.classList.toggle('is-dirty', mod);
+        }
+    }
+
+    // 제목 textarea 높이 자동 조절 (긴 제목 줄바꿈 — 클리핑 방지)
+    function autoGrowTitle() {
+        var t = dom && dom.title;
+        if (!t) return;
+        t.style.height = 'auto';
+        t.style.height = t.scrollHeight + 'px';
+    }
+
+    function onTitleInput() {   // 제목: 높이 재계산 + dirty/요약
+        autoGrowTitle();
+        refreshStatus();
+    }
+    function onMetaInput() {     // 메타 필드: dirty/요약만 (제목 높이와 무관)
+        refreshStatus();
+    }
+
     // ── DOM 구성 (1회) ──
     function buildDom() {
         if (dom) return;
         var ov = document.createElement('div');
         ov.className = 'md-editor-overlay';
         ov.innerHTML =
-            '<div class="md-editor-header">' +
-              '<div class="md-editor-row">' +
-                '<input type="text" class="form-input md-editor-title" placeholder="문서 제목 (필수)" maxlength="120" />' +
-                '<button type="button" class="btn btn-primary" data-act="save">저장</button>' +
-                '<button type="button" class="btn btn-secondary" data-act="export">DOCX 내보내기</button>' +
-                '<button type="button" class="btn btn-ghost" data-act="close">닫기</button>' +
-              '</div>' +
-              '<div class="md-editor-row md-editor-meta">' +
-                '<label>작성자</label><input type="text" class="form-input form-input-sm" data-f="author" />' +
-                '<label>문서번호</label><input type="text" class="form-input form-input-sm" data-f="docNumber" placeholder="TR-2026-001" />' +
-                '<label>보안등급</label><select class="form-select form-select-sm" data-f="classification"></select>' +
-              '</div>' +
+            '<div class="md-editor-topbar">' +
+              '<span class="md-editor-crumb">' +
+                '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>' +
+                '<span data-el="crumb">새 문서</span>' +
+              '</span>' +
+              '<span class="md-editor-spacer"></span>' +
+              '<span class="md-editor-status" data-el="status">저장됨</span>' +
+              '<button type="button" class="btn btn-primary" data-act="save">저장</button>' +
+              '<button type="button" class="btn btn-secondary" data-act="export">DOCX 내보내기</button>' +
+              '<button type="button" class="btn btn-ghost btn-icon" data-act="close" aria-label="닫기">✕</button>' +
             '</div>' +
-            '<div class="md-editor-host"></div>';
+            '<div class="md-editor-canvas">' +
+              '<div class="md-editor-sheet">' +
+                '<textarea class="md-editor-title" rows="1" placeholder="제목 없는 문서" maxlength="120"></textarea>' +
+                '<details class="md-editor-meta">' +
+                  '<summary>' +
+                    '<svg class="md-editor-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>' +
+                    '표지 정보 <span class="md-editor-summary-vals" data-el="summary"></span>' +
+                  '</summary>' +
+                  '<div class="md-editor-meta-fields">' +
+                    '<div class="md-editor-field"><label>작성자</label><input type="text" class="form-input form-input-sm" data-f="author" /></div>' +
+                    '<div class="md-editor-field"><label>문서번호</label><input type="text" class="form-input form-input-sm" data-f="docNumber" placeholder="TR-2026-001" /></div>' +
+                    '<div class="md-editor-field"><label>보안등급</label><select class="form-select form-select-sm" data-f="classification"></select></div>' +
+                  '</div>' +
+                '</details>' +
+                '<div class="md-editor-host"></div>' +
+              '</div>' +
+            '</div>';
         document.body.appendChild(ov);
 
         var sel = ov.querySelector('[data-f="classification"]');
@@ -122,11 +168,21 @@
             classification: sel,
             host: ov.querySelector('.md-editor-host'),
             date: null,
+            crumb: ov.querySelector('[data-el="crumb"]'),
+            status: ov.querySelector('[data-el="status"]'),
+            summary: ov.querySelector('[data-el="summary"]'),
         };
 
         ov.querySelector('[data-act="save"]').addEventListener('click', doSave);
         ov.querySelector('[data-act="export"]').addEventListener('click', doExport);
         ov.querySelector('[data-act="close"]').addEventListener('click', closeWithConfirm);
+
+        // dirty · 요약 · auto-grow 배선 (전 입력원: 제목·작성자·문서번호·보안등급)
+        dom.title.addEventListener('input', onTitleInput);
+        dom.title.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
+        dom.author.addEventListener('input', onMetaInput);
+        dom.docNumber.addEventListener('input', onMetaInput);
+        dom.classification.addEventListener('change', onMetaInput);
     }
 
     function mountEditor(initialBody) {
@@ -135,13 +191,14 @@
         state.editor = new toastui.Editor({
             el: dom.host,
             height: '100%',
-            initialEditType: 'markdown',
-            previewStyle: 'vertical',
+            initialEditType: 'wysiwyg',
+            previewStyle: 'tab',
             language: 'ko-KR',
             usageStatistics: false,
             theme: isDark() ? 'dark' : 'default',
             initialValue: initialBody || '',
         });
+        state.editor.on('change', refreshStatus);
     }
 
     // ── 열기 ──
@@ -155,10 +212,13 @@
         dom.classification.value = CLASSIFICATIONS.indexOf(opts.meta.classification) >= 0 ? opts.meta.classification : '';
         dom.date = opts.meta.date || todayISO();
         dom.title.readOnly = !state.isNew;   // 기존 문서는 제목=파일명 고정
+        dom.crumb.textContent = state.isNew ? '새 문서' : '문서 편집';  // 공유 편집기 — 진입 맥락 반영
         mountEditor(opts.body);
         dom.overlay.classList.add('open');
         state.open = true;
         state.initial = snapshot();
+        autoGrowTitle();
+        refreshStatus();
         setTimeout(function () { (state.isNew ? dom.title : dom.host).focus(); }, 50);
     }
 
@@ -212,7 +272,9 @@
             state.path = data.path;
             state.isNew = false;
             dom.title.readOnly = true;
+            dom.crumb.textContent = '문서 편집';
             state.initial = snapshot();
+            refreshStatus();
             showToast('저장되었습니다', 'success');
             // 기존 문서를 보던 화면이면 배경 뷰 새로고침 (Monaco onSave 와 일관)
             if (!wasNew && typeof window.loadContent === 'function' &&

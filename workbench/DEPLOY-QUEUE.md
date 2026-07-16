@@ -16,6 +16,7 @@
 - **[plan/68]** Explorer 안정화·성능복원·관리자 올클린 — **전체 이미지 필요**(nginx 500m·청크 업로드 + backend 인덱싱 관측·올클린·빈폴더정리). 커밋 `f1e1ada`·`2910c02`·`abd0e57`·`6379d0c`·`5fb8bed`
 - **[plan/69]** 관리자 빠른설정 드로어 — **프론트 패치**(`js/admin-settings.js`·`js/platform-header.js`·`css/settings-drawer.css`·`css/admin-settings.css`). 커밋 `1ae1966`
 - **[plan/70]** '새 문서' 저작 편집기 Explorer→Author 교정 이전 — **프론트 패치**(`author.html`·`css/author.css`·`js/app.js`·`js/author.js`·`js/md-editor.js`). Explorer '새 문서' 메뉴 사라지고 Author 홈에서 저작. RBAC 게이팅 포함. 배포 후 교차검증 시 Explorer '새 문서' 부재 + Author 저작·저장 + 뷰어 게이팅 확인
+- **[plan/71]** Author 저작 편집기 화면 트렌디 리디자인 — **프론트 패치**(`css/md-editor.css`·`js/md-editor.js`). 위지윅 단일 컬럼·밝은 상단 바·히어로 제목·접힘 표지 정보·정직 dirty·반응형. 저장 모델 불변. 배포 후 교차검증 시 '빈 문서 작성'→새 화면 + 저장/DOCX + 라이트/다크 확인 (커밋 대기)
 
 ## 📦 다음 배포 대상 (이번 회사 방문분)
 
