@@ -27,8 +27,7 @@
 
 | # | 제목 | 상태 | 비고 |
 |---|------|------|------|
-| 71 | Author 저작 편집기(MdEditor) 화면 트렌디 리디자인 | active (착수 대기) | 표현 개편 — 위지윅 단일·밝은 chrome+네이비 악센트·접힘 표지 정보. 저장 모델 불변·본문 known-delta. 목업 승인·plan-advisor 검토 반영·협의 0건 |
-| 72 | Author 문서 워크스페이스 (소유자 한정+좌측 패널+Explorer 분리) | draft (방향 캡처) | Author 저작 `.md`를 Explorer에서 분리+소유자만 노출+Notebook식 좌측 패널 차용. 상세 설계는 Plan-71 완료 후 착수. 저작 문서 0개=최저 마이그레이션 비용 |
+| 72 | Author 문서 워크스페이스 (소유자 한정+좌측 패널+Explorer 분리) | draft (방향 캡처) | Author 저작 `.md`를 Explorer에서 분리+소유자만 노출+Notebook식 좌측 패널 차용. 상세 설계 착수 대기(Plan-71 완료). 저작 문서 0개=최저 마이그레이션 비용 |
 
 > 배포·회사테스트는 활성 아님 → `workbench/DEPLOY-QUEUE.md`(운영 축). plan 완료 정의=코드완료+로컬검증.
 
@@ -111,6 +110,7 @@
 | 68 | Explorer 안정화·성능복원·관리자 올클린 — 업로드 대용량(nginx 500m·청크)·벡터 인덱싱 관측·올클린 초기화·빈폴더 자동정리(D4)·저장 알림 토스트. 코어 코드완료+로컬검증. 배포·F3(세션만료 재현)=DEPLOY-QUEUE, D2/D3·Phase6=backlog. 커밋 `6379d0c`·`5fb8bed`·`f1e1ada` |
 | 60 | 통일 양식 기반 문서 저작·내보내기 플랫폼 — 저작 풀사이클(2a)·에디터 디자인 브리지·DOCX 내보내기(3a/3c)·"작성 문서" 자동 메뉴편입(4) 완료분 기준 종료(2026-07-16). 저작 기능은 Plan-70으로 Author 이관. 미완(소유권·표지·하드닝·검색연동·큐레이션)은 `backlog.md` Author 인계 |
 | 70 | '새 문서' 저작 기능을 Author로 교정 이전 — 설계상 창작 시스템(Author)에 속해야 할 '새 문서' 편집기가 Explorer(소비)에 잘못 구현된 것을 교정. Author에 편집기 번들 이식·진입점 3곳 실연결·저장후 목록갱신 훅·RBAC 게이팅(실 viewer 검증) + Explorer '새 문서' 메뉴 제거(열람·edit-in-place·번들 잔류). code-review Warning 2건 수정. 실브라우저 검증·콘솔0. 보고서 `reports/plan-70-feedback-2026-07-16.md` |
+| 71 | Author 저작 편집기(MdEditor) 화면 트렌디 리디자인 — 네이비 바 구식 레이아웃을 업계표준 문서 에디터 패턴으로 개편(위지윅 단일 컬럼·밝은 상단 바+네이비 악센트·히어로 제목 auto-grow textarea·접힘 표지 정보·정직 dirty·브레드크럼 상태전환·반응형). 저장 모델 불변(front matter·슬러그·409·훅·readOnly 잠금), dom 참조 7키 보존. 실브라우저 e2e: 신규·기존·저장(모델 바이트 동등·본문 골격 바이트 동일)·다크·440px·콘솔0. 커밋 `35e89ec`. 보고서 `reports/plan-71-feedback-2026-07-16.md` |
 | 69 | Gmail식 하이브리드 관리자 빠른설정 드로어 — 각 시스템(Explorer/Notebook/Verify)에서 페이지 전환 없이 우측 드로어로 그 시스템 설정 조정. `renderAdminSettings(container,opts)` 파라미터화 + 공통 헤더 admin 톱니 1개(lazy-load) + 빈 탭 필터·Explorer 무거운 확장 게이팅. 무거운 관리는 admin.html 존치(Gmail 하이브리드). 실측: 저장 왕복 디스크 영속·no-wipe, admin.html 회귀 0, 콘솔 0. 커밋 `1ae1966` |
 | — | (설계) Phase4 AI 요약 설계서 → `phase4-ai-summary-design.md` |
 
