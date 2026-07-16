@@ -37,8 +37,8 @@ Author 저작을 **전체화면 오버레이에서 Author 셸 안으로** 옮겨
 
 | Phase | 내용 | 의존 | 위험 |
 |------|------|------|------|
-| **P1** | 저작면 현실화 — `md-editor.js SKELETON` 제거(빈 문서/현실 구조) | 없음 | 초저 |
-| **P2** | Explorer 분리 — `tree-menu.js` 병합 제거 + `editor.js` `.md` 분기 정리 → MdEditor를 Author 전용화 | 없음 | 저 |
+| **P1** ✅ | 저작면 현실화 — `md-editor.js SKELETON` 제거(빈 문서) | 없음 | 초저 | **완료 2026-07-17** |
+| **P2** ✅ | Explorer 분리 — `tree-menu.js` 병합 제거 (`editor.js` `.md` 분기·`app.js renderMarkdownDoc` 정리는 **P3로 이연** — 딥링크 읽기 경로 잔존 때문) | 없음 | 저 | **완료 2026-07-17** (범위 축소) |
 | **P3** | 셸 통합 — 오버레이→셸 마운트 + 71 자산 이식 + 좌측 패널 UI 신규 + `openExisting` Author 배선 | **P2 선결**(안 하면 공유 편집기가 Explorer서 깨짐) | 중 |
 | **P4** | 소유권 — 서버측 owner 캡처 + `/api/authored` 인증·필터 + **정적서빙 누수 대책** | **아래 결정1·2 선결** | 고(백엔드) |
 
@@ -66,6 +66,7 @@ Author 저작을 **전체화면 오버레이에서 Author 셸 안으로** 옮겨
 - **범위 주의**: 5부분(셸 통합·저작면·노출 분리·소유권·좌측 패널)은 서로 얽혀 있어 한 계획이 크다. 착수 시 Phase 분할(예: 셸+패널 UI 먼저 → 소유권 백엔드 → 노출 분리) 검토.
 
 ## Progress Log
+- 2026-07-17 — **P1·P2 구현 완료** (`/run-plan`, 로컬 Docker:80 검증). P1: `md-editor.js SKELETON` 제거→빈 문서. P2: `tree-menu.js` `/api/authored` 병합 제거(`fetchMergedMenu`→`fetchMenuData`), 死 authored-leaf 처리·`icon-authored` CSS 정리. **사전 분석 발견으로 P2 범위 축소** — 원안의 `editor.js .md 분기 정리`는 딥링크 읽기 경로(`author.js openDoc`→`index.html?page=`, Plan-70 잔류)가 살아있어 지금 지우면 회귀 → **P3로 이연**(openDoc 리다이렉트 제거와 한 세트). 검증: Explorer 트리 "작성 문서" 폴더 소멸·콘솔 0, Author 빈 편집기·읽기/편집 경로 무손상. 보고서 `reports/plan-72-feedback-2026-07-17.md`. **잔여 P3(셸 통합)·P4(소유권, 결정 2건 선결) → plan 활성 유지.**
 - 2026-07-16 — **방향 캡처 스텁 생성**. Plan-71(편집기 화면) 논의 중 파생. Explorer `/api/authored` 병합 노출을 사용자가 재확인 → "Author 안에서·소유자에게만 + Notebook 좌측 패널 차용" 방향 확정.
 - 2026-07-16 — **셸 통합·저작면 현실화 2요구 추가**. Plan-71 실물 확인 후 사용자 피드백: (1) 전체화면 오버레이가 공통 헤더를 덮어 시스템 정체성이 끊김 → 편집기를 Author 셸 안으로(헤더 유지), (2) 골격 프리셋(개요/배경/…)이 비현실적 → 저작면 현실화. 스코프 3→**5부분**, Plan-71 관계를 "직교"→"71 껍데기를 72가 대체(시각 자산은 이식)"로 정정. 71은 완료(시각 개선분 유효)이되 오버레이 전제는 72가 교체.
 - 2026-07-16 — **plan-advisor 검토 반영**: (1) 🔴 정적서빙 소유권 누수 발견 — 리스트 필터만으론 불충분, `.md` 인증 경유/루트 이전이 P4 전제. (2) 소유권 SSOT=서버측(front matter 아님). (3) part5 정정 — Notebook 패널 import 불가(translator 결합)→UI 신규 구현, Author엔 편집 진입 없음→`openExisting` 신규 배선·`openDoc` Explorer 리다이렉트 변경 필수. (4) `/api/authored` 인증 게이팅 필요. (5) **Phase 분할 P1~P4**(P2가 P3 선결). (6) 협의1 셸 통합=스플릿(b) 권장. 착수 전 결론 2건(정적누수 대책·소유권 위치) 명시.
