@@ -4,6 +4,13 @@
    원칙: tokens.css 변수만 소비. 색 하드코딩 0 (#fff = accent/navy 위 텍스트, 플랫폼 관례).
    =================================================================== */
 
+/* RBAC — editor 미만 권한이면 저작 진입점 숨김 (Plan-70).
+   auth.css 는 옛 .main-nav 헤더 스타일 동반이라 로드하지 않고, 이 규칙만 명시.
+   body.auth-editor 클래스는 js/author.js applyRbac() 가 부여. */
+body:not(.auth-editor) .auth-editor-only {
+    display: none !important;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
     background: var(--canvas-bg);

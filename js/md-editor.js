@@ -226,6 +226,11 @@
                     if (typeof window.highlightAuthoredDoc === 'function') window.highlightAuthoredDoc(savedUrl);
                 });
             }
+            // 호스트 시스템 저장 후 훅 (Author: 최근 문서 목록 갱신 — Plan-70). Explorer 는 미정의 → no-op
+            if (typeof window.onMdEditorSaved === 'function') {
+                // 훅 실패는 저장 성공(위)에 영향 없음 — 목록 갱신만 못 함, 삼켜서 저장 흐름 보호
+                try { window.onMdEditorSaved(state.path, wasNew); } catch (e) {}
+            }
         } catch (e) {
             showToast('저장 실패: ' + e.message, 'error');
         }

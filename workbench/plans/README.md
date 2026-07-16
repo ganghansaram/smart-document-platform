@@ -27,7 +27,7 @@
 
 | # | 제목 | 상태 | 비고 |
 |---|------|------|------|
-| 60 | 통일 양식 기반 문서 저작·내보내기 플랫폼 (저작+DOCX 내보내기 통합) | 🟡 Phase 2·3·4 진행 중 | 2a 저작 풀사이클 ✅ + 에디터 디자인 토큰·다크 브리지 ✅(2026-06-18) + 3a/3c DOCX 내보내기 ✅ + 4 "작성 문서" 자동 메뉴 편입 ✅(방법 가). 남음: 2b 소유권·3b 표지·하드닝·검색연동·admin 큐레이션/관리·회귀. 최근 커밋 `cddc377`·`d44e7c1`(push됨) |
+| — | (활성 계획 없음) | — | Plan-60·70 완료(2026-07-16). 다음 착수는 backlog 승격 또는 icebox 트리거 |
 
 > 배포·회사테스트는 활성 아님 → `workbench/DEPLOY-QUEUE.md`(운영 축). plan 완료 정의=코드완료+로컬검증.
 
@@ -108,6 +108,8 @@
 | 67 | Explorer 트리·문서 생애주기 관리 — 문서 삭제 cascade(파일 휴지통 이동 + 검색·벡터 인덱스 제거 + menu.json 노드 처리) + detach(문서만 제거) + admin 영향 미리보기 모달·dirty-guard + authored 통합 삭제. 벡터=`IndexFlatL2.remove_ids`(순서보존 실측) + `INDEX_WRITE_LOCK`. 재시작 audit=배너 7항목만(이미 표준). 단위 6/6 + 실서버 HTTP e2e + 실브라우저 UI 검증 통과. 커밋 `fba7df6` |
 | 49 | Verify 가이드 튜토리얼화 — 유사도·비교 모드 가이드를 엔지니어 친화 튜토리얼(`po-*` 패턴: 5분시작·시나리오카드·핫스팟·decision-tree)로 재구성. Phase 1(유사도)·Phase 2(비교, `bef6377`) 완료. 규칙모드(Phase 3)·타 시스템 가이드 확장은 backlog |
 | 68 | Explorer 안정화·성능복원·관리자 올클린 — 업로드 대용량(nginx 500m·청크)·벡터 인덱싱 관측·올클린 초기화·빈폴더 자동정리(D4)·저장 알림 토스트. 코어 코드완료+로컬검증. 배포·F3(세션만료 재현)=DEPLOY-QUEUE, D2/D3·Phase6=backlog. 커밋 `6379d0c`·`5fb8bed`·`f1e1ada` |
+| 60 | 통일 양식 기반 문서 저작·내보내기 플랫폼 — 저작 풀사이클(2a)·에디터 디자인 브리지·DOCX 내보내기(3a/3c)·"작성 문서" 자동 메뉴편입(4) 완료분 기준 종료(2026-07-16). 저작 기능은 Plan-70으로 Author 이관. 미완(소유권·표지·하드닝·검색연동·큐레이션)은 `backlog.md` Author 인계 |
+| 70 | '새 문서' 저작 기능을 Author로 교정 이전 — 설계상 창작 시스템(Author)에 속해야 할 '새 문서' 편집기가 Explorer(소비)에 잘못 구현된 것을 교정. Author에 편집기 번들 이식·진입점 3곳 실연결·저장후 목록갱신 훅·RBAC 게이팅(실 viewer 검증) + Explorer '새 문서' 메뉴 제거(열람·edit-in-place·번들 잔류). code-review Warning 2건 수정. 실브라우저 검증·콘솔0. 보고서 `reports/plan-70-feedback-2026-07-16.md` |
 | 69 | Gmail식 하이브리드 관리자 빠른설정 드로어 — 각 시스템(Explorer/Notebook/Verify)에서 페이지 전환 없이 우측 드로어로 그 시스템 설정 조정. `renderAdminSettings(container,opts)` 파라미터화 + 공통 헤더 admin 톱니 1개(lazy-load) + 빈 탭 필터·Explorer 무거운 확장 게이팅. 무거운 관리는 admin.html 존치(Gmail 하이브리드). 실측: 저장 왕복 디스크 영속·no-wipe, admin.html 회귀 0, 콘솔 0. 커밋 `1ae1966` |
 | — | (설계) Phase4 AI 요약 설계서 → `phase4-ai-summary-design.md` |
 

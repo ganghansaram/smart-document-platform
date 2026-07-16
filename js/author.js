@@ -2,8 +2,8 @@
    Author 셸 로직 — Plan-61
    - 공통 헤더(currentSystem:'author') · 테마 · 푸터 · 애널리틱스
    - 최근 문서 = GET /api/authored 실연동 (카드/리스트 토글)
-   - 진입 타일·새 문서 = "곧 제공" 자리표시 (실연결은 후속 Phase)
-   - 합성 = empty-state (백엔드 미구현)
+   - 저작 진입점(빈 문서·+새 문서·동적 카드) = MdEditor 실연결 (Plan-70 교정 이전, editor 권한)
+   - 합성 타일 = "곧 제공" 자리표시 (Plan-24) · 합성 섹션 = empty-state (백엔드 미구현)
    =================================================================== */
 (function () {
     'use strict';
@@ -59,6 +59,12 @@
         }
     }
 
+    // 빈 문서 작성 = 저작 편집기(Plan-70 교정 이전). 창작은 Author, 열람은 Explorer.
+    function openNewDoc() {
+        if (window.MdEditor) MdEditor.openNew();
+        else if (typeof showToast === 'function') showToast('편집기를 불러오지 못했습니다', 'error');
+    }
+
     function openDoc(url) {
         // 읽기는 Explorer 잔류: index.html?page= 딥링크 (app.js loadPageFromUrl)
         // 방어: 서버 생성 contents/ 경로만 허용 (javascript: 등 차단)
@@ -109,7 +115,7 @@
             el.addEventListener('click', function () { openDoc(el.getAttribute('data-url')); });
         });
         host.querySelectorAll('[data-act="new-doc"]').forEach(function (el) {
-            el.addEventListener('click', comingSoon);
+            el.addEventListener('click', openNewDoc);
         });
     }
 
@@ -132,10 +138,13 @@
     }
 
     function wireActions() {
-        ['tile-new-doc', 'tile-new-synth', 'act-new-doc'].forEach(function (id) {
+        // 저작 진입점(빈 문서 작성·+새 문서) → 편집기 / 합성 타일은 아직 준비 중(Plan-24)
+        ['tile-new-doc', 'act-new-doc'].forEach(function (id) {
             var el = document.getElementById(id);
-            if (el) el.addEventListener('click', comingSoon);
+            if (el) el.addEventListener('click', openNewDoc);
         });
+        var synth = document.getElementById('tile-new-synth');
+        if (synth) synth.addEventListener('click', comingSoon);
         var c = document.getElementById('seg-cards');
         var l = document.getElementById('seg-list');
         if (c) c.addEventListener('click', function () { setView('cards'); });
@@ -153,6 +162,8 @@
                     document.body.style.visibility = 'visible';
                     document.body.classList.add('fade-in');
                     applyRbac(user);
+                    // 편집기 작성자 필드 프리필용 (auth.js 미로드 환경 — md-editor 가 참조)
+                    window.AuthState = { user: user };
                     if (typeof initAnalytics === 'function') initAnalytics('author');
                     loadRecent();
                 }
@@ -169,6 +180,9 @@
         if (l) l.setAttribute('aria-pressed', String(view === 'list'));
 
         wireActions();
+
+        // 저작 편집기 저장 후 최근 문서 목록 즉시 갱신 (Plan-70)
+        window.onMdEditorSaved = function () { loadRecent(); };
     }
 
     if (document.readyState === 'loading') {

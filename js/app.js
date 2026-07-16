@@ -30,8 +30,7 @@ async function initializeApp() {
             navItems: [
                 { id: 'nav-edit-item', label: 'Edit', className: 'auth-editor-only', hidden: true,
                   onClick: function() { openEditor(); } },
-                { id: 'nav-new-doc-item', label: '새 문서', className: 'auth-editor-only',
-                  onClick: function() { if (window.MdEditor) MdEditor.openNew(); } },
+                // '새 문서'(창작) 진입점은 Author 로 이관됨 (Plan-70). Explorer 는 열람·보던 문서 편집만.
                 { label: 'Home', onClick: function() { loadContent('contents/home.html'); } },
                 { label: 'About', onClick: function() { loadContent('contents/about.html'); } },
                 { id: 'bookmarks-trigger', label: 'Bookmarks' },
