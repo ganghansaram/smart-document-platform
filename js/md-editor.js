@@ -11,8 +11,6 @@
 
     var BACKEND = (window.EDITOR_CONFIG && EDITOR_CONFIG.backendUrl) || '';
 
-    // 신규 문서 골격 (통일 양식 사양 §2)
-    var SKELETON = ['# 개요', '', '## 배경', '', '## 목적', '', '# 본론', '', '# 결론', ''].join('\n');
     var CLASSIFICATIONS = ['', '일반', '대외비', '비밀'];
 
     var state = { open: false, editor: null, path: null, isNew: false, initial: '' };
@@ -223,7 +221,8 @@
     }
 
     function openNew() {
-        open({ isNew: true, path: null, meta: { date: todayISO(), author: _currentUser() }, body: SKELETON });
+        // 빈 문서로 시작 — 제목·작성자·문서번호 등은 헤더 폼(front matter)이 담당
+        open({ isNew: true, path: null, meta: { date: todayISO(), author: _currentUser() }, body: '' });
     }
 
     function openExisting(path, rawMd) {
