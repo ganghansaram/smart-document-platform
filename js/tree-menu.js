@@ -55,56 +55,15 @@ function initTreeSearch() {
 }
 
 /**
- * 저작 마크다운 목록 조회 (contents/authored/) — 실패 시 빈 배열
+ * menu.json 트리를 반환 (Promise)
+ * 저작 마크다운(contents/authored/)은 Explorer 트리에 노출하지 않는다 (Plan-72 P2:
+ * 창작=Author / 소비=Explorer 분리). Explorer 는 워드→HTML 소비 문서만 나열.
  */
-function fetchAuthoredDocs() {
-    var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
-    return fetch(backendUrl + '/api/authored?t=' + Date.now(), { credentials: 'include' })
-        .then(function(r) { return r.ok ? r.json() : { documents: [] }; })
-        .then(function(d) { return (d && d.documents) || []; })
-        .catch(function() { return []; });
-}
-
-/**
- * menu.json 트리에 "작성 문서" 가상 폴더(홈 바로 아래)를 합성한다.
- * - 원본 불변(얕은 복사) · 기존 가상 노드 제거로 중복 방지 · 문서 0개면 미삽입
- */
-function mergeAuthoredNode(menuData, docs) {
-    var menu = (Array.isArray(menuData) ? menuData : []).filter(function(n) {
-        return !(n && n._authored);
-    });
-    if (!docs || docs.length === 0) return menu;
-
-    var node = {
-        label: '작성 문서',
-        _authored: true,
-        icon: 'authored',
-        children: docs.map(function(d) {
-            return { label: d.label, url: d.url, author: d.author || '', modified: d.modified || '' };
-        })
-    };
-
-    var homeIdx = -1;
-    for (var i = 0; i < menu.length; i++) {
-        if (menu[i] && menu[i].url === 'contents/home.html') { homeIdx = i; break; }
-    }
-    menu.splice(homeIdx + 1, 0, node);
-    return menu;
-}
-
-/**
- * menu.json + 저작 문서 목록을 병합한 트리를 반환 (Promise)
- */
-function fetchMergedMenu() {
+function fetchMenuData() {
     return fetch('data/menu.json?t=' + Date.now())
         .then(function(response) {
             if (!response.ok) throw new Error('메뉴 데이터를 불러올 수 없습니다.');
             return response.json();
-        })
-        .then(function(data) {
-            return fetchAuthoredDocs().then(function(docs) {
-                return mergeAuthoredNode(data, docs);
-            });
         });
 }
 
@@ -113,7 +72,7 @@ function fetchMergedMenu() {
  * @param {Function} [onDone] - 렌더 완료 후 콜백 (예: 신규 저작 문서 하이라이트)
  */
 function loadMenuData(onDone) {
-    fetchMergedMenu()
+    fetchMenuData()
         .then(function(merged) {
             AppState.menuData = merged;
             renderTreeMenu(merged);
@@ -195,19 +154,8 @@ function createMenuList(items) {
         label.textContent = item.label;
         itemDiv.appendChild(label);
 
-        // 저작 .md 리프: 식별용 tooltip(작성자·수정일·파일명) + 정밀 선택용 data-url
-        var isAuthoredLeaf = (item.url || '').indexOf('contents/authored/') === 0;
-        if (isAuthoredLeaf) {
-            itemDiv.dataset.url = item.url;
-            var tip = [];
-            if (item.author) tip.push('작성자: ' + item.author);
-            if (item.modified) tip.push('수정: ' + String(item.modified).slice(0, 10));
-            tip.push('파일: ' + item.url.split('/').pop());
-            itemDiv.title = tip.join('  ·  ');
-        }
-
-        // 업로드 버튼 (리프 노드 + UPLOAD_CONFIG.enabled) — 저작 .md 에는 미노출
-        if (!hasChildren && !isAuthoredLeaf && typeof UPLOAD_CONFIG !== 'undefined' && UPLOAD_CONFIG.enabled) {
+        // 업로드 버튼 (리프 노드 + UPLOAD_CONFIG.enabled)
+        if (!hasChildren && typeof UPLOAD_CONFIG !== 'undefined' && UPLOAD_CONFIG.enabled) {
             itemDiv.classList.add('has-upload');
             const uploadBtn = document.createElement('button');
             uploadBtn.className = 'tree-upload-btn auth-editor-only';
@@ -807,7 +755,7 @@ async function uploadDocument(file, targetUrl, backendUrl, menuPath) {
  * menu.json 갱신 후 트리를 다시 렌더링하고, 업로드된 문서를 표시
  */
 function reloadTreeMenuAndLoad(outputPath) {
-    fetchMergedMenu()
+    fetchMenuData()
         .then(function(data) {
             // 메뉴 데이터 갱신 및 트리 재렌더링
             AppState.menuData = data;
