@@ -1,7 +1,7 @@
 # 백로그 — 미착수 / 보류 항목
 
 > 각 계획서에서 이관된 잔여 항목을 모아둔 파일. 필요 시 우선순위를 매겨 별도 계획서로 승격하여 진행.
-> 최종 수정: 2026-07-05
+> 최종 수정: 2026-07-17
 
 ## 🧭 현황 한눈에 (Backlog Dashboard)
 > 상태: ⬜ 대기 · 🔄 진행 중 · ✅ 조치(→ 하단 [조치 이력](#-조치-이력)). 상세는 아래 각 섹션.
@@ -38,6 +38,7 @@
 | 27 | 작성 문서 admin 큐레이션 (삭제/개명/관리) — 위치 협의 | Author | Plan-60→70 | 2026-07-16 | ⬜ 대기 |
 | 28 | 작성 문서 Explorer 검색연동 — 소속 협의(읽기측=Explorer 가능) | Explorer/Author | Plan-60→70 | 2026-07-16 | ⬜ 대기 |
 | 29 | Author 편집기 번들 lazy-load | Author | Plan-70 S1 | 2026-07-16 | ⬜ 대기 |
+| 30 | 회사 Tomcat·http.server `/data/` 정적 노출 차단 (auth.db 포함) | 플랫폼/보안 | Plan-72 | 2026-07-17 | ⬜ 배포 전 선재 |
 
 > **관리 규칙**: 새 항목 추가 시 이 표에 1행(등록일=오늘) + 아래 상세 섹션. 조치 완료 시 → 상태 ✅ + [조치 이력](#-조치-이력)에 옮기고 상세 섹션 제거.
 
@@ -267,6 +268,24 @@
 - **admin 큐레이션 (27)** — 작성 문서 삭제/개명/관리 UI. **위치 협의**: Author 홈 자체 UI vs admin.html/Plan-69 드로어 재사용. 삭제는 Explorer 인덱스(Plan-67 생애주기)와 맞물림 주의.
 - **검색연동 (28)** — 작성 문서를 Explorer 검색에 노출. **소속 협의**: 읽기(소비)측 일이라 Explorer 몫일 수 있음(Author 아님).
 - **번들 lazy-load (29)** — 편집기 번들(TUI ~수백KB)을 "새 문서" 클릭 시점에 동적 로드. 현재 Author 홈 진입 시 즉시 로드(Plan-70 Acceptance "선호/후속").
+
+---
+
+## 플랫폼/보안 — 회사 Tomcat·http.server `/data/` 정적 노출 차단 (30)
+
+> 출처: Plan-72 P4 code-review Critical #1 (2026-07-17). Docker/nginx 는 `docker/nginx.conf:52` `location /data/ {return 403}` 로 차단됨(로컬 검증 완료).
+
+**문제**: `docs/01-DEPLOYMENT-GUIDE.md §5-2`가 회사 Windows(Tomcat 7)에 `data/`를 `webapps/ROOT/`로 통째 복사하도록 지시 → Tomcat:8080·(repo root에서의) `python -m http.server`는 `data/` 전체를 **무인증 정적 서빙**한다. 이는 P72 이전부터 존재하던 플랫폼 노출:
+- `data/auth.db`(계정 DB)·`data/settings.json`·`data/verify/<user>/_history.json`가 이미 노출 대상
+- Plan-72가 `data/authored/*.md`·`_owners.json`(저작 문서 본문·소유자 인덱스)를 그 집합에 추가 → **회사 Tomcat 환경에서만** 저작 문서 소유권 게이팅이 무력화(집 Docker는 안전)
+
+**조치안** (택1 또는 병행):
+- Tomcat: `webapps/ROOT/WEB-INF/web.xml`에 `<security-constraint>`로 `/data/*` 전면 거부(빈 `<auth-constraint/>`), **또는** 배포 시 `webapps/ROOT/` 복사 대상에서 `data/` 하위 제외(백엔드는 파일시스템 직접 접근이라 무영향)
+- http.server(디버깅): repo root 대신 프론트 정적 자원만 서빙하도록 안내
+- **nginx 403과 동등한 `/data/` 차단이 3환경 모두에서 성립**함을 배포 체크리스트 검증 항목으로 못박기
+
+**우선순위**: auth.db 노출을 포함하므로 회사 배포(환경 C) 실사용 전 **선재**. 별도 계획 승격 후보.
+관련: `workbench/DEPLOY-QUEUE.md`(운영 축 기록), `docs/01-DEPLOYMENT-GUIDE.md §5-2`, `docker/nginx.conf:52`.
 
 ---
 
