@@ -3,11 +3,16 @@
 """
 import os
 import re
+import json
 import shutil
+import logging
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from dependencies import require_editor
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["document"])
 
@@ -112,17 +117,50 @@ async def save_document(request: SaveDocumentRequest, user: dict = Depends(requi
         raise HTTPException(status_code=500, detail=f"Failed to save document: {str(e)}")
 
 
-# ── 저작 마크다운 저장 (Plan-60 Phase 2a) ───────────────────────────────
+# ── 저작 마크다운 저장 (Plan-60 Phase 2a · Plan-72 P4 소유권) ─────────────
 # 기존 save_document(HTML, prettify 적용, 기존 파일만)와 별개:
-#  - contents/authored/ 전용 (기존 웹북과 격리)
-#  - 신규 파일 생성 지원, 원문 그대로 저장(prettify 미적용)
-AUTHORED_DIR_REL = "contents/authored"
-# 허용 파일명: 한글·영숫자·공백·- _ . ( ) + 확장자 .md
+#  - data/authored/ 전용 저장 (신규 파일 생성 지원, 원문 그대로 — prettify 미적용)
+#  - Plan-72 P4: 저작 .md 는 정적 서빙 루트(contents/) 밖 data/authored/ 에 둔다.
+#    contents/ 는 nginx/http.server/Tomcat 이 무인증 정적 서빙 → 소유권 누수.
+#    data/ 는 nginx 403(화이트리스트 3파일 제외) → 정적 접근 차단, API 경유(소유자 인증)만 허용.
+#  - 소유권 SSOT = 서버측 _owners.json (front matter author 는 표시용·위조가능이라 권한 판정 미사용)
+AUTHORED_STORE_DIR = os.path.join(PROJECT_ROOT, "data", "authored")
+AUTHORED_OWNERS_PATH = os.path.join(AUTHORED_STORE_DIR, "_owners.json")
+# 허용 파일명: 한글·영숫자·공백·- _ . ( ) + 확장자 .md (디렉토리 성분 불허)
 _SAFE_MD_NAME = re.compile(r"^[\w\-. ()가-힣]+\.md$")
 
 
+def _resolve_store_path(name: str) -> str:
+    """저작 .md 파일명(단일, 디렉토리 성분 없음)만 허용하고 data/authored/ 물리 경로를 반환한다."""
+    base = os.path.basename((name or "").strip().replace("\\", "/"))
+    if not _SAFE_MD_NAME.match(base):
+        raise HTTPException(status_code=400,
+                            detail="Invalid filename (허용: 한글·영숫자·공백·-_.() + .md)")
+    return os.path.join(AUTHORED_STORE_DIR, base)
+
+
+def _load_owners() -> dict:
+    """소유권 인덱스 로드 ({ '<파일명>.md': {owner, created_at, modified} })."""
+    if not os.path.exists(AUTHORED_OWNERS_PATH):
+        return {}
+    try:
+        with open(AUTHORED_OWNERS_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_owners(data: dict):
+    """소유권 인덱스 원자적 저장 (compare._save_history 패턴: tmp write → replace)."""
+    os.makedirs(AUTHORED_STORE_DIR, exist_ok=True)
+    tmp = AUTHORED_OWNERS_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, AUTHORED_OWNERS_PATH)
+
+
 class SaveMarkdownRequest(BaseModel):
-    path: str            # contents/authored/<name>.md
+    name: str            # 저작 .md 파일명 (디렉토리 성분 없음, 예: 제목.md)
     content: str
     createBackup: bool = True
     overwrite: bool = True
@@ -131,65 +169,69 @@ class SaveMarkdownRequest(BaseModel):
 class SaveMarkdownResponse(BaseModel):
     success: bool
     message: str
-    path: str
+    name: str
     created: bool = False
     backupPath: str | None = None
 
 
-def _resolve_authored_path(rel_path: str) -> str:
-    """contents/authored/ 하위 .md 경로만 허용하고 절대경로를 반환한다 (path traversal 방지)."""
-    rel_path = (rel_path or "").strip().replace("\\", "/")
-    if not rel_path.startswith(AUTHORED_DIR_REL + "/"):
-        raise HTTPException(status_code=400, detail="Invalid path: must be under contents/authored/")
-
-    basename = os.path.basename(rel_path)
-    if not _SAFE_MD_NAME.match(basename):
-        raise HTTPException(status_code=400,
-                            detail="Invalid filename (허용: 한글·영숫자·공백·-_.() + .md)")
-
-    authored_root = os.path.join(PROJECT_ROOT, "contents", "authored")
-    abs_path = os.path.normpath(os.path.join(PROJECT_ROOT, rel_path))
-    if abs_path != authored_root and not abs_path.startswith(authored_root + os.sep):
-        raise HTTPException(status_code=400, detail="Invalid path: path traversal detected")
-    return abs_path
-
-
 @router.post("/save-markdown", response_model=SaveMarkdownResponse)
 async def save_markdown(request: SaveMarkdownRequest, user: dict = Depends(require_editor)):
-    """저작 마크다운(.md)을 contents/authored/ 에 저장한다.
+    """저작 마크다운(.md)을 data/authored/ 에 저장하고 소유자를 서버측에 캡처한다.
 
     - 신규 생성 + 기존 덮어쓰기 모두 지원 (overwrite=False 면 기존 존재 시 409)
-    - 덮어쓰기 시 기존본을 backups/ 에 백업
-    - HTML prettify 미적용 — 마크다운 원문 그대로 저장
+    - 기존 문서는 소유자 본인만 덮어쓰기 가능 (타인 문서 403)
+    - 덮어쓰기 시 기존본을 backups/ 에 백업 · HTML prettify 미적용(원문 그대로)
     """
     if not request.content or not request.content.strip():
         raise HTTPException(status_code=400, detail="빈 내용은 저장할 수 없습니다.")
     try:
-        file_path = _resolve_authored_path(request.path)
+        file_path = _resolve_store_path(request.name)
+        base = os.path.basename(file_path)
+        owners = _load_owners()
         exists = os.path.exists(file_path)
-        if exists and not request.overwrite:
-            raise HTTPException(status_code=409, detail="이미 존재하는 문서입니다 (overwrite=false).")
 
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        # 소유권 검사 — 기존 문서면 소유자 본인만 수정 가능.
+        # fail-closed: 소유자 미기록(고아·인덱스 파싱실패) 파일도 '타인 소유'로 간주해 거부한다
+        # (읽기 경로 list/content 와 대칭 — write 만 열려 소유권 탈취되는 것을 차단).
+        if exists:
+            if (owners.get(base) or {}).get("owner") != user["username"]:
+                raise HTTPException(status_code=403, detail="다른 사용자의 문서는 수정할 수 없습니다.")
+            if not request.overwrite:
+                raise HTTPException(status_code=409, detail="이미 존재하는 문서입니다 (overwrite=false).")
 
+        os.makedirs(AUTHORED_STORE_DIR, exist_ok=True)
+
+        # 백업은 best-effort — 실패해도 저장(주 작업)은 진행한다(안전망 상실 뿐, 저장 차단 아님).
         backup_path = None
         if exists and request.createBackup:
-            backup_dir = os.path.join(PROJECT_ROOT, "backups")
-            os.makedirs(backup_dir, exist_ok=True)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            stem = os.path.splitext(os.path.basename(file_path))[0]
-            backup_filename = f"{stem}_{timestamp}.md.bak"
-            shutil.copy2(file_path, os.path.join(backup_dir, backup_filename))
-            backup_path = f"backups/{backup_filename}"
+            try:
+                backup_dir = os.path.join(PROJECT_ROOT, "backups")
+                os.makedirs(backup_dir, exist_ok=True)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                stem = os.path.splitext(base)[0]
+                backup_filename = f"{stem}_{timestamp}.md.bak"
+                shutil.copy2(file_path, os.path.join(backup_dir, backup_filename))
+                backup_path = f"backups/{backup_filename}"
+            except OSError as e:
+                logger.warning("저작 문서 백업 실패 (저장은 계속): %s — %s", base, e)
 
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(request.content)
 
-        rel = os.path.relpath(file_path, PROJECT_ROOT).replace(os.sep, "/")
+        # 소유권 인덱스 갱신 — 신규면 owner 캡처(서버측 신뢰 user), 기존이면 owner 유지
+        now = datetime.now().isoformat()
+        rec = owners.get(base) or {}
+        if not rec.get("owner"):
+            rec["owner"] = user["username"]
+            rec["created_at"] = now
+        rec["modified"] = now
+        owners[base] = rec
+        _save_owners(owners)
+
         return SaveMarkdownResponse(
             success=True,
             message="Markdown saved successfully",
-            path=rel,
+            name=base,
             created=not exists,
             backupPath=backup_path,
         )
@@ -225,20 +267,23 @@ def _read_front_matter_fields(abs_path: str, keys) -> dict:
 
 
 @router.get("/authored")
-def list_authored():
-    """contents/authored/ 의 저작 마크다운 목록을 반환한다 (좌측 메뉴 자동 노출용).
+def list_authored(user: dict = Depends(require_editor)):
+    """로그인 사용자가 소유한 저작 마크다운 목록을 반환한다 (Author 좌측 패널용).
 
-    각 항목: { label(front matter title→없으면 파일명), author, url, modified }. 최신 수정순.
-    인증 불요 — 콘텐츠는 정적 공개 서빙되며 menu.json 도 공개 파일이다.
+    각 항목: { label(front matter title→없으면 파일명), author, name, modified }. 최신 수정순.
+    Plan-72 P4: 인증 필수 + 소유자 한정 (admin 예외 없음). data/authored/ 에서 읽는다.
     """
-    authored_root = os.path.join(PROJECT_ROOT, "contents", "authored")
+    owners = _load_owners()
     docs = []
-    if os.path.isdir(authored_root):
-        for name in os.listdir(authored_root):
+    if os.path.isdir(AUTHORED_STORE_DIR):
+        for name in os.listdir(AUTHORED_STORE_DIR):
             if not name.lower().endswith(".md"):
                 continue
-            abs_path = os.path.join(authored_root, name)
+            abs_path = os.path.join(AUTHORED_STORE_DIR, name)
             if not os.path.isfile(abs_path):
+                continue
+            # 소유자 한정 — 인덱스에 없거나(고아) 타인 소유면 제외
+            if (owners.get(name) or {}).get("owner") != user["username"]:
                 continue
             try:
                 mtime = os.stat(abs_path).st_mtime
@@ -249,11 +294,28 @@ def list_authored():
             docs.append({
                 "label": title,
                 "author": fields.get("author", ""),
-                "url": "contents/authored/" + name,
+                "name": name,
                 "modified": datetime.fromtimestamp(mtime).isoformat(),
             })
     docs.sort(key=lambda d: d["modified"], reverse=True)
     return {"documents": docs}
+
+
+@router.get("/authored/content", response_class=PlainTextResponse)
+def get_authored_content(name: str, user: dict = Depends(require_editor)):
+    """저작 .md 원문을 인증·소유자 확인 후 반환한다 (정적 서빙 대체 — Plan-72 P4).
+
+    소유자 본인만 열람 가능. contents/ 정적 서빙을 우회하지 않고 이 엔드포인트를 경유해야
+    소유권 게이팅이 성립한다 (data/authored/ 는 nginx 403).
+    """
+    file_path = _resolve_store_path(name)
+    base = os.path.basename(file_path)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다.")
+    if (_load_owners().get(base) or {}).get("owner") != user["username"]:
+        raise HTTPException(status_code=403, detail="다른 사용자의 문서입니다.")
+    with open(file_path, "r", encoding="utf-8") as f:
+        return PlainTextResponse(f.read())
 
 
 @router.get("/document-history/{path:path}")

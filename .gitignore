@@ -87,6 +87,10 @@ _patch_*/
 # Translator runtime data
 data/translator/
 
+# Author 저작 문서 런타임 데이터 (Plan-72 P4) — 소유권 인덱스·문서 본문은 배포별 상태
+data/authored/*
+!data/authored/.gitkeep
+
 # Test outputs
 pmt_test_out/
 
