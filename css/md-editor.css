@@ -1,14 +1,14 @@
 /* ===================================
    Plan-60 — 통일 양식 마크다운 저작 편집기 (Toast UI 래퍼)
-   기존 EditorCore(Monaco/HTML) 와 독립된 풀스크린 모달
+   Plan-72 P3: 풀스크린 오버레이 폐기 → Author 셸(#au-editor-host) 인셸 마운트.
+   공통 헤더 유지(fixed/z-4000 제거), 상단 바·시트·다크 등 시각 자산은 그대로 이식.
    =================================== */
 
 .md-editor-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 4000;                 /* 헤더/툴팁보다 위 */
     display: none;
     flex-direction: column;
+    height: 100%;                  /* 마운트 컨테이너(#au-editor-host, 우측 편집면)를 채움 */
+    min-height: 0;
     background: var(--canvas-bg);  /* 차분한 캔버스 — 문서 시트를 띄운다 */
 }
 .md-editor-overlay.open { display: flex; }

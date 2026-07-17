@@ -74,17 +74,8 @@ async function openEditor() {
         return;
     }
 
-    // 마크다운 저작 문서(.md) → 전용 MD 편집기 (Plan-60), HTML 은 기존 Monaco
-    if (currentPage.endsWith('.md') && window.MdEditor) {
-        try {
-            var resp = await fetch(currentPage + '?t=' + Date.now());
-            if (!resp.ok) throw new Error('load failed');
-            MdEditor.openExisting(currentPage, await resp.text());
-        } catch (e) {
-            showToast('문서를 불러오지 못했습니다', 'error');
-        }
-        return;
-    }
+    // Plan-72 P3: 저작 .md 편집은 Author 셸 전용(MdEditor). Explorer 는 워드→HTML 소비만 담당하며
+    // 저작 문서를 트리·딥링크로 노출하지 않으므로 여기의 .md 분기(구 Plan-60)는 제거됨.
 
     // 인증 필요 시 체크
     if (EDITOR_CONFIG.requireAuth && typeof requireAdmin === 'function') {

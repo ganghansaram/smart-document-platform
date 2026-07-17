@@ -327,21 +327,6 @@ function expandParentPath(itemDiv) {
 }
 
 /**
- * 저작 문서를 정확히(data-url) 짚어 활성화 + 폴더 펼침 + 화면 안으로 스크롤.
- * 동명 제목이 있어도 파일 경로로 구분되므로 label 기반 highlightCurrentPage 보다 정밀.
- */
-function highlightAuthoredDoc(url) {
-    const tree = document.getElementById('tree-menu');
-    if (!tree || !url) return;
-    const el = tree.querySelector('.tree-item[data-url="' + url + '"]');
-    if (!el) return;
-    tree.querySelectorAll('.tree-item.active').forEach(a => a.classList.remove('active'));
-    el.classList.add('active');
-    expandParentPath(el);
-    try { el.scrollIntoView({ block: 'center' }); } catch (e) { el.scrollIntoView(); }
-}
-
-/**
  * 메뉴에서 URL로 아이템 찾기
  */
 function findMenuItemByUrl(items, url) {

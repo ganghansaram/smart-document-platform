@@ -59,17 +59,62 @@
         }
     }
 
-    // 빈 문서 작성 = 저작 편집기(Plan-70 교정 이전). 창작은 Author, 열람은 Explorer.
-    function openNewDoc() {
-        if (window.MdEditor) MdEditor.openNew();
-        else if (typeof showToast === 'function') showToast('편집기를 불러오지 못했습니다', 'error');
+    // ── 저작 워크스페이스 (Plan-72 P3): 인셸 편집(좌측 패널 + 우측 편집면), 헤더 유지 ──
+    function enterWorkspace() { document.body.classList.add('au-editing'); }
+    function exitWorkspace() {
+        document.body.classList.remove('au-editing');
+        loadRecent();   // 홈 최근 문서 목록 최신화
     }
 
-    function openDoc(url) {
-        // 읽기는 Explorer 잔류: index.html?page= 딥링크 (app.js loadPageFromUrl)
-        // 방어: 서버 생성 contents/ 경로만 허용 (javascript: 등 차단)
-        if (!url || url.indexOf('contents/') !== 0) return;
-        window.location.href = 'index.html?page=' + encodeURIComponent(url);
+    // 편집 중 미저장 변경 보호 (새 문서·문서 전환 공통)
+    function confirmDiscardIfDirty(msg) {
+        if (window.MdEditor && MdEditor.isOpen() && MdEditor.isModified()) {
+            return window.confirm(msg);
+        }
+        return true;
+    }
+
+    // 좌측 '내 문서' 패널 렌더 (activeName 강조)
+    function renderPanel(activeName) {
+        var host = document.getElementById('ws-doc-list');
+        if (!host) return;
+        if (!docs.length) {
+            host.innerHTML = '<div class="au-ws-empty">아직 작성한 문서가 없습니다.</div>';
+            return;
+        }
+        host.innerHTML = docs.map(function (d) {
+            var active = (d.name === activeName) ? ' active' : '';
+            return '<button type="button" class="au-ws-item' + active + '" data-name="' + esc(d.name) + '">' +
+                FILE_SVG + '<span class="au-ws-item-name">' + esc(d.label) + '</span></button>';
+        }).join('');
+        host.querySelectorAll('[data-name]').forEach(function (el) {
+            el.addEventListener('click', function () { openDoc(el.getAttribute('data-name')); });
+        });
+    }
+
+    // 빈 문서 작성 = 저작 편집기(창작은 Author). 셸 안에서 헤더 유지된 채 편집.
+    function openNewDoc() {
+        if (!window.MdEditor) { if (typeof showToast === 'function') showToast('편집기를 불러오지 못했습니다', 'error'); return; }
+        if (!confirmDiscardIfDirty('저장하지 않은 변경사항이 있습니다. 새 문서를 여시겠습니까?')) return;
+        enterWorkspace();
+        renderPanel(null);
+        MdEditor.openNew();
+    }
+
+    // 기존 문서 편집 진입 (Plan-72 P3: Explorer 리다이렉트 폐기 → 인증 content API 경유 인셸 편집)
+    function openDoc(name) {
+        if (!name || !window.MdEditor) return;
+        if (!confirmDiscardIfDirty('저장하지 않은 변경사항이 있습니다. 다른 문서를 여시겠습니까?')) return;
+        fetch(API + '/api/authored/content?name=' + encodeURIComponent(name), { credentials: 'include' })
+            .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+            .then(function (text) {
+                enterWorkspace();
+                renderPanel(name);
+                MdEditor.openExisting(name, text);
+            })
+            .catch(function () {
+                if (typeof showToast === 'function') showToast('문서를 불러오지 못했습니다', 'error');
+            });
     }
 
     // ── 최근 문서 렌더 ──
@@ -87,7 +132,7 @@
 
         if (view === 'list') {
             var rows = docs.map(function (d) {
-                return '<button type="button" class="au-row" data-url="' + esc(d.url) + '">' +
+                return '<button type="button" class="au-row" data-name="' + esc(d.name) + '">' +
                     '<span class="au-row-name">' + FILE_SVG + '<span>' + esc(d.label) + '</span></span>' +
                     '<span class="au-row-owner col-owner">' + esc(d.author || '—') + '</span>' +
                     '<span class="au-row-date">' + esc(fmtDate(d.modified)) + '</span>' +
@@ -99,7 +144,7 @@
                 rows + '</div>';
         } else {
             var cards = docs.map(function (d) {
-                return '<button type="button" class="au-card content-card" data-url="' + esc(d.url) + '">' +
+                return '<button type="button" class="au-card content-card" data-name="' + esc(d.name) + '">' +
                     '<span class="au-card-top">' + FILE_SVG +
                     '<span class="au-card-name">' + esc(d.label) + '</span></span>' +
                     '<span class="au-card-meta"><span>' + esc(d.author || '—') + '</span>' +
@@ -111,8 +156,8 @@
             host.innerHTML = '<div class="au-grid">' + cards + '</div>';
         }
 
-        host.querySelectorAll('[data-url]').forEach(function (el) {
-            el.addEventListener('click', function () { openDoc(el.getAttribute('data-url')); });
+        host.querySelectorAll('[data-name]').forEach(function (el) {
+            el.addEventListener('click', function () { openDoc(el.getAttribute('data-name')); });
         });
         host.querySelectorAll('[data-act="new-doc"]').forEach(function (el) {
             el.addEventListener('click', openNewDoc);
@@ -129,17 +174,19 @@
         renderRecent();
     }
 
-    function loadRecent() {
-        // credentials: 플랫폼 fetch 관례 정합(교차출처 직접실행 대비) — /api/authored 자체는 공개
-        fetch(API + '/api/authored', { credentials: 'include' })
+    // 소유자 문서 목록 조회 (Plan-72 P4: 인증 필수·소유자 한정 — 비소유/미인증 시 빈 목록)
+    function fetchDocs() {
+        return fetch(API + '/api/authored', { credentials: 'include' })
             .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-            .then(function (d) { docs = (d && d.documents) || []; renderRecent(); })
-            .catch(function () { docs = []; renderRecent(); });
+            .then(function (d) { docs = (d && d.documents) || []; })
+            .catch(function () { docs = []; });
     }
 
+    function loadRecent() { fetchDocs().then(renderRecent); }
+
     function wireActions() {
-        // 저작 진입점(빈 문서 작성·+새 문서) → 편집기 / 합성 타일은 아직 준비 중(Plan-24)
-        ['tile-new-doc', 'act-new-doc'].forEach(function (id) {
+        // 저작 진입점(빈 문서 작성·+새 문서·워크스페이스 패널 새 문서) → 편집기 / 합성 타일은 준비 중(Plan-24)
+        ['tile-new-doc', 'act-new-doc', 'ws-new-doc'].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.addEventListener('click', openNewDoc);
         });
@@ -181,8 +228,12 @@
 
         wireActions();
 
-        // 저작 편집기 저장 후 최근 문서 목록 즉시 갱신 (Plan-70)
-        window.onMdEditorSaved = function () { loadRecent(); };
+        // 저작 편집기 저장 후: 좌측 패널 목록 갱신(현재 문서 강조 유지). 홈 목록은 워크스페이스 종료 시 갱신.
+        window.onMdEditorSaved = function (name) {
+            fetchDocs().then(function () { renderPanel(name); });
+        };
+        // 편집기 닫힘(✕·ESC) → 워크스페이스 종료·홈 복귀 (Plan-72 P3)
+        window.onMdEditorClosed = exitWorkspace;
     }
 
     if (document.readyState === 'loading') {

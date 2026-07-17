@@ -146,6 +146,94 @@ body {
     padding: var(--space-xl) var(--space-xl) 72px;
 }
 
+/* ── 저작 워크스페이스 (Plan-72 P3) — 좌측 '내 문서' 패널 + 우측 편집면 스플릿.
+   편집 진입 시 body.au-editing 으로 홈(히어로·본문·푸터)을 감추고 헤더 아래 전체를 채운다.
+   공통 헤더(sticky)는 유지 → Author 시스템 정체성 보존. =================== */
+.au-workspace { display: none; }
+body.au-editing .author-hero,
+body.au-editing .author-main,
+body.au-editing #author-footer { display: none; }
+body.au-editing .au-workspace {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.au-ws-panel {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border-color);
+    overflow: hidden;
+}
+.au-ws-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.au-ws-panel-title {
+    font-size: 12.5px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+}
+.au-ws-new {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--active-color);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity var(--transition-fast);
+}
+.au-ws-new:hover { opacity: 0.7; }
+.au-ws-list { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-xs); }
+.au-ws-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 9px 10px;
+    color: var(--text-muted);
+    transition: background var(--transition-fast);
+}
+.au-ws-item:hover { background: var(--hover-bg); }
+.au-ws-item.active { background: var(--active-color-subtle); }
+.au-ws-item svg { flex-shrink: 0; opacity: 0.7; }
+.au-ws-item-name {
+    font-size: 13px;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.au-ws-item.active .au-ws-item-name { color: var(--active-color); }
+.au-ws-empty { padding: var(--space-md); font-size: 12px; color: var(--text-muted); }
+
+/* 우측 편집면 — md-editor 가 #au-editor-host 에 인셸 마운트(높이 100% 상속) */
+.au-ws-editor { flex: 1; min-height: 0; overflow: hidden; }
+
+@media (max-width: 640px) {
+    .au-ws-panel { display: none; }   /* 좁은 폭: 편집면 전폭 (패널은 홈 최근목록으로 대체) */
+}
+
 /* ── 섹션 공통 ── */
 .au-section { margin-bottom: var(--space-2xl); }
 .au-section-title {

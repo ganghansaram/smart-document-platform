@@ -66,7 +66,7 @@
                 <span class="au-tile-sub">통일 양식 골격에서 새 기술 보고서를 마크다운 ↔ WYSIWYG로 작성하고, DOCX로 내보내 워드에서 다듬어 제출합니다.</span>
                 <span class="au-chips">
                     <span class="au-chip">마크다운 SSOT</span>
-                    <span class="au-chip">통일 양식 프리필</span>
+                    <span class="au-chip">빈 문서 시작</span>
                     <span class="au-chip">DOCX 내보내기</span>
                 </span>
             </button>
@@ -124,6 +124,22 @@
         </div>
 
     </main>
+
+    <!-- 저작 워크스페이스 (Plan-72 P3): 좌측 '내 문서' 패널 + 우측 편집면(#au-editor-host).
+         편집 진입 시에만 body.au-editing 으로 표시 — 공통 헤더는 유지된다. -->
+    <section id="au-workspace" class="au-workspace">
+        <aside class="au-ws-panel">
+            <div class="au-ws-panel-head">
+                <span class="au-ws-panel-title">내 문서</span>
+                <button type="button" class="au-ws-new auth-editor-only" id="ws-new-doc">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    새 문서
+                </button>
+            </div>
+            <div class="au-ws-list" id="ws-doc-list"></div>
+        </aside>
+        <div class="au-ws-editor" id="au-editor-host"></div>
+    </section>
 
     <div id="author-footer"></div>
 

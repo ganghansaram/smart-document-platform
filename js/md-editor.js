@@ -2,7 +2,8 @@
    Plan-60 — 통일 양식 마크다운 저작 편집기 (Toast UI 래퍼)
 
    기존 EditorCore(Monaco/HTML, js/editor-core.js)와 독립.
-   - 저장: POST /api/save-markdown (contents/authored/ 전용, MD 원문)
+   - 저장: POST /api/save-markdown (name 기반, data/authored/ 저장, MD 원문 — Plan-72 P4)
+   - Plan-72 P3: 전체화면 오버레이 폐기 → Author 셸(#au-editor-host)에 인셸 마운트(공통 헤더 유지)
    - front matter(제목·작성자·날짜·문서번호·보안등급)는 헤더 폼으로 관리 → 저장 시 합성
    - 본문은 Toast UI 로 Markdown↔WYSIWYG 작성 (통일 양식 사양 §1·§2)
    =================================== */
@@ -13,7 +14,7 @@
 
     var CLASSIFICATIONS = ['', '일반', '대외비', '비밀'];
 
-    var state = { open: false, editor: null, path: null, isNew: false, initial: '' };
+    var state = { open: false, editor: null, name: null, isNew: false, initial: '' };
     var dom = null;
 
     function todayISO() {
@@ -149,7 +150,8 @@
                 '<div class="md-editor-host"></div>' +
               '</div>' +
             '</div>';
-        document.body.appendChild(ov);
+        // Plan-72 P3: Author 셸 콘텐츠 영역에 마운트(공통 헤더 유지). 컨테이너 없으면 body 폴백.
+        (document.getElementById('au-editor-host') || document.body).appendChild(ov);
 
         var sel = ov.querySelector('[data-f="classification"]');
         CLASSIFICATIONS.forEach(function (c) {
@@ -202,7 +204,7 @@
     // ── 열기 ──
     function open(opts) {
         buildDom();
-        state.path = opts.path || null;
+        state.name = opts.name || null;
         state.isNew = !!opts.isNew;
         dom.title.value = opts.meta.title || '';
         dom.author.value = opts.meta.author || '';
@@ -222,12 +224,12 @@
 
     function openNew() {
         // 빈 문서로 시작 — 제목·작성자·문서번호 등은 헤더 폼(front matter)이 담당
-        open({ isNew: true, path: null, meta: { date: todayISO(), author: _currentUser() }, body: '' });
+        open({ isNew: true, name: null, meta: { date: todayISO(), author: _currentUser() }, body: '' });
     }
 
-    function openExisting(path, rawMd) {
+    function openExisting(name, rawMd) {
         var parsed = parseFrontMatter(rawMd);
-        open({ isNew: false, path: path, meta: parsed.meta, body: parsed.body });
+        open({ isNew: false, name: name, meta: parsed.meta, body: parsed.body });
     }
 
     function _currentUser() {
@@ -241,11 +243,11 @@
         var meta = metaFromFields();
         if (!meta.title) { showToast('문서 제목을 입력하세요', 'error'); dom.title.focus(); return; }
 
-        var path = state.path;
+        var name = state.name;
         if (state.isNew) {
             var slug = slugify(meta.title);
             if (!slug) { showToast('제목에 사용할 수 있는 문자가 없습니다', 'error'); return; }
-            path = 'contents/authored/' + slug + '.md';
+            name = slug + '.md';
         }
 
         var content = buildFrontMatter(meta) + state.editor.getMarkdown() + '\n';
@@ -256,7 +258,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({
-                    path: path,
+                    name: name,
                     content: content,
                     createBackup: true,
                     overwrite: !state.isNew,   // 신규는 동명 파일 보호(409)
@@ -268,29 +270,17 @@
                 throw new Error(err.detail || '저장 실패');
             }
             var data = await res.json();
-            state.path = data.path;
+            state.name = data.name;
             state.isNew = false;
             dom.title.readOnly = true;
             dom.crumb.textContent = '문서 편집';
             state.initial = snapshot();
             refreshStatus();
             showToast('저장되었습니다', 'success');
-            // 기존 문서를 보던 화면이면 배경 뷰 새로고침 (Monaco onSave 와 일관)
-            if (!wasNew && typeof window.loadContent === 'function' &&
-                window.AppState && AppState.currentPage === state.path) {
-                loadContent(state.path);
-            }
-            // 신규 저작 문서는 좌측 "작성 문서" 메뉴에 즉시 반영 + 새 문서 짚어주기
-            if (wasNew && typeof window.loadMenuData === 'function') {
-                var savedUrl = state.path;
-                window.loadMenuData(function () {
-                    if (typeof window.highlightAuthoredDoc === 'function') window.highlightAuthoredDoc(savedUrl);
-                });
-            }
-            // 호스트 시스템 저장 후 훅 (Author: 최근 문서 목록 갱신 — Plan-70). Explorer 는 미정의 → no-op
+            // 호스트 시스템 저장 후 훅 (Author: 좌측 패널·최근 문서 목록 갱신). Explorer 는 미정의 → no-op
             if (typeof window.onMdEditorSaved === 'function') {
                 // 훅 실패는 저장 성공(위)에 영향 없음 — 목록 갱신만 못 함, 삼켜서 저장 흐름 보호
-                try { window.onMdEditorSaved(state.path, wasNew); } catch (e) {}
+                try { window.onMdEditorSaved(state.name, wasNew); } catch (e) {}
             }
         } catch (e) {
             showToast('저장 실패: ' + e.message, 'error');
@@ -337,7 +327,11 @@
         if (state.editor) { try { state.editor.destroy(); } catch (e) {} state.editor = null; }
         dom.overlay.classList.remove('open');
         state.open = false;
-        state.path = null;
+        state.name = null;
+        // 셸 통합(Plan-72 P3): 호스트(Author)가 워크스페이스를 닫고 홈으로 복귀하도록 통지
+        if (typeof window.onMdEditorClosed === 'function') {
+            try { window.onMdEditorClosed(); } catch (e) {}
+        }
     }
 
     function closeWithConfirm() {
