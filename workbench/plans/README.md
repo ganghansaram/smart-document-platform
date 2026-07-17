@@ -27,7 +27,7 @@
 
 | # | 제목 | 상태 | 비고 |
 |---|------|------|------|
-| 72 | Author 문서 워크스페이스 (셸 통합+소유자 한정+좌측 패널+Explorer 분리) | 진행 중 (P1·P2 완료) | **P1·P2 완료(2026-07-17)** — 저작면 현실화(골격 프리셋 제거)·Explorer 병합 노출 제거. 잔여 **P3 셸 통합**·**P4 소유권**(착수 전 결정 2건: 정적서빙 누수·소유권 저장위치 선결). editor.js `.md` 정리는 P3 이연(딥링크 읽기 경로 잔존) |
+| _(활성 plan 없음)_ | — | — | Plan-72 완료(done/). 다음 착수는 backlog 승격 또는 icebox 트리거 |
 
 > 배포·회사테스트는 활성 아님 → `workbench/DEPLOY-QUEUE.md`(운영 축). plan 완료 정의=코드완료+로컬검증.
 
@@ -112,6 +112,7 @@
 | 70 | '새 문서' 저작 기능을 Author로 교정 이전 — 설계상 창작 시스템(Author)에 속해야 할 '새 문서' 편집기가 Explorer(소비)에 잘못 구현된 것을 교정. Author에 편집기 번들 이식·진입점 3곳 실연결·저장후 목록갱신 훅·RBAC 게이팅(실 viewer 검증) + Explorer '새 문서' 메뉴 제거(열람·edit-in-place·번들 잔류). code-review Warning 2건 수정. 실브라우저 검증·콘솔0. 보고서 `reports/plan-70-feedback-2026-07-16.md` |
 | 71 | Author 저작 편집기(MdEditor) 화면 트렌디 리디자인 — 네이비 바 구식 레이아웃을 업계표준 문서 에디터 패턴으로 개편(위지윅 단일 컬럼·밝은 상단 바+네이비 악센트·히어로 제목 auto-grow textarea·접힘 표지 정보·정직 dirty·브레드크럼 상태전환·반응형). 저장 모델 불변(front matter·슬러그·409·훅·readOnly 잠금), dom 참조 7키 보존. 실브라우저 e2e: 신규·기존·저장(모델 바이트 동등·본문 골격 바이트 동일)·다크·440px·콘솔0. 커밋 `35e89ec`. 보고서 `reports/plan-71-feedback-2026-07-16.md` |
 | 69 | Gmail식 하이브리드 관리자 빠른설정 드로어 — 각 시스템(Explorer/Notebook/Verify)에서 페이지 전환 없이 우측 드로어로 그 시스템 설정 조정. `renderAdminSettings(container,opts)` 파라미터화 + 공통 헤더 admin 톱니 1개(lazy-load) + 빈 탭 필터·Explorer 무거운 확장 게이팅. 무거운 관리는 admin.html 존치(Gmail 하이브리드). 실측: 저장 왕복 디스크 영속·no-wipe, admin.html 회귀 0, 콘솔 0. 커밋 `1ae1966` |
+| 72 | Author 문서 워크스페이스 (셸 통합+소유자 한정+좌측 패널+Explorer 분리) — P1 저작면 현실화·P2 Explorer 병합 노출 제거·P3 편집기 오버레이→Author 셸 좌패널+우편집 스플릿(공통 헤더 유지, 71 자산 이식)·P4 저작 문서 소유권(저장 `contents/authored/`→`data/authored/` 이전으로 정적누수 차단·서버측 `_owners.json` owner 캡처·`/api/authored` 인증·소유자필터·신규 `/api/authored/content`·fail-closed). 결정 5건 업계표준 확정. 로컬 Docker:80 검증(소유권 격리 2계정·정적 403·UI 왕복·콘솔0). code-review Critical 2 반영. 회사 Tomcat `/data/` 하드닝=`DEPLOY-QUEUE.md`. 보고서 `reports/plan-72-feedback-2026-07-17-P3P4.md` |
 | — | (설계) Phase4 AI 요약 설계서 → `phase4-ai-summary-design.md` |
 
 > 결번 46: 미생성. 08·09·24·25·26·34 는 icebox.

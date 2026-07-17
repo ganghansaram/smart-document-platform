@@ -4,7 +4,7 @@
 > 계획서(개발 축)와 **분리**: plan 은 **코드 완성 + 로컬 Docker 검증**으로 닫는다. **회사 배포·회사테스트는 완료 조건이 아니라 이 큐로 흐른다.**
 > plan 을 닫을 때, 배포 필요분·회사전용 확인은 계획서 꼬리에 남기지 말고 여기에 1줄 append(예측 아님, 누적).
 > 배포 방법: `docs/01-DEPLOYMENT-GUIDE.md` · 검증 기준: `memory/feedback_docker_verification.md`(HTTP 200만으론 부족) · 배포유형 판단: `memory/feedback_docker_deploy.md`
-> 최종 갱신: 2026-07-05
+> 최종 갱신: 2026-07-17
 
 ---
 
@@ -17,6 +17,9 @@
 - **[plan/69]** 관리자 빠른설정 드로어 — **프론트 패치**(`js/admin-settings.js`·`js/platform-header.js`·`css/settings-drawer.css`·`css/admin-settings.css`). 커밋 `1ae1966`
 - **[plan/70]** '새 문서' 저작 편집기 Explorer→Author 교정 이전 — **프론트 패치**(`author.html`·`css/author.css`·`js/app.js`·`js/author.js`·`js/md-editor.js`). Explorer '새 문서' 메뉴 사라지고 Author 홈에서 저작. RBAC 게이팅 포함. 배포 후 교차검증 시 Explorer '새 문서' 부재 + Author 저작·저장 + 뷰어 게이팅 확인
 - **[plan/71]** Author 저작 편집기 화면 트렌디 리디자인 — **프론트 패치**(`css/md-editor.css`·`js/md-editor.js`). 위지윅 단일 컬럼·밝은 상단 바·히어로 제목·접힘 표지 정보·정직 dirty·반응형. 저장 모델 불변. 배포 후 교차검증 시 '빈 문서 작성'→새 화면 + 저장/DOCX + 라이트/다크 확인 (커밋 대기)
+- **[plan/72 P3·P4]** Author 셸 통합 + 저작 문서 소유권 — **전체 이미지 필요**(backend `api/document.py` 변경: `/api/save-markdown` name 계약·소유권 캡처·`/api/authored` 인증·소유자필터·신규 `/api/authored/content`). 프론트: 편집기 오버레이→Author 셸 스플릿(`md-editor.js`·`md-editor.css`·`author.html`·`author.css`·`author.js`), Explorer `.md` 잔존 정리(`editor.js`·`tree-menu.js`). **저장 위치 `contents/authored/`→`data/authored/` 이전**(정적 누수 차단). 배포 후 교차검증: 저작 문서 생성/편집/저장, 좌측 패널 문서 전환, 헤더 유지, **하위권한 계정으로 소유권 격리**(타인 문서 목록·읽기·덮어쓰기 차단) (커밋 대기)
+
+> 🔴 **[보안 하드닝 — 환경 C(Tomcat)·http.server 선결]** Plan-72 소유권은 "`data/` 가 정적 서빙되지 않음"을 전제로 성립한다. Docker/nginx 는 `location /data/ {return 403}` 로 차단됨(로컬 검증 완료). **그러나 `docs/01-DEPLOYMENT-GUIDE.md §5-2`는 Tomcat `webapps/ROOT/` 에 `data/` 통째 복사를 지시** → 회사 Windows(Tomcat:8080)·repo root 에서의 `python -m http.server` 는 `data/` 전체를 무인증 노출한다. **이는 P72 이전부터 존재하던 플랫폼 노출**(같은 경로로 `data/auth.db`·`data/settings.json`·`data/verify/*` 도 노출 대상) — P72 가 `data/authored/*`·`_owners.json` 를 그 집합에 더한다. **필요 조치**: Tomcat 배포 시 `/data/` 정적 접근 차단(web.xml `<security-constraint>` 또는 `webapps/ROOT` 복사 대상에서 `data/` 하위 제외 — nginx 403 과 동등). auth.db 노출까지 포함하는 **선재 하드닝 과제**로, 별도 backlog 승격 권장.
 
 ## 📦 다음 배포 대상 (이번 회사 방문분)
 
