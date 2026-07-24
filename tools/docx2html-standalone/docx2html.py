@@ -14,6 +14,7 @@ DOCX → HTML 독립 변환기 (래퍼)
 
 import sys
 import os
+import re
 import argparse
 import logging
 from pathlib import Path
@@ -36,10 +37,98 @@ def _setup_engine_import_path():
 
 _setup_engine_import_path()
 
+# 전처리(Word COM) 행 방지용 타임아웃 (초) — 초과 시 Word 강제 종료 후 원본 변환
+PREPROCESS_TIMEOUT = 90
+
 
 def get_base_dir():
     """PyInstaller 번들 또는 스크립트 디렉토리 반환 (레거시 호환)"""
     return Path(getattr(sys, '_MEIPASS', Path(__file__).parent))
+
+
+def _kill_word():
+    """잔존 WINWORD 프로세스 강제 종료 (Windows 한정)."""
+    if os.name != 'nt':
+        return
+    try:
+        import subprocess
+        subprocess.run(['taskkill', '/F', '/IM', 'WINWORD.EXE'],
+                       capture_output=True, timeout=15)
+    except Exception:
+        pass
+
+
+def _preprocess_with_timeout(input_path, timeout_sec, logger):
+    """장절번호 평문화를 타임아웃 가드와 함께 실행.
+
+    Word COM 이 특정 문서(외부 링크 등)에서 멈추는 사례가 있어, 별도 스레드로
+    실행하고 timeout_sec 초과 시 Word 를 강제 종료하여 원본으로 폴백한다.
+
+    Returns: (실제_입력경로, adapter_라벨)
+    """
+    import threading
+    box = {"path": str(input_path)}
+
+    def _work():
+        try:
+            from word_preprocessor import preprocess_docx
+            box["path"] = preprocess_docx(str(input_path))
+        except Exception as e:
+            logger.warning("전처리 실패 (원본 사용): %s", e)
+
+    t = threading.Thread(target=_work, daemon=True)
+    t.start()
+    t.join(timeout_sec)
+
+    if t.is_alive():
+        logger.warning("전처리 타임아웃(%ds) — Word 강제 종료 후 원본으로 변환합니다.",
+                       timeout_sec)
+        _kill_word()
+        t.join(5)
+        return str(input_path), "word_com_timeout"
+
+    if box["path"] != str(input_path):
+        return box["path"], "word_com"
+    return str(input_path), "word_com_failed"
+
+
+def _load_webbook_css():
+    """번들된 표시용 CSS 로드 (없으면 빈 문자열)."""
+    base_dir = Path(getattr(sys, '_MEIPASS', Path(__file__).parent))
+    css_path = base_dir / "webbook-content.css"
+    try:
+        return css_path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+
+def _wrap_output_with_style(output_path, logger):
+    """변환 결과(본문 조각)를 표시용 CSS 와 함께 자기완결 HTML 로 감싼다.
+
+    결과 형태: [provenance 주석] + <style>…</style> + <div class="docx-content">…</div>
+    웹북이 출력을 그대로 삽입해도 본사 화면과 동일하게 보이도록 한다.
+    """
+    css = _load_webbook_css()
+    if not css:
+        logger.warning("표시용 CSS 를 찾지 못해 스타일 내장을 건너뜁니다.")
+        return
+    p = Path(output_path)
+    try:
+        html = p.read_text(encoding="utf-8")
+    except OSError as e:
+        logger.warning("출력 HTML 재읽기 실패 — 스타일 내장 생략: %s", e)
+        return
+
+    # provenance 주석은 최상단에 유지
+    prov = ""
+    m = re.match(r'(<!--\s*converter:.*?-->\s*)', html, re.DOTALL)
+    if m:
+        prov = m.group(1)
+        html = html[m.end():]
+
+    wrapped = (f'{prov}<style>\n{css}\n</style>\n'
+               f'<div class="docx-content">\n{html}\n</div>\n')
+    p.write_text(wrapped, encoding="utf-8")
 
 
 def run_cli(args=None):
@@ -66,8 +155,13 @@ def run_cli(args=None):
                         help='이미지 폴더명 (기본: {파일명}_images)')
     parser.add_argument('--image-prefix', default=None,
                         help='HTML 내 이미지 경로 접두사 (기본: 상대경로)')
+    parser.add_argument('--preprocess', action='store_true',
+                        help='장절번호 평문화 켜기 (Word 설치 필요, 기본 꺼짐). '
+                             '미지정 시 변환기 자체 번호 생성 사용')
     parser.add_argument('--no-preprocess', action='store_true',
-                        help='장절번호 평문화 건너뛰기')
+                        help='(기본값) 장절번호 평문화 건너뛰기 — 하위호환용')
+    parser.add_argument('--no-style', action='store_true',
+                        help='출력에 표시용 CSS 내장하지 않고 본문 조각만 출력')
     parser.add_argument('--preprocess-only', action='store_true',
                         help='전처리만 수행 (DRM 환경용, .docx 출력)')
     parser.add_argument('--verbose', action='store_true',
@@ -126,23 +220,16 @@ def run_cli(args=None):
             logger.error("전처리 중 오류: %s", e)
             return 1
 
-    # 전처리 (장절번호 평문화)
+    # 전처리 (장절번호 평문화) — 기본 OFF. --preprocess 로만 켜며, Word COM
+    # 행 방지를 위해 타임아웃 가드와 함께 실행. 미사용 시 변환기 자체 번호 생성.
     actual_input = input_path
     adapter_used = "skip"
-    if not parsed.no_preprocess:
-        try:
-            from word_preprocessor import preprocess_docx
-            preprocessed = preprocess_docx(str(input_path))
-            if preprocessed != str(input_path):
-                actual_input = Path(preprocessed)
-                adapter_used = "word_com"
-                logger.info("전처리 완료: %s", actual_input)
-            else:
-                adapter_used = "word_com_failed"
-        except Exception as e:
-            logger.warning("전처리 실패 (원본 사용): %s", e)
-            print(f"[경고] 전처리 실패: {e} — 원본 파일로 변환합니다.", file=sys.stderr)
-            adapter_used = "word_com_error"
+    if parsed.preprocess and not parsed.no_preprocess:
+        actual_str, adapter_used = _preprocess_with_timeout(
+            input_path, PREPROCESS_TIMEOUT, logger)
+        actual_input = Path(actual_str)
+        if adapter_used == "word_com":
+            logger.info("전처리 완료: %s", actual_input)
 
     # 변환 실행
     try:
@@ -157,6 +244,9 @@ def run_cli(args=None):
         )
 
         if result.success:
+            # 표시용 CSS 내장 (기본) — 웹북이 출력을 그대로 삽입해도 본사와 동일 표시
+            if not parsed.no_style:
+                _wrap_output_with_style(result.output_path, logger)
             logger.info("변환 완료: %s", result.output_path)
             # stdout에 결과 경로 출력 (프로세스 연동용)
             print(str(result.output_path))
