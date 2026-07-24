@@ -38,7 +38,7 @@
 | 27 | 작성 문서 admin 큐레이션 (삭제/개명/관리) — 위치 협의 | Author | Plan-60→70 | 2026-07-16 | ⬜ 대기 |
 | 28 | 작성 문서 Explorer 검색연동 — 소속 협의(읽기측=Explorer 가능) | Explorer/Author | Plan-60→70 | 2026-07-16 | ⬜ 대기 |
 | 29 | Author 편집기 번들 lazy-load | Author | Plan-70 S1 | 2026-07-16 | ⬜ 대기 |
-| 30 | 회사 Tomcat·http.server `/data/` 정적 노출 차단 (auth.db 포함) | 플랫폼/보안 | Plan-72 | 2026-07-17 | ⬜ 배포 전 선재 |
+| 30 | 회사 Tomcat·http.server `/data/` 정적 노출 차단 (auth.db 포함) | 플랫폼/보안 | Plan-72 | 2026-07-17 | 🧊 icebox — 환경 C 부활 시 |
 
 > **관리 규칙**: 새 항목 추가 시 이 표에 1행(등록일=오늘) + 아래 상세 섹션. 조치 완료 시 → 상태 ✅ + [조치 이력](#-조치-이력)에 옮기고 상세 섹션 제거.
 
@@ -271,8 +271,9 @@
 
 ---
 
-## 플랫폼/보안 — 회사 Tomcat·http.server `/data/` 정적 노출 차단 (30)
+## 플랫폼/보안 — 회사 Tomcat·http.server `/data/` 정적 노출 차단 (30) — 🧊 icebox
 
+> **상태 (2026-07-24)**: 🧊 **icebox**. 환경 C(Tomcat·http.server)가 **deprecated로 강등**되어 현행 배포(Docker/nginx, `/data/` 403 차단됨)에는 노출 위험 없음 → 배포 차단 요소 아님. 이 항목은 **환경 C를 되살릴 경우에만** 선결 조건으로 승격한다.
 > 출처: Plan-72 P4 code-review Critical #1 (2026-07-17). Docker/nginx 는 `docker/nginx.conf:52` `location /data/ {return 403}` 로 차단됨(로컬 검증 완료).
 
 **문제**: `docs/01-DEPLOYMENT-GUIDE.md §5-2`가 회사 Windows(Tomcat 7)에 `data/`를 `webapps/ROOT/`로 통째 복사하도록 지시 → Tomcat:8080·(repo root에서의) `python -m http.server`는 `data/` 전체를 **무인증 정적 서빙**한다. 이는 P72 이전부터 존재하던 플랫폼 노출:
@@ -284,7 +285,7 @@
 - http.server(디버깅): repo root 대신 프론트 정적 자원만 서빙하도록 안내
 - **nginx 403과 동등한 `/data/` 차단이 3환경 모두에서 성립**함을 배포 체크리스트 검증 항목으로 못박기
 
-**우선순위**: auth.db 노출을 포함하므로 회사 배포(환경 C) 실사용 전 **선재**. 별도 계획 승격 후보.
+**우선순위**: 🧊 icebox. 환경 C가 부활하지 않는 한 착수 불필요. 부활 시에는 auth.db 노출을 포함하므로 실사용 전 **선재**(별도 계획 승격).
 관련: `workbench/DEPLOY-QUEUE.md`(운영 축 기록), `docs/01-DEPLOYMENT-GUIDE.md §5-2`, `docker/nginx.conf:52`.
 
 ---

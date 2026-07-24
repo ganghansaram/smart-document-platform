@@ -5,16 +5,15 @@
 - **모놀리식 HTML** — 각 서브시스템은 단일 HTML 파일 (inline JS/CSS)
 - **빌드 시스템 없음** — 번들러, 트랜스파일러 사용하지 않음
 
-## 배포 환경 (3종)
+## 배포 환경 — **Docker 이미지 방식으로 표준화**
 | 환경 | 구성 | 용도 |
 |------|------|------|
 | **개발 PC (집)** | Windows + WSL2 + Docker Desktop | 개발·테스트, `localhost:80` |
-| **회사 리눅스 VM** | Ubuntu 24.04 + Docker | 주 서비스, tar 이미지 배포 |
-| **회사 Windows PC** | 톰캣 + Python 백엔드 (Docker 없음) | 대안 서비스, 프로젝트 디렉토리 통째 복사 |
+| **회사 리눅스 VM** | Ubuntu 24.04 + Docker | **주 서비스**, tar 이미지 배포 |
 
-- 코드는 Docker 전용 기능에 의존하지 않아야 함 (Windows 직접 실행도 지원)
-- 프론트엔드는 정적 파일 — 톰캣/Nginx/http.server 어디서든 서빙 가능
-- 백엔드는 `python main.py`로 직접 실행 가능 (Docker 없이도)
+- **배포는 Docker(tar 이미지) 방식으로 굳어졌다.** 실배포 대상은 위 2종(회사=리눅스 VM).
+- ~~회사 Windows PC 톰캣 + Python 직접 실행~~ — **⛔ deprecated(폐지·보류)**. 과거 대안 서비스였으나 현재 배포 방식 아님. 되살릴 경우 `/data/` 정적 노출 하드닝(icebox) 선결 필요.
+- 다만 **백엔드 `python main.py` 직접 실행 능력은 유지** — 디버깅·폐쇄망 탈출구용(배포 대상 아님). 코드는 Docker 전용 기능에 의존하지 않는다(프론트=정적 파일, 백엔드=직접 실행 가능).
 
 ## 실행 방법
 ```bash
@@ -24,9 +23,9 @@ docker compose up -d                  # http://localhost:80
 # 프론트엔드: Ctrl+F5, 백엔드: docker compose restart backend
 # Docker→Ollama 관통됨 (.env OLLAMA_URL=host.docker.internal:11434) → AI 기능도 Docker(:80)에서 동작
 #   (2026-07-04 생성 스모크로 END-TO-END 확인. 과거 WSL 제한으로 막혔던 이슈는 해결됨)
-# ⇒ 개발 기본값 = Docker(localhost:80). 아래 직접 실행은 디버깅/회사 Windows용 탈출구.
+# ⇒ 개발 기본값 = Docker(localhost:80). 아래 직접 실행은 디버깅용 탈출구(배포 방식 아님).
 
-# ── 직접 실행 (회사 Windows[Docker 없음] / 디버거 붙일 때) ──
+# ── 직접 실행 (디버거 붙일 때 / 백엔드 단독 기동) ──
 cd backend && python main.py          # http://localhost:8000
 python -m http.server 8080            # http://localhost:8080
 ```
