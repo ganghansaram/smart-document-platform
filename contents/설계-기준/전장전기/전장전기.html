@@ -1,4 +1,4 @@
-<h1><strong>폐쇄망 환경에서의 BM25+FAISS 하이브리드 검색을 이용한 RAG 검색 품질 향상 연구</strong><br>A Study on Improving RAG Retrieval Quality Using BM25+FAISS Hybrid Retrieval in a Closed Network Environment</h1>
+<h1 id="폐쇄망-환경에서의-bm25faiss-하이브리드-검색을-이용한-rag-검색-품질-향상-연구-"><strong>폐쇄망 환경에서의 BM25+FAISS 하이브리드 검색을 이용한 RAG 검색 품질 향상 연구</strong><br>A Study on Improving RAG Retrieval Quality Using BM25+FAISS Hybrid Retrieval in a Closed Network Environment</h1>
 
 <h4>요약 (Abstract in Korean)</h4>
 
@@ -12,7 +12,7 @@
 
 <p style="text-align: justify;">하이브리드 검색, BM25, FAISS, RAG, 기술문서 검색, 항공·방산 도메인</p>
 
-<h3><strong>Ⅰ. 서론 (Introduction)</strong></h3>
+<h3 id="서론-introduction"><strong>Ⅰ. 서론 (Introduction)</strong></h3>
 
 <h4>1.1 연구 배경</h4>
 
@@ -80,7 +80,7 @@
 
 <p style="text-align: justify; margin-left: 44px;">α 가중치, 전처리 적용 여부, Top-k, Threshold의 조합에 따른 검색 품질 변화를 통계적으로 분석하여, Dense 중심 가중(α=0.2)에서 최고 성능을 확인하고 최적 조합을 도출하였다(상세 결과는 Ⅳ장 참조).</p>
 
-<h3><strong>Ⅱ. 관련 연구 (Related Work)</strong></h3>
+<h3 id="관련-연구-related-work"><strong>Ⅱ. 관련 연구 (Related Work)</strong></h3>
 
 <p style="text-align: justify;">Retrieval-Augmented Generation(RAG)은 대규모 언어모델(LLM)의 지식 한계를 보완하기 위한 대표적인 접근으로, 검색(Retrieval) 단계의 품질이 전체 응답의 정확도와 신뢰도를 결정짓는 핵심 요소로 평가된다. 특히 기술문서나 특허, 연구보고서처럼 명시적 근거와 수치적 근거가 필요한 영역에서는 검색 단계의 품질이 시스템 전체의 성능을 좌우한다. 최근에는 전통적 키워드 기반 검색(희소 검색(Sparse Retrieval))과 임베딩 기반 의미 검색(밀집 검색(Dense Retrieval))의 상보적 특성을 결합한 하이브리드(Hybrid) 검색 구조가 RAG의 핵심 구성요소로 자리 잡고 있다. 본 장에서는 하이브리드 검색의 발전 동향과 가중치 융합 전략, RAG 평가 변수의 영향, 그리고 폐쇄망·도메인 특화 환경에서의 관련 연구를 검토하고, 본 연구의 차별성을 제시한다. 국내에서도 이은빈 and 배호(2024)[14]는 RAG의 기본 아키텍처와 최적화 동향을 체계적으로 정리하여, LLM 환각 현상 완화를 위한 RAG 기술의 발전 방향을 제시한 바 있다.</p>
 
@@ -124,7 +124,7 @@
 
 <p style="text-align: justify;">이를 통해 폐쇄망 환경에서도 재현 가능한 하이브리드 RAG 구조를 실험적으로 입증하고, 도메인 특화 기술문서 환경에서 RAG 검색 품질을 정량적으로 향상시킨 사례를 제시한다.</p>
 
-<h3><strong>Ⅲ. 연구 방법 (Methodology)</strong></h3>
+<h3 id="연구-방법-methodology"><strong>Ⅲ. 연구 방법 (Methodology)</strong></h3>
 
 <p style="text-align: justify;">본 장에서는 본 연구의 실험 환경, 데이터 구축 및 전처리 과정, 하이브리드 검색 구조 설계, 평가 지표, 실험 변수 및 절차를 구체적으로 기술한다. 본 연구의 목표는 항공·방산 분야 기술문서를 대상으로 BM25(희소 검색)과 FAISS(밀집 검색)를 결합한 하이브리드 검색 구조를 구현하고, 폐쇄망 환경에서도 재현 가능한 Retrieval-Augmented Generation(RAG) 검색 품질 향상 방안을 실증적으로 검증하는 것이다.</p>
 
@@ -316,7 +316,7 @@
 
 <p style="text-align: justify;">이러한 구성은 RAG 연구의 재현성(Reproducibility)과 신뢰성(Verifiability)을 동시에 확보하기 위한 것으로, 폐쇄망 기반 기술문서 QA 시스템 개발의 기초 프레임워크로 활용될 수 있다.</p>
 
-<h3>Ⅳ. 실험 및 결과 (Experiments and Results)</h3>
+<h3 id="실험-및-결과-experiments-and-results">Ⅳ. 실험 및 결과 (Experiments and Results)</h3>
 
 <p style="text-align: justify;">본 장에서는 제안한 BM25+FAISS 하이브리드 검색 구조의 성능을 실험적으로 검증하고, 각 구성 요소(α 가중치, 전처리, Top-k, Threshold)가 검색 품질에 미치는 영향을 분석한다. 실험은 40개의 질의 세트를 대상으로 BM25, FAISS, Hybrid 세 가지 검색 방식을 비교하였으며,평가 지표로 Recall@k, nDCG@k, MRR을 사용하였다.</p>
 
@@ -450,7 +450,7 @@
 
 <p style="text-align: justify;">이상의 결과는 제안된 하이브리드 구조가 폐쇄망 환경에서도 재현 가능한 고품질 RAG 검색 모델임을 실증적으로 입증하며, 향후 생성 단계(Generation)와의 통합 실험을 위한 기반으로 활용될 수 있다.</p>
 
-<h3>Ⅴ. 결론 (Conclusion)</h3>
+<h3 id="결론-conclusion">Ⅴ. 결론 (Conclusion)</h3>
 
 <h4>5.1 연구 요약</h4>
 
