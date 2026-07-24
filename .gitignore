@@ -110,3 +110,9 @@ workbench/screenshots/
 .env
 *.tar
 release-v*/
+release-v*.7z*
+
+# 웹북 변환기 배포 산출물 (별도 exe 트랙 — 소스는 커밋, 빌드물은 제외)
+tools/docx2html-standalone/webbook-*.zip
+tools/docx2html-standalone/2026-*-webbook-*/
+tools/docx2html-standalone/2026-*-webbook-*.7z
