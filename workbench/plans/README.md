@@ -27,7 +27,7 @@
 
 | # | 제목 | 상태 | 비고 |
 |---|------|------|------|
-| 73 | 캡션 감지 Tier 1 (표시 전용) 분리 · 웹북 캡션 간격 정상화 | 📝 draft (협의 대기) | 웹북(업체) 표 캡션 이격 제보 → 엔진 감지 완화는 **표시 계층만**, id/링크(Tier 2) 동결. 미해결 4건 협의 필요 |
+| _(활성 plan 없음)_ | — | — | Plan-73 완료(done/). 다음 착수는 backlog 승격 또는 icebox 트리거 |
 
 > 배포·회사테스트는 활성 아님 → `workbench/DEPLOY-QUEUE.md`(운영 축). plan 완료 정의=코드완료+로컬검증.
 
@@ -113,6 +113,7 @@
 | 71 | Author 저작 편집기(MdEditor) 화면 트렌디 리디자인 — 네이비 바 구식 레이아웃을 업계표준 문서 에디터 패턴으로 개편(위지윅 단일 컬럼·밝은 상단 바+네이비 악센트·히어로 제목 auto-grow textarea·접힘 표지 정보·정직 dirty·브레드크럼 상태전환·반응형). 저장 모델 불변(front matter·슬러그·409·훅·readOnly 잠금), dom 참조 7키 보존. 실브라우저 e2e: 신규·기존·저장(모델 바이트 동등·본문 골격 바이트 동일)·다크·440px·콘솔0. 커밋 `35e89ec`. 보고서 `reports/plan-71-feedback-2026-07-16.md` |
 | 69 | Gmail식 하이브리드 관리자 빠른설정 드로어 — 각 시스템(Explorer/Notebook/Verify)에서 페이지 전환 없이 우측 드로어로 그 시스템 설정 조정. `renderAdminSettings(container,opts)` 파라미터화 + 공통 헤더 admin 톱니 1개(lazy-load) + 빈 탭 필터·Explorer 무거운 확장 게이팅. 무거운 관리는 admin.html 존치(Gmail 하이브리드). 실측: 저장 왕복 디스크 영속·no-wipe, admin.html 회귀 0, 콘솔 0. 커밋 `1ae1966` |
 | 72 | Author 문서 워크스페이스 (셸 통합+소유자 한정+좌측 패널+Explorer 분리) — P1 저작면 현실화·P2 Explorer 병합 노출 제거·P3 편집기 오버레이→Author 셸 좌패널+우편집 스플릿(공통 헤더 유지, 71 자산 이식)·P4 저작 문서 소유권(저장 `contents/authored/`→`data/authored/` 이전으로 정적누수 차단·서버측 `_owners.json` owner 캡처·`/api/authored` 인증·소유자필터·신규 `/api/authored/content`·fail-closed). 결정 5건 업계표준 확정. 로컬 Docker:80 검증(소유권 격리 2계정·정적 403·UI 왕복·콘솔0). code-review Critical 2 반영. 회사 Tomcat `/data/` 하드닝=`DEPLOY-QUEUE.md`. 보고서 `reports/plan-72-feedback-2026-07-17-P3P4.md` |
+| 73 | 캡션 감지 2계층 분리 · 웹북 캡션 간격 정상화 — 업체 웹북(standalone exe)에서 표 위 캡션이 24px 벌어지던 증상. 원인=엔진이 구분자 없는 "표 1 시스템 구성"을 못 잡고 Explorer 는 프론트 JS 폴백이 덮어와 정상으로 보였던 것. 참조 캡션(id·본문링크)은 **본체 diff 0줄 동결**하고 표시 캡션(class만)을 신설, `js/app.js` 폴백과 동치 유지(테스트로 고정). 본문 오탐은 조사 배제+150자 2겹 차단. CSS 는 마진 주체를 img→감싼 p 로 교정하고 캡션 위/아래 대칭 완성. **`:has()` 를 핵심 규칙 그룹에 넣은 자체 결함을 검토로 발견·분리**(구형 브라우저에서 표 규칙까지 폐기될 뻔), 동일 패턴 기존 결함 `platform-footer.css` 도 수정. 실측 24/16/16px→4/4/4px, 구형 시뮬레이션에서도 표 4px, 골든 id·링크 변화 0건, 실문서 오탐 제거(MyPaper 23→22). 커밋 `5129957`. 보고서 `reports/plan-73-feedback-2026-07-29.md` |
 | — | (설계) Phase4 AI 요약 설계서 → `phase4-ai-summary-design.md` |
 
 > 결번 46: 미생성. 08·09·24·25·26·34 는 icebox.

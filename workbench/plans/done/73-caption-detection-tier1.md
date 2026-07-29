@@ -1,9 +1,10 @@
 # Plan-73 — 캡션 감지 Tier 1 (표시 전용) 분리 · 웹북 캡션 간격 정상화
 
-> **상태: ✅ 구현·검증 완료 (2026-07-29) — 커밋 대기**
-> 사용자 결정: 괄호 표기 **제외**(JS 동치로만 좁힘) · **B안 채택**(캡션 위/아래 대칭 완성)
-> 검증: 웹북 24/16/16px → **4px** (v1.5.0 exe 대비 실측) · Explorer `id`·참조링크 변화 **0건**
+> **상태: ✅ 완료 (2026-07-29 — 코드 완성 + 로컬 검증 + 커밋 `5129957`)**
+> 사용자 결정: 괄호 표기 **제외**(JS 동치로만 좁힘) · **B안 채택**(캡션 위/아래 대칭) · **조사 배제 추가**(엔진·JS 동시)
+> 검증: 웹북 24/16/16px → **4/4/4px** · Explorer `id`·참조링크 변화 **0건** · 실문서 오탐 제거(MyPaper 23→22)
 > 보고서: `workbench/reports/plan-73-feedback-2026-07-29.md`
+> 배포·업체 전달은 `workbench/DEPLOY-QUEUE.md` (운영 축 — 완료 조건 아님)
 > 작성: 2026-07-29 · 트리거: 업체 웹북(전자정부 기반)에 탑재된 standalone 변환기(`docx2html.exe` v1.5.0) 출력에서 **표 위 캡션이 표와 지나치게 떨어져** 보이는 현상 제보. 조사 결과 Explorer 는 정상인데 웹북만 깨지는 이유가 **엔진 결함을 프론트 JS 가 덮고 있었기 때문**으로 확인.
 > 근거: `tools/converter/converter.py:1667` `_detect_caption()` · `js/app.js:659` `optimizeContent()` 2단계 · `tools/docx2html-standalone/webbook-content.css:204-221` · `workbench/plans/done/39-docx-caption-hyphen-loss.md`(엔진 SSOT 확인) · `workbench/plans/done/37-converter-unification.md`(Phase 0 회귀 방어망)
 
@@ -123,11 +124,14 @@ doc.querySelectorAll('p').forEach(function(p) {
 1. **엔진 Tier 분리** — `converter.py` 에 표시 전용 판정(Tier 1)을 추가. Tier 2(현행 `_detect_caption`)는 **한 글자도 안 건드림**.
    - Tier 1 통과 → `class="caption"` **만**
    - Tier 2 통과 → 현행 그대로 `class="caption"` + `id` + `_caption_map` + 링크
-2. **Tier 1 판정 기준** — 프론트 JS(`app.js:660`)와 **의도적으로 동일 수준** + 괄호 표기 흡수:
+2. **Tier 1 판정 기준** — 프론트 JS(`app.js:660`)와 **의도적으로 동일 수준**:
    - 구분자 불필요 (`표 1 시스템 구성`)
    - 키워드-숫자 사이 공백 선택 (`표1`)
-   - 선행 괄호/대괄호/꺾쇠 허용 (`[표 1]`, `(표 1)`, `<표 1>`)
+   - ~~선행 괄호/대괄호/꺾쇠 허용~~ → **제외 확정** (사용자: 사내 문서에 안 쓰임.
+     JS 동치로만 좁혀 오탐 표면적 축소)
    - **150자 길이 가드** (JS 와 동일 — 본문 오탐 차단)
+   - **조사 배제 추가** (착수 후 사용자 지시) — 번호에 조사가 붙으면 본문
+     (`표 1을 보면`, `그림 3과 같이`). JS 도 동시 변경해 동치 유지
 3. **웹북 표시 CSS 수정** — `webbook-content.css` 의 `.caption + p > img` → `.caption + p` 로 교정(이미지 캡처 표 대응). `css/content.css` 도 **대칭 정렬**(Explorer 는 전역 리셋으로 가려져 있어 시각 변화 없음, 규칙 일관성 목적).
 4. **회귀 방어망** — 캡션 표기 편차 픽스처 추가 + 골든 갱신 + **"Explorer 합집합 불변" 검증**(골든 diff 에 `class="caption"` 추가만 있고 `id=` / `<a data-fig-ref` 변화 0건임을 확인).
 5. **v1.6.0 재빌드 + 업체 전달 패키지** — `dist/docx2html.exe` 갱신, `2026-XX-XX-webbook-exe/` 형식으로 README + 메일 초안 동봉 (v1.5.0 전달 선례 답습).
@@ -152,37 +156,52 @@ doc.querySelectorAll('p').forEach(function(p) {
 
 ### A. 엔진 Tier 분리 (`tools/converter/converter.py`)
 
-- [ ] A1. `_is_display_caption(text)` 신설 — Tier 1 판정 (정규식 + 150자 가드). 순수 함수로 분리하여 테스트 가능하게
-- [ ] A2. `_process_paragraph:722-725` 수정 — `caption_id`(Tier 2) 결과와 `_is_display_caption`(Tier 1) 결과를 OR 로 결합해 `class` 결정. **`id_attr` 은 Tier 2 결과에만 의존(현행 유지)**
-- [ ] A3. `_detect_caption()` docstring 정정 — "구분자 후보에 공백 포함" 오기 제거 + Tier 1/2 관계 명시
-- [ ] A4. `__version__.py` → `1.6.0` + 버전 이력 추가
+- [x] A1. `_is_display_caption(text)` 신설 — Tier 1 판정 (정규식 + 150자 가드). 순수 함수로 분리하여 테스트 가능하게
+- [x] A2. `_process_paragraph:722-725` 수정 — `caption_id`(Tier 2) 결과와 `_is_display_caption`(Tier 1) 결과를 OR 로 결합해 `class` 결정. **`id_attr` 은 Tier 2 결과에만 의존(현행 유지)**
+- [x] A3. `_detect_caption()` docstring 정정 — "구분자 후보에 공백 포함" 오기 제거 + Tier 1/2 관계 명시
+- [x] A4. `__version__.py` → `1.6.0` + 버전 이력 추가
 
 ### B. 표시 CSS (웹북 + Explorer 대칭)
 
-- [ ] B1. `tools/docx2html-standalone/webbook-content.css:210` — `.caption + p > img` → `.caption + p { margin-top: 4px }`
-- [ ] B2. `tools/docx2html-standalone/2026-06-29-webbook-css/docx-content.css` 동일 반영 (CSS-only 배포 A안 패키지 동기화)
-- [ ] B3. `css/content.css:108` 대칭 정렬 — Explorer 시각 변화 없음을 **실제 화면으로 확인 후** 반영
-- [ ] B4. 실제 표 / 이미지 캡처 표 두 경우 모두 4px 로 붙는지 브라우저 확인
+- [x] B1. `webbook-content.css` — `.caption + p > img` → **`.caption + p:has(> img)`**
+      (계획의 `.caption + p` 는 캡션 뒤 *본문* 문단까지 압축하므로 정밀 타겟팅으로 변경)
+- [x] B2. `2026-06-29-webbook-css/docx-content.css` 동일 반영 (CSS-only 배포 A안 패키지 동기화)
+- [x] B3. `css/content.css` 대칭 정렬 — Explorer 실화면 확인 후 반영
+- [x] B4. 표 / 이미지 캡처 표 브라우저 확인 → **4px** 실측
+- [x] **B5 (계획 외·필수)** — `:has()` 규칙을 전부 **독립 규칙으로 분리**.
+      셀렉터 그룹은 하나만 못 읽어도 규칙 전체가 폐기되므로, 구형 브라우저
+      (`:has()` = Chrome/Edge 105+)에서 **표 규칙까지 같이 죽는 결함**을 자체
+      검토로 발견·수정. 동일 패턴의 기존 결함(`css/platform-footer.css:42`)도
+      함께 분리. 프로젝트 전체 재스캔 결과 혼재 **0건**
 
 ### C. 회귀 방어망 (`tools/converter/tests/`)
 
-- [ ] C1. 캡션 표기 편차 픽스처 신설 (`fixtures/caption_variants.docx`) — 위 판정 표의 8종 표기 + 본문 오탐 후보(`그림 1 또한 중요하다`, 150자 초과 문단) 포함
-- [ ] C2. Tier 1/2 경계 단위 테스트 — Tier 1 만 통과한 항목에 **`id` 가 없음**을 명시적으로 단언
-- [ ] C3. 골든 재생성(`regenerate_golden.py`) 후 **diff 검수** — `class="caption"` 추가 외 `id=` / `data-fig-ref` 변화 **0건** 확인 (Explorer 합집합 불변의 실증)
-- [ ] C4. `semantic_checks.py` 전 골든 통과 확인 (`caption_id_unique`, `caption_id_pattern` error 0)
+- [x] C1. 픽스처 신설 (`fixtures/caption_variants.docx`) — 표기 10종 + 본문 오탐 후보
+      8종(조사 5 + 길이초과 1 + 일반 2)
+- [x] C2. 계층 경계 단위 테스트 — 표시 캡션에 **`id` 가 없음**을 명시적으로 단언
+- [x] C3. 골든 diff 검수 — `id=` / `data-fig-ref` 변화 **0건** 실증
+- [x] C4. `semantic_checks.py` 전 골든 통과 (신규 error 0)
+- [x] **C5 (계획 외)** — `run_tests.py` 에 캡션 계층 검사 연결.
+      fingerprint 가 태그명만 해싱해 class·id 변화를 못 잡는다는 걸 사전 분석에서
+      발견 → "테스트 통과"가 안전의 증거가 못 되는 구멍을 메움
+- [x] **C6 (계획 외)** — JS 동치 자동 고정(`check_js_parity`). `js/app.js` 의
+      정규식·길이가드를 읽어 엔진과 대조 + "선언만 하고 판정에 미사용" 검사
 
 ### D. 재빌드 · 업체 전달
 
-- [ ] D1. `build.bat` 으로 v1.6.0 exe 빌드 (`pyinstaller --clean docx2html.spec`)
-- [ ] D2. exe 로 실제 문제 문서 변환 → 캡션 간격 육안 확인 (CLI + GUI 양쪽)
-- [ ] D3. 전달 패키지 구성 — `2026-XX-XX-webbook-exe-v1.6.0/` (exe + README + 메일 초안). v1.5.0 선례 형식 답습
-- [ ] D4. 업체가 **교체만 하면 되는지** 확인 — 호출 방식·CLI 인자 변경 없음을 README 에 명시
+- [x] D1. `build.bat` 으로 v1.6.0 exe 빌드 (`pyinstaller --clean docx2html.spec`)
+- [x] D2. exe 변환 → 캡션 간격 확인 — **CLI 만 검증**. exit code(0/2)·CLI 인자·
+      내장 CSS·provenance 확인. ⚠️ **GUI 모드는 미검증**(대화형 창이라 자동 확인
+      불가). 변경은 `converter.py`+CSS 에 한정되고 `gui.py` 시그니처 무변경이라
+      위험은 낮으나, 전달 전 GUI 1회 수동 실행 권장
+- [x] D3. 전달 패키지 구성 — `2026-XX-XX-webbook-exe-v1.6.0/` (exe + README + 메일 초안). v1.5.0 선례 형식 답습
+- [x] D4. 업체가 **교체만 하면 되는지** 확인 — 호출 방식·CLI 인자 변경 없음을 README 에 명시
 
 ### E. 문서
 
-- [ ] E1. `docs/04-USER-GUIDE.md:864` — Tier 2(ID·링크) 조건은 유지, "표시상 캡션 인식은 더 넓게 동작" 한 줄 보강
-- [ ] E2. `docs/05-ARCHITECTURE.md` 문서 변환 파이프라인 절에 Tier 1/2 구분 반영
-- [ ] E3. `workbench/DEPLOY-QUEUE.md` append — v1.6.0 exe 업체 전달 건 (운영 축)
+- [x] E1. `docs/04-USER-GUIDE.md:864` — Tier 2(ID·링크) 조건은 유지, "표시상 캡션 인식은 더 넓게 동작" 한 줄 보강
+- [x] E2. `docs/05-ARCHITECTURE.md` 문서 변환 파이프라인 절에 Tier 1/2 구분 반영
+- [x] E3. `workbench/DEPLOY-QUEUE.md` append — v1.6.0 exe 업체 전달 건 (운영 축)
 
 ---
 
@@ -201,16 +220,36 @@ doc.querySelectorAll('p').forEach(function(p) {
 6. Tier 1 정규식이 `js/app.js:660` 과 **의미적으로 동치**임을 테스트로 고정 (향후 드리프트 감지).
 7. 업체 전달 README 에 v1.5.0 → v1.6.0 변경점이 1~2줄로 요약되어 있다.
 
+### 판정 (2026-07-29)
+
+| # | 결과 | 근거 |
+|---|------|------|
+| 1 | ✅ | 웹북 실측 24/16/16px → **4/4/4px** (v1.5.0 exe 대비) |
+| 2 | ✅ / **⚠️ 부분** | 골든 4종 id·링크 변화 **0건**. 다만 **그림 아래 캡션 16px→4px** 는 사용자가 선택한 **B안의 의도된 변경** — 이 항목에 한해 "렌더 동일" 면제 |
+| 3 | ✅ | `run_tests.py` 전 통과 · `pytest` 2 passed · 시맨틱 신규 error **0** |
+| 4 | ✅ | 픽스처로 고정. **조사 배제 추가**로 실문서 오탐 1건까지 제거(MyPaper 23→22) |
+| 5 | ✅ | `_detect_caption` 본체·`_make_caption_id`·`_linkify_references` **diff 0줄** (docstring 만 보강) |
+| 6 | ✅ | `check_js_parity()` — 정규식 2종 + 길이가드 + 미사용 검사 |
+| 7 | ✅ | README 에 실측 before/after 표 + 브라우저 호환 표 포함 |
+
 ---
 
-## 미해결 / 협의 필요
+## 미해결 / 협의 필요 → **전건 해소 (2026-07-29)**
 
-| # | 항목 | 필요한 결정 |
+| # | 항목 | 결정 |
 |---|---|---|
-| 1 | **괄호 표기 실사용 빈도** | `[표 1]` · `(표 1)` · `<표 1>` 가 사내 문서에 실제로 쓰이는가? 안 쓰이면 Tier 1 에서 빼고 범위를 JS 동치로만 좁힌다 (오탐 표면적 축소) |
-| 2 | `css/content.css` 대칭 수정 여부 | 전역 리셋으로 시각 변화가 없어 안전하지만, "기존 것 변경"에 해당 → 진행 전 확인 |
-| 3 | 기존 등록 문서 재변환 여부 | 변환기 개선은 **신규 업로드분에만** 적용. 기존 `contents/*.html` 은 JS 폴백이 계속 커버하므로 재변환은 불필요 — 다만 웹북 측 기존 콘텐츠는 업체 판단 필요 |
-| 4 | `.figure-wrap` 죽은 셀렉터 | 제거 / 존치 / 실제 생성 중 택1 (후속) |
+| 1 | 괄호 표기 실사용 빈도 | ✅ **사내 미사용** → Tier 1 에서 제외, JS 동치로만 좁힘 |
+| 2 | `css/content.css` 대칭 수정 | ✅ **승인·반영** (B안). 캡션 위는 무변화, 그림 아래만 16px→4px |
+| 3 | 기존 등록 문서 재변환 | ✅ **불필요** — `contents/*.html` 은 JS 폴백이 계속 커버. 웹북 측 기존 콘텐츠는 업체 판단 (DEPLOY-QUEUE 기록) |
+| 4 | `.figure-wrap` 죽은 셀렉터 | ➡️ **후속 이월** — 순수 정리 항목, 보고서 잔여 #5 |
+
+### 전달 전 확인 필요 (사용자·업체 몫 — 코드로 알 수 없음)
+
+| 항목 | 내용 |
+|------|------|
+| **업체 브라우저 버전** | Chrome/Edge **105 미만**이면 이미지 캡처 표 캡션은 미해결로 남음(표 캡션은 정상 동작하도록 규칙 분리 완료) |
+| **업체 페이지 charset** | UTF-8 미선언 시 한글 깨짐. **v1.5.0 부터의 기존 문제** — 검증 중 재현됨 |
+| **GUI 1회 수동 실행** | D2 참조 — CLI 만 자동 검증됨 |
 
 ---
 
@@ -245,4 +284,8 @@ doc.querySelectorAll('p').forEach(function(p) {
 ## Progress Log
 
 - **2026-07-29** — plan 생성. 선행 조사 완료(캡션 규칙 8개소 전수 추적, Explorer/웹북 차이 원인 규명, 규칙 영향 분석). 협의 대기.
-- **2026-07-29** — 사용자 결정 반영(괄호 표기 제외 · B안 채택) 후 `/run-plan` 실행. A~E 전 영역 완료. 사전 분석에서 **fingerprint 가 속성 변화를 못 잡는다**(`run_tests.py:54` 태그명만 해싱)는 점을 발견해 `test_caption_tiers.py` 로 방어망 보강. 웹북 실측 24/16/16px→4px, Explorer id·링크 변화 0건. 보고서 `reports/plan-73-feedback-2026-07-29.md`. 커밋 대기.
+- **2026-07-29** — 사용자 결정 반영(괄호 표기 제외 · B안 채택) 후 `/run-plan` 실행. A~E 전 영역 완료. 사전 분석에서 **fingerprint 가 속성 변화를 못 잡는다**(`run_tests.py:54` 태그명만 해싱)는 점을 발견해 `test_caption_tiers.py` 로 방어망 보강. 웹북 실측 24/16/16px→4px, Explorer id·링크 변화 0건.
+- **2026-07-29 (실문서 검증)** — 합성 픽스처로 부족해 `contents/samples/` 실문서 5종을 v1.5.0/v1.6.0 exe 로 대조. **SWA 매뉴얼 3종은 캡션 문단 자체가 없고**(표 앞에 h3 직행), MyPaper 캡션 22개는 전부 구분자 표기라 이미 검출되던 것 → **"구분자 없는 캡션"이 샘플에 0건**. 실문서에서 확인된 유일한 변화가 **오탐 1건**이었음. JS 폴백도 동일 오탐을 내는 것을 실행으로 확인(7/7 일치) → 새 위험이 아니라 기존 Explorer 판정의 이식임이 실증됨.
+- **2026-07-29 (조사 배제)** — 위 오탐 대응으로 사용자 지시. 번호에 조사가 붙으면 본문 판정. **`js/app.js` 도 동시 변경**해 동치 유지. 판정 22건 불일치 0 · JS 실행 대조 12/12 · **실문서 MyPaper 23→22**(오탐 제거).
+- **2026-07-29 (자체 검토 — `:has()` 결함)** — `:has()` 를 핵심 규칙 그룹에 넣은 것이 결함임을 자체 검토로 발견. CSS 는 셀렉터 그룹에 못 읽는 게 하나라도 있으면 **규칙 전체를 폐기**하므로, 구형 브라우저에서 **표 규칙까지 죽어 v1.5.0 보다 나빠질** 뻔했다(시뮬레이션 24px). `:has()` 규칙 전면 분리 후 4px 확인. 같은 패턴의 기존 결함 `css/platform-footer.css:42` 도 수정, 프로젝트 전체 혼재 0건.
+- **2026-07-29 (완료)** — 커밋 `5129957` (20 files, +1011/-17). 미해결 4건 전건 해소, 잔여 11건은 보고서 "잔여·후속"으로 이관. 업체 전달·배포는 `DEPLOY-QUEUE.md` 운영 축으로 분리(완료 조건 아님).
