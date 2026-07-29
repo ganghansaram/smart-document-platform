@@ -213,6 +213,13 @@ def main():
                 print(f"  [ERROR] {type(e).__name__}: {e}")
                 total_fail += 1
 
+    # 캡션 2계층 경계 (Plan-73)
+    # fingerprint 는 태그 이름만 해싱해 class·id 변화를 못 잡으므로 별도 검사.
+    if not args.fixture:
+        print("\n[caption_tiers] Plan-73 캡션 2계층 경계")
+        import test_caption_tiers
+        total_fail += test_caption_tiers.main()
+
     print("\n" + "=" * 72)
     if total_fail == 0:
         print(f"[OK] All checks passed.")

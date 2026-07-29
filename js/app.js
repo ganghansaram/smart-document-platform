@@ -657,11 +657,16 @@ function optimizeContent(html) {
     });
 
     // 2단계: 캡션 자동 감지 - Figure/Table/그림/표 패턴의 짧은 <p>에 class="caption" 부여
+    // 변환기(converter.py _is_display_caption)와 동일 기준을 유지해야 한다.
+    // 여기만 바꾸면 Explorer(엔진∪JS)와 웹북(엔진 단독)의 화면이 어긋난다.
+    // 동치는 tools/converter/tests/test_caption_tiers.py 가 고정한다.
     var captionPattern = /^(Figure|Table|그림|표|Fig\.)\s*\d/i;
+    // 번호에 조사가 바로 붙으면 캡션이 아니라 본문 서술 ("표 1을 보면", "그림 3과 같이")
+    var captionParticle = /^(Figure|Table|그림|표|Fig\.)\s*\d+([-.]\d+)*[은는이가을를과와의에도만로으]/i;
     doc.querySelectorAll('p').forEach(function(p) {
         if (p.classList.contains('caption')) return;
         var text = p.textContent.trim();
-        if (captionPattern.test(text) && text.length < 150) {
+        if (captionPattern.test(text) && !captionParticle.test(text) && text.length < 150) {
             p.classList.add('caption');
         }
     });

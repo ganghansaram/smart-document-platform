@@ -39,7 +39,12 @@ body[data-theme="dark"] .platform-footer {
 }
 
 /* ── Launcher 전용 (투명 배경, 밝은 텍스트) ──────────────────────────────────── */
-.launcher-main ~ .platform-footer,
+/* :has() 는 Chrome/Edge 105+ 필요 — 일반 셀렉터와 같은 그룹에 두면 미지원
+   브라우저가 규칙 전체를 폐기해 형제 셀렉터 쪽까지 죽는다. 따라서 분리. */
+.launcher-main ~ .platform-footer {
+    border-top: none;
+    color: rgba(255, 255, 255, 0.3);
+}
 body:has(.launcher-main) .platform-footer {
     border-top: none;
     color: rgba(255, 255, 255, 0.3);

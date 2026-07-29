@@ -206,17 +206,37 @@
     margin-top: 4px;
     margin-bottom: 4px;
 }
+/* 캡션이 대상 위에 올 때 (표 규칙) — 대상과의 간격 좁힘 */
 .docx-content .caption + table,
-.docx-content .caption + p > img,
 .docx-content .caption + .figure-wrap {
     margin-top: 4px;
 }
+/* 캡션이 대상 아래에 올 때 (그림 규칙) */
 .docx-content table + .caption,
 .docx-content .figure-wrap + .caption {
     margin-top: 4px;
 }
-.docx-content table:has(+ .caption),
+/* 대상 바로 뒤에 캡션이 올 때: 대상의 하단 마진 축소 (마진 병합 방지) */
 .docx-content .figure-wrap:has(+ .caption) {
+    margin-bottom: 4px;
+}
+.docx-content table:has(+ .caption) {
+    margin-bottom: 4px;
+}
+
+/* ── 이미지 문단 (:has 전용) ──
+   이미지는 p 로 감싸여 나오므로(변환기 _extract_inline_images) 마진 주체는
+   img 가 아니라 그 p 다. img 에 걸면 리셋 없는 호스트에서 p 마진이 남는다.
+   :has() 는 Chrome/Edge 105+ 필요 — 미지원 브라우저에서 규칙이 통째로
+   버려져도 위 표 규칙까지 같이 죽지 않도록 반드시 별도 규칙으로 분리한다.
+   (셀렉터 그룹은 하나만 못 읽어도 규칙 전체가 폐기된다) */
+.docx-content .caption + p:has(> img) {
+    margin-top: 4px;
+}
+.docx-content p:has(> img) + .caption {
+    margin-top: 4px;
+}
+.docx-content p:has(> img):has(+ .caption) {
     margin-bottom: 4px;
 }
 

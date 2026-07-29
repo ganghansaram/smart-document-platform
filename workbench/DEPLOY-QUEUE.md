@@ -19,6 +19,9 @@
 - **[plan/71]** Author 저작 편집기 화면 트렌디 리디자인 — **프론트 패치**(`css/md-editor.css`·`js/md-editor.js`). 위지윅 단일 컬럼·밝은 상단 바·히어로 제목·접힘 표지 정보·정직 dirty·반응형. 저장 모델 불변. 배포 후 교차검증 시 '빈 문서 작성'→새 화면 + 저장/DOCX + 라이트/다크 확인 (커밋 대기)
 - **[plan/72 P3·P4]** Author 셸 통합 + 저작 문서 소유권 — **전체 이미지 필요**(backend `api/document.py` 변경: `/api/save-markdown` name 계약·소유권 캡처·`/api/authored` 인증·소유자필터·신규 `/api/authored/content`). 프론트: 편집기 오버레이→Author 셸 스플릿(`md-editor.js`·`md-editor.css`·`author.html`·`author.css`·`author.js`), Explorer `.md` 잔존 정리(`editor.js`·`tree-menu.js`). **저장 위치 `contents/authored/`→`data/authored/` 이전**(정적 누수 차단). 배포 후 교차검증: 저작 문서 생성/편집/저장, 좌측 패널 문서 전환, 헤더 유지, **하위권한 계정으로 소유권 격리**(타인 문서 목록·읽기·덮어쓰기 차단) (커밋 대기)
 
+- **[plan/73]** 캡션 감지 2계층 분리 — **프론트 패치**(`css/content.css` 만). Explorer 는 캡션 위 간격 **무변화**, 그림 아래 캡션 16px→4px(의도된 개선). 배포 후 교차검증: 캡션 있는 문서(`설계-기준/구조-설계` 등)에서 표 위·그림 아래 캡션이 대상에 붙는지 확인
+- **[plan/73 · 업체]** DOCX 변환기 v1.6.0 exe **업체(웹북) 전달** — 배포 축이 아닌 **외부 전달 건**. 패키지 `tools/docx2html-standalone/2026-07-29-webbook-exe-v1.6.0/`(gitignore, exe+README+메일). 업체는 exe 교체만 하면 됨(CLI 인자·호출 방식 불변). 전달 후 확인: 변환 HTML 첫 줄 provenance 가 `1.6.0` 인지
+
 > ✅ **[보안 하드닝 — 환경 C 강등으로 배포 차단 해소]** (2026-07-24) 이 하드닝은 **환경 C(Tomcat·`http.server`)가 배포 대상일 때만** 유효한 선결 조건이었다. **환경 C는 deprecated(폐지·보류)로 강등** → 표준 배포(Docker/nginx)는 `location /data/ {return 403}`로 이미 차단(로컬 검증 완료)되어 **현행 배포에는 차단 요소 없음**. 하드닝 과제(`data/` 무인증 노출: `auth.db`·`settings.json`·`verify/*`·`authored/*`·`_owners.json`)는 **환경 C를 되살릴 경우의 선결 조건으로 icebox 보존** → `plans/backlog.md` #30(상태: 🧊 icebox — 환경 C 부활 시 승격).
 
 ## 📦 다음 배포 대상 (이번 회사 방문분)

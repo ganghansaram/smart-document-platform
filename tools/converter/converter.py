@@ -28,6 +28,21 @@ from omml_to_mathml import OmmlToMathml
 from numbering_resolver import NumberingResolver
 
 
+# ── 표시 캡션 판정 (Plan-73) ──
+# 프론트엔드 폴백(js/app.js optimizeContent 2단계)과 의도적으로 동일한 기준.
+# 한쪽만 고치면 Explorer(엔진∪JS)와 웹북(엔진 단독)의 화면이 어긋나므로
+# 양쪽을 함께 바꾼다.
+DISPLAY_CAPTION_RE = re.compile(
+    r'^(?:Figure|Table|그림|표|Fig\.)\s*\d', re.IGNORECASE)
+DISPLAY_CAPTION_MAX_LEN = 150
+# 번호 바로 뒤에 조사가 붙으면 캡션이 아니라 본문 서술이다.
+#   "표 1을 보면", "표 2는 …", "그림 3과 같이"  → 본문
+#   "표 1 주요 제원", "표 3.1 제원"              → 캡션 (번호 뒤가 공백)
+DISPLAY_CAPTION_PARTICLE_RE = re.compile(
+    r'^(?:Figure|Table|그림|표|Fig\.)\s*\d+(?:[-.]\d+)*[은는이가을를과와의에도만로으]',
+    re.IGNORECASE)
+
+
 class DocxConverter:
     """Word 문서를 HTML로 변환하는 클래스"""
 
@@ -719,10 +734,16 @@ class DocxConverter:
                 )
             return None, None
 
-        # 캡션 감지 → id + class 속성 추가 (Phase 4d: 스타일 힌트도 활용)
+        # 캡션 감지 (Plan-73: 참조 캡션 / 표시 캡션 2계층)
+        #   참조 캡션 — id + 본문 참조 링크 대상. 판정은 _detect_caption (엄격, 무변경)
+        #   표시 캡션 — class 만. 판정은 _is_display_caption (느슨)
+        # id 는 참조 캡션에만 부여한다. 표시 캡션까지 id 를 주면 중복 id·본문
+        # 오탐 링크가 생겨 semantic_checks·사용자 가이드 계약이 깨진다.
         caption_id = self._detect_caption(text, paragraph)
         id_attr = f' id="{caption_id}"' if caption_id else ''
-        caption_cls = ' class="caption"' if caption_id else ''
+        is_caption = bool(caption_id) or (
+            tag == 'p' and self._is_display_caption(text))
+        caption_cls = ' class="caption"' if is_caption else ''
 
         # Phase 4a: heading 번호 prefix 적용
         # resolver_mode 에 따라:
@@ -1664,14 +1685,36 @@ class DocxConverter:
             r.append(t)
             parent_for_new.append(r)
 
+    def _is_display_caption(self, text):
+        """표시 캡션 판정 — class="caption" 만 부여할지 (Plan-73).
+
+        _detect_caption(참조 캡션) 이 놓치는 표기까지 넓게 잡는다.
+        구분자 없는 "표 1 시스템 구성", 붙여쓴 "표1", "Table 1 Overview" 등
+        담당자별 표기 편차가 여기서 흡수된다.
+
+        id 나 본문 참조 링크는 만들지 않는다 — 판정이 느슨한 만큼 오탐이
+        섞이므로, 오탐의 피해를 "가운데 정렬 + 마진"으로 한정한다.
+
+        본문 오탐 방어선 2겹:
+          1. 조사 배제 — "표 1을 보면", "그림 3과 같이" 처럼 번호에 조사가
+             바로 붙으면 캡션이 아니라 서술이다. 짧아도 걸러진다.
+          2. 길이 가드 — 조사 없이 길게 이어지는 설명 문장을 거른다.
+        """
+        return (len(text) < DISPLAY_CAPTION_MAX_LEN
+                and bool(DISPLAY_CAPTION_RE.match(text))
+                and not DISPLAY_CAPTION_PARTICLE_RE.match(text))
+
     def _detect_caption(self, text, paragraph=None):
-        """캡션 텍스트 감지 → ID 생성 및 _caption_map 등록 (Plan-37 Phase 4d).
+        """참조 캡션 감지 → ID 생성 및 _caption_map 등록 (Plan-37 Phase 4d).
+
+        여기서 감지된 캡션만 id 를 받고 본문 참조 링크(_linkify_references)의
+        대상이 된다. 표시 전용 판정은 _is_display_caption 참조 (Plan-73).
 
         감지 규칙:
           1. 기본: "Figure N: ..." 또는 "Figure N. ..." 등 구분자 포함
           2. 확장(Phase 4d): 구분자 없이도 캡션 스타일(Caption/캡션/제목 주석)로
              감지된 단락은 캡션으로 인정
-          3. 구분자 후보: `:` `：` `–` `—` `-` `.` `]` `>` 공백 (개행 포함)
+          3. 구분자 후보: `:` `：` `–` `—` `-` `.` `]` `>`
           4. 제목 문맥 ("Figure 1" 으로 시작하는 단락 전체가 짧고 제목 형태) 허용
 
         "그림 1 또한 중요하다" 같은 본문 오탐을 피하기 위해 기본은 구분자 필수.

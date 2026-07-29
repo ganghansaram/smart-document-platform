@@ -105,7 +105,6 @@
 
 /* 캡션이 표/그림 위에 올 때: 대상과의 간격 좁힘 */
 .main-content .caption + table,
-.main-content .caption + p > img,
 .main-content .caption + .figure-wrap {
     margin-top: 4px;
 }
@@ -121,6 +120,19 @@
     margin-bottom: 4px;
 }
 .main-content .figure-wrap:has(+ .caption) {
+    margin-bottom: 4px;
+}
+
+/* 이미지 문단 (:has 전용) — 마진 주체는 img 가 아니라 감싼 p.
+   :has() 미지원 브라우저에서 규칙이 버려져도 위 표 규칙이 같이 죽지 않도록
+   반드시 별도 규칙으로 분리한다 (셀렉터 그룹은 하나만 못 읽어도 전체 폐기). */
+.main-content .caption + p:has(> img) {
+    margin-top: 4px;
+}
+.main-content p:has(> img) + .caption {
+    margin-top: 4px;
+}
+.main-content p:has(> img):has(+ .caption) {
     margin-bottom: 4px;
 }
 
