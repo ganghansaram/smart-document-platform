@@ -565,6 +565,10 @@ function _renderSystemContent(sys) {
     var area = document.getElementById('admin-content-area');
     if (!area) return;
 
+    // 이전 섹션이 대시보드였다면 자동 갱신 타이머를 여기서 해제한다.
+    // 이 함수가 모든 섹션 렌더의 단일 통로라 해제 누락 지점이 생기지 않는다.
+    if (typeof window.stopAnalyticsDashboard === 'function') window.stopAnalyticsDashboard();
+
     // 커스텀 패널
     if (sys.custom) {
         if (sys.id === 'users') { _renderUsersPanel(area); return; }
@@ -1006,6 +1010,9 @@ function _drawerKeydown(e) {
 
 var _menuEditorData = null;
 var _menuEditorOriginal = null;  // 마지막 로드/저장 시점 스냅샷 (dirty 판정용, Plan-67)
+// '추가' 로 만들었지만 아직 확인하지 않은 노드 — 취소 시 되돌린다.
+// 인덱스는 이동·삭제로 흔들리므로 노드 참조로 보관한다.
+var _menuPendingNew = null;
 
 function _renderMenuTab() {
     var panel = document.getElementById('tab-explorer-menu');
@@ -1070,17 +1077,32 @@ function _explorerAllCleanModal() {
 
     var input = document.getElementById('allclean-confirm-input');
     var confirmBtn = document.getElementById('allclean-confirm');
-    function close() { overlay.remove(); }
-    document.getElementById('allclean-cancel').addEventListener('click', close);
+    var cancelBtn = document.getElementById('allclean-cancel');
+
+    // Escape 는 document 에 건다 — 포커스가 모달 밖에 있어도 닫히도록.
+    // 단 초기화가 시작된 뒤에는 취소 버튼과 동일하게 닫기를 막는다.
+    function onEscape(e) {
+        if (e.key !== 'Escape') return;
+        if (cancelBtn && cancelBtn.disabled) return;
+        close();
+    }
+    function close() {
+        document.removeEventListener('keydown', onEscape);
+        overlay.remove();
+    }
+    document.addEventListener('keydown', onEscape);
+
+    cancelBtn.addEventListener('click', close);
     overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
     input.addEventListener('input', function() {
         confirmBtn.disabled = (input.value.trim() !== '초기화');
     });
-    confirmBtn.addEventListener('click', function() { _runExplorerAllClean(overlay); });
+    confirmBtn.addEventListener('click', function() { _runExplorerAllClean(overlay, close); });
     input.focus();
 }
 
-async function _runExplorerAllClean(overlay) {
+// close: 모달 teardown 단일 통로 (Escape 리스너 해제 포함) — overlay.remove() 직접 호출 금지
+async function _runExplorerAllClean(overlay, close) {
     var backendUrl = (typeof AUTH_CONFIG !== 'undefined' && 'backendUrl' in AUTH_CONFIG) ? AUTH_CONFIG.backendUrl : '';
     var body = document.getElementById('allclean-body');
     var cancelBtn = document.getElementById('allclean-cancel');
@@ -1098,7 +1120,7 @@ async function _runExplorerAllClean(overlay) {
         var res = await fetch(backendUrl + '/api/explorer/all-clean', { method: 'POST', credentials: 'include' });
         if (res.status === 401) {
             if (typeof window.handleApiUnauthorized === 'function') window.handleApiUnauthorized();
-            overlay.remove();
+            close();
             return;
         }
         if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);
@@ -1123,7 +1145,7 @@ async function _runExplorerAllClean(overlay) {
             }
         }
 
-        overlay.remove();
+        close();
         if (final && final.success) {
             var n = (final.trashed != null) ? final.trashed + '개 항목 정리' : '완료';
             showToast('Explorer 초기화 완료 — ' + n + ' (휴지통 보관)', 'success');
@@ -1132,7 +1154,7 @@ async function _runExplorerAllClean(overlay) {
         }
         renderAdminSettings();
     } catch (e) {
-        overlay.remove();
+        close();
         showToast('초기화 실패: ' + e.message, 'error');
     }
 }
@@ -1274,19 +1296,24 @@ function _menuToggleChildren(toggleEl) {
 
 function _menuAddTopLevel() {
     if (!_menuEditorData) _menuEditorData = [];
-    _menuEditorData.push({ label: '\uC0C8 \uD56D\uBAA9' });
+    var node = { label: '\uC0C8 \uD56D\uBAA9' };
+    _menuEditorData.push(node);
     _menuRenderEditor();
-    _menuEditByPath(String(_menuEditorData.length - 1));
+    _menuEditByPath(String(_menuEditorData.length - 1), { list: _menuEditorData, node: node });
 }
 
 function _menuAddChildByPath(pathStr) {
     var path = _menuParsePath(pathStr);
     var ctx = _menuNodeByPath(path);
     if (!ctx || !ctx.node) return;
-    if (!ctx.node.children) ctx.node.children = [];
-    ctx.node.children.push({ label: '\uC0C8 \uD56D\uBAA9' });
+    // children \uBC30\uC5F4\uC744 \uC5EC\uAE30\uC11C \uCC98\uC74C \uB9CC\uB4E4\uC5C8\uB2E4\uBA74 \uCDE8\uC18C \uC2DC \uADF8\uAC83\uAE4C\uC9C0 \uB418\uB3CC\uB824\uC57C dirty \uAC00 \uB0A8\uC9C0 \uC54A\uB294\uB2E4
+    var createdList = !ctx.node.children;
+    if (createdList) ctx.node.children = [];
+    var node = { label: '\uC0C8 \uD56D\uBAA9' };
+    ctx.node.children.push(node);
     _menuRenderEditor();
-    _menuEditByPath(path.concat([ctx.node.children.length - 1]).join(','));
+    _menuEditByPath(path.concat([ctx.node.children.length - 1]).join(','),
+                    { list: ctx.node.children, node: node, parent: ctx.node, createdList: createdList });
 }
 
 // ── 삭제 ──────────────────────────────────────────────────────────────────────
@@ -1369,7 +1396,14 @@ function _openDocDeleteModal(urls, opts) {
         '</div>';
     document.body.appendChild(overlay);
 
-    function close() { overlay.remove(); }
+    // Escape 는 document 에 건다 — 포커스가 모달 밖에 있어도 닫히도록
+    function onEscape(e) { if (e.key === 'Escape') close(); }
+    function close() {
+        document.removeEventListener('keydown', onEscape);
+        overlay.remove();
+    }
+    document.addEventListener('keydown', onEscape);
+
     document.getElementById('doc-delete-cancel').addEventListener('click', close);
     overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
 
@@ -1449,7 +1483,10 @@ function _menuMoveByPath(pathStr, direction) {
 
 // ── 인라인 편집 ───────────────────────────────────────────────────────────────
 
-function _menuEditByPath(pathStr) {
+function _menuEditByPath(pathStr, pendingNew) {
+    // 다른 편집을 열면 이전 '추가 대기' 추적은 포기한다 (되돌릴 시점을 놓친 것)
+    _menuPendingNew = pendingNew || null;
+
     var path = _menuParsePath(pathStr);
     var ctx = _menuNodeByPath(path);
     if (!ctx || !ctx.node) return;
@@ -1463,8 +1500,8 @@ function _menuEditByPath(pathStr) {
         '<div class="menu-node-edit" style="padding-left:' + rowEl.style.paddingLeft + '">' +
             '<input class="form-input admin-input menu-edit-label" placeholder="\uC774\uB984" value="' + _escHtml(ctx.node.label || '') + '">' +
             '<input class="form-input admin-input menu-edit-url" placeholder="URL (\uBE44\uC6CC\uB450\uBA74 \uD3F4\uB354)" value="' + _escHtml(ctx.node.url || '') + '">' +
-            '<button class="menu-btn menu-btn-ok" onclick="_menuEditConfirm(\'' + pathStr + '\',this)">\uD655\uC778</button>' +
-            '<button class="menu-btn" onclick="_menuEditCancel()">\uCDE8\uC18C</button>' +
+            '<button class="btn btn-secondary btn-sm" onclick="_menuEditCancel()">\uCDE8\uC18C</button>' +
+            '<button class="btn btn-primary btn-sm menu-edit-confirm" onclick="_menuEditConfirm(\'' + pathStr + '\',this)">\uD655\uC778</button>' +
         '</div>';
 
     rowEl.style.display = 'none';
@@ -1476,7 +1513,7 @@ function _menuEditByPath(pathStr) {
     var editDiv = nodeEl.querySelector('.menu-node-edit');
     if (editDiv) {
         editDiv.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') _menuEditConfirm(pathStr, editDiv.querySelector('.menu-btn-ok'));
+            if (e.key === 'Enter') _menuEditConfirm(pathStr, editDiv.querySelector('.menu-edit-confirm'));
             else if (e.key === 'Escape') _menuEditCancel();
         });
     }
@@ -1497,10 +1534,20 @@ function _menuEditConfirm(pathStr, btnEl) {
 
     ctx.node.label = label;
     if (url) { ctx.node.url = url; } else { delete ctx.node.url; }
+    _menuPendingNew = null;   // 확인됨 — 더 이상 되돌릴 대상 아님
     _menuRenderEditor();
 }
 
 function _menuEditCancel() {
+    // 취소는 흔적을 남기지 않는다 — '추가' 로 방금 만든 노드는 되돌린다
+    if (_menuPendingNew) {
+        var i = _menuPendingNew.list.indexOf(_menuPendingNew.node);
+        if (i >= 0) _menuPendingNew.list.splice(i, 1);
+        if (_menuPendingNew.createdList && _menuPendingNew.list.length === 0) {
+            delete _menuPendingNew.parent.children;
+        }
+        _menuPendingNew = null;
+    }
     _menuRenderEditor();
 }
 
@@ -1549,41 +1596,22 @@ function _renderUsersPanel(area) {
 
     area.innerHTML =
         '<div class="admin-section">' +
-            '<h3 class="admin-section-title">사용자 목록</h3>' +
+            '<div class="admin-section-header">' +
+                '<h3 class="admin-section-title">사용자 목록</h3>' +
+                '<button class="btn btn-primary btn-sm" id="admin-add-user-btn">+ 사용자 추가</button>' +
+            '</div>' +
             '<div class="admin-users-table-wrap">' +
                 '<table class="admin-users-table">' +
                     '<thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Role</th><th>IP</th><th>Last Login</th><th>Created</th><th>Actions</th></tr></thead>' +
                     '<tbody id="admin-users-tbody"></tbody>' +
                 '</table>' +
             '</div>' +
-        '</div>' +
-        '<div class="admin-section">' +
-            '<h3 class="admin-section-title">사용자 추가</h3>' +
-            '<div class="admin-users-add-form">' +
-                '<input type="text" class="form-input admin-input" id="admin-new-user-name" placeholder="Username (사번)">' +
-                '<input type="password" class="form-input admin-input" id="admin-new-user-pw" placeholder="Password">' +
-                '<select class="form-select admin-select" id="admin-new-user-role">' +
-                    '<option value="viewer">viewer</option>' +
-                    '<option value="editor">editor</option>' +
-                    '<option value="admin">admin</option>' +
-                '</select>' +
-                '<input type="text" class="form-input admin-input" id="admin-new-user-ip" placeholder="허용 IP (선택)">' +
-                '<input type="text" class="form-input admin-input" id="admin-new-user-displayname" placeholder="이름 (선택)">' +
-                '<input type="text" class="form-input admin-input" id="admin-new-user-desc" placeholder="설명 / 부서 (선택)">' +
-                '<button class="btn btn-primary admin-btn admin-btn-save" id="admin-add-user-btn">추가</button>' +
-            '</div>' +
         '</div>';
 
     _loadUsersTable(backendUrl);
 
     document.getElementById('admin-add-user-btn').addEventListener('click', function() {
-        _addUser(backendUrl);
-    });
-    ['admin-new-user-pw', 'admin-new-user-ip', 'admin-new-user-displayname', 'admin-new-user-desc'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') _addUser(backendUrl);
-        });
+        _addUserModal(backendUrl);
     });
 }
 
@@ -1643,22 +1671,93 @@ function _formatLastLogin(iso) {
     return m ? (m[1] + ' ' + m[2]) : iso;
 }
 
-async function _addUser(backendUrl) {
-    var nameEl = document.getElementById('admin-new-user-name');
-    var pwEl = document.getElementById('admin-new-user-pw');
-    var roleEl = document.getElementById('admin-new-user-role');
-    var ipEl = document.getElementById('admin-new-user-ip');
-    var displayNameEl = document.getElementById('admin-new-user-displayname');
-    var descEl = document.getElementById('admin-new-user-desc');
-    var username = nameEl.value.trim();
-    var password = pwEl.value;
-    var role = roleEl.value;
-    var allowed_ip = ipEl.value.trim();
-    var displayName = displayNameEl.value.trim();
-    var description = descEl.value.trim();
+function _addUserModal(backendUrl) {
+    var existing = document.getElementById('admin-add-user-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'admin-add-user-overlay';
+    overlay.className = 'admin-modal-overlay';
+    overlay.innerHTML =
+        '<div class="admin-modal">' +
+            '<h3>사용자 추가</h3>' +
+            // 오류는 모달 안에서 보여준다 — #admin-notice 는 오버레이 뒤에 가려 보이지 않는다
+            '<div class="admin-settings-notice notice-error" id="admin-new-user-error" style="display:none"></div>' +
+            '<div class="admin-field" style="margin-bottom:12px">' +
+                '<label class="admin-field-label">Username <span style="font-weight:normal;opacity:.6">(사번, 필수)</span></label>' +
+                '<input type="text" class="form-input admin-input" id="admin-new-user-name" autocomplete="off">' +
+            '</div>' +
+            '<div class="admin-field" style="margin-bottom:12px">' +
+                '<label class="admin-field-label">Password <span style="font-weight:normal;opacity:.6">(필수)</span></label>' +
+                '<input type="password" class="form-input admin-input" id="admin-new-user-pw" autocomplete="new-password">' +
+            '</div>' +
+            '<div class="admin-field" style="margin-bottom:12px">' +
+                '<label class="admin-field-label">이름 <span style="font-weight:normal;opacity:.6">(선택, 표시용)</span></label>' +
+                '<input type="text" class="form-input admin-input" id="admin-new-user-displayname">' +
+            '</div>' +
+            '<div class="admin-field" style="margin-bottom:12px">' +
+                '<label class="admin-field-label">설명 <span style="font-weight:normal;opacity:.6">(선택, 부서·비고)</span></label>' +
+                '<input type="text" class="form-input admin-input" id="admin-new-user-desc">' +
+            '</div>' +
+            '<div class="admin-field" style="margin-bottom:12px">' +
+                '<label class="admin-field-label">Role</label>' +
+                '<select class="form-select admin-select" id="admin-new-user-role">' +
+                    '<option value="viewer">viewer</option>' +
+                    '<option value="editor">editor</option>' +
+                    '<option value="admin">admin</option>' +
+                '</select>' +
+            '</div>' +
+            '<div class="admin-field" style="margin-bottom:16px">' +
+                '<label class="admin-field-label">허용 IP <span style="font-weight:normal;opacity:.6">(비워두면 제한 없음)</span></label>' +
+                '<input type="text" class="form-input admin-input" id="admin-new-user-ip">' +
+            '</div>' +
+            '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+                '<button class="btn btn-secondary admin-btn admin-btn-reset" id="admin-new-user-cancel">Cancel</button>' +
+                '<button class="btn btn-primary admin-btn admin-btn-save" id="admin-new-user-save">추가</button>' +
+            '</div>' +
+        '</div>';
+
+    document.body.appendChild(overlay);
+
+    // Escape 는 document 에 건다 — 포커스가 모달 밖에 있어도 닫히도록
+    function onEscape(e) { if (e.key === 'Escape') close(); }
+    function close() {
+        document.removeEventListener('keydown', onEscape);
+        overlay.remove();
+    }
+    document.addEventListener('keydown', onEscape);
+
+    document.getElementById('admin-new-user-cancel').addEventListener('click', close);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+
+    document.getElementById('admin-new-user-save').addEventListener('click', function() {
+        _submitNewUser(backendUrl, close);
+    });
+    // 인라인 폼에 있던 Enter 제출 유지 (모달 안에 포커스가 있을 때만)
+    overlay.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') _submitNewUser(backendUrl, close);
+    });
+
+    document.getElementById('admin-new-user-name').focus();
+}
+
+async function _submitNewUser(backendUrl, close) {
+    var errEl = document.getElementById('admin-new-user-error');
+    function showErr(msg) {
+        if (!errEl) return;
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+    }
+
+    var username = document.getElementById('admin-new-user-name').value.trim();
+    var password = document.getElementById('admin-new-user-pw').value;
+    var role = document.getElementById('admin-new-user-role').value;
+    var allowed_ip = document.getElementById('admin-new-user-ip').value.trim();
+    var displayName = document.getElementById('admin-new-user-displayname').value.trim();
+    var description = document.getElementById('admin-new-user-desc').value.trim();
 
     if (!username || !password) {
-        _showNotice('error', 'Username and password are required.');
+        showErr('Username 과 Password 는 필수입니다.');
         return;
     }
 
@@ -1673,19 +1772,15 @@ async function _addUser(backendUrl) {
             })
         });
         if (r.ok) {
-            nameEl.value = '';
-            pwEl.value = '';
-            ipEl.value = '';
-            displayNameEl.value = '';
-            descEl.value = '';
+            close();
             _loadUsersTable(backendUrl);
             _showNotice('ok', '✓ 사용자가 추가되었습니다: ' + _escHtml(username));
         } else {
             var err = await r.json();
-            _showNotice('error', '✗ ' + (err.detail || 'Failed to add user'));
+            showErr('✗ ' + (err.detail || 'Failed to add user'));
         }
     } catch (e) {
-        _showNotice('error', '✗ 서버 오류');
+        showErr('✗ 서버 오류');
     }
 }
 
@@ -1705,6 +1800,8 @@ function _editUserInline(backendUrl, u) {
     overlay.innerHTML =
         '<div class="admin-modal">' +
             '<h3>Edit User: ' + _escHtml(currentName) + '</h3>' +
+            // 오류는 모달 안에서 보여준다 — #admin-notice 는 오버레이 뒤에 가려 보이지 않는다
+            '<div class="admin-settings-notice notice-error" id="admin-edit-user-error" style="display:none"></div>' +
             '<div class="admin-field" style="margin-bottom:12px">' +
                 '<label class="admin-field-label">이름 <span style="font-weight:normal;opacity:.6">(선택, 표시용)</span></label>' +
                 '<input type="text" class="form-input admin-input" id="admin-edit-displayname" value="' + _escHtml(currentDisplayName) + '">' +
@@ -1737,9 +1834,23 @@ function _editUserInline(backendUrl, u) {
 
     document.body.appendChild(overlay);
 
-    function close() { overlay.remove(); }
+    // Escape 는 document 에 건다 — 포커스가 모달 밖에 있어도 닫히도록
+    function onEscape(e) { if (e.key === 'Escape') close(); }
+    function close() {
+        document.removeEventListener('keydown', onEscape);
+        overlay.remove();
+    }
+    document.addEventListener('keydown', onEscape);
+
     document.getElementById('admin-edit-cancel').addEventListener('click', close);
     overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+
+    function showErr(msg) {
+        var errEl = document.getElementById('admin-edit-user-error');
+        if (!errEl) return;
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+    }
 
     document.getElementById('admin-edit-save').addEventListener('click', function() {
         var newPw = document.getElementById('admin-edit-pw').value;
@@ -1762,13 +1873,13 @@ function _editUserInline(backendUrl, u) {
             body: JSON.stringify(body)
         }).then(function(r) {
             if (r.ok) {
+                close();
                 _loadUsersTable(backendUrl);
                 _showNotice('ok', '✓ 사용자가 수정되었습니다.');
-                close();
             } else {
-                r.json().then(function(err) { _showNotice('error', '✗ ' + (err.detail || 'Failed')); });
+                r.json().then(function(err) { showErr('✗ ' + (err.detail || 'Failed')); });
             }
-        }).catch(function() { _showNotice('error', '✗ 서버 오류'); });
+        }).catch(function() { showErr('✗ 서버 오류'); });
     });
 }
 
@@ -1794,7 +1905,11 @@ function _deleteUser(backendUrl, userId, name) {
 
 function _renderDashboardPanel(area) {
     if (typeof renderAnalyticsDashboard === 'function') {
-        renderAnalyticsDashboard(area);
+        // 전용 호스트에 렌더한다. area(#admin-content-area)는 섹션이 바뀌어도
+        // 살아남는 영구 컨테이너라, 직접 넘기면 analytics.js 의 자동 갱신 중단
+        // 가드(document.body.contains)가 영영 발동하지 못한다.
+        area.innerHTML = '<div id="admin-dashboard-host"></div>';
+        renderAnalyticsDashboard(document.getElementById('admin-dashboard-host'));
     } else {
         area.innerHTML = '<div class="admin-section"><p>analytics.js가 로드되지 않았습니다.</p></div>';
     }

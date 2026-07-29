@@ -151,6 +151,12 @@
         _dashRefreshTarget = null;
     }
 
+    /**
+     * 대시보드 자동 갱신 중단 — 대시보드를 그렸던 화면을 떠날 때 호출한다.
+     * 해제하지 않으면 30초 뒤 타이머가 그 자리에 들어선 다른 화면을 덮어쓴다.
+     */
+    window.stopAnalyticsDashboard = _stopDashboardAutoRefresh;
+
     function _formatUpdateTime(d) {
         function pad(n) { return (n < 10 ? '0' : '') + n; }
         return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());

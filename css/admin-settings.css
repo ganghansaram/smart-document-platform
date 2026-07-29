@@ -388,6 +388,23 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
     padding-bottom: 10px;
     border-bottom: 1px solid var(--as-border-light);
 }
+
+/* 제목 + 우측 액션 버튼 한 줄. 구분선을 헤더가 넘겨받아 폭 전체를 유지한다 */
+.admin-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--as-border-light);
+}
+
+.admin-section-header .admin-section-title {
+    margin: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
 .admin-section-desc {
     font-size: var(--font-small);
     color: var(--text-muted);
@@ -719,8 +736,18 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
    ══════════════════════════════════════════════════════════════════════════════ */
 
 /* ── 사용자 테이블 ─────────────────────────────────────────────────────────── */
+/* 넓은 화면에선 스크롤 컨테이너를 만들지 않는다. overflow-x:auto 를 걸면
+   overflow-y 가 auto 로 계산되어 이 박스가 스크롤 컨테이너가 되고,
+   thead 의 sticky 기준이 페이지가 아닌 이 박스로 바뀌어 고정이 무력화된다. */
 .admin-users-table-wrap {
-    overflow-x: auto;
+    overflow-x: visible;
+}
+
+/* 표(min-width 720px)가 넘치기 시작하는 폭부터 가로 스크롤 복원 */
+@media (max-width: 1023px) {
+    .admin-users-table-wrap {
+        overflow-x: auto;
+    }
 }
 
 .admin-users-table {
@@ -738,7 +765,14 @@ body[data-theme="dark"] .admin-subtab-btn:hover:not(.active) {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     padding: 8px 10px;
-    border-bottom: 2px solid var(--as-border);
+    /* 목록이 길어져도 헤더가 남도록 페이지 스크롤에 고정.
+       border-collapse:collapse 에서는 고정된 셀의 border 가 함께 따라오지 않아
+       구분선을 inset box-shadow 로 그린다 (두께·색은 기존 2px 선과 동일) */
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--as-bg-card);
+    box-shadow: inset 0 -2px 0 var(--as-border);
 }
 
 .admin-users-table td {
@@ -833,25 +867,6 @@ body[data-theme="dark"] .admin-role-badge.role-admin {
 
 body[data-theme="dark"] .admin-btn-sm.admin-btn-danger:hover {
     background: #2d1515;
-}
-
-/* ── 사용자 추가 폼 ────────────────────────────────────────────────────────── */
-.admin-users-add-form {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.admin-users-add-form .admin-input {
-    flex: 1;
-    min-width: 120px;
-    max-width: none;
-}
-
-.admin-users-add-form .admin-select {
-    flex: 0 0 auto;
-    width: auto;
 }
 
 /* ── 모달 오버레이 ─────────────────────────────────────────────────────────── */
@@ -1120,29 +1135,18 @@ body[data-theme="dark"] .admin-modal .admin-btn-reset:hover:not(:disabled) {
     color: var(--as-danger);
 }
 
-.menu-btn-ok {
-    width: auto;
-    padding: 0 10px;
-    font-size: var(--font-small);
-    font-weight: var(--font-weight-semibold);
-    background: var(--as-primary);
-    color: #fff;
-    border-radius: 5px;
-    flex-shrink: 0;
-}
-
-.menu-btn-ok:hover:not(:disabled) {
-    background: var(--as-primary-hover);
-    color: #fff;
-}
-
 /* ── 인라인 편집 ───────────────────────────────────────────────────────────── */
 
+/* 확인/취소는 공통 .btn + .btn-sm 사용 (components.css) — .menu-btn 은 아이콘 전용 */
 .menu-node-edit {
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 4px 8px;
+}
+
+.menu-node-edit .btn {
+    flex-shrink: 0;
 }
 
 .menu-node-edit .admin-input {
