@@ -45,6 +45,9 @@ backend/packages/
 data/vector-index.faiss
 data/vector-index_meta.json
 
+# 재색인 관측 메타 (upload.py _record_reindex_meta — 시각·소요시간, PC별 런타임 상태)
+data/index-meta.json
+
 # Reader runtime data
 data/reader/pdfs/
 data/reader/images/
@@ -102,6 +105,9 @@ backend/temp/
 
 # Workbench (test/dev artifacts)
 workbench/screenshots/
+
+# 발표자료 바이너리 (보고서 md 는 커밋, pptx 산출물은 제외)
+workbench/reports/**/*.pptx
 
 # Screenshots (test artifacts in repo root)
 /*.png
